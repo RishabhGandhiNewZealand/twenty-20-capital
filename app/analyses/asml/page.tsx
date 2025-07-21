@@ -3,9 +3,9 @@ import { TrendingUp, DollarSign, Globe, AlertTriangle } from "lucide-react"
 
 export default function ASMLAnalysisPage() {
   const metrics = [
-    { label: "Current Price", value: "€820.50", change: "+1.8%", icon: DollarSign, positive: true },
-    { label: "Target Price", value: "€950.00", change: "+15.8% upside", icon: TrendingUp, positive: true },
-    { label: "Market Cap", value: "€325.4B", change: "", icon: Globe, positive: true },
+    { label: "Current Price", value: "€820.50", icon: DollarSign },
+    { label: "Target Price", value: "€950.00", icon: TrendingUp },
+    { label: "Market Cap", value: "€325.4B", icon: Globe },
   ]
 
   const strengths = [
@@ -51,11 +51,6 @@ export default function ASMLAnalysisPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
-                  {metric.change && (
-                    <div className={`text-sm ${metric.positive ? "text-green-600" : "text-red-600"}`}>
-                      {metric.change}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )

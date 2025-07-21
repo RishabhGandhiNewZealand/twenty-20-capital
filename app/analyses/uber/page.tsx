@@ -3,9 +3,9 @@ import { TrendingUp, DollarSign, Users, AlertTriangle } from "lucide-react"
 
 export default function UberAnalysisPage() {
   const metrics = [
-    { label: "Current Price", value: "$72.45", change: "+2.3%", icon: DollarSign, positive: true },
-    { label: "Target Price", value: "$85.00", change: "+17.3% upside", icon: TrendingUp, positive: true },
-    { label: "Market Cap", value: "$151.2B", change: "", icon: Users, positive: true },
+    { label: "Current Price", value: "$72.45", icon: DollarSign },
+    { label: "Target Price", value: "$85.00", icon: TrendingUp },
+    { label: "Market Cap", value: "$151.2B", icon: Users },
   ]
 
   const strengths = [
@@ -51,11 +51,6 @@ export default function UberAnalysisPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
-                  {metric.change && (
-                    <div className={`text-sm ${metric.positive ? "text-green-600" : "text-red-600"}`}>
-                      {metric.change}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )
