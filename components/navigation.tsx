@@ -20,7 +20,7 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-2">
             <TrendingUp className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-900">InvestTracker</span>
+            <span className="text-xl font-bold text-gray-900">Rish Investing Journey</span>
           </Link>
 
           <div className="flex space-x-8">
