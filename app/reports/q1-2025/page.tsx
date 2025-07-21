@@ -1,19 +1,43 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, PieChart, Target } from "lucide-react"
-import Image from "next/image"
+import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
 
 export default function Q1Report2025Page() {
   const quarterStats = [
     { label: "Q1 Return", value: "+8.1%", icon: TrendingUp },
     { label: "Portfolio Value", value: "$134,820", icon: DollarSign },
-    { label: "New Positions", value: "3", icon: Target },
-    { label: "Sector Allocation", value: "8 Sectors", icon: PieChart },
   ]
 
-  const monthlyPerformance = [
-    { month: "January", return: "+3.2%", market: "+2.8%" },
-    { month: "February", return: "+2.1%", market: "+1.9%" },
-    { month: "March", return: "+2.6%", market: "+2.3%" },
+  const portfolioHoldings = [
+    { 
+      symbol: "NVDA", 
+      name: "NVIDIA Corporation",
+      allocation: "19.2%", 
+      return: "+12.5%",
+      shares: "48",
+      value: "$25,880"
+    },
+    { 
+      symbol: "UBER", 
+      name: "Uber Technologies",
+      allocation: "13.1%", 
+      return: "+8.7%",
+      shares: "290",
+      value: "$17,670"
+    },
+    { 
+      symbol: "MSFT", 
+      name: "Microsoft Corporation",
+      allocation: "16.2%", 
+      return: "+6.3%",
+      shares: "62",
+      value: "$21,840"
+    },
+  ]
+
+  const watchlist = [
+    { symbol: "ASML", name: "ASML Holding N.V.", reason: "Semiconductor equipment leader" },
+    { symbol: "TSM", name: "Taiwan Semiconductor", reason: "Foundry leader, AI chip demand" },
+    { symbol: "META", name: "Meta Platforms", reason: "AI infrastructure investment" },
   ]
 
   return (
@@ -25,7 +49,7 @@ export default function Q1Report2025Page() {
         </div>
 
         {/* Quarter Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {quarterStats.map((stat) => {
             const Icon = stat.icon
             return (
@@ -42,69 +66,118 @@ export default function Q1Report2025Page() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Performance Chart */}
+        {/* Portfolio Holdings */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center">
+              <Briefcase className="h-5 w-5 mr-2" />
+              Portfolio Holdings at Quarter End
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {portfolioHoldings.map((holding) => (
+                <div key={holding.symbol} className="border-l-4 border-blue-200 pl-4 py-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="font-bold text-gray-900">{holding.symbol}</span>
+                      <span className="text-gray-600 ml-2">{holding.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-green-600">{holding.return}</div>
+                      <div className="text-sm text-gray-500">{holding.allocation}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>{holding.shares} shares</span>
+                    <span className="font-medium">{holding.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Text Content */}
+        <div className="space-y-8">
+          {/* Portfolio Summary */}
           <Card className="border-blue-100">
             <CardHeader>
-              <CardTitle className="text-gray-900">Q1 Performance vs Market</CardTitle>
+              <CardTitle className="text-gray-900">Portfolio Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="aspect-video bg-blue-50 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/placeholder.svg?height=300&width=500&text=Q1+2025+Performance+vs+Market"
-                  alt="Q1 2025 Performance Chart"
-                  width={500}
-                  height={300}
-                  className="rounded-lg"
-                />
+              <div className="text-gray-700">
+                <p>Q1 2025 portfolio summary content goes here...</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Monthly Breakdown */}
+          {/* Individual Holdings */}
           <Card className="border-blue-100">
             <CardHeader>
-              <CardTitle className="text-gray-900">Monthly Performance</CardTitle>
+              <CardTitle className="text-gray-900">NVDA</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>NVDA Q1 analysis goes here...</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">UBER</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>UBER Q1 analysis goes here...</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">MSFT</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>MSFT Q1 analysis goes here...</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Watchlist */}
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Watchlist</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {monthlyPerformance.map((month) => (
-                  <div key={month.month} className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{month.month}</span>
-                    <div className="text-right">
-                      <div className="font-medium text-green-600">{month.return}</div>
-                      <div className="text-sm text-gray-500">Market: {month.market}</div>
+                {watchlist.map((stock) => (
+                  <div key={stock.symbol} className="border-l-4 border-green-200 pl-4 py-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-gray-900">{stock.symbol}</span>
+                      <span className="text-sm text-gray-600">{stock.name}</span>
                     </div>
+                    <p className="text-sm text-gray-700">{stock.reason}</p>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Key Highlights */}
-        <Card className="border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Q1 Highlights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose max-w-none text-gray-700">
-              <p className="mb-4">
-                The first quarter of 2025 showed strong performance with an 8.1% return, outpacing the broader market by
-                1.5%. Key drivers included continued strength in technology stocks and strategic positioning in emerging
-                sectors.
-              </p>
-              <p className="mb-4">
-                Added three new positions during the quarter: renewable energy ETF, cybersecurity stock, and a
-                healthcare REIT. These additions improved portfolio diversification while maintaining growth focus.
-              </p>
-              <p>
-                Looking ahead to Q2, maintaining cautious optimism while monitoring inflation trends and Federal Reserve
-                policy decisions.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Closing Thoughts */}
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Closing Thoughts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>Q1 2025 closing thoughts content goes here...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

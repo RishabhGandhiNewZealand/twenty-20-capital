@@ -1,13 +1,43 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, AlertTriangle, Target } from "lucide-react"
-import Image from "next/image"
+import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
 
 export default function Q2Report2025Page() {
   const quarterStats = [
     { label: "Q2 Return", value: "+5.7%", icon: TrendingUp },
     { label: "Portfolio Value", value: "$142,510", icon: DollarSign },
-    { label: "Rebalanced Positions", value: "5", icon: Target },
-    { label: "Risk Level", value: "Moderate", icon: AlertTriangle },
+  ]
+
+  const portfolioHoldings = [
+    { 
+      symbol: "NVDA", 
+      name: "NVIDIA Corporation",
+      allocation: "17.8%", 
+      return: "+4.2%",
+      shares: "52",
+      value: "$25,370"
+    },
+    { 
+      symbol: "UBER", 
+      name: "Uber Technologies",
+      allocation: "14.5%", 
+      return: "+6.1%",
+      shares: "315",
+      value: "$20,640"
+    },
+    { 
+      symbol: "MSFT", 
+      name: "Microsoft Corporation",
+      allocation: "15.9%", 
+      return: "+3.8%",
+      shares: "65",
+      value: "$22,660"
+    },
+  ]
+
+  const watchlist = [
+    { symbol: "ASML", name: "ASML Holding N.V.", reason: "Semiconductor equipment leader" },
+    { symbol: "TSM", name: "Taiwan Semiconductor", reason: "Foundry leader, AI chip demand" },
+    { symbol: "META", name: "Meta Platforms", reason: "AI infrastructure investment" },
   ]
 
   return (
@@ -19,7 +49,7 @@ export default function Q2Report2025Page() {
         </div>
 
         {/* Quarter Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {quarterStats.map((stat) => {
             const Icon = stat.icon
             return (
@@ -36,71 +66,118 @@ export default function Q2Report2025Page() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Performance Chart */}
+        {/* Portfolio Holdings */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center">
+              <Briefcase className="h-5 w-5 mr-2" />
+              Portfolio Holdings at Quarter End
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {portfolioHoldings.map((holding) => (
+                <div key={holding.symbol} className="border-l-4 border-blue-200 pl-4 py-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="font-bold text-gray-900">{holding.symbol}</span>
+                      <span className="text-gray-600 ml-2">{holding.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-green-600">{holding.return}</div>
+                      <div className="text-sm text-gray-500">{holding.allocation}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>{holding.shares} shares</span>
+                    <span className="font-medium">{holding.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Text Content */}
+        <div className="space-y-8">
+          {/* Portfolio Summary */}
           <Card className="border-blue-100">
             <CardHeader>
-              <CardTitle className="text-gray-900">Q2 Sector Performance</CardTitle>
+              <CardTitle className="text-gray-900">Portfolio Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="aspect-video bg-blue-50 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/placeholder.svg?height=300&width=500&text=Q2+2025+Sector+Performance"
-                  alt="Q2 2025 Sector Performance"
-                  width={500}
-                  height={300}
-                  className="rounded-lg"
-                />
+              <div className="text-gray-700">
+                <p>Q2 2025 portfolio summary content goes here...</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Portfolio Adjustments */}
+          {/* Individual Holdings */}
           <Card className="border-blue-100">
             <CardHeader>
-              <CardTitle className="text-gray-900">Portfolio Adjustments</CardTitle>
+              <CardTitle className="text-gray-900">NVDA</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>NVDA Q2 analysis goes here...</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">UBER</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>UBER Q2 analysis goes here...</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">MSFT</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>MSFT Q2 analysis goes here...</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Watchlist */}
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Watchlist</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="border-l-4 border-green-400 pl-4">
-                  <h4 className="font-medium text-gray-900">Added Positions</h4>
-                  <p className="text-sm text-gray-600">Increased exposure to defensive sectors</p>
-                </div>
-                <div className="border-l-4 border-red-400 pl-4">
-                  <h4 className="font-medium text-gray-900">Reduced Positions</h4>
-                  <p className="text-sm text-gray-600">Trimmed overweight tech positions</p>
-                </div>
-                <div className="border-l-4 border-blue-400 pl-4">
-                  <h4 className="font-medium text-gray-900">Rebalanced</h4>
-                  <p className="text-sm text-gray-600">Maintained target allocation ranges</p>
-                </div>
+                {watchlist.map((stock) => (
+                  <div key={stock.symbol} className="border-l-4 border-green-200 pl-4 py-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-gray-900">{stock.symbol}</span>
+                      <span className="text-sm text-gray-600">{stock.name}</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{stock.reason}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Closing Thoughts */}
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Closing Thoughts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-gray-700">
+                <p>Q2 2025 closing thoughts content goes here...</p>
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Market Outlook */}
-        <Card className="border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Q2 Summary & Outlook</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose max-w-none text-gray-700">
-              <p className="mb-4">
-                Q2 2025 delivered solid returns of 5.7% despite increased market volatility. The quarter was marked by
-                strategic rebalancing to reduce concentration risk and improve defensive positioning.
-              </p>
-              <p className="mb-4">
-                Key actions included trimming overweight technology positions and adding exposure to utilities and
-                consumer staples. This defensive tilt proved beneficial during the mid-quarter market correction.
-              </p>
-              <p>
-                Entering Q3 with a balanced approach, focusing on quality companies with strong fundamentals and
-                maintaining adequate cash reserves for potential opportunities.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
