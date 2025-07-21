@@ -139,7 +139,7 @@ export default function ASMLAnalysisPage() {
             {/* Market Share Chart */}
             <div className="mb-6">
               <img 
-                src="/wafer-fab-equipment-market-share.png" 
+                src="/wafer-fab-equipment-market-share.jpeg" 
                 alt="2023 Wafer Fab Equipment Vendor Market Share by Type of Equipment - showing ASML's dominance across various semiconductor manufacturing segments"
                 className="w-full h-auto rounded-lg border border-gray-200"
               />
@@ -151,7 +151,7 @@ export default function ASMLAnalysisPage() {
             {/* ASML Facility Image */}
             <div className="mb-4">
               <img 
-                src="/asml-facility.jpg" 
+                src="/asml-facility.jpeg" 
                 alt="ASML advanced semiconductor manufacturing facility showing EUV lithography machines"
                 className="w-full h-auto rounded-lg border border-gray-200"
               />
