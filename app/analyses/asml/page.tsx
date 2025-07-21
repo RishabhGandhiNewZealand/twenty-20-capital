@@ -1,13 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Cpu, Globe, AlertTriangle } from "lucide-react"
-import Image from "next/image"
 
 export default function ASMLAnalysisPage() {
   const metrics = [
     { label: "Current Price", value: "€820.50", change: "+1.8%", icon: DollarSign, positive: true },
     { label: "Target Price", value: "€950.00", change: "+15.8% upside", icon: TrendingUp, positive: true },
     { label: "Market Cap", value: "€325.4B", change: "", icon: Globe, positive: true },
-    { label: "52W Range", value: "€645 - €895", change: "", icon: TrendingUp, positive: true },
   ]
 
   const strengths = [
@@ -39,13 +37,10 @@ export default function ASMLAnalysisPage() {
               <p className="text-gray-600">NASDAQ: ASML • Technology Hardware • Semiconductors</p>
             </div>
           </div>
-          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-            Rating: Strong Buy
-          </div>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {metrics.map((metric) => {
             const Icon = metric.icon
             return (
@@ -67,25 +62,19 @@ export default function ASMLAnalysisPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Stock Chart */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Stock Performance (1 Year)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video bg-blue-50 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/placeholder.svg?height=300&width=500&text=ASML+Stock+Chart"
-                  alt="ASML Stock Chart"
-                  width={500}
-                  height={300}
-                  className="rounded-lg"
-                />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Business Summary */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Business Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700">
+              ASML is a Dutch company that manufactures lithography systems for the semiconductor industry. The company is the world's leading supplier of photolithography equipment used in chip manufacturing.
+            </p>
+          </CardContent>
+        </Card>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Technology Leadership */}
           <Card className="border-blue-100">
             <CardHeader>
@@ -119,7 +108,7 @@ export default function ASMLAnalysisPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Investment Strengths */}
           <Card className="border-blue-100">
             <CardHeader>
@@ -160,36 +149,6 @@ export default function ASMLAnalysisPage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Investment Thesis */}
-        <Card className="border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Investment Thesis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose max-w-none text-gray-700">
-              <p className="mb-4">
-                ASML represents one of the most compelling monopoly positions in the technology sector. The company's
-                extreme ultraviolet (EUV) lithography systems are essential for manufacturing the most advanced
-                semiconductors, with no viable alternatives from competitors.
-              </p>
-              <p className="mb-4">
-                The artificial intelligence boom has created unprecedented demand for advanced chips, directly
-                benefiting ASML's EUV business. Major customers like TSMC, Samsung, and Intel are investing heavily in
-                new fabs, creating a multi-year growth cycle for ASML.
-              </p>
-              <p className="mb-4">
-                The company's order backlog provides excellent revenue visibility, while the introduction of High-NA EUV
-                systems opens new growth opportunities. ASML's pricing power and high switching costs ensure strong
-                margins and cash generation.
-              </p>
-              <p>
-                <strong>Price Target: €950</strong> based on 25x 2025E earnings, reflecting the company's monopoly
-                position, strong growth prospects, and essential role in the semiconductor ecosystem.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
