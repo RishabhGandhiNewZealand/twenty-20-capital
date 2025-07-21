@@ -18,11 +18,11 @@ export default function AnalysesPage() {
       company: "ASML Holding",
       symbol: "ASML",
       sector: "Technology Hardware",
-      targetPrice: "€950",
-      currentPrice: "€820",
+      targetPrice: "$900",
+      currentPrice: "$[CURRENT_PRICE]",
       href: "/analyses/asml",
-      lastUpdated: "March 10, 2025",
-      keyPoints: ["EUV lithography monopoly", "AI chip demand growth", "Strong order backlog"],
+      lastUpdated: "March 15, 2025",
+      keyPoints: ["EUV lithography monopoly", "90%+ market share", "10-15% revenue growth expected"],
     },
   ]
 
