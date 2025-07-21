@@ -1,27 +1,28 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Globe, AlertTriangle } from "lucide-react"
+import { TrendingUp, DollarSign, Globe, AlertTriangle, Microscope, Target } from "lucide-react"
 
 export default function ASMLAnalysisPage() {
   const metrics = [
-    { label: "Current Price", value: "€820.50", icon: DollarSign },
-    { label: "Target Price", value: "€950.00", icon: TrendingUp },
-    { label: "Market Cap", value: "€325.4B", icon: Globe },
+    { label: "Current Price", value: "$[CURRENT_PRICE]", icon: DollarSign },
+    { label: "Target Price", value: "$900.00", icon: Target },
+    { label: "Market Cap", value: "$325.4B", icon: Globe },
   ]
 
   const strengths = [
-    "Monopoly in EUV lithography technology",
+    "Near-monopoly in EUV lithography with 90%+ market share",
     "Essential for advanced semiconductor manufacturing",
-    "Strong order backlog providing revenue visibility",
-    "Benefiting from AI and data center chip demand",
-    "High barriers to entry and switching costs",
+    "Technological lead of decades over competitors", 
+    "EUV machines priced at $300M+ each with strong pricing power",
+    "Critical enabler for AI, cloud computing, and automotive chips",
+    "Robust order backlog providing revenue visibility",
   ]
 
   const risks = [
     "Geopolitical tensions affecting China sales",
-    "Cyclical semiconductor industry exposure",
+    "Cyclical semiconductor industry exposure", 
     "High R&D costs and technology complexity",
     "Concentration risk with few major customers",
-    "Potential for technology disruption",
+    "Annual production capacity constraints",
   ]
 
   return (
@@ -57,14 +58,94 @@ export default function ASMLAnalysisPage() {
           })}
         </div>
 
-        {/* Business Summary */}
+        {/* Pioneering Technological Excellence */}
         <Card className="border-blue-100 mb-8">
           <CardHeader>
-            <CardTitle className="text-gray-900">Business Summary</CardTitle>
+            <CardTitle className="text-gray-900 flex items-center">
+              <Microscope className="h-5 w-5 text-blue-600 mr-2" />
+              Pioneering Technological Excellence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 mb-4">
+              ASML stands at the forefront of technological innovation, renowned for developing some of the most advanced machinery globally. Their flagship products, Extreme Ultraviolet (EUV) lithography machines, are pivotal in the semiconductor manufacturing process. These machines are so complex that they are often considered more intricate than the James Webb Space Telescope, operating at the cutting edge of multiple physics disciplines.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Essential Role in Semiconductor Manufacturing */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Essential Role in Semiconductor Manufacturing</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 mb-4">
+              ASML's EUV lithography machines utilize lasers to etch intricate patterns onto silicon wafers, transforming them into powerful semiconductors. This technology is indispensable for producing high-performance chips used in various applications, from artificial intelligence to cloud computing. Major industry players like TSMC and Samsung rely on ASML's equipment to fabricate advanced chips, which are then utilized by companies such as Nvidia to develop cutting-edge processors. Without ASML's technology, the production of high-end chips would be unfeasible.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Dominant Market Position and Pricing Power */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Dominant Market Position and Pricing Power</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 mb-4">
+              ASML holds a near-monopoly in the high-end lithography machine market, commanding over 90% market share in this segment. The company's technological lead is so substantial that it would require a competitor decades and tens of billions of dollars to develop a comparable machine and establish a sustainable supply chain. This dominant position grants ASML significant pricing power, with each EUV machine selling for upwards of $300 million. Due to the sheer size and complexity of these machines, ASML is limited in how many it can produce annually, further enhancing its pricing leverage.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Continuous Technological Advancement */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Continuous Technological Advancement</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-gray-700 space-y-4">
+              <p>
+                ASML's technology is underpinned by the Rayleigh criterion, which defines the smallest possible feature size (Critical Dimension, or CD) that can be achieved in lithography. The formula is expressed as:
+              </p>
+              <div className="bg-gray-100 p-4 rounded-lg font-mono text-center">
+                CD = k₁ × λ / NA
+              </div>
+              <div className="ml-4">
+                <p><strong>Where:</strong></p>
+                <ul className="list-disc ml-6 space-y-1">
+                  <li>CD: Critical Dimension</li>
+                  <li>k₁: Process factor</li>
+                  <li>λ: Wavelength of light used</li>
+                  <li>NA: Numerical aperture of the system</li>
+                </ul>
+              </div>
+              <p>
+                Currently, ASML's EUV systems operate at a wavelength of 13.5 nm. The transition from Deep Ultraviolet (DUV) to EUV lithography marked a significant advancement, reducing the wavelength by a factor of 14. There remains substantial potential for further miniaturization as advancements in laser and optical systems allow for shorter wavelengths and larger numerical apertures. Additionally, improvements in process factors through enhanced computational lithography techniques can further reduce the critical dimension. This indicates that ASML has ample room for technological improvement over the next two decades, with limited competition in sight.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Robust Demand Driven by Technological Trends */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Robust Demand Driven by Technological Trends</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-700">
-              ASML is a Dutch company that manufactures lithography systems for the semiconductor industry. The company is the world's leading supplier of photolithography equipment used in chip manufacturing.
+              The escalating demand for semiconductors, fuelled by advancements in artificial intelligence, automotive technology, energy solutions, and cloud computing, positions ASML favourably for sustained growth. As these sectors expand, the need for high-performance chips intensifies, thereby increasing the demand for ASML's cutting-edge lithography machines. The company's unique market position and technological prowess make it a critical enabler in the ongoing digital transformation across various industries.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Resilience Amid Market Volatility */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Resilience Amid Market Volatility</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700">
+              Recently, ASML's stock experienced a decline of over 30% from its all-time highs, primarily due to concerns over reduced sales to China stemming from regulatory restrictions and perceived competitive threats. However, the decrease in Chinese sales is expected to be offset by increased demand from other regions. Moreover, there is no substantial evidence indicating that China or any other nation is close to replicating ASML's advanced technologies. The company's competitive moat remains robust, underscoring its resilience amid market uncertainties.
             </p>
           </CardContent>
         </Card>
@@ -111,31 +192,18 @@ export default function ASMLAnalysisPage() {
           </Card>
         </div>
 
-        {/* Investment Thesis */}
+        {/* Growth Expectations and Valuation */}
         <Card className="border-blue-100">
           <CardHeader>
-            <CardTitle className="text-gray-900">Investment Thesis</CardTitle>
+            <CardTitle className="text-gray-900">Growth Expectations and Valuation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose max-w-none text-gray-700">
               <p className="mb-4">
-                ASML represents one of the most compelling monopoly positions in the technology sector. The company's
-                extreme ultraviolet (EUV) lithography systems are essential for manufacturing the most advanced
-                semiconductors, with no viable alternatives from competitors.
-              </p>
-              <p className="mb-4">
-                The artificial intelligence boom has created unprecedented demand for advanced chips, directly
-                benefiting ASML's EUV business. Major customers like TSMC, Samsung, and Intel are investing heavily in
-                new fabs, creating a multi-year growth cycle for ASML.
-              </p>
-              <p className="mb-4">
-                The company's order backlog provides excellent revenue visibility, while the introduction of High-NA EUV
-                systems opens new growth opportunities. ASML's pricing power and high switching costs ensure strong
-                margins and cash generation.
+                In summary, ASML's unparalleled technological leadership, dominant market position, continuous innovation, and the escalating global demand for advanced semiconductors collectively make a compelling case for investing in its stock.
               </p>
               <p>
-                <strong>Price Target: €950</strong> based on 25x 2025E earnings, reflecting the company's monopoly
-                position, strong growth prospects, and essential role in the semiconductor ecosystem.
+                <strong>Price Target: $900 USD</strong> reflecting the company's monopoly position, technological moat, and essential role in enabling the next generation of semiconductor manufacturing across AI, automotive, and cloud computing applications.
               </p>
             </div>
           </CardContent>
