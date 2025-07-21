@@ -4,8 +4,9 @@ import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import Link from 'next/link';
 
-export default async function ReportPage({ params }: { params: { slug: string } }) {
-  const filePath = path.join(process.cwd(), 'app', 'reports', `${params.slug}.md`);
+export default async function ReportPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const filePath = path.join(process.cwd(), 'app', 'reports', `${slug}.md`);
   let source = '';
   try {
     source = fs.readFileSync(filePath, 'utf8');
