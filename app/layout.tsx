@@ -7,7 +7,7 @@ import Navigation from "@/components/navigation"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Personal Investment Tracker",
+  title: "Rish Investing Journey",
   description: "Track your personal investing journey and portfolio performance",
     generator: 'v0.dev'
 }

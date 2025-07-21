@@ -8,7 +8,6 @@ export default function AnalysesPage() {
       company: "Uber Technologies",
       symbol: "UBER",
       sector: "Technology",
-      rating: "Buy",
       targetPrice: "$85",
       currentPrice: "$72",
       href: "/analyses/uber",
@@ -19,7 +18,6 @@ export default function AnalysesPage() {
       company: "ASML Holding",
       symbol: "ASML",
       sector: "Technology Hardware",
-      rating: "Strong Buy",
       targetPrice: "€950",
       currentPrice: "€820",
       href: "/analyses/asml",
@@ -27,21 +25,6 @@ export default function AnalysesPage() {
       keyPoints: ["EUV lithography monopoly", "AI chip demand growth", "Strong order backlog"],
     },
   ]
-
-  const getRatingColor = (rating: string) => {
-    switch (rating) {
-      case "Strong Buy":
-        return "bg-green-100 text-green-800"
-      case "Buy":
-        return "bg-blue-100 text-blue-800"
-      case "Hold":
-        return "bg-yellow-100 text-yellow-800"
-      case "Sell":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -56,21 +39,14 @@ export default function AnalysesPage() {
             <Link key={analysis.symbol} href={analysis.href}>
               <Card className="border-blue-100 hover:border-blue-300 transition-colors cursor-pointer h-full">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Building2 className="h-8 w-8 text-blue-600" />
-                      <div>
-                        <CardTitle className="text-gray-900">{analysis.company}</CardTitle>
-                        <p className="text-sm text-gray-500">
-                          {analysis.symbol} • {analysis.sector}
-                        </p>
-                      </div>
+                  <div className="flex items-center space-x-3">
+                    <Building2 className="h-8 w-8 text-blue-600" />
+                    <div>
+                      <CardTitle className="text-gray-900">{analysis.company}</CardTitle>
+                      <p className="text-sm text-gray-500">
+                        {analysis.symbol} • {analysis.sector}
+                      </p>
                     </div>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRatingColor(analysis.rating)}`}
-                    >
-                      {analysis.rating}
-                    </span>
                   </div>
                 </CardHeader>
                 <CardContent>

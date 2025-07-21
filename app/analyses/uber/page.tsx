@@ -1,13 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Users, Truck, AlertTriangle } from "lucide-react"
-import Image from "next/image"
+import { TrendingUp, DollarSign, Users, AlertTriangle } from "lucide-react"
 
 export default function UberAnalysisPage() {
   const metrics = [
-    { label: "Current Price", value: "$72.45", change: "+2.3%", icon: DollarSign, positive: true },
-    { label: "Target Price", value: "$85.00", change: "+17.3% upside", icon: TrendingUp, positive: true },
-    { label: "Market Cap", value: "$151.2B", change: "", icon: Users, positive: true },
-    { label: "52W Range", value: "$58 - $82", change: "", icon: TrendingUp, positive: true },
+    { label: "Current Price", value: "$72.45", icon: DollarSign },
+    { label: "Target Price", value: "$85.00", icon: TrendingUp },
+    { label: "Market Cap", value: "$151.2B", icon: Users },
   ]
 
   const strengths = [
@@ -39,13 +37,10 @@ export default function UberAnalysisPage() {
               <p className="text-gray-600">NASDAQ: UBER • Technology • Transportation</p>
             </div>
           </div>
-          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-            Rating: Buy
-          </div>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {metrics.map((metric) => {
             const Icon = metric.icon
             return (
@@ -56,68 +51,23 @@ export default function UberAnalysisPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
-                  {metric.change && (
-                    <div className={`text-sm ${metric.positive ? "text-green-600" : "text-red-600"}`}>
-                      {metric.change}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Stock Chart */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Stock Performance (1 Year)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video bg-blue-50 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/placeholder.svg?height=300&width=500&text=UBER+Stock+Chart"
-                  alt="UBER Stock Chart"
-                  width={500}
-                  height={300}
-                  className="rounded-lg"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Business Segments */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Business Segments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Users className="h-5 w-5 text-blue-600 mr-2" />
-                    <span className="font-medium">Mobility (Rides)</span>
-                  </div>
-                  <span className="text-gray-600">65% of revenue</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Truck className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="font-medium">Delivery</span>
-                  </div>
-                  <span className="text-gray-600">30% of revenue</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <TrendingUp className="h-5 w-5 text-purple-600 mr-2" />
-                    <span className="font-medium">Freight</span>
-                  </div>
-                  <span className="text-gray-600">5% of revenue</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Business Summary */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Business Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700">
+              Uber Technologies is a mobility and delivery company that operates ride-sharing, food delivery, and freight services through its technology platform connecting drivers and riders globally.
+            </p>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Investment Strengths */}
