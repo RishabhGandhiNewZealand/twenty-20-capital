@@ -108,7 +108,7 @@ export default function ASMLAnalysisPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Investment Strengths */}
           <Card className="border-blue-100">
             <CardHeader>
@@ -149,6 +149,36 @@ export default function ASMLAnalysisPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Investment Thesis */}
+        <Card className="border-blue-100">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Investment Thesis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="prose max-w-none text-gray-700">
+              <p className="mb-4">
+                ASML represents one of the most compelling monopoly positions in the technology sector. The company's
+                extreme ultraviolet (EUV) lithography systems are essential for manufacturing the most advanced
+                semiconductors, with no viable alternatives from competitors.
+              </p>
+              <p className="mb-4">
+                The artificial intelligence boom has created unprecedented demand for advanced chips, directly
+                benefiting ASML's EUV business. Major customers like TSMC, Samsung, and Intel are investing heavily in
+                new fabs, creating a multi-year growth cycle for ASML.
+              </p>
+              <p className="mb-4">
+                The company's order backlog provides excellent revenue visibility, while the introduction of High-NA EUV
+                systems opens new growth opportunities. ASML's pricing power and high switching costs ensure strong
+                margins and cash generation.
+              </p>
+              <p>
+                <strong>Price Target: €950</strong> based on 25x 2025E earnings, reflecting the company's monopoly
+                position, strong growth prospects, and essential role in the semiconductor ecosystem.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
