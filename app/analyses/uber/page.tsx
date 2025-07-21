@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Users, Truck, AlertTriangle } from "lucide-react"
+import { TrendingUp, DollarSign, Users, AlertTriangle } from "lucide-react"
 
 export default function UberAnalysisPage() {
   const metrics = [
@@ -73,40 +73,6 @@ export default function UberAnalysisPage() {
             </p>
           </CardContent>
         </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Business Segments */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Business Segments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Users className="h-5 w-5 text-blue-600 mr-2" />
-                    <span className="font-medium">Mobility (Rides)</span>
-                  </div>
-                  <span className="text-gray-600">65% of revenue</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Truck className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="font-medium">Delivery</span>
-                  </div>
-                  <span className="text-gray-600">30% of revenue</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <TrendingUp className="h-5 w-5 text-purple-600 mr-2" />
-                    <span className="font-medium">Freight</span>
-                  </div>
-                  <span className="text-gray-600">5% of revenue</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Investment Strengths */}

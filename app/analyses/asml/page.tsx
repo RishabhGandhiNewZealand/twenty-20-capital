@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Cpu, Globe, AlertTriangle } from "lucide-react"
+import { TrendingUp, DollarSign, Globe, AlertTriangle } from "lucide-react"
 
 export default function ASMLAnalysisPage() {
   const metrics = [
@@ -73,40 +73,6 @@ export default function ASMLAnalysisPage() {
             </p>
           </CardContent>
         </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Technology Leadership */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Technology Portfolio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Cpu className="h-5 w-5 text-purple-600 mr-2" />
-                    <span className="font-medium">EUV Systems</span>
-                  </div>
-                  <span className="text-gray-600">Leading edge chips</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Cpu className="h-5 w-5 text-blue-600 mr-2" />
-                    <span className="font-medium">DUV Systems</span>
-                  </div>
-                  <span className="text-gray-600">Mature node production</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="font-medium">High-NA EUV</span>
-                  </div>
-                  <span className="text-gray-600">Next generation</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Investment Strengths */}
