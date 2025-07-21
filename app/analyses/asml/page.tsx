@@ -1,13 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Cpu, Globe, AlertTriangle } from "lucide-react"
-import Image from "next/image"
+import { TrendingUp, DollarSign, Globe, AlertTriangle } from "lucide-react"
 
 export default function ASMLAnalysisPage() {
   const metrics = [
-    { label: "Current Price", value: "€820.50", change: "+1.8%", icon: DollarSign, positive: true },
-    { label: "Target Price", value: "€950.00", change: "+15.8% upside", icon: TrendingUp, positive: true },
-    { label: "Market Cap", value: "€325.4B", change: "", icon: Globe, positive: true },
-    { label: "52W Range", value: "€645 - €895", change: "", icon: TrendingUp, positive: true },
+    { label: "Current Price", value: "€820.50", icon: DollarSign },
+    { label: "Target Price", value: "€950.00", icon: TrendingUp },
+    { label: "Market Cap", value: "€325.4B", icon: Globe },
   ]
 
   const strengths = [
@@ -39,13 +37,10 @@ export default function ASMLAnalysisPage() {
               <p className="text-gray-600">NASDAQ: ASML • Technology Hardware • Semiconductors</p>
             </div>
           </div>
-          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-            Rating: Strong Buy
-          </div>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {metrics.map((metric) => {
             const Icon = metric.icon
             return (
@@ -56,68 +51,23 @@ export default function ASMLAnalysisPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
-                  {metric.change && (
-                    <div className={`text-sm ${metric.positive ? "text-green-600" : "text-red-600"}`}>
-                      {metric.change}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Stock Chart */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Stock Performance (1 Year)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video bg-blue-50 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/placeholder.svg?height=300&width=500&text=ASML+Stock+Chart"
-                  alt="ASML Stock Chart"
-                  width={500}
-                  height={300}
-                  className="rounded-lg"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Technology Leadership */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Technology Portfolio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Cpu className="h-5 w-5 text-purple-600 mr-2" />
-                    <span className="font-medium">EUV Systems</span>
-                  </div>
-                  <span className="text-gray-600">Leading edge chips</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Cpu className="h-5 w-5 text-blue-600 mr-2" />
-                    <span className="font-medium">DUV Systems</span>
-                  </div>
-                  <span className="text-gray-600">Mature node production</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="font-medium">High-NA EUV</span>
-                  </div>
-                  <span className="text-gray-600">Next generation</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Business Summary */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Business Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700">
+              ASML is a Dutch company that manufactures lithography systems for the semiconductor industry. The company is the world's leading supplier of photolithography equipment used in chip manufacturing.
+            </p>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Investment Strengths */}
