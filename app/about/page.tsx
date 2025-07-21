@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, Target, TrendingUp, BookOpen, Mail, Calendar, Shield, Zap, Building, Brain, DollarSign, Users } from "lucide-react"
+import { Target, TrendingUp, BookOpen, Shield, Zap, Building, Brain, DollarSign, Users } from "lucide-react"
 
 export default function AboutPage() {
   const qualityFactors = [
@@ -22,13 +22,13 @@ export default function AboutPage() {
       title: "Capital Light",
       description: "Does not require substantial capex and R&D to generate growth",
       icon: DollarSign,
-    },
-    {
-      title: "Predictability",
-      description: "Consistent stream of cash flows over the long term",
-      icon: Calendar,
-    },
-    {
+         },
+     {
+       title: "Predictability",
+       description: "Consistent stream of cash flows over the long term",
+       icon: TrendingUp,
+     },
+     {
       title: "Smart Management",
       description: "Effective use of capital on buybacks, dividends, and smaller acquisitions",
       icon: Users,
@@ -52,16 +52,7 @@ export default function AboutPage() {
         "Far more attractive opportunity in similar or better quality company"
       ]
     }
-  ]
-
-  const milestones = [
-    { year: "2020", event: "Started investing journey with first stock purchase" },
-    { year: "2021", event: "Diversified into ETFs and international markets" },
-    { year: "2022", event: "Weathered market volatility, learned risk management" },
-    { year: "2023", event: "Focused on quality companies and long-term growth" },
-    { year: "2024", event: "Achieved 24% annual return, added $20,000 NZD to portfolio" },
-    { year: "2025", event: "Continuing focused approach with 8-12 concentrated holdings" },
-  ]
+     ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -215,54 +206,7 @@ export default function AboutPage() {
           </CardContent>
         </Card>
 
-        {/* Timeline */}
-        <Card className="border-blue-100 mb-8">
-          <CardHeader>
-            <CardTitle className="text-gray-900 flex items-center">
-              <Calendar className="h-5 w-5 text-blue-600 mr-2" />
-              Investment Journey Timeline
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {milestones.map((milestone, index) => (
-                <div key={milestone.year} className="flex items-start">
-                  <div className="flex-shrink-0 w-20">
-                    <span className="inline-flex items-center justify-center w-16 h-8 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                      {milestone.year}
-                    </span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-gray-700">{milestone.event}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Contact */}
-        <Card className="border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900 flex items-center">
-              <Mail className="h-5 w-5 text-blue-600 mr-2" />
-              Investment Approach
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700 mb-4">
-              This systematic approach combines fundamental analysis with emotional discipline to build long-term wealth. 
-              The focus on quality companies, concentrated holdings, and patient capital allocation aims to compound returns 
-              over decades while minimizing permanent capital loss.
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-800 text-sm">
-                <strong>Transparency Note:</strong> This website tracks the real performance of this investment philosophy, 
-                documenting both successes and learning opportunities along the 40+ year journey.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
