@@ -10,13 +10,85 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
+import { TrendingUp, DollarSign, Target, Plus } from "lucide-react"
 
 export default function PortfolioPage() {
   const holdings = [
-    { symbol: "AAPL", name: "Apple Inc.", shares: 50, value: "$8,750", change: "+2.5%" },
-    { symbol: "GOOGL", name: "Alphabet Inc.", shares: 25, value: "$6,250", change: "+1.8%" },
-    { symbol: "MSFT", name: "Microsoft Corp.", shares: 30, value: "$9,450", change: "+3.2%" },
-    { symbol: "TSLA", name: "Tesla Inc.", shares: 15, value: "$3,750", change: "-1.2%" },
+    { 
+      symbol: "AAPL", 
+      name: "Apple Inc.", 
+      allocation: 22.5,
+      shares: 50, 
+      value: "$8,750", 
+      tier: "S"
+    },
+    { 
+      symbol: "GOOGL", 
+      name: "Alphabet Inc.", 
+      allocation: 18.3,
+      shares: 25, 
+      value: "$6,250", 
+      tier: "A"
+    },
+    { 
+      symbol: "MSFT", 
+      name: "Microsoft Corp.", 
+      allocation: 16.8,
+      shares: 30, 
+      value: "$9,450", 
+      tier: "S"
+    },
+    { 
+      symbol: "TSLA", 
+      name: "Tesla Inc.", 
+      allocation: 12.4,
+      shares: 15, 
+      value: "$3,750", 
+      tier: "A"
+    },
+    { 
+      symbol: "AMZN", 
+      name: "Amazon.com Inc.", 
+      allocation: 15.2,
+      shares: 18, 
+      value: "$4,850", 
+      tier: "S"
+    },
+    { 
+      symbol: "META", 
+      name: "Meta Platforms Inc.", 
+      allocation: 14.8,
+      shares: 12, 
+      value: "$5,200", 
+      tier: "S"
+    },
+  ]
+
+  const portfolioStats = [
+    { 
+      label: "Portfolio Value", 
+      value: "$38,250", 
+      icon: Target,
+      description: "Total portfolio value"
+    },
+    { 
+      label: "YTD Performance", 
+      value: "+12.8%", 
+      icon: TrendingUp,
+      description: "Year to date return"
+    },
+    { 
+      label: "S&P 500 YTD", 
+      value: "+14.2%", 
+      icon: DollarSign,
+      description: "S&P 500 benchmark"
+    },
+    { 
+      label: "Total Additions", 
+      value: "$5,000", 
+      icon: Plus,
+      description: "Capital added this year"
+    },
   ]
 
   return (
@@ -39,59 +111,71 @@ export default function PortfolioPage() {
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Value</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$28,200</div>
-              <p className="text-xs text-muted-foreground">+5.2% from last week</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Today's Change</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">+$420</div>
-              <p className="text-xs text-muted-foreground">+1.5% today</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Holdings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">4</div>
-              <p className="text-xs text-muted-foreground">Active positions</p>
-            </CardContent>
-          </Card>
+        {/* Portfolio Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {portfolioStats.map((stat) => {
+            const Icon = stat.icon
+            return (
+              <Card key={stat.label}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
+
+        {/* Holdings Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Current Holdings</CardTitle>
-            <CardDescription>Your current investment positions</CardDescription>
+            <CardTitle>Portfolio Holdings</CardTitle>
+            <CardDescription>Current investment positions and allocations</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {holdings.map((holding) => (
-                <div key={holding.symbol} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium">{holding.symbol}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium">{holding.name}</p>
-                      <p className="text-sm text-muted-foreground">{holding.shares} shares</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{holding.value}</p>
-                    <Badge variant={holding.change.startsWith("+") ? "default" : "destructive"}>{holding.change}</Badge>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Symbol</th>
+                    <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Company</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Allocation</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Shares</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Value</th>
+                    <th className="text-center py-3 px-2 text-sm font-medium text-muted-foreground">Tier</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {holdings.map((holding, index) => (
+                    <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-muted/20' : 'bg-background'}`}>
+                      <td className="py-3 px-2">
+                        <span className="font-bold">{holding.symbol}</span>
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className="text-sm">{holding.name}</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="font-medium">{holding.allocation}%</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="text-muted-foreground">{holding.shares}</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="font-medium">{holding.value}</span>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <Badge variant={holding.tier === 'S' ? 'default' : 'secondary'}>
+                          {holding.tier}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
