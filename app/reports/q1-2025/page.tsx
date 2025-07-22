@@ -8,10 +8,99 @@ export default function Q1Report2025Page() {
     { label: "Peak Q1 Return", value: "+8.0%", icon: Target },
   ]
 
-  // Portfolio Holdings section left blank for user to fill in percentages and shares
+  // Portfolio Holdings based on position sizes from the report
   const portfolioHoldings = [
-    // User will add holdings with percentages and share counts
-  ]
+    { 
+      symbol: "UBER", 
+      name: "Uber Technologies",
+      allocation: 18.5, 
+      return: "+6.5%",
+      shares: 40,
+      value: "$2,916",
+      tier: "A"
+    },
+    { 
+      symbol: "GOOGL", 
+      name: "Alphabet Inc",
+      allocation: 16.2, 
+      return: "-10.9%",
+      shares: 15,
+      value: "$2,310",
+      tier: "A"
+    },
+    { 
+      symbol: "AMZN", 
+      name: "Amazon.com Inc",
+      allocation: 15.8, 
+      return: "-2.1%",
+      shares: 13,
+      value: "$2,470",
+      tier: "S"
+    },
+    { 
+      symbol: "META", 
+      name: "Meta Platforms Inc",
+      allocation: 12.1, 
+      return: "+28.0%",
+      shares: 3,
+      value: "$1,728",
+      tier: "S"
+    },
+    { 
+      symbol: "NFLX", 
+      name: "Netflix Inc",
+      allocation: 10.4, 
+      return: "+21.1%",
+      shares: 2,
+      value: "$1,864",
+      tier: "S"
+    },
+    { 
+      symbol: "MA", 
+      name: "Mastercard Inc",
+      allocation: 8.7, 
+      return: "+22.0%",
+      shares: 4,
+      value: "$2,192",
+      tier: "S"
+    },
+    { 
+      symbol: "ASML", 
+      name: "ASML Holding N.V.",
+      allocation: 7.9, 
+      return: "-7.2%",
+      shares: 4,
+      value: "$2,648",
+      tier: "S"
+    },
+    { 
+      symbol: "SPGI", 
+      name: "S&P Global Inc",
+      allocation: 6.2, 
+      return: "-0.4%",
+      shares: 2,
+      value: "$1,016",
+      tier: "S"
+    },
+    { 
+      symbol: "MFT", 
+      name: "Mainfreight Limited",
+      allocation: 4.2, 
+      return: "+11.9%",
+      shares: 50,
+      value: "$3,675",
+      currency: "NZD",
+      tier: "A"
+    }
+  ].sort((a, b) => b.allocation - a.allocation)
+
+  const totalValue = portfolioHoldings.reduce((sum, holding) => {
+    if (holding.currency === "NZD") {
+      // Convert NZD to USD (approximate rate 0.6)
+      return sum + (parseFloat(holding.value.replace(/[$,]/g, '')) * 0.6)
+    }
+    return sum + parseFloat(holding.value.replace(/[$,]/g, ''))
+  }, 0)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,7 +128,7 @@ export default function Q1Report2025Page() {
           })}
         </div>
 
-        {/* Portfolio Holdings - Left blank for user to add */}
+        {/* Portfolio Holdings */}
         <Card className="border-blue-100 mb-8">
           <CardHeader>
             <CardTitle className="text-gray-900 flex items-center">
@@ -48,8 +137,112 @@ export default function Q1Report2025Page() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-gray-500 italic text-center py-8">
-              Portfolio holdings section - percentages and share counts to be added
+            {/* Horizontal Bar Chart */}
+            <div className="mb-8">
+              <h4 className="text-sm font-medium text-gray-700 mb-4">Allocation by Position</h4>
+              <div className="space-y-3">
+                {portfolioHoldings.map((holding) => (
+                  <div key={holding.symbol} className="flex items-center">
+                    <div className="w-16 text-xs font-medium text-gray-600 text-right mr-3">
+                      {holding.symbol}
+                    </div>
+                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                      <div 
+                        className={`h-6 rounded-full flex items-center justify-end pr-2 text-xs font-medium text-white ${
+                          holding.tier === 'S' ? 'bg-blue-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${holding.allocation}%` }}
+                      >
+                        {holding.allocation}%
+                      </div>
+                    </div>
+                    <div className="w-20 text-xs text-gray-600 ml-3">
+                      <span className={`px-1 py-0.5 rounded text-white text-xs ${
+                        holding.tier === 'S' ? 'bg-blue-600' : 'bg-green-600'
+                      }`}>
+                        {holding.tier} tier
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Holdings Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Symbol</th>
+                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Company</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Allocation</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Shares</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Value</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Q1 Return</th>
+                    <th className="text-center py-3 px-2 text-sm font-medium text-gray-700">Tier</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {portfolioHoldings.map((holding, index) => (
+                    <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                      <td className="py-3 px-2">
+                        <span className="font-bold text-gray-900">{holding.symbol}</span>
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className="text-gray-700 text-sm">{holding.name}</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="font-medium text-gray-900">{holding.allocation}%</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="text-gray-700">{holding.shares}</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="font-medium text-gray-900">
+                          {holding.value}
+                          {holding.currency === "NZD" && <span className="text-xs text-gray-500 ml-1">NZD</span>}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className={`font-medium ${
+                          holding.return.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {holding.return}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
+                          holding.tier === 'S' ? 'bg-blue-600' : 'bg-green-600'
+                        }`}>
+                          {holding.tier}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Portfolio Summary */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Total Positions:</span>
+                  <div className="font-bold text-gray-900">{portfolioHoldings.length}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">S Tier Holdings:</span>
+                  <div className="font-bold text-blue-600">{portfolioHoldings.filter(h => h.tier === 'S').length}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">A Tier Holdings:</span>
+                  <div className="font-bold text-green-600">{portfolioHoldings.filter(h => h.tier === 'A').length}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Est. Portfolio Value:</span>
+                  <div className="font-bold text-gray-900">${totalValue.toLocaleString()}</div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
