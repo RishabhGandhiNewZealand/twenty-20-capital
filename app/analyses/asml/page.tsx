@@ -62,6 +62,7 @@ export default function ASMLAnalysisPage() {
             
             {/* ASML Facility Image */}
             <div className="mb-4">
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">ASML Manufacturing Facility</h4>
               <img 
                 src="/asml-facility.jpg" 
                 alt="ASML advanced semiconductor manufacturing facility showing EUV lithography machines"

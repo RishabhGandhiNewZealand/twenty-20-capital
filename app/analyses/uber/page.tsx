@@ -167,6 +167,7 @@ export default function UberAnalysisPage() {
                 </p>
                 
                 <div className="my-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Uber's Expense Control</h4>
                   <div className="relative h-64 mb-4">
                     <Image
                       src="/Uber_Expenses.png"
@@ -188,6 +189,7 @@ export default function UberAnalysisPage() {
                 </p>
 
                 <div className="my-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Employee Count Growth</h4>
                   <div className="relative h-64 mb-4">
                     <Image
                       src="/Uber_Employee_Count.png"
@@ -206,6 +208,7 @@ export default function UberAnalysisPage() {
                 </p>
 
                 <div className="my-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Free Cash Flow vs Stock-Based Compensation</h4>
                   <div className="relative h-64 mb-4">
                     <Image
                       src="/Uber_Free_Cash_Flow_SBC.png"
@@ -312,32 +315,35 @@ export default function UberAnalysisPage() {
                   As people get wealthier across the globe, they will want to use services such as Uber to save time. Moreover, a wealthier clientele is likely to be less impacted by economic downturns, providing some stability to Uber's revenue during tougher times.
                 </p>
 
-                <div className="my-6">
-                  <div className="relative h-64 mb-4">
-                    <Image
-                      src="/Uber_Monthly_Active_Platform_Users.png"
-                      alt="Uber Monthly Active Platform Users"
-                      fill
-                      className="object-contain"
-                    />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 my-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Monthly Active Users Growth</h4>
+                    <div className="relative h-64 mb-4">
+                      <Image
+                        src="/Uber_Monthly_Active_Platform_Users.png"
+                        alt="Uber Monthly Active Platform Users"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 italic text-center">
+                      Figure 4: Uber's users on its app who have made a transaction in the last month. Showing consistent growth by 9% over the last 5 years.
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600 italic text-center">
-                    Figure 4: Uber's users on its app who have made a transaction in the last month. Showing consistent growth by 9% over the last 5 years.
-                  </p>
-                </div>
-
-                <div className="my-6">
-                  <div className="relative h-64 mb-4">
-                    <Image
-                      src="/Uber_Trips.png"
-                      alt="Uber Trips"
-                      fill
-                      className="object-contain"
-                    />
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Quarterly Trips Growth</h4>
+                    <div className="relative h-64 mb-4">
+                      <Image
+                        src="/Uber_Trips.png"
+                        alt="Uber Trips"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 italic text-center">
+                      Figure 5: The numbers of trips made per quarter on the Uber App. Growing faster than the number of users showing increasing usage per user.
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600 italic text-center">
-                    Figure 5: The numbers of trips made per quarter on the Uber App. Growing faster than the number of users showing increasing usage per user.
-                  </p>
                 </div>
               </div>
             </div>
@@ -466,6 +472,7 @@ export default function UberAnalysisPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 my-6">
                   <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Revenue Growth Trajectory</h4>
                     <div className="relative h-64 mb-4">
                       <Image
                         src="/Uber_Revenue.png"
@@ -479,6 +486,7 @@ export default function UberAnalysisPage() {
                     </p>
                   </div>
                   <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Gross Bookings Performance</h4>
                     <div className="relative h-64 mb-4">
                       <Image
                         src="/Uber_Gross_Bookings.png"
@@ -494,6 +502,7 @@ export default function UberAnalysisPage() {
                 </div>
 
                 <div className="my-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Operating Margin Expansion</h4>
                   <div className="relative h-64 mb-4">
                     <Image
                       src="/Uber_Operating_Margin.png"
