@@ -5,7 +5,7 @@ export default function Q1Report2025Page() {
   const quarterStats = [
     { label: "Q1 Return", value: "-5.4%", icon: TrendingUp },
     { label: "Index Return", value: "-4.2%", icon: DollarSign },
-    { label: "Peak Q1 Return", value: "+8.0%", icon: Target },
+    { label: "Portfolio Value", value: "~$36,000 NZD", icon: Target },
   ]
 
   // Portfolio Holdings based on position sizes from the report
@@ -16,7 +16,9 @@ export default function Q1Report2025Page() {
       allocation: 18.5, 
       return: "+6.5%",
       shares: 40,
-      value: "$2,916",
+      value: "$4,860",
+      nzdValue: "$4,860",
+      stockCurrency: "USD",
       tier: "A"
     },
     { 
@@ -25,7 +27,9 @@ export default function Q1Report2025Page() {
       allocation: 16.2, 
       return: "-10.9%",
       shares: 15,
-      value: "$2,310",
+      value: "$3,850",
+      nzdValue: "$3,850",
+      stockCurrency: "USD",
       tier: "A"
     },
     { 
@@ -34,7 +38,9 @@ export default function Q1Report2025Page() {
       allocation: 15.8, 
       return: "-2.1%",
       shares: 13,
-      value: "$2,470",
+      value: "$4,117",
+      nzdValue: "$4,117",
+      stockCurrency: "USD",
       tier: "S"
     },
     { 
@@ -43,7 +49,9 @@ export default function Q1Report2025Page() {
       allocation: 12.1, 
       return: "+28.0%",
       shares: 3,
-      value: "$1,728",
+      value: "$2,880",
+      nzdValue: "$2,880",
+      stockCurrency: "USD",
       tier: "S"
     },
     { 
@@ -52,7 +60,9 @@ export default function Q1Report2025Page() {
       allocation: 10.4, 
       return: "+21.1%",
       shares: 2,
-      value: "$1,864",
+      value: "$3,107",
+      nzdValue: "$3,107",
+      stockCurrency: "USD",
       tier: "S"
     },
     { 
@@ -61,7 +71,9 @@ export default function Q1Report2025Page() {
       allocation: 8.7, 
       return: "+22.0%",
       shares: 4,
-      value: "$2,192",
+      value: "$3,653",
+      nzdValue: "$3,653",
+      stockCurrency: "USD",
       tier: "S"
     },
     { 
@@ -70,7 +82,9 @@ export default function Q1Report2025Page() {
       allocation: 7.9, 
       return: "-7.2%",
       shares: 4,
-      value: "$2,648",
+      value: "$4,413",
+      nzdValue: "$4,413",
+      stockCurrency: "USD",
       tier: "S"
     },
     { 
@@ -79,7 +93,9 @@ export default function Q1Report2025Page() {
       allocation: 6.2, 
       return: "-0.4%",
       shares: 2,
-      value: "$1,016",
+      value: "$1,693",
+      nzdValue: "$1,693",
+      stockCurrency: "USD",
       tier: "S"
     },
     { 
@@ -89,17 +105,14 @@ export default function Q1Report2025Page() {
       return: "+11.9%",
       shares: 50,
       value: "$3,675",
-      currency: "NZD",
+      nzdValue: "$3,675",
+      stockCurrency: "NZD",
       tier: "A"
     }
   ].sort((a, b) => b.allocation - a.allocation)
 
   const totalValue = portfolioHoldings.reduce((sum, holding) => {
-    if (holding.currency === "NZD") {
-      // Convert NZD to USD (approximate rate 0.6)
-      return sum + (parseFloat(holding.value.replace(/[$,]/g, '')) * 0.6)
-    }
-    return sum + parseFloat(holding.value.replace(/[$,]/g, ''))
+    return sum + parseFloat(holding.nzdValue.replace(/[$,]/g, ''))
   }, 0)
 
   return (
@@ -197,12 +210,12 @@ export default function Q1Report2025Page() {
                       <td className="py-3 px-2 text-right">
                         <span className="text-gray-700">{holding.shares}</span>
                       </td>
-                      <td className="py-3 px-2 text-right">
-                        <span className="font-medium text-gray-900">
-                          {holding.value}
-                          {holding.currency === "NZD" && <span className="text-xs text-gray-500 ml-1">NZD</span>}
-                        </span>
-                      </td>
+                                             <td className="py-3 px-2 text-right">
+                         <span className="font-medium text-gray-900">
+                           {holding.nzdValue}
+                           <span className="text-xs text-gray-500 ml-1">NZD</span>
+                         </span>
+                       </td>
                       <td className="py-3 px-2 text-right">
                         <span className={`font-medium ${
                           holding.return.startsWith('+') ? 'text-green-600' : 'text-red-600'
@@ -238,10 +251,10 @@ export default function Q1Report2025Page() {
                   <span className="text-gray-600">A Tier Holdings:</span>
                   <div className="font-bold text-green-600">{portfolioHoldings.filter(h => h.tier === 'A').length}</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Est. Portfolio Value:</span>
-                  <div className="font-bold text-gray-900">${totalValue.toLocaleString()}</div>
-                </div>
+                                 <div>
+                   <span className="text-gray-600">Portfolio Value:</span>
+                   <div className="font-bold text-gray-900">${totalValue.toLocaleString()} NZD</div>
+                 </div>
               </div>
             </div>
           </CardContent>
@@ -343,12 +356,13 @@ export default function Q1Report2025Page() {
                   <p>
                     Therefore, I initiated a position in ASML early January and added throughout the quarter, seeing it as significantly undervalued. I plan to hold this long-term, with the primary catalyst for selling being the unlikely emergence of a competitor with an equally capable machine. Importantly, ASML also adds valuable diversification as a non-US company, reducing geographic concentration and introducing a different risk profile compared to my other holdings.
                   </p>
-                  <div className="mt-4 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $900-1000 USD</p>
-                    <p><strong>Cost Basis:</strong> $713 USD</p>
-                    <p><strong>Final Position:</strong> 4</p>
-                    <p><strong>Price@31/3/2025:</strong> $662 USD</p>
-                  </div>
+                                     <div className="mt-4 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $900-1000 USD</p>
+                     <p><strong>Cost Basis:</strong> $713 USD</p>
+                     <p><strong>Final Position:</strong> 4 shares</p>
+                     <p><strong>Price@31/3/2025:</strong> $662 USD</p>
+                     <p><strong>Portfolio Value:</strong> $4,413 NZD</p>
+                   </div>
                 </div>
               </div>
             </CardContent>
@@ -369,12 +383,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     S and P Global continued along its merry way this quarter, with business as usual. The story remained as is and the company's performance was within expectations. I continued to add to it during this quarter, with new capital and consolidated my MSCI position into SPGI for reasons mentioned above. This slightly reduced my cost basis. The position is now a full-size position. And I still expect to hold it for years to come.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $620-670 USD</p>
-                    <p><strong>Cost Basis:</strong> $510 USD</p>
-                    <p><strong>Final Position:</strong> 2</p>
-                    <p><strong>Price@31/3/2025:</strong> $508 USD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $620-670 USD</p>
+                     <p><strong>Cost Basis:</strong> $510 USD</p>
+                     <p><strong>Final Position:</strong> 2 shares</p>
+                     <p><strong>Price@31/3/2025:</strong> $508 USD</p>
+                     <p><strong>Portfolio Value:</strong> $1,693 NZD</p>
+                   </div>
                 </div>
 
                 <div className="border-l-4 border-blue-200 pl-4">
@@ -382,12 +397,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     The biggest change in my sentiment for the portfolio was my increased conviction of Amazon as a business. Amazon is one of the best businesses in the world. And with economic uncertainty in the air due to geo-politics, I think Amazon will greatly benefit from this period as they have in the past. They will gain market share and consolidate their monopoly. There is no real threat to their company from AI or regulation. And their runway for growth is much larger than the market predicts. Moreover, they are primed for massive margin expansion as the high margin parts of their business continue to grow faster than the low margin parts. I think Amazon will likely be a 10 trillion dollar company in the next decade and the market is greatly undervaluing the company. I more than doubled my Amazon position this quarter.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $270-300 USD</p>
-                    <p><strong>Cost Basis:</strong> $194 USD</p>
-                    <p><strong>Final Position:</strong> 13</p>
-                    <p><strong>Price@31/3/2025:</strong> $190 USD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $270-300 USD</p>
+                     <p><strong>Cost Basis:</strong> $194 USD</p>
+                     <p><strong>Final Position:</strong> 13 shares</p>
+                     <p><strong>Price@31/3/2025:</strong> $190 USD</p>
+                     <p><strong>Portfolio Value:</strong> $4,117 NZD</p>
+                   </div>
                 </div>
 
                 <div className="border-l-4 border-blue-200 pl-4">
@@ -395,12 +411,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     I have continued to add to Google this quarter. The uncertainty around its search business from LLMs and regulatory risk remains. The LLM risk is largely overblown. I changed my thesis on Google's monopoly slightly, I no longer think Google has a monopoly on search and it never did. Google has a monopoly in web search, but that only represents a small portion of the overall search pie. There are other search platforms such as Facebook, Amazon etc. These platforms perform searches and help users find what they are looking for, just not on the web but on their websites. And each of these platforms when created only increase the overall search pie. LLM's will do the same thing. As a result, the search business is being vastly underestimated. And Google has said that incorporating LLM's into search is seeing similar monetization while increasing query volume. Regulatory risk is real and uncertainty still looms but in good and bad outcomes, the google business will continue to thrive. And in 9 out 10 scenarios the market usually overestimates regulatory risks and discounts companies too much. In the financials, google saw no weakness and continues to grow as expected. And at current prices and forward predictions, the company is significantly undervalued with modest expectations of growth.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $240-250 USD</p>
-                    <p><strong>Cost Basis:</strong> $173 USD</p>
-                    <p><strong>Final Position:</strong> 15</p>
-                    <p><strong>Price@31/12/2025:</strong> $154 USD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $240-250 USD</p>
+                     <p><strong>Cost Basis:</strong> $173 USD</p>
+                     <p><strong>Final Position:</strong> 15 shares</p>
+                     <p><strong>Price@31/12/2025:</strong> $154 USD</p>
+                     <p><strong>Portfolio Value:</strong> $3,850 NZD</p>
+                   </div>
                 </div>
 
                 <div className="border-l-4 border-blue-200 pl-4">
@@ -408,12 +425,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     Uber has continued to progress steadily, delivering excellent revenue growth and continuing profitability. Moreover, it continues to roll out and announce more AV partnerships. I think smaller companies are realizing the potential of developing the AV software and then attaching it to a car. Then using the power of Ubers network to distribute. The winners in tech have all been companies with entrenched distribution networks. While other companies focus on developing the the AV tech, Uber solidifies its position as the go-to-supply demand aggregator. Uber's intrinsic value continues to grow rapidly while the market continues to discount it unreasonably.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $100-120 USD</p>
-                    <p><strong>Cost Basis:</strong> $68.4 USD</p>
-                    <p><strong>Final Position:</strong> 40</p>
-                    <p><strong>Price@31/12/2025:</strong> $72.9 USD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $100-120 USD</p>
+                     <p><strong>Cost Basis:</strong> $68.4 USD</p>
+                     <p><strong>Final Position:</strong> 40 shares</p>
+                     <p><strong>Price@31/12/2025:</strong> $72.9 USD</p>
+                     <p><strong>Portfolio Value:</strong> $4,860 NZD</p>
+                   </div>
                 </div>
               </div>
             </CardContent>
@@ -434,12 +452,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     Mastercard had a great quarter delivering strong than expected growth and FCF generation. This company keeps on executing on its long term business plan. They also acquired a small cyber security company to further improve their product offering. Mastercard is a better business than when I bought it and I see no reason to change anything.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $550-570 USD</p>
-                    <p><strong>Cost Basis:</strong> $449 USD</p>
-                    <p><strong>Final Position:</strong> 4</p>
-                    <p><strong>Price@31/12/2025:</strong> $548 USD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $550-570 USD</p>
+                     <p><strong>Cost Basis:</strong> $449 USD</p>
+                     <p><strong>Final Position:</strong> 4 shares</p>
+                     <p><strong>Price@31/12/2025:</strong> $548 USD</p>
+                     <p><strong>Portfolio Value:</strong> $3,653 NZD</p>
+                   </div>
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
@@ -447,12 +466,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     Meta once again delivered way better than expected growth. I am still baffled how this company delivers 20+ revenue growth at its size. I think my initial thesis is stronger than expected, Meta is driving engagement on their platform like never before. People are glued to their apps, me included. And it is difficult to leave as so much of the world is on these platforms. The advertising demand for this audience will continue to grow as business gets bigger. I think Meta can keep this growth up for the next 5 years. This is a bold claim but if you aren't advertising on Meta, you are losing out to your competition. My conviction of Meta has increased this quarter. Moreover, they deliver some of the best AI models in the world while keeping them open sourced. Which is simply destroying any moat that other companies are trying to build in AI. This further proves that using AI successfully is a better business than developing it. And Meta is still the only non-hardware company to profit significantly from AI thus far.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $700 USD</p>
-                    <p><strong>Cost Basis:</strong> $450 USD</p>
-                    <p><strong>Final Position:</strong> 3</p>
-                    <p><strong>Price@31/12/2025:</strong> $576 USD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $700 USD</p>
+                     <p><strong>Cost Basis:</strong> $450 USD</p>
+                     <p><strong>Final Position:</strong> 3 shares</p>
+                     <p><strong>Price@31/12/2025:</strong> $576 USD</p>
+                     <p><strong>Portfolio Value:</strong> $2,880 NZD</p>
+                   </div>
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
@@ -460,12 +480,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     Being an NZ company, Mainfreight only reports earnings half yearly so there was no update from the company this quarter. The company I believe is continuing to perform well, despite weak economic growth. Furthermore, Tariffs will hurt their business and growth as trade will reduce. But in previous times of economic uncertainty, Mainfreight has won market share, and this time will be no different. The stock has sold off a little bit and insiders are buying once again. I will continue to hold this company, as it has a completely different risk profile than the rest of the portfolio while having similar expected returns.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $85-90 NZD</p>
-                    <p><strong>Cost Basis:</strong> $65.69 NZD</p>
-                    <p><strong>Final Position:</strong> 50</p>
-                    <p><strong>Price @31/12/2024:</strong> 73.50 NZD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $85-90 NZD</p>
+                     <p><strong>Cost Basis:</strong> $65.69 NZD</p>
+                     <p><strong>Final Position:</strong> 50 shares</p>
+                     <p><strong>Price @31/12/2024:</strong> $73.50 NZD</p>
+                     <p><strong>Portfolio Value:</strong> $3,675 NZD</p>
+                   </div>
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
@@ -473,12 +494,13 @@ export default function Q1Report2025Page() {
                   <p className="text-gray-700 mb-2">
                     Netflix reported a blockbuster quarter. Delivering well above expectations. Netflix now has 300 million subscribers. And I see no reason why they can't grow to 500 million within the next 5 years. And that is still a small part of their TAM. Netflix user growth is like Meta. When you think they are saturated they will grow again. Netflix became priced at around $1000 this quarter as the market started taking this into account, before trading down with the broader market. Netflix still has years of fast revenue growth ahead now with margin expansion, which will result in large FCF generation. I wanted to add more Netflix, but other opportunities had better risk adjusted returns.
                   </p>
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> $1000-1100</p>
-                    <p><strong>Cost Basis:</strong> $769 USD</p>
-                    <p><strong>Final Position:</strong> 2</p>
-                    <p><strong>Price@31/12/2025:</strong> $932 USD</p>
-                  </div>
+                                     <div className="mt-3 p-3 bg-gray-50 rounded">
+                     <p><strong>Intrinsic value:</strong> $1000-1100 USD</p>
+                     <p><strong>Cost Basis:</strong> $769 USD</p>
+                     <p><strong>Final Position:</strong> 2 shares</p>
+                     <p><strong>Price@31/12/2025:</strong> $932 USD</p>
+                     <p><strong>Portfolio Value:</strong> $3,107 NZD</p>
+                   </div>
                 </div>
               </div>
             </CardContent>
