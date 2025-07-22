@@ -150,11 +150,11 @@ export default function Q1Report2025Page() {
           </CardHeader>
           <CardContent>
             {/* Chart and Table Side by Side */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
               {/* Horizontal Bar Chart */}
-              <div>
+              <div className="flex flex-col">
                 <h4 className="text-sm font-medium text-gray-700 mb-4">Allocation by Position</h4>
-                <div className="space-y-3">
+                <div className="flex-1 flex flex-col justify-center space-y-3 min-h-[400px]">
                   {portfolioHoldings.map((holding) => {
                     const maxAllocation = Math.max(...portfolioHoldings.map(h => h.allocation))
                     const barWidth = (holding.allocation / maxAllocation) * 100
@@ -164,9 +164,9 @@ export default function Q1Report2025Page() {
                         <div className="w-16 text-xs font-medium text-gray-600 text-right mr-3">
                           {holding.symbol}
                         </div>
-                        <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                        <div className="flex-1 bg-gray-200 rounded-full h-7 relative">
                           <div 
-                            className={`h-6 rounded-full flex items-center justify-end pr-2 text-xs font-medium text-white ${
+                            className={`h-7 rounded-full flex items-center justify-end pr-2 text-xs font-medium text-white ${
                               holding.tier === 'S' ? 'bg-blue-500' : 'bg-green-500'
                             }`}
                             style={{ width: `${barWidth}%` }}
@@ -188,58 +188,52 @@ export default function Q1Report2025Page() {
               </div>
 
               {/* Holdings Table */}
-              <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Symbol</th>
-                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Company</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Allocation</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Shares</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Value</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Q1 Return</th>
-                    <th className="text-center py-3 px-2 text-sm font-medium text-gray-700">Tier</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {portfolioHoldings.map((holding, index) => (
-                    <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                      <td className="py-3 px-2">
-                        <span className="font-bold text-gray-900">{holding.symbol}</span>
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className="text-gray-700 text-sm">{holding.name}</span>
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <span className="font-medium text-gray-900">{holding.allocation}%</span>
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <span className="text-gray-700">{holding.shares}</span>
-                      </td>
-                                             <td className="py-3 px-2 text-right">
-                         <span className="font-medium text-gray-900">
-                           {holding.nzdValue}
-                           <span className="text-xs text-gray-500 ml-1">NZD</span>
-                         </span>
-                       </td>
-                      <td className="py-3 px-2 text-right">
-                        <span className={`font-medium ${
-                          holding.return.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {holding.return}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
-                          holding.tier === 'S' ? 'bg-blue-600' : 'bg-green-600'
-                        }`}>
-                          {holding.tier}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="flex flex-col">
+                <h4 className="text-sm font-medium text-gray-700 mb-4">Portfolio Details</h4>
+                <div className="flex-1 overflow-x-auto min-h-[400px]">
+                  <table className="w-full h-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Symbol</th>
+                        <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Company</th>
+                        <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Allocation</th>
+                        <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Shares</th>
+                        <th className="text-right py-3 px-2 text-sm font-medium text-gray-700">Value (NZD)</th>
+                        <th className="text-center py-3 px-2 text-sm font-medium text-gray-700">Tier</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {portfolioHoldings.map((holding, index) => (
+                        <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                          <td className="py-3 px-2">
+                            <span className="font-bold text-gray-900">{holding.symbol}</span>
+                          </td>
+                          <td className="py-3 px-2">
+                            <span className="text-gray-700 text-sm">{holding.name}</span>
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <span className="font-medium text-gray-900">{holding.allocation}%</span>
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <span className="text-gray-700">{holding.shares}</span>
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <span className="font-medium text-gray-900">
+                              {holding.nzdValue}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
+                              holding.tier === 'S' ? 'bg-blue-600' : 'bg-green-600'
+                            }`}>
+                              {holding.tier}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
