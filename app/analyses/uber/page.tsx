@@ -9,23 +9,23 @@ export default function UberAnalysisPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">UBER</span>
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Uber Technologies Inc.</h1>
+            <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xl">UBER</span>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Uber Technologies Inc.</h1>
                 <p className="text-gray-600">NYSE: UBER • Technology • Transportation & Delivery</p>
               </div>
-            </div>
-            
-            {/* Intrinsic Value Tile */}
-            <Card className="border-green-100 bg-green-50">
+        </div>
+
+                        {/* Intrinsic Value Tile */}
+            <Card className="border-blue-100 bg-blue-50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-green-700">Intrinsic Value</CardTitle>
-                <Target className="h-4 w-4 text-green-600" />
+                <CardTitle className="text-sm font-medium text-blue-700">Intrinsic Value</CardTitle>
+                <Target className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-900">$113 USD</div>
+                <div className="text-2xl font-bold text-blue-900">$110 USD</div>
               </CardContent>
             </Card>
           </div>
@@ -84,15 +84,15 @@ export default function UberAnalysisPage() {
                   Consider a food delivery transaction where an order is placed for $30 worth of food from a local restaurant. Additional fees, including delivery and service charges, bring the total to $40. From this amount:
                 </p>
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
-                  <div className="flex justify-between items-center text-lg mb-2">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">Restaurant receives:</span>
                     <span className="font-bold text-blue-800">~$20</span>
                   </div>
-                  <div className="flex justify-between items-center text-lg mb-2">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">Driver receives:</span>
                     <span className="font-bold text-blue-800">~$10</span>
                   </div>
-                  <div className="border-t border-blue-300 pt-3 mt-3 flex justify-between items-center text-xl">
+                  <div className="border-t border-blue-300 pt-3 mt-3 flex justify-between items-center">
                     <span className="font-semibold">Uber retains:</span>
                     <span className="font-bold text-blue-900">~$10</span>
                   </div>
@@ -122,9 +122,9 @@ export default function UberAnalysisPage() {
 
         {/* Investment Story and Competitive Edge - Combined Section */}
         <Card className="border-blue-100 mb-8">
-          <CardHeader>
+            <CardHeader>
             <CardTitle className="text-gray-900 text-2xl">Investment Story and Competitive Edge</CardTitle>
-          </CardHeader>
+            </CardHeader>
           <CardContent className="space-y-8">
             {/* Introduction */}
             <div className="prose max-w-none text-gray-700">
@@ -279,7 +279,7 @@ export default function UberAnalysisPage() {
                   <li>• There is less restaurants on the competitor and restaurants are less likely to sign up because there is less customers on the competitor.</li>
                   <li>• I often will need use multiple apps for ride hailing, food and grocery delivery instead of just one App.</li>
                   <li>• Same for drivers, as they can get a variety of jobs from Uber.</li>
-                </ul>
+              </ul>
                 <p className="mb-4">
                   This in essence creates a positive feedback loop for Uber, where once they have gained their dominant market share, it becomes a lot easier to maintain due to the network effects described above. And it is these network effects which make Uber a better customer experience than competitors even though it may be slightly more costly.
                 </p>
@@ -341,17 +341,17 @@ export default function UberAnalysisPage() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         {/* Threats to Uber's Business - Combined Section */}
         <Card className="border-red-100 mb-8">
-          <CardHeader>
+            <CardHeader>
             <CardTitle className="text-gray-900 text-2xl flex items-center">
               <AlertTriangle className="h-6 w-6 text-red-600 mr-2" />
               Threats to Uber's Business
-            </CardTitle>
-          </CardHeader>
+              </CardTitle>
+            </CardHeader>
           <CardContent className="space-y-8">
             {/* Introduction */}
             <div className="prose max-w-none text-gray-700">
@@ -442,8 +442,8 @@ export default function UberAnalysisPage() {
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         {/* Financials with Stable Balance Sheet as subsection */}
         <Card className="border-blue-100 mb-8">
@@ -507,7 +507,7 @@ export default function UberAnalysisPage() {
                   </p>
                 </div>
               </div>
-            </div>
+        </div>
 
             {/* Stable Balance Sheet as subsection */}
             <div>
@@ -587,25 +587,99 @@ export default function UberAnalysisPage() {
 
               <h4 className="text-lg font-semibold mt-6 mb-4">Expected Value Calculation</h4>
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-lg border border-blue-200">
-                <p className="mb-3 text-blue-900 font-medium text-center text-lg">
+                <p className="mb-3 text-blue-900 font-medium text-center">
                   Average expected value of all these scenarios:
                 </p>
-                <p className="text-center text-xl font-bold text-blue-800 mb-4">
+                <p className="text-center font-bold text-blue-800 mb-4">
                   V = 0.25 × 433 + 0.5 × 212 + 0.2 × 120 + 0.05 × 25
                 </p>
-                <p className="text-center text-3xl font-extrabold text-blue-900 mb-4">
+                <p className="text-center text-2xl font-extrabold text-blue-900 mb-4">
                   V = $240B
                 </p>
-                <p className="text-center text-lg text-blue-700">
+                <p className="text-center text-blue-700">
                   The expected value of all these scenarios is that Uber will be worth $240B in 5 years' time. This gives a 11.3% CAGR, Uber's weighted return has a significant margin of safety, focusing more on potential setbacks than successes. Uber can exceed these expectations, outperforming the average S&P 500 and surpassing a 6% risk-free rate.
                 </p>
-                <p className="text-center text-lg text-blue-700 mt-2">
+                <p className="text-center text-blue-700 mt-2">
                   If Uber trades below $75 per share, future returns should generally beat the market. Therefore, I recommend an equal weight rating in a concentrated portfolio, ideally around 10%.
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Investment Strengths */}
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900 flex items-center">
+                <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
+                Investment Strengths
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Dominant marketplace with 15+ years of data advantage</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Strong brand value synonymous with transport and delivery</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Expanding margins with flat expense growth despite 20% revenue growth</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Minimal capital expenditures due to asset-light model</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Pricing power and monopolistic behavior in existing markets</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Network effects creating user stickiness</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          {/* Investment Risks */}
+          <Card className="border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-gray-900 flex items-center">
+                <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+                Investment Risks
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Autonomous vehicles (robo-taxis) disrupting the business model</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Legislative challenges classifying drivers as employees</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Regulatory pressures in key markets</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Competition from well-capitalized new entrants</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="text-gray-700">Economic sensitivity affecting discretionary spending</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Summary */}
         <Card className="border-blue-100 mb-8">

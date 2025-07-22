@@ -2,12 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Globe, AlertTriangle, Microscope, Target } from "lucide-react"
 
 export default function ASMLAnalysisPage() {
-  const metrics = [
-    { label: "Current Price", value: "$[CURRENT_PRICE]", icon: DollarSign },
-    { label: "Target Price", value: "$900.00", icon: Target },
-    { label: "Market Cap", value: "$325.4B", icon: Globe },
-  ]
-
   const strengths = [
     "Near-monopoly in EUV lithography with 90%+ market share",
     "Essential for advanced semiconductor manufacturing",
@@ -29,33 +23,28 @@ export default function ASMLAnalysisPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">ASML</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">ASML</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">ASML Holding N.V.</h1>
+                <p className="text-gray-600">NASDAQ: ASML • Technology Hardware • Semiconductors</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">ASML Holding N.V.</h1>
-              <p className="text-gray-600">NASDAQ: ASML • Technology Hardware • Semiconductors</p>
-            </div>
+            
+            {/* Intrinsic Value Tile */}
+            <Card className="border-blue-100 bg-blue-50">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-blue-700">Intrinsic Value</CardTitle>
+                <Target className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-900">$900 USD</div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {metrics.map((metric) => {
-            const Icon = metric.icon
-            return (
-              <Card key={metric.label} className="border-blue-100">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">{metric.label}</CardTitle>
-                  <Icon className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
-                </CardContent>
-              </Card>
-            )
-          })}
         </div>
 
         {/* Pioneering Technological Excellence */}
