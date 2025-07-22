@@ -188,7 +188,7 @@ export default function Q1Report2025Page() {
                     
                     return (
                       <div key={holding.symbol} className="flex items-center">
-                        <div className="w-20 flex items-center justify-end mr-3">
+                        <div className="w-20 flex items-center justify-start mr-3">
                           <img 
                             src={getLogoUrl(holding.symbol)} 
                             alt={`${holding.symbol} logo`}
