@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Target, Plus, Calendar, BarChart3 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 
 export default function HomePage() {
   const portfolioStats = [
@@ -24,9 +23,8 @@ export default function HomePage() {
       icon: DollarSign,
     },
     {
-      title: "Total Additions",
+      title: "Capital added this year",
       value: "$25,000",
-      description: "Capital added this year",
       icon: Plus,
     },
     {
@@ -43,70 +41,89 @@ export default function HomePage() {
     },
   ]
 
+  // Function to get company logo URL
+  const getLogoUrl = (symbol: string) => {
+    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
+  }
+
+  const getCompanyDomain = (symbol: string) => {
+    const domains: { [key: string]: string } = {
+      'UBER': 'uber.com',
+      'GOOGL': 'google.com',
+      'AMZN': 'amazon.com',
+      'META': 'meta.com',
+      'NFLX': 'netflix.com',
+      'MA': 'mastercard.com',
+      'ASML': 'asml.com',
+      'SPGI': 'spglobal.com',
+      'MFT': 'mainfreight.com'
+    }
+    return domains[symbol] || `${symbol.toLowerCase()}.com`
+  }
+
   const holdings = [
     { 
-      symbol: "AAPL", 
-      name: "Apple Inc.", 
-      allocation: 15.2,
-      shares: 125, 
-      value: "$19,372", 
-      tier: "S"
-    },
-    { 
-      symbol: "MSFT", 
-      name: "Microsoft Corp.", 
-      allocation: 12.8,
-      shares: 52, 
-      value: "$16,314", 
-      tier: "S"
+      symbol: "UBER", 
+      name: "Uber Technologies",
+      allocation: 14.8,
+      shares: 40,
+      value: "$6,220"
     },
     { 
       symbol: "GOOGL", 
-      name: "Alphabet Inc.", 
-      allocation: 10.5,
-      shares: 87, 
-      value: "$13,382", 
-      tier: "A"
-    },
-    { 
-      symbol: "UBER", 
-      name: "Uber Technologies", 
-      allocation: 8.3,
-      shares: 195, 
-      value: "$10,579", 
-      tier: "A"
+      name: "Alphabet Inc",
+      allocation: 12.5,
+      shares: 18,
+      value: "$5,280"
     },
     { 
       symbol: "ASML", 
-      name: "ASML Holding", 
-      allocation: 7.9,
-      shares: 15, 
-      value: "$10,069", 
-      tier: "S"
-    },
-    { 
-      symbol: "NFLX", 
-      name: "Netflix Inc.", 
-      allocation: 6.8,
-      shares: 22, 
-      value: "$8,667", 
-      tier: "S"
-    },
-    { 
-      symbol: "META", 
-      name: "Meta Platforms Inc.", 
-      allocation: 6.2,
-      shares: 18, 
-      value: "$7,902", 
-      tier: "S"
+      name: "ASML Holding N.V.",
+      allocation: 12.3,
+      shares: 4,
+      value: "$5,160"
     },
     { 
       symbol: "AMZN", 
-      name: "Amazon.com Inc.", 
-      allocation: 5.8,
-      shares: 42, 
-      value: "$7,392", 
-      tier: "S"
+      name: "Amazon.com Inc",
+      allocation: 11.3,
+      shares: 13,
+      value: "$4,745"
+    },
+    { 
+      symbol: "NFLX", 
+      name: "Netflix Inc",
+      allocation: 10.6,
+      shares: 2,
+      value: "$4,467"
+    },
+    { 
+      symbol: "MFT", 
+      name: "Mainfreight Limited",
+      allocation: 10.7,
+      shares: 67,
+      value: "$4,499"
+    },
+    { 
+      symbol: "SPGI", 
+      name: "S&P Global Inc",
+      allocation: 10.4,
+      shares: 5,
+      value: "$4,392"
+    },
+    { 
+      symbol: "MA", 
+      name: "Mastercard Inc",
+      allocation: 8.9,
+      shares: 4,
+      value: "$3,740"
+    },
+    { 
+      symbol: "META", 
+      name: "Meta Platforms Inc",
+      allocation: 8.5,
+      shares: 3,
+      value: "$3,595"
     },
   ]
 
@@ -134,7 +151,9 @@ export default function HomePage() {
                   {stat.subtitle && (
                     <p className="text-sm text-gray-700 mt-1">{stat.subtitle}</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                  {stat.description && (
+                    <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                  )}
                 </CardContent>
               </Card>
             )
@@ -156,14 +175,24 @@ export default function HomePage() {
                     <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Allocation</th>
                     <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Shares</th>
                     <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Value</th>
-                    <th className="text-center py-3 px-2 text-sm font-medium text-gray-600">Tier</th>
                   </tr>
                 </thead>
                 <tbody>
                   {holdings.map((holding, index) => (
                     <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                       <td className="py-3 px-2">
-                        <span className="font-bold text-gray-900">{holding.symbol}</span>
+                        <div className="flex items-center">
+                          <img 
+                            src={getLogoUrl(holding.symbol)} 
+                            alt={`${holding.symbol} logo`}
+                            className="w-6 h-6 rounded mr-2"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                          <span className="font-bold text-gray-900">{holding.symbol}</span>
+                        </div>
                       </td>
                       <td className="py-3 px-2">
                         <span className="text-sm text-gray-700">{holding.name}</span>
@@ -176,11 +205,6 @@ export default function HomePage() {
                       </td>
                       <td className="py-3 px-2 text-right">
                         <span className="font-medium text-gray-900">{holding.value}</span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <Badge variant={holding.tier === 'S' ? 'default' : 'secondary'}>
-                          {holding.tier}
-                        </Badge>
                       </td>
                     </tr>
                   ))}
