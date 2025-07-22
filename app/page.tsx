@@ -68,22 +68,13 @@ export default function HomePage() {
     const fetchPortfolioData = async () => {
       try {
         // Fetch portfolio holdings from API
-        let baseHoldings: PortfolioHolding[] = []
-        try {
-          const portfolioResponse = await fetch('/api/portfolio')
-          if (portfolioResponse.ok) {
-            const portfolioData = await portfolioResponse.json()
-            baseHoldings = portfolioData.holdings
-            setExitedPositions(portfolioData.exitedPositions)
-          } else {
-            throw new Error('API failed')
-          }
-        } catch (error) {
-          // Fallback to static data from portfolioData.ts
-          const { staticPortfolioHoldings, staticExitedPositions } = await import('@/lib/portfolioData')
-          baseHoldings = staticPortfolioHoldings
-          setExitedPositions(staticExitedPositions)
+        const portfolioResponse = await fetch('/api/portfolio')
+        if (!portfolioResponse.ok) {
+          throw new Error('Failed to load portfolio data from CSV')
         }
+        const portfolioData = await portfolioResponse.json()
+        const baseHoldings: PortfolioHolding[] = portfolioData.holdings
+        setExitedPositions(portfolioData.exitedPositions)
 
         // Fetch exchange rate
         const exchangeResponse = await fetch('/api/exchange-rate')
@@ -168,6 +159,15 @@ export default function HomePage() {
 
       } catch (error) {
         console.error('Error fetching portfolio data:', error)
+        // Update portfolio stats to show error
+        setPortfolioStats(prev => prev.map((stat, index) => 
+          index === 0 ? { 
+            ...stat, 
+            value: "Error",
+            subtitle: "Failed to load portfolio data",
+            description: undefined 
+          } : stat
+        ))
       }
     }
 
@@ -254,89 +254,100 @@ export default function HomePage() {
             <CardTitle className="text-gray-900">Portfolio Holdings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
-                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Position Started</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Shares</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (NZD)</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (USD)</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Allocation</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Current Value (NZD)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {holdings
-                    .filter(holding => holding.totalShares > 0.01)
-                    .sort((a, b) => (b.allocation || 0) - (a.allocation || 0))
-                    .map((holding, index) => (
-                    <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                      <td className="py-3 px-2">
-                        <div className="flex items-center">
-                          <img 
-                            src={getLogoUrl(holding.symbol)} 
-                            alt={`${holding.symbol} logo`}
-                            className="w-6 h-6 rounded mr-2"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                          <span className="font-bold text-gray-900">{holding.symbol}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className="text-sm text-gray-700">{holding.name}</span>
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <span className="text-sm text-gray-600">{formatDate(holding.firstPurchaseDate)}</span>
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <span className="text-gray-700">{formatNumber(holding.totalShares, 0)}</span>
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <span className="text-gray-700">{formatCurrency(holding.avgPriceNZD, 'NZD')}</span>
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        {holding.avgPriceUSD ? (
-                          <span className="text-gray-700">{formatCurrency(holding.avgPriceUSD, 'USD')}</span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        {holding.loading ? (
-                          <div className="flex items-center justify-end">
-                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                          </div>
-                        ) : (
-                          <span className="font-medium text-gray-900">{formatNumber(holding.allocation || 0, 1)}%</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        {holding.loading ? (
-                          <div className="flex items-center justify-end">
-                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                          </div>
-                        ) : holding.error ? (
-                          <span className="text-red-500 text-sm">Error</span>
-                        ) : (
-                          <span className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD, 'NZD')}</span>
-                        )}
-                      </td>
+            {holdings.length === 0 && portfolioStats[0].value === "Error" ? (
+              <div className="text-center py-8">
+                <div className="text-red-500 text-lg font-medium mb-2">Failed to Load Portfolio Data</div>
+                <div className="text-gray-600">Unable to read portfolio data from CSV file. Please check if the file exists and is accessible.</div>
+              </div>
+            ) : holdings.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500">Loading portfolio data...</div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Position Started</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Shares</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (NZD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (USD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Allocation</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Current Value (NZD)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {holdings
+                      .filter(holding => holding.totalShares > 0.01)
+                      .sort((a, b) => (b.allocation || 0) - (a.allocation || 0))
+                      .map((holding, index) => (
+                      <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                        <td className="py-3 px-2">
+                          <div className="flex items-center">
+                            <img 
+                              src={getLogoUrl(holding.symbol)} 
+                              alt={`${holding.symbol} logo`}
+                              className="w-6 h-6 rounded mr-2"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                            <span className="font-bold text-gray-900">{holding.symbol}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className="text-sm text-gray-700">{holding.name}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-sm text-gray-600">{formatDate(holding.firstPurchaseDate)}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-gray-700">{formatNumber(holding.totalShares, 0)}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-gray-700">{formatCurrency(holding.avgPriceNZD, 'NZD')}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          {holding.avgPriceUSD ? (
+                            <span className="text-gray-700">{formatCurrency(holding.avgPriceUSD, 'USD')}</span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          {holding.loading ? (
+                            <div className="flex items-center justify-end">
+                              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                            </div>
+                          ) : (
+                            <span className="font-medium text-gray-900">{formatNumber(holding.allocation || 0, 1)}%</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          {holding.loading ? (
+                            <div className="flex items-center justify-end">
+                              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                            </div>
+                          ) : holding.error ? (
+                            <span className="text-red-500 text-sm">Error</span>
+                          ) : (
+                            <span className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD, 'NZD')}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Exited Positions Table */}
-        {exitedPositions.length > 0 && (
+        {portfolioStats[0].value !== "Error" && exitedPositions.length > 0 && (
           <Card className="border-blue-100 mt-8">
             <CardHeader>
               <CardTitle className="text-gray-900">Exited Positions</CardTitle>
