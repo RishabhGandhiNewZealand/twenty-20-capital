@@ -90,7 +90,6 @@ export default function ASMLAnalysisPage() {
               <Card className="border-gray-200 bg-gray-50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-gray-700">Current Price</CardTitle>
-                  <DollarSign className="h-4 w-4 text-gray-600" />
                 </CardHeader>
                 <CardContent>
                   {stockData.loading ? (
@@ -102,7 +101,7 @@ export default function ASMLAnalysisPage() {
                     <div className="text-sm text-red-500">Price unavailable</div>
                   ) : (
                     <div className="text-2xl font-bold text-gray-900">
-                      {formatPrice(stockData.currentPrice!, stockData.currency)}
+                      {formatPrice(stockData.currentPrice!, stockData.currency)} {stockData.currency}
                     </div>
                   )}
                 </CardContent>
