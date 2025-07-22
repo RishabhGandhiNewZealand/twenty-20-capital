@@ -27,7 +27,7 @@ export default function Q2Report2025Page() {
   const quarterStats = [
     { label: "Q2 Return", value: "+5.18%", icon: TrendingUp },
     { label: "S&P 500 Return Unhedged", value: "+6.05%", icon: DollarSign },
-    { label: "Portfolio Value", value: "$36,590 NZD", icon: Target },
+    { label: "Portfolio Value", value: "$42,098 NZD", icon: Target },
     { label: "Portfolio Additions", value: "$2,000 NZD", icon: Plus },
   ]
 
