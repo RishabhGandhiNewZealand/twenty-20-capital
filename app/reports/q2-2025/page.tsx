@@ -78,7 +78,7 @@ export default function Q2Report2025Page() {
       name: "Mainfreight Limited",
       return: "-8.5%",
       shares: 67,
-      usdValue: 2698, // $67.15 NZD * 67 shares * 0.6 USD/NZD rate
+      usdValue: 2742, // $67.15 NZD * 67 shares * 0.61 USD/NZD rate (Jun 30, 2025)
       nzdValue: "$4,499",
       stockCurrency: "NZD",
       tier: "A"
