@@ -2,6 +2,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, Target, Plus } from "lucide-react"
 
 export default function Q2Report2025Page() {
+  // Function to get company logo URL
+  const getLogoUrl = (symbol: string) => {
+    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
+  }
+
+  const getCompanyDomain = (symbol: string) => {
+    const domains: { [key: string]: string } = {
+      'UBER': 'uber.com',
+      'GOOGL': 'google.com',
+      'AMZN': 'amazon.com',
+      'META': 'meta.com',
+      'NFLX': 'netflix.com',
+      'MA': 'mastercard.com',
+      'ASML': 'asml.com',
+      'SPGI': 'spglobal.com',
+      'MFT': 'mainfreight.com'
+    }
+    return domains[symbol] || `${symbol.toLowerCase()}.com`
+  }
+
   const quarterStats = [
     { label: "Q2 Return", value: "+5.18%", icon: TrendingUp },
     { label: "S&P 500 Return", value: "+6.05%", icon: DollarSign },
@@ -162,8 +182,17 @@ export default function Q2Report2025Page() {
                     
                     return (
                       <div key={holding.symbol} className="flex items-center">
-                        <div className="w-16 text-xs font-medium text-gray-600 text-right mr-3">
-                          {holding.symbol}
+                        <div className="w-20 flex items-center justify-end mr-3">
+                          <img 
+                            src={getLogoUrl(holding.symbol)} 
+                            alt={`${holding.symbol} logo`}
+                            className="w-5 h-5 rounded mr-2"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                          <span className="text-xs font-medium text-gray-600">{holding.symbol}</span>
                         </div>
                         <div className="flex-1 bg-gray-200 rounded-full h-7 relative">
                           <div 
@@ -271,7 +300,18 @@ export default function Q2Report2025Page() {
             <CardContent>
               <div className="space-y-6">
                 <div className="border-l-4 border-blue-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Google (GOOGL: NASDAQ) (A tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('GOOGL')} 
+                      alt="GOOGL logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Google (GOOGL: NASDAQ) (A tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     I have continued to add more to Google this quarter as the market keep the stock price discounted. The narrative still hasn't changed, and I remain unconvinced of it. Moreover, this quarter Google released its Gemini 2.5 family of models which have been at the top of the LMArena charts ever since the release. Despite new flagship models from the other AI players. I think Google is now starting to flex its research and development Genius, kind of like a diesel train that takes a while to get going but won't stop once it's in motion. Moreover, Google has come out with very positive engagement metrics on AI overviews on search. I think in the short term, AI overviews will cannibalize search revenue, but it will make the platform stickier. And I have full confidence that Google will be able to monetize them even better than normal search. Google is tackling the innovators dilemma head on and is not afraid of short-term pain for long term gain. The rest of the business is excelling and being discounted for no reason. A quick sum of the parts valuation as follows: Search with 5 P/S multiple, Cloud with a 15P/S, Google network with a 3 P/S , YouTube and Subscriptions with 8P/S, Other bets/Waymo a 15 P/S multiple. This gives a rough valuation of 2.5T. This does not account for the synergies between the different business segments either. The financials continued to grow as expected and at current prices the company still has good growth prospects.
                   </p>
@@ -285,7 +325,18 @@ export default function Q2Report2025Page() {
                 </div>
 
                 <div className="border-l-4 border-blue-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Mainfreight (MFT: NZE) (A tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('MFT')} 
+                      alt="MFT logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Mainfreight (MFT: NZE) (A tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     Mainfreight reported their annual results this quarter, their revenue is up 11% while profit is down 3% before tax. Considering the macro environment, Mainfreight is executing well in all its regions except the USA. This region is struggling to get going at the same speed as others; however, I have faith that over the next 5 years, it will become a profit center. I think they can grow revenue by 8-10% comfortably and they have demonstrated that. Their profitability will improve as they continue to win market share and the macro environment improves, and if it doesn't the company will still do well as I have faith in the management execution ability. Every year they win market share with better service and build better infrastructure to give betters service the moat continues to improve. The company is still lagging the rest of my portfolio, there I think two reasons for this, NZ is not great now as a country, thus capital is slow to go into companies, and since MFT is only listed on the NZX, this further adds to this issue. However, over the long term the value of the company follows its fundamentals. During a pre-earnings dip, I added another $1000 dollars to the company reducing my cost basis. And I will add more if the prices stay below 60$ a share.
                   </p>
@@ -312,7 +363,18 @@ export default function Q2Report2025Page() {
             <CardContent>
               <div className="space-y-6">
                 <div className="border-l-4 border-yellow-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Mastercard (MA: NYSE) (S tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('MA')} 
+                      alt="MA logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Mastercard (MA: NYSE) (S tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     Mastercard revenue grew faster than expected at 14% despite 3% currency headwinds, as the USD weakens this should help boost revenue growth. The core business is growing quickly despite maturity, and their value-added services + additional paths such as cross borders continue to be excellent long-term drivers. Like I said last quarter, this company keeps on executing on its long-term business plan. Mastercard is a better business than when I bought it and I see no reason to change anything. I think Mastercard is correctly valued now, but the market may still not expect consistent growth ahead for the next 10 years.
                   </p>
@@ -326,7 +388,18 @@ export default function Q2Report2025Page() {
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Meta (META: NASDAQ) (S tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('META')} 
+                      alt="META logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Meta (META: NASDAQ) (S tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     Meta continues to deliver above expectations and people are finally starting to realize the potential that this company has, especially in the age of AI. I think this business is one of the best in the world with a very high barrier to entry. I think that 20%+ EPS growth can continue despite the heavy investments in AI. The company has yet to monetize WhatsApp and threads, which have 1B+ daily active users. Their operating costs are starting to flatline. They now need to prepare their business for AI, which they are doing well, They are pouring massive amount of money into AI, on top of their Infra Capex investments, they bought a share of Scale AI to hire its founder and have poached huge talents from Other key AI players for massive compensation packages at 100M+. I would like to add to this company, but the market is slowly realizing this and is valuing it appropriately.
                   </p>
@@ -340,7 +413,18 @@ export default function Q2Report2025Page() {
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Netflix (NFLX: NASDAQ) (S tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('NFLX')} 
+                      alt="NFLX logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Netflix (NFLX: NASDAQ) (S tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     The story for Netflix remains unchanged. They grew revenue at 14% and profit at 46%. Their operating leverage is now showing. There was an internal Memo leak, where the management is expecting to hit a 1T market cap in the next 5 years. This was in line with my expectations of 500 million subscribers. The market has swiftly priced the company up to 500 million in market cap at a price of $1300 a share. That still gives a 15% return if management meet their targets, but I think Netflix is overvalued now and has valuation risk associated with it now. However, the company is just too good to sell at this stage. It still has years of revenue growth ahead and I think the company will still be around in 10 years. Often the market underestimates margin expansion so selling now would still be a mistake. Even at $1300, I think NFLX will still beat the market in 5 years' time. Letting the winners run.
                   </p>
@@ -354,7 +438,18 @@ export default function Q2Report2025Page() {
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Standard and Poor Global (SPGI: NYSE) (S tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('SPGI')} 
+                      alt="SPGI logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Standard and Poor Global (SPGI: NYSE) (S tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     Like last quarter S and P Global continued along its way this quarter, with business as usual. The story remained as it is and the company's performance was within expectations. The biggest news for S&P global this quarter is that they plan to spin out their automotive mobility segment into its individual company. This is interesting news, I think long term this is a great benefit for SPGI. Most likely, when this happens, I will sell any shares in the mobility division to buy more SPGI as I think SPGI will be a higher quality higher margin business afterwards. SPGI lags the market this year in price, but strong fundamentals means no cause for concern.
                   </p>
@@ -368,7 +463,18 @@ export default function Q2Report2025Page() {
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Amazon (AMZN: NASDAQ) (S tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('AMZN')} 
+                      alt="AMZN logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Amazon (AMZN: NASDAQ) (S tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     My sentiment towards Amazon has gotten even stronger over the past quarter. The company has three main drivers for returns in the future, firstly stable revenue growth driven by their high margin business, this will increase the quality of Amazon's business. Secondly, their existing low margin business is set to benefit greatly from new technologies like AI and automation. An increase in margin of 1% in a 250B dollar business resulted in 2.5B of additional profit. Amazon is probably the leading automation player in the market as their distribution warehouses are already employing hundreds of thousands of robots to serve customers. The market still does not appreciate the scale that this company has. I will be adding to this company early next quarter, with my next lot of capital.
                   </p>
@@ -382,7 +488,18 @@ export default function Q2Report2025Page() {
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">UBER (UBER: NYSE) (A tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('UBER')} 
+                      alt="UBER logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">UBER (UBER: NYSE) (A tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     While I did not add to Uber this quarter, the company has progressed steadily. They have executed on their business plan, which to continue growing their network while exercising operating leverage and developing partnerships with AV companies. The company reported a great quarter with 17% revenue growth and 84% growth in FCF, YoY. I think the market is underestimating Uber's operating leverage. Even if the market rates the company to a 5% FCF yield, and revenue growth is only 10% for the next 5 years. I think returns will still exceed 15% from here. The market is catching on and Uber performed well this quarter. I will add to Uber if it dips.
                   </p>
@@ -396,7 +513,18 @@ export default function Q2Report2025Page() {
                 </div>
 
                 <div className="border-l-4 border-yellow-200 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">Advanced Semiconductor Materials Lithography (ASML: NYSE) (S tier)</h3>
+                  <div className="flex items-center mb-2">
+                    <img 
+                      src={getLogoUrl('ASML')} 
+                      alt="ASML logo"
+                      className="w-6 h-6 rounded mr-3"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <h3 className="font-bold text-gray-900">Advanced Semiconductor Materials Lithography (ASML: NYSE) (S tier)</h3>
+                  </div>
                   <p className="text-gray-700 mb-2">
                     ASML had a quarter of accelerating revenue growth and growing backlog. ASML continues to develop and improve its tech. TSMC's new fabs in Arizona are going to come online soon and as chip demand increases, ASML will be able to provide machines to all upcoming fabs worldwide. And even if China comes out with competitive tech, ASML still has the industry connections and know how to compete. Although, the risks around the Chinese market export restrictions and upcoming Chinese technology remain. There was some positive news that the USA is slowly reducing the restrictions, some software restrictions were removed this past quarter. And hopefully this is the start of more open trade. If this continues then we could ASML back to $1000 by the end of the year.
                   </p>
