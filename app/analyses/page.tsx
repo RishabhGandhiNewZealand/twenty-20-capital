@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2, Star, Calendar } from "lucide-react"
+import { Calendar } from "lucide-react"
 import Link from "next/link"
 
 export default function AnalysesPage() {
@@ -7,22 +7,26 @@ export default function AnalysesPage() {
     {
       company: "Uber Technologies",
       symbol: "UBER",
-      sector: "Technology",
-      targetPrice: "$85",
-      currentPrice: "$72",
+      sector: "Transportation & Delivery",
+      intrinsicValue: "$110",
+      currentMarketCap: "$126B",
       href: "/analyses/uber",
-      lastUpdated: "March 15, 2025",
-      keyPoints: ["Strong ride-sharing recovery", "Expanding delivery business", "Path to profitability clear"],
+      lastUpdated: "December 4, 2024",
+      summary: "Uber exhibits strong fundamental attributes with a significant competitive advantage built on 15+ years of data and network effects. The company has achieved critical scale leading to expanding profit margins, generating consistent cash flows despite facing challenges from autonomous vehicles and regulatory pressures.",
+      logo: "UBER",
+      logoColor: "bg-black",
     },
     {
       company: "ASML Holding",
       symbol: "ASML",
       sector: "Technology Hardware",
-      targetPrice: "$900",
-      currentPrice: "$[CURRENT_PRICE]",
+      intrinsicValue: "$900",
+      currentMarketCap: "$325.4B",
       href: "/analyses/asml",
       lastUpdated: "March 15, 2025",
-      keyPoints: ["EUV lithography monopoly", "90%+ market share", "Global chip demand growth"],
+      summary: "ASML maintains a near-monopoly in EUV lithography with 90%+ market share, making it essential for advanced semiconductor manufacturing. The company's technological lead and robust demand from AI, automotive, and cloud computing positions it favorably for sustained growth despite cyclical industry pressures.",
+      logo: "ASML",
+      logoColor: "bg-blue-600",
     },
   ]
 
@@ -40,7 +44,9 @@ export default function AnalysesPage() {
               <Card className="border-blue-100 hover:border-blue-300 transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-center space-x-3">
-                    <Building2 className="h-8 w-8 text-blue-600" />
+                    <div className={`w-12 h-12 ${analysis.logoColor} rounded-lg flex items-center justify-center`}>
+                      <span className="text-white font-bold text-sm">{analysis.logo}</span>
+                    </div>
                     <div>
                       <CardTitle className="text-gray-900">{analysis.company}</CardTitle>
                       <p className="text-sm text-gray-500">
@@ -53,25 +59,20 @@ export default function AnalysesPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-sm text-gray-500">Current Price</p>
-                        <p className="text-lg font-semibold text-gray-900">{analysis.currentPrice}</p>
+                        <p className="text-sm text-gray-500">Current Market Cap</p>
+                        <p className="text-lg font-semibold text-gray-900">{analysis.currentMarketCap}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-gray-500">Target Price</p>
-                        <p className="text-lg font-semibold text-green-600">{analysis.targetPrice}</p>
+                        <p className="text-sm text-gray-500">Intrinsic Value</p>
+                        <p className="text-lg font-semibold text-blue-600">{analysis.intrinsicValue}</p>
                       </div>
                     </div>
 
                     <div>
-                      <p className="text-sm font-medium text-gray-900 mb-2">Key Investment Points:</p>
-                      <ul className="space-y-1">
-                        {analysis.keyPoints.map((point, index) => (
-                          <li key={index} className="text-sm text-gray-600 flex items-center">
-                            <Star className="h-3 w-3 text-blue-600 mr-2 flex-shrink-0" />
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
+                      <p className="text-sm font-medium text-gray-900 mb-2">Investment Summary:</p>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {analysis.summary}
+                      </p>
                     </div>
 
                     <div className="flex items-center text-sm text-gray-500 pt-2 border-t">
