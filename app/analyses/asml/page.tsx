@@ -70,6 +70,18 @@ export default function ASMLAnalysisPage() {
             <p className="text-gray-700 mb-4">
               ASML stands at the forefront of technological innovation, renowned for developing some of the most advanced machinery globally. Their flagship products, Extreme Ultraviolet (EUV) lithography machines, are pivotal in the semiconductor manufacturing process. These machines are so complex that they are often considered more intricate than the James Webb Space Telescope, operating at the cutting edge of multiple physics disciplines.
             </p>
+            
+            {/* ASML Facility Image */}
+            <div className="mb-4">
+              <img 
+                src="/asml-facility.jpg" 
+                alt="ASML advanced semiconductor manufacturing facility showing EUV lithography machines"
+                className="w-full h-auto rounded-lg border border-gray-200"
+              />
+              <p className="text-sm text-gray-600 mt-2 text-center">
+                ASML's state-of-the-art facility featuring advanced EUV lithography systems
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -94,6 +106,18 @@ export default function ASMLAnalysisPage() {
             <p className="text-gray-700 mb-4">
               ASML holds a near-monopoly in the high-end lithography machine market, commanding over 90% market share in this segment. The company's technological lead is so substantial that it would require a competitor decades and tens of billions of dollars to develop a comparable machine and establish a sustainable supply chain. This dominant position grants ASML significant pricing power, with each EUV machine selling for upwards of $300 million. Due to the sheer size and complexity of these machines, ASML is limited in how many it can produce annually, further enhancing its pricing leverage.
             </p>
+            
+            {/* Market Share Chart */}
+            <div className="mb-6">
+              <img 
+                src="/wafer-fab-equipment-market-share.jpg" 
+                alt="2023 Wafer Fab Equipment Vendor Market Share by Type of Equipment - showing ASML's dominance across various semiconductor manufacturing segments"
+                className="w-full h-auto rounded-lg border border-gray-200"
+              />
+              <p className="text-sm text-gray-600 mt-2 text-center">
+                2023 Wafer Fab Equipment Vendor Market Share by Type of Equipment - Source: Yole Intelligence, 2024
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -132,33 +156,9 @@ export default function ASMLAnalysisPage() {
             <CardTitle className="text-gray-900">Robust Demand Driven by Technological Trends</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 mb-4">
+            <p className="text-gray-700">
               The escalating demand for semiconductors, fuelled by advancements in artificial intelligence, automotive technology, energy solutions, and cloud computing, positions ASML favourably for sustained growth. As these sectors expand, the need for high-performance chips intensifies, thereby increasing the demand for ASML's cutting-edge lithography machines. The company's unique market position and technological prowess make it a critical enabler in the ongoing digital transformation across various industries.
             </p>
-            
-            {/* Market Share Chart */}
-            <div className="mb-6">
-              <img 
-                src="/wafer-fab-equipment-market-share.jpg" 
-                alt="2023 Wafer Fab Equipment Vendor Market Share by Type of Equipment - showing ASML's dominance across various semiconductor manufacturing segments"
-                className="w-full h-auto rounded-lg border border-gray-200"
-              />
-              <p className="text-sm text-gray-600 mt-2 text-center">
-                2023 Wafer Fab Equipment Vendor Market Share by Type of Equipment - Source: Yole Intelligence, 2024
-              </p>
-            </div>
-
-            {/* ASML Facility Image */}
-            <div className="mb-4">
-              <img 
-                src="/asml-facility.jpg" 
-                alt="ASML advanced semiconductor manufacturing facility showing EUV lithography machines"
-                className="w-full h-auto rounded-lg border border-gray-200"
-              />
-              <p className="text-sm text-gray-600 mt-2 text-center">
-                ASML's state-of-the-art facility featuring advanced EUV lithography systems
-              </p>
-            </div>
           </CardContent>
         </Card>
 
