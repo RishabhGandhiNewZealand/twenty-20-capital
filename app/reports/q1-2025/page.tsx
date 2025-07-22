@@ -30,9 +30,9 @@ export default function Q1Report2025Page() {
 
   const quarterStats = [
     { label: "Q1 Return", value: "-5.4%", icon: TrendingUp },
-    { label: "Index Return", value: "-4.2%", icon: DollarSign },
+    { label: "S&P 500 Return Unhedged", value: "-4.2%", icon: DollarSign },
     { label: "Portfolio Value", value: "$34,788 NZD", icon: Target },
-    { label: "Portfolio Additions", value: "$5,200 NZD", icon: Plus },
+    { label: "Portfolio Additions", value: "$6,500 NZD", icon: Plus },
   ]
 
   // Portfolio Holdings - calculating proper allocations
