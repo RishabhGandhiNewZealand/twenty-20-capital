@@ -1,45 +1,114 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, DollarSign, PieChart } from "lucide-react"
-import Image from "next/image"
+import { Target, Calendar, BarChart3 } from "lucide-react"
 
 export default function HomePage() {
   const portfolioStats = [
     {
-      title: "Total Portfolio Value",
+      title: "Portfolio Value",
       value: "$127,450",
-      change: "+12.5%",
-      trend: "up",
-      icon: DollarSign,
+      subtitle: "$42,000 invested • $7,000 gains (+16.7%)",
+      icon: Target,
     },
     {
-      title: "Monthly Return",
-      value: "+3.2%",
-      change: "+0.8%",
-      trend: "up",
-      icon: TrendingUp,
+      title: "Portfolio Yearly CAGR",
+      value: "+22.3%",
+      description: "Money-weighted return since inception",
+      icon: BarChart3,
     },
     {
-      title: "YTD Performance",
-      value: "+18.7%",
-      change: "+2.1%",
-      trend: "up",
-      icon: PieChart,
-    },
-    {
-      title: "Total Positions",
-      value: "23",
-      change: "+2",
-      trend: "up",
-      icon: TrendingUp,
+      title: "S&P 500 Yearly CAGR",
+      value: "+19.8%",
+      description: "S&P 500 money-weighted return since inception",
+      icon: Calendar,
     },
   ]
 
-  const topHoldings = [
-    { symbol: "AAPL", name: "Apple Inc.", allocation: "15.2%", value: "$19,372" },
-    { symbol: "MSFT", name: "Microsoft Corp.", allocation: "12.8%", value: "$16,314" },
-    { symbol: "GOOGL", name: "Alphabet Inc.", allocation: "10.5%", value: "$13,382" },
-    { symbol: "UBER", name: "Uber Technologies", allocation: "8.3%", value: "$10,579" },
-    { symbol: "ASML", name: "ASML Holding", allocation: "7.9%", value: "$10,069" },
+  // Function to get company logo URL
+  const getLogoUrl = (symbol: string) => {
+    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
+  }
+
+  const getCompanyDomain = (symbol: string) => {
+    const domains: { [key: string]: string } = {
+      'UBER': 'uber.com',
+      'GOOGL': 'google.com',
+      'AMZN': 'amazon.com',
+      'META': 'meta.com',
+      'NFLX': 'netflix.com',
+      'MA': 'mastercard.com',
+      'ASML': 'asml.com',
+      'SPGI': 'spglobal.com',
+      'MFT': 'mainfreight.com'
+    }
+    return domains[symbol] || `${symbol.toLowerCase()}.com`
+  }
+
+  const holdings = [
+    { 
+      symbol: "UBER", 
+      name: "Uber Technologies",
+      allocation: 14.8,
+      shares: 40,
+      value: "$6,220"
+    },
+    { 
+      symbol: "GOOGL", 
+      name: "Alphabet Inc",
+      allocation: 12.5,
+      shares: 18,
+      value: "$5,280"
+    },
+    { 
+      symbol: "ASML", 
+      name: "ASML Holding N.V.",
+      allocation: 12.3,
+      shares: 4,
+      value: "$5,160"
+    },
+    { 
+      symbol: "AMZN", 
+      name: "Amazon.com Inc",
+      allocation: 11.3,
+      shares: 13,
+      value: "$4,745"
+    },
+    { 
+      symbol: "NFLX", 
+      name: "Netflix Inc",
+      allocation: 10.6,
+      shares: 2,
+      value: "$4,467"
+    },
+    { 
+      symbol: "MFT", 
+      name: "Mainfreight Limited",
+      allocation: 10.7,
+      shares: 67,
+      value: "$4,499"
+    },
+    { 
+      symbol: "SPGI", 
+      name: "S&P Global Inc",
+      allocation: 10.4,
+      shares: 5,
+      value: "$4,392"
+    },
+    { 
+      symbol: "MA", 
+      name: "Mastercard Inc",
+      allocation: 8.9,
+      shares: 4,
+      value: "$3,740"
+    },
+    { 
+      symbol: "META", 
+      name: "Meta Platforms Inc",
+      allocation: 8.5,
+      shares: 3,
+      value: "$3,595"
+    },
   ]
 
   return (
@@ -48,10 +117,11 @@ export default function HomePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio</h1>
+          <p className="text-gray-600">Since inception: October 2023</p>
         </div>
 
         {/* Portfolio Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {portfolioStats.map((stat) => {
             const Icon = stat.icon
             return (
@@ -62,63 +132,87 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                  <div className="flex items-center text-sm">
-                    {stat.trend === "up" ? (
-                      <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
-                    )}
-                    <span className={stat.trend === "up" ? "text-green-600" : "text-red-600"}>{stat.change}</span>
-                    <span className="text-gray-500 ml-1">from last month</span>
-                  </div>
+                  {stat.subtitle && (
+                    <p className="text-sm text-gray-700 mt-1">{stat.subtitle}</p>
+                  )}
+                  {stat.description && (
+                    <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                  )}
                 </CardContent>
               </Card>
             )
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Portfolio Chart */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video bg-blue-50 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/placeholder.svg?height=300&width=500&text=Portfolio+Performance+Chart"
-                  alt="Portfolio Performance Chart"
-                  width={500}
-                  height={300}
-                  className="rounded-lg"
-                />
+        {/* Portfolio Performance Chart Placeholder */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-medium">Portfolio Performance Chart</p>
+                <p className="text-gray-400 text-sm">Chart will be generated in a future update</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Top Holdings */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Top Holdings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {topHoldings.map((holding) => (
-                  <div key={holding.symbol} className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-gray-900">{holding.symbol}</div>
-                      <div className="text-sm text-gray-500">{holding.name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium text-gray-900">{holding.value}</div>
-                      <div className="text-sm text-blue-600">{holding.allocation}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Portfolio Holdings Table */}
+        <Card className="border-blue-100">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Portfolio Holdings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
+                    <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Allocation</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Shares</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {holdings.map((holding, index) => (
+                    <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                      <td className="py-3 px-2">
+                        <div className="flex items-center">
+                          <img 
+                            src={getLogoUrl(holding.symbol)} 
+                            alt={`${holding.symbol} logo`}
+                            className="w-6 h-6 rounded mr-2"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                          <span className="font-bold text-gray-900">{holding.symbol}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className="text-sm text-gray-700">{holding.name}</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="font-medium text-gray-900">{holding.allocation}%</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="text-gray-700">{holding.shares}</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="font-medium text-gray-900">{holding.value}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
