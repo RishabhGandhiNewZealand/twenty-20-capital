@@ -18,7 +18,8 @@ export default function ReportsPage() {
       date: "March 31, 2025",
       href: "/reports/q1-2025",
       type: "Quarterly",
-      performance: "+8.1%",
+      performance: "-5.4%",
+      portfolioValue: "$34,788 NZD",
     },
     {
       title: "Q2 2025 Report",
@@ -26,7 +27,8 @@ export default function ReportsPage() {
       date: "June 30, 2025",
       href: "/reports/q2-2025",
       type: "Quarterly",
-      performance: "+5.7%",
+      performance: "+5.18%",
+      portfolioValue: "$42,098 NZD",
     },
   ]
 
@@ -53,15 +55,25 @@ export default function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">{report.description}</p>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center text-gray-500">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {report.date}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-gray-500">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {report.date}
+                      </div>
+                      <div className={`flex items-center ${
+                        report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        {report.performance}
+                      </div>
                     </div>
-                    <div className="flex items-center text-green-600">
-                      <TrendingUp className="h-4 w-4 mr-1" />
-                      {report.performance}
-                    </div>
+                    {report.portfolioValue && (
+                      <div className="text-sm text-center">
+                        <span className="text-gray-500">Portfolio Value: </span>
+                        <span className="font-medium text-gray-900">{report.portfolioValue}</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
