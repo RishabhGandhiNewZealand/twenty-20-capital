@@ -150,39 +150,46 @@ export default function Q1Report2025Page() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Horizontal Bar Chart */}
-            <div className="mb-8">
-              <h4 className="text-sm font-medium text-gray-700 mb-4">Allocation by Position</h4>
-              <div className="space-y-3">
-                {portfolioHoldings.map((holding) => (
-                  <div key={holding.symbol} className="flex items-center">
-                    <div className="w-16 text-xs font-medium text-gray-600 text-right mr-3">
-                      {holding.symbol}
-                    </div>
-                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                      <div 
-                        className={`h-6 rounded-full flex items-center justify-end pr-2 text-xs font-medium text-white ${
-                          holding.tier === 'S' ? 'bg-blue-500' : 'bg-green-500'
-                        }`}
-                        style={{ width: `${holding.allocation}%` }}
-                      >
-                        {holding.allocation}%
+            {/* Chart and Table Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* Horizontal Bar Chart */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-4">Allocation by Position</h4>
+                <div className="space-y-3">
+                  {portfolioHoldings.map((holding) => {
+                    const maxAllocation = Math.max(...portfolioHoldings.map(h => h.allocation))
+                    const barWidth = (holding.allocation / maxAllocation) * 100
+                    
+                    return (
+                      <div key={holding.symbol} className="flex items-center">
+                        <div className="w-16 text-xs font-medium text-gray-600 text-right mr-3">
+                          {holding.symbol}
+                        </div>
+                        <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                          <div 
+                            className={`h-6 rounded-full flex items-center justify-end pr-2 text-xs font-medium text-white ${
+                              holding.tier === 'S' ? 'bg-blue-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${barWidth}%` }}
+                          >
+                            {holding.allocation}%
+                          </div>
+                        </div>
+                        <div className="w-20 text-xs text-gray-600 ml-3">
+                          <span className={`px-1 py-0.5 rounded text-white text-xs ${
+                            holding.tier === 'S' ? 'bg-blue-600' : 'bg-green-600'
+                          }`}>
+                            {holding.tier} tier
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="w-20 text-xs text-gray-600 ml-3">
-                      <span className={`px-1 py-0.5 rounded text-white text-xs ${
-                        holding.tier === 'S' ? 'bg-blue-600' : 'bg-green-600'
-                      }`}>
-                        {holding.tier} tier
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    )
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Holdings Table */}
-            <div className="overflow-x-auto">
+              {/* Holdings Table */}
+              <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
@@ -234,6 +241,7 @@ export default function Q1Report2025Page() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Portfolio Summary */}
