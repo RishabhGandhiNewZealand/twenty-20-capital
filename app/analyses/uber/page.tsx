@@ -206,7 +206,7 @@ export default function UberAnalysisPage() {
               <div className="my-6">
                 <div className="relative h-64 mb-4">
                   <Image
-                    src="/uber/Uber_Expenses.png"
+                    src="/Uber_Expenses.png"
                     alt="Uber Expenses"
                     fill
                     className="object-contain"
@@ -227,7 +227,7 @@ export default function UberAnalysisPage() {
               <div className="my-6">
                 <div className="relative h-64 mb-4">
                   <Image
-                    src="/uber/Uber_Employee_Count.png"
+                    src="/Uber_Employee_Count.png"
                     alt="Uber Employee Count"
                     fill
                     className="object-contain"
@@ -245,7 +245,7 @@ export default function UberAnalysisPage() {
               <div className="my-6">
                 <div className="relative h-64 mb-4">
                   <Image
-                    src="/uber/Uber_Free_Cash_Flow_SBC.png"
+                    src="/Uber_Free_Cash_Flow_SBC.png"
                     alt="Uber Free Cash Flow and Stock Based Compensation"
                     fill
                     className="object-contain"
@@ -364,7 +364,7 @@ export default function UberAnalysisPage() {
               <div className="my-6">
                 <div className="relative h-64 mb-4">
                   <Image
-                    src="/uber/Uber_Monthly_Active_Platform_Users.png"
+                    src="/Uber_Monthly_Active_Platform_Users.png"
                     alt="Uber Monthly Active Platform Users"
                     fill
                     className="object-contain"
@@ -378,7 +378,7 @@ export default function UberAnalysisPage() {
               <div className="my-6">
                 <div className="relative h-64 mb-4">
                   <Image
-                    src="/uber/Uber_Trips.png"
+                    src="/Uber_Trips.png"
                     alt="Uber Trips"
                     fill
                     className="object-contain"
@@ -521,7 +521,7 @@ export default function UberAnalysisPage() {
                 <div>
                   <div className="relative h-64 mb-4">
                     <Image
-                      src="/uber/Uber_Revenue.png"
+                      src="/Uber_Revenue.png"
                       alt="Uber Revenue"
                       fill
                       className="object-contain"
@@ -534,7 +534,7 @@ export default function UberAnalysisPage() {
                 <div>
                   <div className="relative h-64 mb-4">
                     <Image
-                      src="/uber/Uber_Gross_Bookings.png"
+                      src="/Uber_Gross_Bookings.png"
                       alt="Uber Gross Bookings"
                       fill
                       className="object-contain"
@@ -549,7 +549,7 @@ export default function UberAnalysisPage() {
               <div className="my-6">
                 <div className="relative h-64 mb-4">
                   <Image
-                    src="/uber/Uber_Operating_Margin.png"
+                    src="/Uber_Operating_Margin.png"
                     alt="Uber Operating Margin"
                     fill
                     className="object-contain"
