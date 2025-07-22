@@ -1,18 +1,32 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Target, Calendar, BarChart3 } from "lucide-react"
+import { Target, Calendar, BarChart3, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { PortfolioHolding, ExitedPosition } from "@/types/portfolio"
+import { StockPrice, StockPriceError } from "@/types/stock"
+import { calculatePortfolioAllocations } from "@/lib/portfolio"
+
+interface EnhancedPortfolioHolding extends PortfolioHolding {
+  currentPrice?: number
+  currentValueNZD?: number
+  loading?: boolean
+  error?: string
+}
 
 export default function HomePage() {
-  const portfolioStats = [
+  const [holdings, setHoldings] = useState<EnhancedPortfolioHolding[]>([])
+  const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
+  const [exchangeRate, setExchangeRate] = useState<number>(1.78)
+  const [portfolioStats, setPortfolioStats] = useState([
     {
       title: "Portfolio Value",
-      value: "$127,450",
-      subtitle: "$42,000 invested • $7,000 gains (+16.7%)",
+      value: "Loading...",
+      subtitle: "Calculating current value",
       icon: Target,
     },
     {
-      title: "Portfolio Yearly CAGR",
+      title: "Portfolio Yearly CAGR", 
       value: "+22.3%",
       description: "Money-weighted return since inception",
       icon: BarChart3,
@@ -23,7 +37,7 @@ export default function HomePage() {
       description: "S&P 500 money-weighted return since inception",
       icon: Calendar,
     },
-  ]
+  ])
 
   // Function to get company logo URL
   const getLogoUrl = (symbol: string) => {
@@ -40,76 +54,150 @@ export default function HomePage() {
       'MA': 'mastercard.com',
       'ASML': 'asml.com',
       'SPGI': 'spglobal.com',
-      'MFT': 'mainfreight.com'
+      'MFT': 'mainfreight.com',
+      'CRM': 'salesforce.com',
+      'UNH': 'unitedhealthgroup.com',
+      'ANET': 'arista.com',
+      'CP': 'cpr.ca',
+      'MSCI': 'msci.com'
     }
     return domains[symbol] || `${symbol.toLowerCase()}.com`
   }
 
-  const holdings = [
-    { 
-      symbol: "UBER", 
-      name: "Uber Technologies",
-      allocation: 14.8,
-      shares: 40,
-      value: "$6,220"
-    },
-    { 
-      symbol: "GOOGL", 
-      name: "Alphabet Inc",
-      allocation: 12.5,
-      shares: 18,
-      value: "$5,280"
-    },
-    { 
-      symbol: "ASML", 
-      name: "ASML Holding N.V.",
-      allocation: 12.3,
-      shares: 4,
-      value: "$5,160"
-    },
-    { 
-      symbol: "AMZN", 
-      name: "Amazon.com Inc",
-      allocation: 11.3,
-      shares: 13,
-      value: "$4,745"
-    },
-    { 
-      symbol: "NFLX", 
-      name: "Netflix Inc",
-      allocation: 10.6,
-      shares: 2,
-      value: "$4,467"
-    },
-    { 
-      symbol: "MFT", 
-      name: "Mainfreight Limited",
-      allocation: 10.7,
-      shares: 67,
-      value: "$4,499"
-    },
-    { 
-      symbol: "SPGI", 
-      name: "S&P Global Inc",
-      allocation: 10.4,
-      shares: 5,
-      value: "$4,392"
-    },
-    { 
-      symbol: "MA", 
-      name: "Mastercard Inc",
-      allocation: 8.9,
-      shares: 4,
-      value: "$3,740"
-    },
-    { 
-      symbol: "META", 
-      name: "Meta Platforms Inc",
-      allocation: 8.5,
-      shares: 3,
-      value: "$3,595"
-    },
-  ]
+  useEffect(() => {
+    const fetchPortfolioData = async () => {
+      try {
+        // Fetch portfolio holdings from API
+        let baseHoldings: PortfolioHolding[] = []
+        try {
+          const portfolioResponse = await fetch('/api/portfolio')
+          if (portfolioResponse.ok) {
+            const portfolioData = await portfolioResponse.json()
+            baseHoldings = portfolioData.holdings
+            setExitedPositions(portfolioData.exitedPositions)
+          } else {
+            throw new Error('API failed')
+          }
+        } catch (error) {
+          // Fallback to static data from portfolioData.ts
+          const { staticPortfolioHoldings, staticExitedPositions } = await import('@/lib/portfolioData')
+          baseHoldings = staticPortfolioHoldings
+          setExitedPositions(staticExitedPositions)
+        }
+
+        // Fetch exchange rate
+        const exchangeResponse = await fetch('/api/exchange-rate')
+        let currentExchangeRate = 1.78
+        if (exchangeResponse.ok) {
+          const exchangeData = await exchangeResponse.json()
+          currentExchangeRate = exchangeData.rate
+          setExchangeRate(currentExchangeRate)
+        }
+
+        // Fetch current prices for all holdings
+        const updatedHoldings = await Promise.all(
+          baseHoldings.map(async (holding) => {
+            const enhancedHolding: EnhancedPortfolioHolding = {
+              ...holding,
+              loading: true
+            }
+
+            try {
+              if (holding.instrumentCurrency === 'USD') {
+                const response = await fetch(`/api/stock-price/${holding.symbol}`)
+                if (response.ok) {
+                  const stockData: StockPrice = await response.json()
+                  const currentValueUSD = stockData.currentPrice * holding.totalShares
+                  const currentValueNZD = currentValueUSD * currentExchangeRate
+                  
+                  return {
+                    ...enhancedHolding,
+                    currentPrice: stockData.currentPrice,
+                    currentValueNZD,
+                    loading: false,
+                    error: undefined
+                  }
+                } else {
+                  return {
+                    ...enhancedHolding,
+                    loading: false,
+                    error: 'Price unavailable'
+                  }
+                }
+              } else {
+                // For NZD stocks (MFT), we need NZX data - for now use fallback
+                const estimatedCurrentValueNZD = holding.totalShares * holding.avgPriceNZD * 1.1 // Rough estimate
+                return {
+                  ...enhancedHolding,
+                  currentValueNZD: estimatedCurrentValueNZD,
+                  loading: false,
+                  error: undefined
+                }
+              }
+            } catch (error) {
+              return {
+                ...enhancedHolding,
+                loading: false,
+                error: 'Failed to fetch price'
+              }
+            }
+          })
+        )
+
+        // Calculate allocations
+        const holdingsWithAllocations = calculatePortfolioAllocations(updatedHoldings)
+        setHoldings(holdingsWithAllocations)
+
+        // Update portfolio stats
+        const totalValue = holdingsWithAllocations.reduce((sum, h) => sum + (h.currentValueNZD || 0), 0)
+        const formattedValue = new Intl.NumberFormat('en-NZ', {
+          style: 'currency',
+          currency: 'NZD',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(totalValue)
+
+        setPortfolioStats(prev => prev.map((stat, index) => 
+          index === 0 ? { 
+            ...stat, 
+            value: formattedValue, 
+            subtitle: "Current portfolio value",
+            description: undefined 
+          } : stat
+        ))
+
+      } catch (error) {
+        console.error('Error fetching portfolio data:', error)
+      }
+    }
+
+    fetchPortfolioData()
+  }, [])
+
+  const formatCurrency = (value: number | undefined, currency: string = 'NZD') => {
+    if (value === undefined) return 'N/A'
+    return new Intl.NumberFormat('en-NZ', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value)
+  }
+
+  const formatNumber = (value: number, decimals: number = 2) => {
+    return new Intl.NumberFormat('en-NZ', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-NZ', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -172,13 +260,19 @@ export default function HomePage() {
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
                     <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Allocation</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Position Started</th>
                     <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Shares</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Value</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (NZD)</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (USD)</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Allocation</th>
+                    <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Current Value (NZD)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {holdings.map((holding, index) => (
+                  {holdings
+                    .filter(holding => holding.totalShares > 0.01)
+                    .sort((a, b) => (b.allocation || 0) - (a.allocation || 0))
+                    .map((holding, index) => (
                     <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                       <td className="py-3 px-2">
                         <div className="flex items-center">
@@ -198,13 +292,40 @@ export default function HomePage() {
                         <span className="text-sm text-gray-700">{holding.name}</span>
                       </td>
                       <td className="py-3 px-2 text-right">
-                        <span className="font-medium text-gray-900">{holding.allocation}%</span>
+                        <span className="text-sm text-gray-600">{formatDate(holding.firstPurchaseDate)}</span>
                       </td>
                       <td className="py-3 px-2 text-right">
-                        <span className="text-gray-700">{holding.shares}</span>
+                        <span className="text-gray-700">{formatNumber(holding.totalShares, 0)}</span>
                       </td>
                       <td className="py-3 px-2 text-right">
-                        <span className="font-medium text-gray-900">{holding.value}</span>
+                        <span className="text-gray-700">{formatCurrency(holding.avgPriceNZD, 'NZD')}</span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        {holding.avgPriceUSD ? (
+                          <span className="text-gray-700">{formatCurrency(holding.avgPriceUSD, 'USD')}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        {holding.loading ? (
+                          <div className="flex items-center justify-end">
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                          </div>
+                        ) : (
+                          <span className="font-medium text-gray-900">{formatNumber(holding.allocation || 0, 1)}%</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        {holding.loading ? (
+                          <div className="flex items-center justify-end">
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                          </div>
+                        ) : holding.error ? (
+                          <span className="text-red-500 text-sm">Error</span>
+                        ) : (
+                          <span className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD, 'NZD')}</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -213,6 +334,80 @@ export default function HomePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Exited Positions Table */}
+        {exitedPositions.length > 0 && (
+          <Card className="border-blue-100 mt-8">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Exited Positions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Entry Date</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Exit Date</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Invested (NZD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Return (NZD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (NZD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exitedPositions
+                      .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
+                      .map((position, index) => (
+                      <tr key={position.symbol + position.exitDate} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                        <td className="py-3 px-2">
+                          <div className="flex items-center">
+                            <img 
+                              src={getLogoUrl(position.symbol)} 
+                              alt={`${position.symbol} logo`}
+                              className="w-6 h-6 rounded mr-2"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                            <span className="font-bold text-gray-900">{position.symbol}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className="text-sm text-gray-700">{position.name}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-sm text-gray-600">{formatDate(position.entryDate)}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-sm text-gray-600">{formatDate(position.exitDate)}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-gray-700">{formatCurrency(position.totalInvestedNZD, 'NZD')}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-gray-700">{formatCurrency(position.totalReturnNZD, 'NZD')}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className={`font-medium ${position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(position.profitLossNZD, 'NZD')}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className={`font-medium ${position.profitLossPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
