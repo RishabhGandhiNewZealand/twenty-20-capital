@@ -6,6 +6,7 @@ export default function Q1Report2025Page() {
     { label: "Q1 Return", value: "-5.4%", icon: TrendingUp },
     { label: "Index Return", value: "-4.2%", icon: DollarSign },
     { label: "Portfolio Value", value: "$34,788 NZD", icon: Target },
+    { label: "Portfolio Additions", value: "$5,200 NZD", icon: Plus },
   ]
 
   // Portfolio Holdings - calculating proper allocations
@@ -123,7 +124,7 @@ export default function Q1Report2025Page() {
         </div>
 
         {/* Quarter Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {quarterStats.map((stat) => {
             const Icon = stat.icon
             return (
