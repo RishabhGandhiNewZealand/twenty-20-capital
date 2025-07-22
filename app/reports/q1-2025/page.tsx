@@ -5,7 +5,7 @@ export default function Q1Report2025Page() {
   const quarterStats = [
     { label: "Q1 Return", value: "-5.4%", icon: TrendingUp },
     { label: "Index Return", value: "-4.2%", icon: DollarSign },
-    { label: "Portfolio Value", value: "~$36,000 NZD", icon: Target },
+    { label: "Portfolio Value", value: "$34,788 NZD", icon: Target },
   ]
 
   // Portfolio Holdings - calculating proper allocations
@@ -237,27 +237,7 @@ export default function Q1Report2025Page() {
               </div>
             </div>
 
-            {/* Portfolio Summary */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Total Positions:</span>
-                  <div className="font-bold text-gray-900">{portfolioHoldings.length}</div>
-                </div>
-                <div>
-                  <span className="text-gray-600">S Tier Holdings:</span>
-                  <div className="font-bold text-blue-600">{portfolioHoldings.filter(h => h.tier === 'S').length}</div>
-                </div>
-                <div>
-                  <span className="text-gray-600">A Tier Holdings:</span>
-                  <div className="font-bold text-green-600">{portfolioHoldings.filter(h => h.tier === 'A').length}</div>
-                </div>
-                                 <div>
-                   <span className="text-gray-600">Portfolio Value:</span>
-                   <div className="font-bold text-gray-900">${totalValue.toLocaleString()} NZD</div>
-                 </div>
-              </div>
-            </div>
+
           </CardContent>
         </Card>
 
