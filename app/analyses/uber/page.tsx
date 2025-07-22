@@ -83,11 +83,20 @@ export default function UberAnalysisPage() {
                 <p className="mb-4">
                   Consider a food delivery transaction where an order is placed for $30 worth of food from a local restaurant. Additional fees, including delivery and service charges, bring the total to $40. From this amount:
                 </p>
-                <ul className="mb-4 space-y-2">
-                  <li>• Approximately $20 goes to the restaurant, which may have adjusted prices to offset Uber's commission.</li>
-                  <li>• Around $10 is allotted to the driver for their effort.</li>
-                  <li>• Uber retains roughly $10 as revenue for facilitating the transaction between the restaurant and the customer.</li>
-                </ul>
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                  <div className="flex justify-between items-center text-lg mb-2">
+                    <span className="font-medium">Restaurant receives:</span>
+                    <span className="font-bold text-blue-800">~$20</span>
+                  </div>
+                  <div className="flex justify-between items-center text-lg mb-2">
+                    <span className="font-medium">Driver receives:</span>
+                    <span className="font-bold text-blue-800">~$10</span>
+                  </div>
+                  <div className="border-t border-blue-300 pt-3 mt-3 flex justify-between items-center text-xl">
+                    <span className="font-semibold">Uber retains:</span>
+                    <span className="font-bold text-blue-900">~$10</span>
+                  </div>
+                </div>
                 <p className="mb-4">
                   This structure is consistent across nearly all Uber services, highlighting the platform's value by enabling providers to reach new clients and offering customers access to otherwise unavailable services, all while creating employment opportunities for drivers.
                 </p>
@@ -577,18 +586,23 @@ export default function UberAnalysisPage() {
               </p>
 
               <h4 className="text-lg font-semibold mt-6 mb-4">Expected Value Calculation</h4>
-              <p className="mb-4">
-                Now if we take the average expected value of all these scenarios: V = 0.25 × 433 + 0.5 × 212 + 0.2 × 120 + 0.05 × 25
-              </p>
-              <p className="mb-4">
-                V = $240B
-              </p>
-              <p className="mb-4">
-                The expected value of all these scenarios is that Uber will be worth $240B in 5 years' time. This gives a 11.3% CAGR, Uber's weighted return has a significant margin of safety, focusing more on potential setbacks than successes. Uber can exceed these expectations, outperforming the average S&P 500 and surpassing a 6% risk-free rate.
-              </p>
-              <p className="mb-4">
-                If Uber trades below $75 per share, future returns should generally beat the market. Therefore, I recommend an equal weight rating in a concentrated portfolio, ideally around 10%.
-              </p>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-lg border border-blue-200">
+                <p className="mb-3 text-blue-900 font-medium text-center text-lg">
+                  Average expected value of all these scenarios:
+                </p>
+                <p className="text-center text-xl font-bold text-blue-800 mb-4">
+                  V = 0.25 × 433 + 0.5 × 212 + 0.2 × 120 + 0.05 × 25
+                </p>
+                <p className="text-center text-3xl font-extrabold text-blue-900 mb-4">
+                  V = $240B
+                </p>
+                <p className="text-center text-lg text-blue-700">
+                  The expected value of all these scenarios is that Uber will be worth $240B in 5 years' time. This gives a 11.3% CAGR, Uber's weighted return has a significant margin of safety, focusing more on potential setbacks than successes. Uber can exceed these expectations, outperforming the average S&P 500 and surpassing a 6% risk-free rate.
+                </p>
+                <p className="text-center text-lg text-blue-700 mt-2">
+                  If Uber trades below $75 per share, future returns should generally beat the market. Therefore, I recommend an equal weight rating in a concentrated portfolio, ideally around 10%.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
