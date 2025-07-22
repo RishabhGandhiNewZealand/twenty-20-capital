@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Target, Plus } from "lucide-react"
+import { TrendingUp, DollarSign, Target, Plus, Calendar, BarChart3 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 export default function HomePage() {
@@ -7,6 +7,7 @@ export default function HomePage() {
     {
       title: "Portfolio Value",
       value: "$127,450",
+      subtitle: "$42,000 invested • $7,000 gains (+16.7%)",
       description: "Total portfolio value",
       icon: Target,
     },
@@ -27,6 +28,18 @@ export default function HomePage() {
       value: "$25,000",
       description: "Capital added this year",
       icon: Plus,
+    },
+    {
+      title: "Portfolio MWR CAGR",
+      value: "+22.3%",
+      description: "Money-weighted return since inception",
+      icon: BarChart3,
+    },
+    {
+      title: "S&P 500 MWR CAGR",
+      value: "+19.8%",
+      description: "S&P 500 money-weighted return since inception",
+      icon: Calendar,
     },
   ]
 
@@ -103,10 +116,11 @@ export default function HomePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio</h1>
+          <p className="text-gray-600">Since inception: October 2023</p>
         </div>
 
         {/* Portfolio Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {portfolioStats.map((stat) => {
             const Icon = stat.icon
             return (
@@ -117,7 +131,10 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                  <p className="text-xs text-gray-500">{stat.description}</p>
+                  {stat.subtitle && (
+                    <p className="text-sm text-gray-700 mt-1">{stat.subtitle}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
                 </CardContent>
               </Card>
             )
