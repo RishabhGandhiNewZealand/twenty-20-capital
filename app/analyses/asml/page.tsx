@@ -1,7 +1,58 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Globe, AlertTriangle, Microscope, Target } from "lucide-react"
+import { TrendingUp, DollarSign, Globe, AlertTriangle, Microscope, Target, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { StockPrice, StockPriceError } from "@/types/stock"
 
 export default function ASMLAnalysisPage() {
+  const [stockData, setStockData] = useState<{
+    currentPrice?: number
+    currency?: string
+    loading: boolean
+    error?: string
+  }>({ loading: true })
+
+  useEffect(() => {
+    const fetchStockPrice = async () => {
+      try {
+        const response = await fetch('/api/stock-price/ASML')
+        
+        if (response.ok) {
+          const data: StockPrice = await response.json()
+          setStockData({
+            currentPrice: data.currentPrice,
+            currency: data.currency,
+            loading: false,
+            error: undefined,
+          })
+        } else {
+          const errorData: StockPriceError = await response.json()
+          setStockData({
+            loading: false,
+            error: errorData.error,
+          })
+        }
+      } catch (error) {
+        setStockData({
+          loading: false,
+          error: 'Failed to fetch stock price',
+        })
+      }
+    }
+
+    fetchStockPrice()
+  }, [])
+
+  const formatPrice = (price: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(price)
+  }
+
   const strengths = [
     "Near-monopoly in EUV lithography with 90%+ market share",
     "Essential for advanced semiconductor manufacturing",
@@ -34,16 +85,40 @@ export default function ASMLAnalysisPage() {
               </div>
             </div>
             
-            {/* Intrinsic Value Tile */}
-            <Card className="border-blue-100 bg-blue-50">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-blue-700">Intrinsic Value</CardTitle>
-                <Target className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-900">$900 USD</div>
-              </CardContent>
-            </Card>
+            <div className="flex space-x-4">
+              {/* Current Price Tile */}
+              <Card className="border-gray-200 bg-gray-50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-700">Current Price</CardTitle>
+                  <DollarSign className="h-4 w-4 text-gray-600" />
+                </CardHeader>
+                <CardContent>
+                  {stockData.loading ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      <span className="text-sm text-gray-400">Loading...</span>
+                    </div>
+                  ) : stockData.error ? (
+                    <div className="text-sm text-red-500">Price unavailable</div>
+                  ) : (
+                    <div className="text-2xl font-bold text-gray-900">
+                      {formatPrice(stockData.currentPrice!, stockData.currency)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Intrinsic Value Tile */}
+              <Card className="border-blue-100 bg-blue-50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-blue-700">Intrinsic Value</CardTitle>
+                  <Target className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-900">$900 USD</div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
 
