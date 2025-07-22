@@ -8,15 +8,14 @@ export default function Q1Report2025Page() {
     { label: "Portfolio Value", value: "~$36,000 NZD", icon: Target },
   ]
 
-  // Portfolio Holdings based on position sizes from the report
-  const portfolioHoldings = [
+  // Portfolio Holdings - calculating proper allocations
+  const rawHoldings = [
     { 
       symbol: "UBER", 
       name: "Uber Technologies",
-      allocation: 18.5, 
       return: "+6.5%",
       shares: 40,
-      value: "$4,860",
+      usdValue: 2916, // $72.9 * 40 shares
       nzdValue: "$4,860",
       stockCurrency: "USD",
       tier: "A"
@@ -24,10 +23,9 @@ export default function Q1Report2025Page() {
     { 
       symbol: "GOOGL", 
       name: "Alphabet Inc",
-      allocation: 16.2, 
       return: "-10.9%",
       shares: 15,
-      value: "$3,850",
+      usdValue: 2310, // $154 * 15 shares
       nzdValue: "$3,850",
       stockCurrency: "USD",
       tier: "A"
@@ -35,10 +33,9 @@ export default function Q1Report2025Page() {
     { 
       symbol: "AMZN", 
       name: "Amazon.com Inc",
-      allocation: 15.8, 
       return: "-2.1%",
       shares: 13,
-      value: "$4,117",
+      usdValue: 2470, // $190 * 13 shares
       nzdValue: "$4,117",
       stockCurrency: "USD",
       tier: "S"
@@ -46,10 +43,9 @@ export default function Q1Report2025Page() {
     { 
       symbol: "META", 
       name: "Meta Platforms Inc",
-      allocation: 12.1, 
       return: "+28.0%",
       shares: 3,
-      value: "$2,880",
+      usdValue: 1728, // $576 * 3 shares
       nzdValue: "$2,880",
       stockCurrency: "USD",
       tier: "S"
@@ -57,10 +53,9 @@ export default function Q1Report2025Page() {
     { 
       symbol: "NFLX", 
       name: "Netflix Inc",
-      allocation: 10.4, 
       return: "+21.1%",
       shares: 2,
-      value: "$3,107",
+      usdValue: 1864, // $932 * 2 shares
       nzdValue: "$3,107",
       stockCurrency: "USD",
       tier: "S"
@@ -68,10 +63,9 @@ export default function Q1Report2025Page() {
     { 
       symbol: "MA", 
       name: "Mastercard Inc",
-      allocation: 8.7, 
       return: "+22.0%",
       shares: 4,
-      value: "$3,653",
+      usdValue: 2192, // $548 * 4 shares
       nzdValue: "$3,653",
       stockCurrency: "USD",
       tier: "S"
@@ -79,10 +73,9 @@ export default function Q1Report2025Page() {
     { 
       symbol: "ASML", 
       name: "ASML Holding N.V.",
-      allocation: 7.9, 
       return: "-7.2%",
       shares: 4,
-      value: "$4,413",
+      usdValue: 2648, // $662 * 4 shares
       nzdValue: "$4,413",
       stockCurrency: "USD",
       tier: "S"
@@ -90,10 +83,9 @@ export default function Q1Report2025Page() {
     { 
       symbol: "SPGI", 
       name: "S&P Global Inc",
-      allocation: 6.2, 
       return: "-0.4%",
       shares: 2,
-      value: "$1,693",
+      usdValue: 1016, // $508 * 2 shares
       nzdValue: "$1,693",
       stockCurrency: "USD",
       tier: "S"
@@ -101,15 +93,22 @@ export default function Q1Report2025Page() {
     { 
       symbol: "MFT", 
       name: "Mainfreight Limited",
-      allocation: 4.2, 
       return: "+11.9%",
       shares: 50,
-      value: "$3,675",
+      usdValue: 2205, // $73.50 NZD * 50 shares * 0.6 USD/NZD rate
       nzdValue: "$3,675",
       stockCurrency: "NZD",
       tier: "A"
     }
-  ].sort((a, b) => b.allocation - a.allocation)
+  ]
+
+  // Calculate total USD value and allocations
+  const totalUsdValue = rawHoldings.reduce((sum, holding) => sum + holding.usdValue, 0)
+  
+  const portfolioHoldings = rawHoldings.map(holding => ({
+    ...holding,
+    allocation: parseFloat(((holding.usdValue / totalUsdValue) * 100).toFixed(1))
+  })).sort((a, b) => b.allocation - a.allocation)
 
   const totalValue = portfolioHoldings.reduce((sum, holding) => {
     return sum + parseFloat(holding.nzdValue.replace(/[$,]/g, ''))
