@@ -9,7 +9,6 @@ export default function AnalysesPage() {
       symbol: "UBER",
       sector: "Transportation & Delivery",
       intrinsicValue: "$110",
-      currentMarketCap: "$126B",
       href: "/analyses/uber",
       lastUpdated: "December 4, 2024",
       summary: "Uber exhibits strong fundamental attributes with a significant competitive advantage built on 15+ years of data and network effects. The company has achieved critical scale leading to expanding profit margins, generating consistent cash flows despite facing challenges from autonomous vehicles and regulatory pressures.",
@@ -21,7 +20,6 @@ export default function AnalysesPage() {
       symbol: "ASML",
       sector: "Technology Hardware",
       intrinsicValue: "$900",
-      currentMarketCap: "$325.4B",
       href: "/analyses/asml",
       lastUpdated: "March 15, 2025",
       summary: "ASML maintains a near-monopoly in EUV lithography with 90%+ market share, making it essential for advanced semiconductor manufacturing. The company's technological lead and robust demand from AI, automotive, and cloud computing positions it favorably for sustained growth despite cyclical industry pressures.",
@@ -58,10 +56,6 @@ export default function AnalysesPage() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-gray-500">Current Market Cap</p>
-                        <p className="text-lg font-semibold text-gray-900">{analysis.currentMarketCap}</p>
-                      </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-500">Intrinsic Value</p>
                         <p className="text-lg font-semibold text-blue-600">{analysis.intrinsicValue}</p>
