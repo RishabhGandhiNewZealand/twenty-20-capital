@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Target, Plus, Calendar, BarChart3 } from "lucide-react"
+import { Target, Calendar, BarChart3 } from "lucide-react"
 
 export default function HomePage() {
   const portfolioStats = [
@@ -11,23 +11,6 @@ export default function HomePage() {
       subtitle: "$42,000 invested • $7,000 gains (+16.7%)",
       description: "Total portfolio value",
       icon: Target,
-    },
-    {
-      title: "YTD Performance",
-      value: "+18.7%",
-      description: "Year to date return",
-      icon: TrendingUp,
-    },
-    {
-      title: "S&P 500 YTD",
-      value: "+15.2%",
-      description: "S&P 500 benchmark",
-      icon: DollarSign,
-    },
-    {
-      title: "Capital added this year",
-      value: "$25,000",
-      icon: Plus,
     },
     {
       title: "Portfolio MWR CAGR",
@@ -139,7 +122,7 @@ export default function HomePage() {
         </div>
 
         {/* Portfolio Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {portfolioStats.map((stat) => {
             const Icon = stat.icon
             return (
@@ -161,6 +144,22 @@ export default function HomePage() {
             )
           })}
         </div>
+
+        {/* Portfolio Performance Chart Placeholder */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-medium">Portfolio Performance Chart</p>
+                <p className="text-gray-400 text-sm">Chart will be generated in a future update</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Portfolio Holdings Table */}
         <Card className="border-blue-100">
