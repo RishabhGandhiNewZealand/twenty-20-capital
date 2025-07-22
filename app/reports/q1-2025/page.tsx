@@ -84,9 +84,9 @@ export default function Q1Report2025Page() {
       symbol: "SPGI", 
       name: "S&P Global Inc",
       return: "-0.4%",
-      shares: 2,
-      usdValue: 1016, // $508 * 2 shares
-      nzdValue: "$1,693",
+      shares: 5,
+      usdValue: 2540, // $508 * 5 shares
+      nzdValue: "$4,233",
       stockCurrency: "USD",
       tier: "S"
     },
@@ -393,9 +393,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $620-670 USD</p>
                      <p><strong>Cost Basis:</strong> $510 USD</p>
-                     <p><strong>Final Position:</strong> 2 shares</p>
+                     <p><strong>Final Position:</strong> 5 shares</p>
                      <p><strong>Price@31/3/2025:</strong> $508 USD</p>
-                     <p><strong>Portfolio Value:</strong> $1,693 NZD</p>
+                     <p><strong>Portfolio Value:</strong> $4,233 NZD</p>
                    </div>
                 </div>
 
