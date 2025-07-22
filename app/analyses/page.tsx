@@ -22,7 +22,7 @@ export default function AnalysesPage() {
       currentPrice: "$[CURRENT_PRICE]",
       href: "/analyses/asml",
       lastUpdated: "March 15, 2025",
-      keyPoints: ["EUV lithography monopoly", "90%+ market share", "10-15% revenue growth expected"],
+      keyPoints: ["EUV lithography monopoly", "90%+ market share", "Global chip demand growth"],
     },
   ]
 
