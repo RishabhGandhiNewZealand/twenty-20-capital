@@ -202,7 +202,7 @@ export default function UberAnalysisPage() {
                 </div>
 
                 <p className="mb-4">
-                  Figure X in blue shows the decreasing trend in stock-based compensation as free cash flow increases. The management team also plans to further control over SBC through 2025.
+                  Figure 3 in blue shows the decreasing trend in stock-based compensation as free cash flow increases. The management team also plans to further control over SBC through 2025.
                 </p>
 
                 <div className="my-6">
