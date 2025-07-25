@@ -329,7 +329,7 @@ function getCurrentPriceEstimates(): { [symbol: string]: number } {
   }
 }
 
-// Function to get real historical prices using Yahoo Finance (like Python's get_daily_historical_prices)
+// Function to get historical prices for all stocks in a single batch call
 async function getHistoricalPrices(
   trades: TradeRecord[], 
   startDate: Date, 
@@ -338,98 +338,127 @@ async function getHistoricalPrices(
   const symbols = Array.from(new Set(trades.map(t => t.code)))
   const prices: { [symbol: string]: StockPriceData } = {}
   
-  console.log(`Fetching historical prices for ${symbols.length} stocks...`)
+  console.log(`Fetching historical prices for ${symbols.length} stocks in batch...`)
   
-  for (const symbol of symbols) {
-    console.log(`Fetching prices for ${symbol}...`)
-    
-    // Map MFT to MFT.NZ for price fetching (like Python code)
+  // Create symbol mapping (MFT -> MFT.NZ)
+  const symbolMapping: { [key: string]: string } = {}
+  const yfinanceSymbols: string[] = []
+  
+  symbols.forEach(symbol => {
     const yfinanceSymbol = symbol === 'MFT' ? 'MFT.NZ' : symbol
+    symbolMapping[symbol] = yfinanceSymbol
+    yfinanceSymbols.push(yfinanceSymbol)
+  })
+  
+  try {
+    // Fetch all historical data in a single batch call
+    const allHistoricalData = await fetchBatchYFinanceHistory(yfinanceSymbols, startDate, endDate)
     
-    try {
-      // Fetch real historical prices using Yahoo Finance
-      const historicalData = await fetchYFinanceHistory(yfinanceSymbol, startDate, endDate)
+    // Process each symbol
+    symbols.forEach(symbol => {
+      const yfinanceSymbol = symbolMapping[symbol]
+      const historicalData = allHistoricalData[yfinanceSymbol]
       
       if (historicalData && Object.keys(historicalData).length > 0) {
         // Forward fill missing dates (like Python's fill_missing_dates function)
         const dateRange = generateDateRange(startDate, endDate)
         prices[symbol] = fillMissingDates(historicalData, dateRange)
-        console.log(`   Success: ${Object.keys(prices[symbol]).length} days of price data`)
+        console.log(`   ${symbol}: ${Object.keys(prices[symbol]).length} days of price data`)
       } else {
-        console.log(`   Failed to fetch data for ${symbol}`)
-        prices[symbol] = {}
-      }
-    } catch (error) {
-      console.log(`   Error fetching data for ${symbol}: ${error}`)
-      prices[symbol] = {}
-    }
-  }
-  
-  return prices
-}
-
-// Function to fetch real historical price data from Yahoo Finance
-async function fetchYFinanceHistory(
-  symbol: string, 
-  startDate: Date, 
-  endDate: Date
-): Promise<{ [date: string]: number }> {
-  const prices: { [date: string]: number } = {}
-  
-  try {
-    // Convert dates to Unix timestamps (Yahoo Finance API format)
-    const period1 = Math.floor(startDate.getTime() / 1000)
-    const period2 = Math.floor(endDate.getTime() / 1000)
-    
-    // Yahoo Finance URL for historical data
-    const url = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${period1}&period2=${period2}&interval=1d&events=history&includeAdjustedClose=true`
-    
-    console.log(`   Fetching from Yahoo Finance: ${symbol}`)
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        console.log(`   ${symbol}: No data, using fallback`)
+        // Use fallback historical data
+        const fallbackData = createFallbackHistoricalData(symbol, startDate, endDate)
+        const dateRange = generateDateRange(startDate, endDate)
+        prices[symbol] = fillMissingDates(fallbackData, dateRange)
       }
     })
     
-    if (!response.ok) {
-      throw new Error(`Yahoo Finance API error: ${response.status} ${response.statusText}`)
-    }
-    
-    const csvData = await response.text()
-    const lines = csvData.trim().split('\n')
-    
-    // Skip header line
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (!line) continue
-      
-      const columns = line.split(',')
-      if (columns.length >= 5) {
-        const dateStr = columns[0] // Date in YYYY-MM-DD format
-        const closePrice = parseFloat(columns[4]) // Close price
-        
-        if (!isNaN(closePrice) && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          prices[dateStr] = closePrice
-        }
-      }
-    }
-    
-    console.log(`   Downloaded ${Object.keys(prices).length} days of data for ${symbol}`)
-    
-    if (Object.keys(prices).length === 0) {
-      throw new Error(`No price data found in Yahoo Finance response for ${symbol}`)
-    }
-    
+    console.log(`Batch fetch completed for ${symbols.length} stocks`)
     return prices
     
   } catch (error) {
-    console.log(`   Error fetching Yahoo Finance data for ${symbol}: ${error}`)
+    console.log(`Error in batch fetch: ${error}`)
+    console.log("Using fallback data for all stocks")
     
-    // Fallback: create reasonable historical data based on current price
-    console.log(`   Using fallback historical data for ${symbol}`)
-    return createFallbackHistoricalData(symbol, startDate, endDate)
+    // Fallback: create reasonable historical data for all stocks
+    symbols.forEach(symbol => {
+      const fallbackData = createFallbackHistoricalData(symbol, startDate, endDate)
+      const dateRange = generateDateRange(startDate, endDate)
+      prices[symbol] = fillMissingDates(fallbackData, dateRange)
+    })
+    
+    return prices
   }
+}
+
+// Function to fetch historical data for multiple stocks in a single batch operation
+async function fetchBatchYFinanceHistory(
+  symbols: string[], 
+  startDate: Date, 
+  endDate: Date
+): Promise<{ [symbol: string]: { [date: string]: number } }> {
+  const allPrices: { [symbol: string]: { [date: string]: number } } = {}
+  
+  // Convert dates to Unix timestamps
+  const period1 = Math.floor(startDate.getTime() / 1000)
+  const period2 = Math.floor(endDate.getTime() / 1000)
+  
+  console.log(`Fetching batch data for symbols: ${symbols.join(', ')}`)
+  
+  // Since Yahoo Finance doesn't have a true batch API, we'll fetch them concurrently
+  // This is much faster than sequential fetching
+  const fetchPromises = symbols.map(async (symbol) => {
+    try {
+      const url = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${period1}&period2=${period2}&interval=1d&events=history&includeAdjustedClose=true`
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API error ${response.status}`)
+      }
+      
+      const csvData = await response.text()
+      const lines = csvData.trim().split('\n')
+      const prices: { [date: string]: number } = {}
+      
+      // Parse CSV data
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (!line) continue
+        
+        const columns = line.split(',')
+        if (columns.length >= 5) {
+          const dateStr = columns[0]
+          const closePrice = parseFloat(columns[4])
+          
+          if (!isNaN(closePrice) && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            prices[dateStr] = closePrice
+          }
+        }
+      }
+      
+      return { symbol, prices }
+      
+    } catch (error) {
+      console.log(`   Error fetching ${symbol}: ${error}`)
+      return { symbol, prices: {} }
+    }
+  })
+  
+  // Wait for all fetches to complete
+  const results = await Promise.all(fetchPromises)
+  
+  // Organize results by symbol
+  results.forEach(({ symbol, prices }) => {
+    allPrices[symbol] = prices
+    console.log(`   ${symbol}: ${Object.keys(prices).length} days fetched`)
+  })
+  
+  return allPrices
 }
 
 // Fallback function to create reasonable historical data when Yahoo Finance fails
@@ -488,7 +517,8 @@ async function getExchangeRates(startDate: Date, endDate: Date): Promise<Exchang
   
   try {
     // Fetch NZD/USD rate from Yahoo Finance (like Python code)
-    const nzdUsdData = await fetchYFinanceHistory("NZDUSD=X", startDate, endDate)
+    const nzdUsdBatchData = await fetchBatchYFinanceHistory(["NZDUSD=X"], startDate, endDate)
+    const nzdUsdData = nzdUsdBatchData["NZDUSD=X"] || {}
     
     if (Object.keys(nzdUsdData).length === 0) {
       throw new Error("No FX data found for NZDUSD")
