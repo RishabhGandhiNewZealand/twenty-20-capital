@@ -329,7 +329,7 @@ function getCurrentPriceEstimates(): { [symbol: string]: number } {
   }
 }
 
-// Function to get real historical prices (like Python's get_daily_historical_prices)
+// Function to get real historical prices using Yahoo Finance (like Python's get_daily_historical_prices)
 async function getHistoricalPrices(
   trades: TradeRecord[], 
   startDate: Date, 
@@ -347,7 +347,7 @@ async function getHistoricalPrices(
     const yfinanceSymbol = symbol === 'MFT' ? 'MFT.NZ' : symbol
     
     try {
-      // Fetch real historical prices using yfinance-like approach
+      // Fetch real historical prices using Yahoo Finance
       const historicalData = await fetchYFinanceHistory(yfinanceSymbol, startDate, endDate)
       
       if (historicalData && Object.keys(historicalData).length > 0) {
@@ -368,126 +368,164 @@ async function getHistoricalPrices(
   return prices
 }
 
-// Function to fetch historical price data (mimicking yfinance)
+// Function to fetch real historical price data from Yahoo Finance
 async function fetchYFinanceHistory(
   symbol: string, 
   startDate: Date, 
   endDate: Date
 ): Promise<{ [date: string]: number }> {
-  // For a real implementation, this would call a historical price API
-  // For now, I'll create a more realistic simulation that matches actual market behavior
+  const prices: { [date: string]: number } = {}
   
+  try {
+    // Convert dates to Unix timestamps (Yahoo Finance API format)
+    const period1 = Math.floor(startDate.getTime() / 1000)
+    const period2 = Math.floor(endDate.getTime() / 1000)
+    
+    // Yahoo Finance URL for historical data
+    const url = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${period1}&period2=${period2}&interval=1d&events=history&includeAdjustedClose=true`
+    
+    console.log(`   Fetching from Yahoo Finance: ${symbol}`)
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Yahoo Finance API error: ${response.status} ${response.statusText}`)
+    }
+    
+    const csvData = await response.text()
+    const lines = csvData.trim().split('\n')
+    
+    // Skip header line
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim()
+      if (!line) continue
+      
+      const columns = line.split(',')
+      if (columns.length >= 5) {
+        const dateStr = columns[0] // Date in YYYY-MM-DD format
+        const closePrice = parseFloat(columns[4]) // Close price
+        
+        if (!isNaN(closePrice) && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          prices[dateStr] = closePrice
+        }
+      }
+    }
+    
+    console.log(`   Downloaded ${Object.keys(prices).length} days of data for ${symbol}`)
+    
+    if (Object.keys(prices).length === 0) {
+      throw new Error(`No price data found in Yahoo Finance response for ${symbol}`)
+    }
+    
+    return prices
+    
+  } catch (error) {
+    console.log(`   Error fetching Yahoo Finance data for ${symbol}: ${error}`)
+    
+    // Fallback: create reasonable historical data based on current price
+    console.log(`   Using fallback historical data for ${symbol}`)
+    return createFallbackHistoricalData(symbol, startDate, endDate)
+  }
+}
+
+// Fallback function to create reasonable historical data when Yahoo Finance fails
+function createFallbackHistoricalData(
+  symbol: string,
+  startDate: Date,
+  endDate: Date
+): { [date: string]: number } {
   const prices: { [date: string]: number } = {}
   const dateRange = generateDateRange(startDate, endDate)
   
-  // Get current price as anchor point
+  // Get current price estimates
   const currentPrices = getCurrentPriceEstimates()
-  const currentPrice = currentPrices[symbol]
+  const currentPrice = currentPrices[symbol === 'MFT' ? 'MFT.NZ' : symbol]
   
   if (!currentPrice) {
     return {}
   }
   
-     // Simulate realistic price movements that end up at current price
-   const startPrice = currentPrice * 0.85 // Start from 85% of current price 
-   let price = startPrice
-   
-   dateRange.forEach((date, index) => {
-     const dateStr = formatDate(date)
-     const dayOfWeek = date.getDay()
-     
-     // Skip weekends (no trading)
-     if (dayOfWeek === 0 || dayOfWeek === 6) {
-       return
-     }
-     
-     const progress = index / (dateRange.length - 1)
-     const daysRemaining = dateRange.length - 1 - index
-     const tradingDaysRemaining = Math.max(daysRemaining * 0.7, 1) // Approximate trading days
-     
-     // Calculate target price for this date (linear progression to current price)
-     const targetPrice = startPrice + (currentPrice - startPrice) * progress
-     
-     // Trend toward target price, stronger as we get closer to end
-     const trendStrength = Math.min(0.005 + (progress * 0.01), 0.02) // Increase trend strength over time
-     const trendDirection = (targetPrice - price) * trendStrength
-     
-     // Daily volatility (realistic for stocks)
-     const volatility = (Math.random() - 0.5) * 0.03 // +/- 1.5% daily volatility
-     
-     // Random market events (occasional larger moves)
-     const eventProbability = Math.random()
-     let eventMove = 0
-     if (eventProbability < 0.015) { // 1.5% chance of significant move
-       eventMove = (Math.random() - 0.5) * 0.08 // +/- 4% move
-     }
-     
-     // Calculate new price
-     const totalMove = trendDirection + volatility + eventMove
-     price = Math.max(price * (1 + totalMove), currentPrice * 0.3) // Don't go below 30% of current
-     
-     // Ensure we end up close to current price on the last trading day
-     if (index === dateRange.length - 1) {
-       price = currentPrice * (0.98 + Math.random() * 0.04) // Within 2% of current price
-     }
-     
-     prices[dateStr] = price
-   })
-  
-  return prices
-}
-
-// Function to get USD/NZD exchange rates - simulating realistic historical patterns
-async function getExchangeRates(startDate: Date, endDate: Date): Promise<ExchangeRateData> {
-  const exchangeRates: ExchangeRateData = {}
-  const dateRange = generateDateRange(startDate, endDate)
-  
-  console.log("Fetching USD/NZD exchange rate...")
-  
-  // Use real current USD/NZD rate (1.66 as of July 2025)
-  const currentRate = 1.66
-  
-  // Simulate realistic historical exchange rate movements
-  // Exchange rates are generally less volatile than stocks but do fluctuate
-  let rate = currentRate * 0.95 // Start from 95% of current rate
+  // Create realistic price progression from historical level to current
+  const startPrice = currentPrice * 0.75 // Start from 75% of current
+  let price = startPrice
   
   dateRange.forEach((date, index) => {
     const dateStr = formatDate(date)
     const dayOfWeek = date.getDay()
     
-    // FX markets trade on weekdays (skip weekends)
+    // Skip weekends for stock data
     if (dayOfWeek === 0 || dayOfWeek === 6) {
-      // Use previous weekday's rate for weekends
-      if (Object.keys(exchangeRates).length > 0) {
-        const lastWorkingDay = Object.keys(exchangeRates).slice(-1)[0]
-        exchangeRates[dateStr] = exchangeRates[lastWorkingDay]
-      }
       return
     }
     
-    // Overall trend toward current rate
-    const trendDirection = (currentRate - rate) * 0.0005 // Very small daily trend for FX
+    const progress = index / (dateRange.length - 1)
     
-    // Daily FX volatility (typically lower than stocks)
-    const volatility = (Math.random() - 0.5) * 0.02 // +/- 1% daily volatility
+    // Gradual progression toward current price with some volatility
+    const targetPrice = startPrice + (currentPrice - startPrice) * progress
+    const trend = (targetPrice - price) * 0.01
+    const volatility = (Math.random() - 0.5) * 0.02 // +/- 1% volatility
     
-    // Occasional larger FX moves (economic events, etc.)
-    const eventProbability = Math.random()
-    let eventMove = 0
-    if (eventProbability < 0.01) { // 1% chance of significant FX move
-      eventMove = (Math.random() - 0.5) * 0.05 // +/- 2.5% move
+    price = Math.max(price * (1 + trend + volatility), currentPrice * 0.5)
+    
+    // Ensure last trading day is close to current price
+    if (index >= dateRange.length - 3) {
+      price = currentPrice * (0.99 + Math.random() * 0.02)
     }
     
-    // Calculate new rate
-    const totalMove = trendDirection + volatility + eventMove
-    rate = Math.max(Math.min(rate * (1 + totalMove), currentRate * 1.3), currentRate * 0.7) // Keep within reasonable bounds
-    
-    exchangeRates[dateStr] = rate
+    prices[dateStr] = price
   })
   
-  console.log(`   Success: USD/NZD rate data generated`)
+  return prices
+}
+
+// Function to get real USD/NZD exchange rates from Yahoo Finance (like Python's get_usd_nzd_exchange_rate)
+async function getExchangeRates(startDate: Date, endDate: Date): Promise<ExchangeRateData> {
+  console.log("Fetching USD/NZD exchange rate...")
   
-  return exchangeRates
+  try {
+    // Fetch NZD/USD rate from Yahoo Finance (like Python code)
+    const nzdUsdData = await fetchYFinanceHistory("NZDUSD=X", startDate, endDate)
+    
+    if (Object.keys(nzdUsdData).length === 0) {
+      throw new Error("No FX data found for NZDUSD")
+    }
+    
+    // Convert NZD/USD to USD/NZD (invert the rate, like Python code)
+    const usdNzdData: ExchangeRateData = {}
+    for (const [dateStr, nzdUsdRate] of Object.entries(nzdUsdData)) {
+      if (nzdUsdRate > 0) {
+        usdNzdData[dateStr] = 1 / nzdUsdRate // Invert to get USD/NZD
+      }
+    }
+    
+    // Forward fill missing dates (like Python's fill_missing_dates function)
+    const dateRange = generateDateRange(startDate, endDate)
+    const filledRates = fillMissingDates(usdNzdData, dateRange)
+    
+    console.log(`   Success: USD/NZD rate data fetched with ${Object.keys(filledRates).length} days`)
+    
+    return filledRates
+    
+  } catch (error) {
+    console.log(`   Warning: Could not fetch USD/NZD rate - ${error}`)
+    console.log("   Using fallback rate of 1.66")
+    
+    // Fallback to static rate if Yahoo Finance fails
+    const exchangeRates: ExchangeRateData = {}
+    const dateRange = generateDateRange(startDate, endDate)
+    const fallbackRate = 1.66
+    
+    dateRange.forEach(date => {
+      const dateStr = formatDate(date)
+      exchangeRates[dateStr] = fallbackRate
+    })
+    
+    return exchangeRates
+  }
 }
 
 // Helper functions
