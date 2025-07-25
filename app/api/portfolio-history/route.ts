@@ -8,6 +8,7 @@ interface DailyPortfolioData {
   date: string
   portfolioValue: number
   costBasis: number
+  sp500Value: number
 }
 
 interface StockPrice {
@@ -150,16 +151,18 @@ export async function GET() {
       // Create all promises at once for parallel execution
       const allPromises = [
         getUSDNZDRate(startDate, endDate),
+        getHistoricalPrices('SPY', startDate, endDate), // Add S&P 500 ETF
         ...tickers.map(ticker => getHistoricalPrices(ticker, startDate, endDate))
       ]
       
       // Execute all fetches in parallel
       const startTime = Date.now()
-      const [exchangeRateMap, ...stockPriceMaps] = await Promise.all(allPromises)
+      const [exchangeRateMap, spyPriceMap, ...stockPriceMaps] = await Promise.all(allPromises)
       const fetchTime = Date.now() - startTime
       
       console.log(`Successfully fetched all price data in ${fetchTime}ms`)
       console.log('Exchange rate entries:', exchangeRateMap.size)
+      console.log('SPY price entries:', spyPriceMap.size)
       stockPriceMaps.forEach((map, index) => {
         console.log(`${tickers[index]} price entries:`, map.size)
       })
@@ -170,8 +173,9 @@ export async function GET() {
         tickerPriceMap.set(ticker, fillMissingDates(stockPriceMaps[index], startDate, endDate))
       })
 
-      // Fill exchange rate gaps
+      // Fill exchange rate gaps and SPY prices
       const filledExchangeRates = fillMissingDates(exchangeRateMap, startDate, endDate)
+      const filledSPYPrices = fillMissingDates(spyPriceMap, startDate, endDate)
 
       // Calculate daily holdings
       const dailyHoldings = new Map<string, Map<string, number>>() // date -> ticker -> shares
@@ -203,10 +207,11 @@ export async function GET() {
         currentDate.setDate(currentDate.getDate() + 1)
       }
 
-      // Calculate daily portfolio values and cost basis
+      // Calculate daily portfolio values, cost basis, and S&P 500 equivalent
       const portfolioHistory: DailyPortfolioData[] = []
       let currentCostBasis = 0
       let soldCapitalAvailable = 0
+      let sp500Shares = 0
 
       const processDate = new Date(startDate)
       while (processDate <= endDate) {
@@ -233,7 +238,7 @@ export async function GET() {
           }
         })
 
-        // Update cost basis based on trades
+        // Update cost basis based on trades and calculate S&P 500 equivalent
         const todaysTrades = trades.filter(t => t.date === dateStr)
         todaysTrades.forEach(trade => {
           const exchangeRate = trade.instrumentCurrency === 'USD' 
@@ -249,6 +254,13 @@ export async function GET() {
               const newCapital = tradeValueNZD - soldCapitalAvailable
               currentCostBasis += newCapital
               soldCapitalAvailable = 0
+              
+              // Calculate how many SPY shares we could buy with this new capital
+              const spyPrice = filledSPYPrices.get(dateStr) || 0
+              if (spyPrice > 0) {
+                const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || 1.65)
+                sp500Shares += newCapital / spyPriceNZD
+              }
             }
           } else if (trade.type === 'Sell') {
             soldCapitalAvailable += tradeValueNZD
@@ -256,10 +268,16 @@ export async function GET() {
           // Reinvestment doesn't affect cost basis
         })
 
+        // Calculate S&P 500 value
+        const spyPrice = filledSPYPrices.get(dateStr) || 0
+        const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || 1.65)
+        const sp500Value = sp500Shares * spyPriceNZD
+
         portfolioHistory.push({
           date: dateStr,
           portfolioValue: Math.round(portfolioValue * 100) / 100,
-          costBasis: Math.round(currentCostBasis * 100) / 100
+          costBasis: Math.round(currentCostBasis * 100) / 100,
+          sp500Value: Math.round(sp500Value * 100) / 100
         })
 
         processDate.setDate(processDate.getDate() + 1)

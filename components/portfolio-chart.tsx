@@ -18,6 +18,7 @@ interface PortfolioHistoryData {
   date: string
   portfolioValue: number
   costBasis: number
+  sp500Value: number
 }
 
 export function PortfolioChart() {
@@ -93,8 +94,11 @@ export function PortfolioChart() {
     if (active && payload && payload.length) {
       const portfolioValue = payload.find((p: any) => p.dataKey === 'portfolioValue')?.value
       const costBasis = payload.find((p: any) => p.dataKey === 'costBasis')?.value
+      const sp500Value = payload.find((p: any) => p.dataKey === 'sp500Value')?.value
       const gain = portfolioValue - costBasis
       const gainPercent = costBasis > 0 ? ((gain / costBasis) * 100) : 0
+      const sp500Gain = sp500Value - costBasis
+      const sp500GainPercent = costBasis > 0 ? ((sp500Gain / costBasis) * 100) : 0
 
       return (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
@@ -111,14 +115,24 @@ export function PortfolioChart() {
               <span className="text-sm font-medium">{formatCurrency(portfolioValue)}</span>
             </div>
             <div className="flex justify-between items-center gap-4">
+              <span className="text-sm text-green-600 dark:text-green-400">S&P 500 Value:</span>
+              <span className="text-sm font-medium">{formatCurrency(sp500Value)}</span>
+            </div>
+            <div className="flex justify-between items-center gap-4">
               <span className="text-sm text-red-600 dark:text-red-400">Cost Basis:</span>
               <span className="text-sm font-medium">{formatCurrency(costBasis)}</span>
             </div>
             <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Gain/Loss:</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Portfolio Gain:</span>
                 <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {formatCurrency(gain)} ({gainPercent.toFixed(1)}%)
+                </span>
+              </div>
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-sm text-gray-600 dark:text-gray-400">S&P 500 Gain:</span>
+                <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {formatCurrency(sp500Gain)} ({sp500GainPercent.toFixed(1)}%)
                 </span>
               </div>
             </div>
@@ -186,7 +200,7 @@ export function PortfolioChart() {
     <Card className="border-blue-100">
       <CardHeader>
         <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-        <CardDescription>Portfolio value and cost basis over time</CardDescription>
+        <CardDescription>Portfolio value vs S&P 500 benchmark and cost basis over time</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[400px] w-full">
@@ -224,6 +238,15 @@ export function PortfolioChart() {
                 stroke="#3b82f6"
                 strokeWidth={2}
                 name="Portfolio Value"
+                dot={false}
+                activeDot={{ r: 6 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="sp500Value" 
+                stroke="#10b981"
+                strokeWidth={2}
+                name="S&P 500 Value"
                 dot={false}
                 activeDot={{ r: 6 }}
               />
