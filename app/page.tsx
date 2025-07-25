@@ -3,22 +3,38 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Target, Calendar, BarChart3, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { PortfolioHolding, ExitedPosition } from "@/types/portfolio"
-import { StockPrice, StockPriceError } from "@/types/stock"
-import { calculatePortfolioAllocations } from "@/lib/portfolio"
+import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
 
-interface EnhancedPortfolioHolding extends PortfolioHolding {
-  currentPrice?: number
-  currentValueNZD?: number
-  loading?: boolean
-  error?: string
+interface CurrentHolding {
+  symbol: string
+  name: string
+  shares: number
+  currentPrice: number
+  currentValueNZD: number
+  costBasisNZD: number
+  gainNZD: number
+  gainPercent: number
+  allocation: number
+  currency: string
+}
+
+interface PortfolioSummary {
+  totalValueNZD: number
+  totalCostBasisNZD: number
+  totalGainNZD: number
+  totalGainPercent: number
+  sp500Value: number
+  sp500GainNZD: number
+  sp500GainPercent: number
+  exchangeRate: number
 }
 
 export default function HomePage() {
-  const [holdings, setHoldings] = useState<EnhancedPortfolioHolding[]>([])
+  const [holdings, setHoldings] = useState<CurrentHolding[]>([])
   const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
-  const [exchangeRate, setExchangeRate] = useState<number>(1.78)
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const [loading, setLoading] = useState(true)
   const [portfolioStats, setPortfolioStats] = useState([
     {
       title: "Portfolio Value",
@@ -28,13 +44,13 @@ export default function HomePage() {
     },
     {
       title: "Portfolio Yearly CAGR", 
-      value: "+22.3%",
+      value: "Loading...",
       description: "Money-weighted return since inception",
       icon: BarChart3,
     },
     {
       title: "S&P 500 Yearly CAGR",
-      value: "+19.8%",
+      value: "Loading...",
       description: "S&P 500 money-weighted return since inception",
       icon: Calendar,
     },
@@ -68,95 +84,116 @@ export default function HomePage() {
   useEffect(() => {
     const fetchPortfolioData = async () => {
       try {
-        // Fetch portfolio holdings from API
+        // Fetch current portfolio data from the new endpoint
+        const currentResponse = await fetch('/api/portfolio-current')
+        if (!currentResponse.ok) {
+          throw new Error('Failed to load portfolio data')
+        }
+        const currentData = await currentResponse.json()
+        
+        setHoldings(currentData.holdings)
+        setSummary(currentData.summary)
+
+        // Fetch exited positions from the old endpoint
         const portfolioResponse = await fetch('/api/portfolio')
-        if (!portfolioResponse.ok) {
-          throw new Error('Failed to load portfolio data from CSV')
-        }
-        const portfolioData = await portfolioResponse.json()
-        const baseHoldings: PortfolioHolding[] = portfolioData.holdings
-        setExitedPositions(portfolioData.exitedPositions)
-
-        // Fetch exchange rate
-        const exchangeResponse = await fetch('/api/exchange-rate')
-        let currentExchangeRate = 1.78
-        if (exchangeResponse.ok) {
-          const exchangeData = await exchangeResponse.json()
-          currentExchangeRate = exchangeData.rate
-          setExchangeRate(currentExchangeRate)
+        if (portfolioResponse.ok) {
+          const portfolioData = await portfolioResponse.json()
+          setExitedPositions(portfolioData.exitedPositions)
         }
 
-        // Fetch current prices for all holdings
-        const updatedHoldings = await Promise.all(
-          baseHoldings.map(async (holding) => {
-            const enhancedHolding: EnhancedPortfolioHolding = {
-              ...holding,
-              loading: true
+        // Fetch portfolio history to get the latest accurate values
+        const historyResponse = await fetch('/api/portfolio-history')
+        if (historyResponse.ok) {
+          const historyData = await historyResponse.json()
+          if (historyData.history && historyData.history.length > 0) {
+            const latestHistory = historyData.history[historyData.history.length - 1]
+            
+            // Update summary with values from portfolio history (source of truth)
+            const updatedSummary = {
+              ...currentData.summary,
+              totalValueNZD: latestHistory.portfolioValue,
+              totalCostBasisNZD: latestHistory.costBasis,
+              totalGainNZD: latestHistory.portfolioValue - latestHistory.costBasis,
+              totalGainPercent: ((latestHistory.portfolioValue - latestHistory.costBasis) / latestHistory.costBasis * 100),
+              sp500Value: latestHistory.sp500Value,
+              sp500GainNZD: latestHistory.sp500Value - latestHistory.costBasis,
+              sp500GainPercent: ((latestHistory.sp500Value - latestHistory.costBasis) / latestHistory.costBasis * 100)
             }
+            setSummary(updatedSummary)
 
-            try {
-              if (holding.instrumentCurrency === 'USD') {
-                const response = await fetch(`/api/stock-price/${holding.symbol}`)
-                if (response.ok) {
-                  const stockData: StockPrice = await response.json()
-                  const currentValueUSD = stockData.currentPrice * holding.totalShares
-                  const currentValueNZD = currentValueUSD * currentExchangeRate
-                  
-                  return {
-                    ...enhancedHolding,
-                    currentPrice: stockData.currentPrice,
-                    currentValueNZD,
-                    loading: false,
-                    error: undefined
-                  }
-                } else {
-                  return {
-                    ...enhancedHolding,
-                    loading: false,
-                    error: 'Price unavailable'
-                  }
-                }
-              } else {
-                // For NZD stocks (MFT), we need NZX data - for now use fallback
-                const estimatedCurrentValueNZD = holding.totalShares * holding.avgPriceNZD * 1.1 // Rough estimate
-                return {
-                  ...enhancedHolding,
-                  currentValueNZD: estimatedCurrentValueNZD,
-                  loading: false,
-                  error: undefined
-                }
-              }
-            } catch (error) {
-              return {
-                ...enhancedHolding,
-                loading: false,
-                error: 'Failed to fetch price'
-              }
-            }
-          })
-        )
+            // Update portfolio stats with the accurate data
+            const formattedValue = new Intl.NumberFormat('en-NZ', {
+              style: 'currency',
+              currency: 'NZD',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            }).format(latestHistory.portfolioValue)
 
-        // Calculate allocations
-        const holdingsWithAllocations = calculatePortfolioAllocations(updatedHoldings)
-        setHoldings(holdingsWithAllocations)
+            // Calculate CAGR from the gain percentages
+            // From September 2023 to July 2025 is approximately 1.83 years
+            const yearsSinceInception = 1.83
+            const portfolioCAGR = Math.pow(1 + updatedSummary.totalGainPercent / 100, 1 / yearsSinceInception) - 1
+            const sp500CAGR = Math.pow(1 + updatedSummary.sp500GainPercent / 100, 1 / yearsSinceInception) - 1
 
-        // Update portfolio stats
-        const totalValue = holdingsWithAllocations.reduce((sum, h) => sum + (h.currentValueNZD || 0), 0)
-        const formattedValue = new Intl.NumberFormat('en-NZ', {
-          style: 'currency',
-          currency: 'NZD',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(totalValue)
+            setPortfolioStats([
+              {
+                title: "Portfolio Value",
+                value: formattedValue,
+                subtitle: "Current portfolio value",
+                icon: Target,
+              },
+              {
+                title: "Portfolio Yearly CAGR", 
+                value: `${portfolioCAGR >= 0 ? '+' : ''}${(portfolioCAGR * 100).toFixed(1)}%`,
+                description: "Money-weighted return since inception",
+                icon: BarChart3,
+              },
+              {
+                title: "S&P 500 Yearly CAGR",
+                value: `${sp500CAGR >= 0 ? '+' : ''}${(sp500CAGR * 100).toFixed(1)}%`,
+                description: "S&P 500 money-weighted return since inception",
+                icon: Calendar,
+              },
+            ])
+          }
+        } else {
+          // Fallback to using data from portfolio-current if history fails
+          const { totalValueNZD, totalGainPercent, sp500GainPercent } = currentData.summary
+          
+          const formattedValue = new Intl.NumberFormat('en-NZ', {
+            style: 'currency',
+            currency: 'NZD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(totalValueNZD)
 
-        setPortfolioStats(prev => prev.map((stat, index) => 
-          index === 0 ? { 
-            ...stat, 
-            value: formattedValue, 
-            subtitle: "Current portfolio value",
-            description: undefined 
-          } : stat
-        ))
+          // Calculate CAGR from the gain percentages
+          // From September 2023 to July 2025 is approximately 1.83 years
+          const yearsSinceInception = 1.83
+          const portfolioCAGR = Math.pow(1 + totalGainPercent / 100, 1 / yearsSinceInception) - 1
+          const sp500CAGR = Math.pow(1 + sp500GainPercent / 100, 1 / yearsSinceInception) - 1
+
+          setPortfolioStats([
+            {
+              title: "Portfolio Value",
+              value: formattedValue,
+              subtitle: "Current portfolio value",
+              icon: Target,
+            },
+            {
+              title: "Portfolio Yearly CAGR", 
+              value: `${portfolioCAGR >= 0 ? '+' : ''}${(portfolioCAGR * 100).toFixed(1)}%`,
+              description: "Money-weighted return since inception",
+              icon: BarChart3,
+            },
+            {
+              title: "S&P 500 Yearly CAGR",
+              value: `${sp500CAGR >= 0 ? '+' : ''}${(sp500CAGR * 100).toFixed(1)}%`,
+              description: "S&P 500 money-weighted return since inception",
+              icon: Calendar,
+            },
+          ])
+        }
 
       } catch (error) {
         console.error('Error fetching portfolio data:', error)
@@ -169,6 +206,8 @@ export default function HomePage() {
             description: undefined 
           } : stat
         ))
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -206,7 +245,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio</h1>
-          <p className="text-gray-600">Since inception: October 2023</p>
+          <p className="text-gray-600">Since September 2023</p>
         </div>
 
         {/* Portfolio Stats */}
@@ -244,100 +283,133 @@ export default function HomePage() {
             <CardTitle className="text-gray-900">Portfolio Holdings</CardTitle>
           </CardHeader>
           <CardContent>
-            {holdings.length === 0 && portfolioStats[0].value === "Error" ? (
-              <div className="text-center py-8">
-                <div className="text-red-500 text-lg font-medium mb-2">Failed to Load Portfolio Data</div>
-                <div className="text-gray-600">Unable to read portfolio data from CSV file. Please check if the file exists and is accessible.</div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               </div>
             ) : holdings.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-gray-500">Loading portfolio data...</div>
+                <div className="text-gray-500">No holdings found</div>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="min-w-full divide-y divide-gray-200">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Position Started</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Shares</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (NZD)</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Avg Price (USD)</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Allocation</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Current Value (NZD)</th>
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Stock
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Shares
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Current Price
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Market Value
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cost Basis
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Gain/Loss
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {holdings
-                      .filter(holding => holding.totalShares > 0.01)
-                      .sort((a, b) => (b.allocation || 0) - (a.allocation || 0))
-                      .map((holding, index) => (
-                      <tr key={holding.symbol} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                        <td className="py-3 px-2">
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {holdings.map((holding) => (
+                      <tr key={holding.symbol} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <img 
                               src={getLogoUrl(holding.symbol)} 
-                              alt={`${holding.symbol} logo`}
-                              className="w-6 h-6 rounded mr-2"
+                              alt={holding.symbol}
+                              className="h-8 w-8 rounded-full mr-3"
                               onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=3b82f6&color=fff`
                               }}
                             />
-                            <span className="font-bold text-gray-900">{holding.symbol}</span>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{holding.symbol}</div>
+                              <div className="text-sm text-gray-500">{holding.name}</div>
+                            </div>
                           </div>
                         </td>
-                        <td className="py-3 px-2">
-                          <span className="text-sm text-gray-700">{holding.name}</span>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatNumber(holding.shares, 2)}
                         </td>
-                        <td className="py-3 px-2 text-right">
-                          <span className="text-sm text-gray-600">{formatDate(holding.firstPurchaseDate)}</span>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {holding.currency === 'NZD' 
+                            ? `NZ$${holding.currentPrice.toFixed(2)}`
+                            : formatCurrency(holding.currentPrice, holding.currency)}
                         </td>
-                        <td className="py-3 px-2 text-right">
-                          <span className="text-gray-700">{formatNumber(holding.totalShares, 0)}</span>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatCurrency(holding.currentValueNZD)}
                         </td>
-                        <td className="py-3 px-2 text-right">
-                          <span className="text-gray-700">{formatCurrency(holding.avgPriceNZD, 'NZD')}</span>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatCurrency(holding.costBasisNZD)}
                         </td>
-                        <td className="py-3 px-2 text-right">
-                          {holding.avgPriceUSD ? (
-                            <span className="text-gray-700">{formatCurrency(holding.avgPriceUSD, 'USD')}</span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          {holding.loading ? (
-                            <div className="flex items-center justify-end">
-                              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                            </div>
-                          ) : (
-                            <span className="font-medium text-gray-900">{formatNumber(holding.allocation || 0, 1)}%</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          {holding.loading ? (
-                            <div className="flex items-center justify-end">
-                              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                            </div>
-                          ) : holding.error ? (
-                            <span className="text-red-500 text-sm">Error</span>
-                          ) : (
-                            <span className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD, 'NZD')}</span>
-                          )}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            {formatCurrency(holding.gainNZD)}
+                            <span className="text-xs ml-1">
+                              ({holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%)
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
+                  {summary && (
+                    <tfoot>
+                      <tr className="bg-gray-50">
+                        <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                          Total Portfolio
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {formatCurrency(summary.totalValueNZD)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {formatCurrency(summary.totalCostBasisNZD)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <div className={summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            {formatCurrency(summary.totalGainNZD)}
+                            <span className="text-xs ml-1">
+                              ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr className="bg-blue-50">
+                        <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                          S&P 500 Benchmark
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {formatCurrency(summary.sp500Value)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {formatCurrency(summary.totalCostBasisNZD)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            {formatCurrency(summary.sp500GainNZD)}
+                            <span className="text-xs ml-1">
+                              ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Exited Positions Table */}
-        {portfolioStats[0].value !== "Error" && exitedPositions.length > 0 && (
+        {/* Exited Positions */}
+        {!loading && exitedPositions.length > 0 && (
           <Card className="border-blue-100 mt-8">
             <CardHeader>
               <CardTitle className="text-gray-900">Exited Positions</CardTitle>
