@@ -50,34 +50,41 @@ export function calculateDailyHoldings(trades: TradeRecord[], startDate: Date, e
   // Get unique tickers
   const tickers = Array.from(new Set(trades.map(trade => trade.code)))
   
-  // Process each ticker separately
+  // Process each ticker separately - following Python logic exactly
   tickers.forEach(ticker => {
     const tickerTrades = trades.filter(trade => trade.code === ticker)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     
-    let cumulativeHoldings = 0
-    
+    // Initialize all dates with 0 holdings for this ticker
     dateRange.forEach(date => {
-      const dateStr = formatDate(date)
+      dailyHoldings[formatDate(date)][ticker] = 0
+    })
+    
+    // Process trades chronologically and update holdings from trade date forward
+    tickerTrades.forEach(trade => {
+      const tradeDate = new Date(trade.date)
+      const tradeDateStr = formatDate(tradeDate)
+      const qty = typeof trade.qty === 'string' ? parseFloat(trade.qty.replace(/[",]/g, '')) : trade.qty
       
-      // Process all trades for this ticker on this exact date
-      const tradesOnDate = tickerTrades.filter(trade => {
-        const tradeDate = new Date(trade.date)
-        return formatDate(tradeDate) === dateStr
-      })
+      // Calculate net change for this trade
+      let netChange = 0
+      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+        netChange = qty
+      } else if (trade.type === 'Sell') {
+        // For sells, qty might be negative or positive, ensure we subtract
+        netChange = qty < 0 ? qty : -qty
+      }
       
-      tradesOnDate.forEach(trade => {
-        const qty = typeof trade.qty === 'string' ? parseFloat(trade.qty.replace(/[",]/g, '')) : trade.qty
-        
-        if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
-          cumulativeHoldings += qty
-        } else if (trade.type === 'Sell') {
-          // For sells, qty might be negative or positive, ensure we subtract
-          cumulativeHoldings += qty < 0 ? qty : -qty
+      // Find the trade date index in our date range
+      const tradeDateIndex = dateRange.findIndex(date => formatDate(date) === tradeDateStr)
+      
+      if (tradeDateIndex >= 0) {
+        // Update holdings from this date forward (like Python's daily_holdings.loc[trade_date:, ticker])
+        for (let i = tradeDateIndex; i < dateRange.length; i++) {
+          const currentDateStr = formatDate(dateRange[i])
+          dailyHoldings[currentDateStr][ticker] += netChange
         }
-      })
-      
-      dailyHoldings[dateStr][ticker] = cumulativeHoldings
+      }
     })
   })
   
@@ -180,20 +187,20 @@ export async function calculateDailyCostBasis(
         
         if (trade.type === 'Buy') {
           if (soldCapitalAvailable >= tradeValueNZD) {
-            // Buy is fully covered by reinvested proceeds
+            // Buy is fully covered by reinvested proceeds, no new capital
             soldCapitalAvailable -= tradeValueNZD
           } else {
             // Buy is partially or fully new capital
             const newCapitalInjected = tradeValueNZD - soldCapitalAvailable
             currentCostBasis += newCapitalInjected
-            soldCapitalAvailable = 0
+            soldCapitalAvailable = 0 // Reset once exhausted
           }
-                 } else if (trade.type === 'Sell') {
-           // Sell transactions add to reinvestable capital 
-           // Note: sell qty is typically negative, so tradeValueNZD will be negative
-           // We want to add the absolute value to available capital
-           soldCapitalAvailable += Math.abs(tradeValueNZD)
-         }
+        } else if (trade.type === 'Sell') {
+          // Sell transactions add to reinvestable capital 
+          // Note: sell qty is negative, so tradeValueNZD will be negative
+          // We subtract the negative value (which adds the positive amount to available capital)
+          soldCapitalAvailable -= tradeValueNZD  // This adds positive value since tradeValueNZD is negative
+        }
         // Reinvestment doesn't affect cost basis
       }
       
@@ -210,18 +217,18 @@ export async function calculateDailyCostBasis(
   return dailyCostBasis
 }
 
-// Current price estimates based on recent market data (July 2025)
+// Current price estimates based on actual current market data (July 2025)
 function getCurrentPriceEstimates(): { [symbol: string]: number } {
   return {
-    'META': 580,   // Meta around $580
-    'MA': 520,     // Mastercard around $520  
-    'AMZN': 200,   // Amazon around $200
-    'NFLX': 720,   // Netflix around $720
-    'UBER': 75,    // Uber around $75
-    'GOOGL': 180,  // Google around $180
-    'SPGI': 520,   // S&P Global around $520
-    'ASML': 750,   // ASML around $750
-    'MFT': 75      // Mainfreight around $75 NZD
+    'META': 714.8,   // Meta current price
+    'MA': 520,       // Mastercard (estimate) 
+    'AMZN': 232.23,  // Amazon current price
+    'NFLX': 1180.76, // Netflix current price
+    'UBER': 90.87,   // Uber current price
+    'GOOGL': 192.17, // Google current price
+    'SPGI': 520,     // S&P Global (estimate)
+    'ASML': 750,     // ASML (estimate)
+    'MFT': 75        // Mainfreight (estimate, NZD)
   }
 }
 
