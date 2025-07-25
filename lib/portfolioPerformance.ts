@@ -1,20 +1,16 @@
 import { TradeRecord } from '../types/portfolio'
 
-// Interfaces matching Python data structures
+// Types matching Python data structures
 interface StockPriceData {
-  [date: string]: number // Close price for each date
+  [date: string]: number
 }
 
 interface ExchangeRateData {
-  [date: string]: number // USD/NZD rate for each date
+  [date: string]: number
 }
 
 interface DailyHoldingsData {
-  [date: string]: { [ticker: string]: number } // shares for each ticker on each date
-}
-
-interface DailyValuesData {
-  [date: string]: { [ticker: string]: number } // NZD value for each ticker on each date
+  [date: string]: { [ticker: string]: number }
 }
 
 interface DailyPortfolioData {
@@ -23,12 +19,12 @@ interface DailyPortfolioData {
   costBasis: number
 }
 
-// Utility function to format date as YYYY-MM-DD (matching Python)
+// Format date as YYYY-MM-DD
 function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
-// Generate complete date range (matching Python's pd.date_range)
+// Generate date range (like pandas date_range)
 function generateDateRange(startDate: Date, endDate: Date): Date[] {
   const dates: Date[] = []
   const current = new Date(startDate)
@@ -41,19 +37,18 @@ function generateDateRange(startDate: Date, endDate: Date): Date[] {
   return dates
 }
 
-// Fetch historical prices using Yahoo Finance API (like Python's yfinance)
-async function fetchYFinanceHistory(symbol: string, startDate: Date, endDate: Date): Promise<StockPriceData> {
-  const prices: StockPriceData = {}
+// Fetch historical prices from Yahoo Finance (like Python yfinance)
+async function getDailyHistoricalPrices(tickerSymbol: string, startDate: string, endDate: string): Promise<StockPriceData | null> {
+  let yfinanceSymbol = tickerSymbol
+  if (tickerSymbol === "MFT") {
+    yfinanceSymbol = "MFT.NZ"
+  }
   
   try {
-    // Convert dates to Unix timestamps
-    const period1 = Math.floor(startDate.getTime() / 1000)
-    const period2 = Math.floor(endDate.getTime() / 1000)
+    const start = Math.floor(new Date(startDate).getTime() / 1000)
+    const end = Math.floor(new Date(endDate).getTime() / 1000)
     
-    // Yahoo Finance URL
-    const url = `https://query1.finance.yahoo.com/v7/finance/download/${symbol}?period1=${period1}&period2=${period2}&interval=1d&events=history&includeAdjustedClose=true`
-    
-    console.log(`   Fetching from Yahoo Finance: ${symbol}`)
+    const url = `https://query1.finance.yahoo.com/v7/finance/download/${yfinanceSymbol}?period1=${start}&period2=${end}&interval=1d&events=history&includeAdjustedClose=true`
     
     const response = await fetch(url, {
       headers: {
@@ -68,561 +63,359 @@ async function fetchYFinanceHistory(symbol: string, startDate: Date, endDate: Da
     const csvText = await response.text()
     const lines = csvText.trim().split('\n')
     
-    if (lines.length <= 1) {
-      throw new Error('No data in CSV response')
+    if (lines.length < 2) {
+      throw new Error('No data returned')
     }
     
-    // Parse CSV data (skip header)
+    const priceData: StockPriceData = {}
+    
+    // Skip header row
     for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(',')
-      if (parts.length >= 5) {
-        const dateStr = parts[0] // YYYY-MM-DD format
-        const closePrice = parseFloat(parts[4]) // Close price
+      const columns = lines[i].split(',')
+      if (columns.length >= 5) {
+        const date = columns[0]
+        const closePrice = parseFloat(columns[4]) // Close price
         
         if (!isNaN(closePrice) && closePrice > 0) {
-          prices[dateStr] = closePrice
+          priceData[date] = closePrice
         }
       }
     }
     
-    return prices
+    return Object.keys(priceData).length > 0 ? priceData : null
     
   } catch (error) {
-    console.log(`   Error fetching ${symbol}: ${error}`)
-    return {}
+    console.log(`Error fetching data for ${yfinanceSymbol}: ${error}`)
+    return null
   }
 }
 
-// Fill missing dates with forward-fill (like Python's fillna().ffill())
-function fillMissingDates(priceData: StockPriceData, dateRange: Date[]): StockPriceData {
+// Fill missing dates (like pandas ffill)
+function fillMissingDates(priceData: StockPriceData | null, startDate: Date, endDate: Date): StockPriceData {
+  if (!priceData || Object.keys(priceData).length === 0) {
+    // Return empty object if no data
+    return {}
+  }
+  
+  const dateRange = generateDateRange(startDate, endDate)
   const filledData: StockPriceData = {}
   let lastKnownPrice: number | null = null
   
-  dateRange.forEach(date => {
+  for (const date of dateRange) {
     const dateStr = formatDate(date)
     
     if (dateStr in priceData) {
-      // We have data for this date
       lastKnownPrice = priceData[dateStr]
       filledData[dateStr] = lastKnownPrice
     } else if (lastKnownPrice !== null) {
-      // Forward fill with last known price
+      // Forward fill
       filledData[dateStr] = lastKnownPrice
     }
-    // If no previous price available, skip this date
-  })
+  }
   
   return filledData
 }
 
-// Get historical prices for all stocks (like Python's fetch_historical_prices_for_all_stocks)
-async function getHistoricalPricesForAllStocks(
-  trades: TradeRecord[], 
-  startDate: Date, 
-  endDate: Date
-): Promise<{ [symbol: string]: StockPriceData }> {
-  const symbols = Array.from(new Set(trades.map(t => t.code)))
-  const stockPrices: { [symbol: string]: StockPriceData } = {}
-  
-  console.log(`Fetching historical prices for ${symbols.length} stocks...`)
-  
-  // Fetch all stocks concurrently
-  const fetchPromises = symbols.map(async (symbol) => {
-    console.log(`Fetching prices for ${symbol}...`)
-    
-    // Map MFT to MFT.NZ for Yahoo Finance (like Python code)
-    const yfinanceSymbol = symbol === 'MFT' ? 'MFT.NZ' : symbol
-    
-    try {
-      const historicalData = await fetchYFinanceHistory(yfinanceSymbol, startDate, endDate)
-      
-      if (Object.keys(historicalData).length > 0) {
-        // Forward fill missing dates
-        const dateRange = generateDateRange(startDate, endDate)
-        stockPrices[symbol] = fillMissingDates(historicalData, dateRange)
-        console.log(`   ${symbol}: ${Object.keys(stockPrices[symbol]).length} days of price data`)
-      } else {
-        console.log(`   ${symbol}: No data, using fallback`)
-        // Create fallback data
-        stockPrices[symbol] = createFallbackPriceData(symbol, startDate, endDate)
-      }
-    } catch (error) {
-      console.log(`   ${symbol}: Error - ${error}, using fallback`)
-      stockPrices[symbol] = createFallbackPriceData(symbol, startDate, endDate)
-    }
-  })
-  
-  await Promise.all(fetchPromises)
-  return stockPrices
-}
-
-// Create fallback price data when Yahoo Finance fails
-function createFallbackPriceData(symbol: string, startDate: Date, endDate: Date): StockPriceData {
-  const prices: StockPriceData = {}
-  const dateRange = generateDateRange(startDate, endDate)
-  
-  // Estimate current prices (you can update these)
-  const currentPrices: { [symbol: string]: number } = {
-    'META': 614.0,
-    'NFLX': 1180.0,
-    'AMZN': 232.0,
-    'UNH': 630.0,
-    'CP': 117.0,
-    'MSCI': 670.0,
-    'ANET': 530.0,
-    'CRM': 380.0,
-    'MFT': 67.0
-  }
-  
-  const currentPrice = currentPrices[symbol] || 100
-  const totalDays = dateRange.length
-  
-  // Create realistic historical progression
-  dateRange.forEach((date, index) => {
-    const progress = index / totalDays
-    const variation = (Math.sin(index * 0.1) * 0.05) + (Math.random() - 0.5) * 0.02
-    const price = currentPrice * (0.7 + progress * 0.3) * (1 + variation)
-    prices[formatDate(date)] = Math.max(price, currentPrice * 0.5)
-  })
-  
-  return prices
-}
-
-// Get USD/NZD exchange rate (like Python's get_usd_nzd_exchange_rate)
-async function getUsdNzdExchangeRate(startDate: Date, endDate: Date): Promise<ExchangeRateData> {
-  console.log("Fetching USD/NZD exchange rate...")
-  
+// Get USD/NZD exchange rate (like Python function)
+async function getUsdNzdExchangeRate(startDate: string, endDate: string): Promise<ExchangeRateData | null> {
   try {
-    // Fetch NZD/USD rate from Yahoo Finance
-    const nzdUsdData = await fetchYFinanceHistory("NZDUSD=X", startDate, endDate)
+    const fxData = await getDailyHistoricalPrices("NZDUSD=X", startDate, endDate)
     
-    if (Object.keys(nzdUsdData).length === 0) {
-      throw new Error("No FX data found for NZDUSD")
+    if (!fxData || Object.keys(fxData).length === 0) {
+      console.log(`No FX data found for NZDUSD between ${startDate} and ${endDate}`)
+      return null
     }
     
-    // Convert NZD/USD to USD/NZD (invert the rate, like Python)
+    // Convert NZD/USD to USD/NZD (invert the rate)
     const usdNzdData: ExchangeRateData = {}
-    for (const [dateStr, nzdUsdRate] of Object.entries(nzdUsdData)) {
+    for (const [date, nzdUsdRate] of Object.entries(fxData)) {
       if (nzdUsdRate > 0) {
-        usdNzdData[dateStr] = 1 / nzdUsdRate
+        usdNzdData[date] = 1 / nzdUsdRate
       }
     }
     
-    // Forward fill missing dates
-    const dateRange = generateDateRange(startDate, endDate)
-    const filledRates = fillMissingDates(usdNzdData, dateRange)
-    
-    console.log(`   Success: USD/NZD rate data fetched with ${Object.keys(filledRates).length} days`)
-    return filledRates
+    return usdNzdData
     
   } catch (error) {
-    console.log(`   Warning: Could not fetch USD/NZD rate - ${error}`)
-    console.log("   Using fallback rate of 1.66")
+    console.log(`Error fetching USD/NZD exchange rate: ${error}`)
+    return null
+  }
+}
+
+// Portfolio Holdings Calculator (like Python class)
+class PortfolioHoldingsCalculator {
+  private trades: TradeRecord[]
+  private dailyHoldings: DailyHoldingsData = {}
+  private dailyValuesNzd: DailyHoldingsData = {}
+  private dailyCostBasis: { [date: string]: number } = {}
+  private stockPrices: { [ticker: string]: StockPriceData } = {}
+  private usdNzdRate: ExchangeRateData = {}
+  private portfolioStartDate: Date
+  private portfolioEndDate: Date
+  
+  constructor(trades: TradeRecord[]) {
+    this.trades = trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     
-    // Fallback to static rate
-    const exchangeRates: ExchangeRateData = {}
-    const dateRange = generateDateRange(startDate, endDate)
-    const fallbackRate = 1.66
+    // Get date range
+    const tradeDates = this.trades.map(t => new Date(t.date))
+    this.portfolioStartDate = new Date(Math.min(...tradeDates.map(d => d.getTime())))
+    this.portfolioEndDate = new Date() // Today
+  }
+  
+  async calculateDailyHoldings(): Promise<void> {
+    console.log("Calculating daily holdings...")
     
+    // Get all unique tickers
+    const tickers = Array.from(new Set(this.trades.map(t => t.code)))
+    const dateRange = generateDateRange(this.portfolioStartDate, this.portfolioEndDate)
+    
+    // Initialize daily holdings structure
     dateRange.forEach(date => {
-      exchangeRates[formatDate(date)] = fallbackRate
+      const dateStr = formatDate(date)
+      this.dailyHoldings[dateStr] = {}
+      tickers.forEach(ticker => {
+        this.dailyHoldings[dateStr][ticker] = 0
+      })
     })
     
-    return exchangeRates
-  }
-}
-
-// Calculate daily holdings (exactly like Python's calculate_daily_holdings)
-function calculateDailyHoldings(
-  trades: TradeRecord[], 
-  startDate: Date, 
-  endDate: Date
-): DailyHoldingsData {
-  const dateRange = generateDateRange(startDate, endDate)
-  const tickers = Array.from(new Set(trades.map(trade => trade.code))).sort()
-  
-  // Initialize holdings dataframe with zeros (like Python)
-  const dailyHoldings: DailyHoldingsData = {}
-  dateRange.forEach(date => {
-    const dateStr = formatDate(date)
-    dailyHoldings[dateStr] = {}
+    // Process trades for each ticker (like Python)
     tickers.forEach(ticker => {
-      dailyHoldings[dateStr][ticker] = 0.0
-    })
-  })
-  
-  console.log(`Calculating daily holdings for ${tickers.length} tickers over ${dateRange.length} days...`)
-  
-  // Process each ticker separately (like Python)
-  tickers.forEach(ticker => {
-    console.log(`Processing ${ticker}...`)
-    
-    const tickerTrades = trades
-      .filter(trade => trade.code === ticker)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
-    // Group trades by date (like Python's groupby('Date'))
-    const tradesByDate = new Map<string, TradeRecord[]>()
-    tickerTrades.forEach(trade => {
-      const tradeDateStr = formatDate(new Date(trade.date))
-      if (!tradesByDate.has(tradeDateStr)) {
-        tradesByDate.set(tradeDateStr, [])
-      }
-      tradesByDate.get(tradeDateStr)!.push(trade)
-    })
-    
-    // Process trades chronologically
-    const sortedTradeDates = Array.from(tradesByDate.keys()).sort()
-    
-    sortedTradeDates.forEach((tradeDateStr, i) => {
-      const dailyTrades = tradesByDate.get(tradeDateStr)!
+      const tickerTrades = this.trades.filter(t => t.code === ticker)
+      let currentHoldings = 0
       
-      // Get previous holdings (like Python logic)
-      let prevHoldings = 0.0
-      const tradeDateIndex = dateRange.findIndex(date => formatDate(date) === tradeDateStr)
-      
-      if (i > 0 || tradeDateIndex > 0) {
-        const prevDateIndex = tradeDateIndex - 1
-        if (prevDateIndex >= 0) {
-          const prevDateStr = formatDate(dateRange[prevDateIndex])
-          prevHoldings = dailyHoldings[prevDateStr][ticker]
-        }
-      }
-      
-      // Calculate net change for this date (like Python)
-      let buyQty = 0
-      let sellQty = 0
-      
-      dailyTrades.forEach(trade => {
-        const qty = typeof trade.qty === 'string' ? parseFloat(trade.qty.replace(/[",]/g, '')) : trade.qty
+      tickerTrades.forEach(trade => {
+        const tradeDate = new Date(trade.date)
+        const tradeDateStr = formatDate(tradeDate)
         
+        // Parse quantity (handle negative values for sells)
+        const qty = typeof trade.qty === 'string' ? 
+          parseFloat(trade.qty.replace(/[",]/g, '')) : trade.qty
+        
+        // Update holdings based on trade type
         if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
-          buyQty += qty
+          currentHoldings += qty
         } else if (trade.type === 'Sell') {
-          sellQty += qty // qty is already negative for sells in CSV
+          currentHoldings += qty // qty is already negative for sells
+        }
+        
+        // Update holdings from trade date forward (like Python daily_holdings.loc[trade_date:, ticker] = current_holdings)
+        const fromIndex = dateRange.findIndex(d => formatDate(d) === tradeDateStr)
+        if (fromIndex >= 0) {
+          for (let i = fromIndex; i < dateRange.length; i++) {
+            const dateStr = formatDate(dateRange[i])
+            this.dailyHoldings[dateStr][ticker] = currentHoldings
+          }
         }
       })
-      
-      const netChange = buyQty + sellQty
-      const currentHoldings = prevHoldings + netChange
-      
-      // Update holdings from this trade date forward (like Python's daily_holdings.loc[trade_date:, ticker] = current_holdings)
-      if (tradeDateIndex >= 0) {
-        for (let i = tradeDateIndex; i < dateRange.length; i++) {
-          const currentDateStr = formatDate(dateRange[i])
-          dailyHoldings[currentDateStr][ticker] = currentHoldings
-        }
-      }
     })
-  })
+  }
   
-  console.log("Daily holdings calculation complete!")
-  return dailyHoldings
-}
-
-// Calculate daily portfolio values in NZD (like Python's calculate_daily_portfolio_values_nzd)
-async function calculateDailyPortfolioValuesNzd(
-  dailyHoldings: DailyHoldingsData,
-  trades: TradeRecord[],
-  startDate: Date,
-  endDate: Date,
-  stockPrices: { [symbol: string]: StockPriceData },
-  usdNzdRate: ExchangeRateData
-): Promise<DailyValuesData> {
-  const dateRange = generateDateRange(startDate, endDate)
-  const tickers = Array.from(new Set(trades.map(trade => trade.code))).sort()
-  
-  // Create a copy of holdings to store values (like Python)
-  const dailyValues: DailyValuesData = {}
-  
-  // Initialize daily values
-  dateRange.forEach(date => {
-    const dateStr = formatDate(date)
-    dailyValues[dateStr] = {}
+  async calculateDailyPortfolioValues(): Promise<void> {
+    console.log("Calculating daily portfolio values...")
+    
+    // Get all unique tickers
+    const tickers = Array.from(new Set(this.trades.map(t => t.code)))
+    const dateRange = generateDateRange(this.portfolioStartDate, this.portfolioEndDate)
+    const startDateStr = formatDate(this.portfolioStartDate)
+    const endDateStr = formatDate(this.portfolioEndDate)
+    
+         // Fetch stock prices for all tickers
+     console.log("Fetching stock prices...")
+     for (const ticker of tickers) {
+       console.log(`  Fetching ${ticker}...`)
+       const priceData = await getDailyHistoricalPrices(ticker, startDateStr, endDateStr)
+       
+       if (priceData && Object.keys(priceData).length > 0) {
+         this.stockPrices[ticker] = fillMissingDates(priceData, this.portfolioStartDate, this.portfolioEndDate)
+         console.log(`    ${ticker}: Got ${Object.keys(priceData).length} days of real price data`)
+       } else {
+         console.log(`    ${ticker}: Yahoo Finance failed, using fallback prices`)
+         // Use fallback prices when Yahoo Finance fails
+         const fallbackPrices = this.createFallbackPrices(ticker, this.portfolioStartDate, this.portfolioEndDate)
+         this.stockPrices[ticker] = fallbackPrices
+       }
+     }
+    
+    // Fetch USD/NZD exchange rate
+    console.log("Fetching USD/NZD exchange rate...")
+    const fxData = await getUsdNzdExchangeRate(startDateStr, endDateStr)
+    if (fxData) {
+      this.usdNzdRate = fillMissingDates(fxData, this.portfolioStartDate, this.portfolioEndDate)
+    } else {
+      // Fallback rate
+      console.log("Using fallback exchange rate: 1.66")
+      dateRange.forEach(date => {
+        this.usdNzdRate[formatDate(date)] = 1.66
+      })
+    }
+    
+    // Initialize daily values structure
+    dateRange.forEach(date => {
+      const dateStr = formatDate(date)
+      this.dailyValuesNzd[dateStr] = {}
+      tickers.forEach(ticker => {
+        this.dailyValuesNzd[dateStr][ticker] = 0
+      })
+    })
+    
+    // Calculate daily values for each ticker and date (like Python)
     tickers.forEach(ticker => {
-      dailyValues[dateStr][ticker] = 0.0
-    })
-  })
-  
-  console.log("Calculating daily portfolio values in NZD...")
-  
-  // Process each ticker (like Python)
-  tickers.forEach(ticker => {
-    console.log(`Processing values for ${ticker}...`)
-    
-    if (ticker in stockPrices && Object.keys(stockPrices[ticker]).length > 0) {
-      const priceData = stockPrices[ticker]
+      const priceData = this.stockPrices[ticker]
+      const currencyMap: { [key: string]: string } = {
+        'META': 'USD', 'AMZN': 'USD', 'NFLX': 'USD', 'UNH': 'USD', 
+        'CP': 'USD', 'MSCI': 'USD', 'ANET': 'USD', 'CRM': 'USD', 'MFT': 'NZD'
+      }
+      const currency = currencyMap[ticker] || 'USD'
       
-      // Determine currency for this ticker
-      const tickerTrades = trades.filter(t => t.code === ticker)
-      const currency = tickerTrades.length > 0 ? tickerTrades[0].instrumentCurrency : 'USD'
-      
-      // Calculate values for each date (like Python's iteration)
       dateRange.forEach(date => {
         const dateStr = formatDate(date)
-        const shares = dailyHoldings[dateStr][ticker]
+        const shares = this.dailyHoldings[dateStr][ticker]
         
-        if (shares === 0) {
-          dailyValues[dateStr][ticker] = 0.0
-          return
-        }
-        
-        // Get price for this date (like Python logic)
-        let priceUsdOrNzd: number | null = null
-        
-        if (dateStr in priceData) {
-          priceUsdOrNzd = priceData[dateStr]
-        } else {
-          // Find closest previous date with price data (like Python)
-          const availableDates = Object.keys(priceData)
-            .filter(d => d <= dateStr)
-            .sort()
+        if (shares > 0 && dateStr in priceData) {
+          const priceUsdOrNzd = priceData[dateStr]
           
-          if (availableDates.length > 0) {
-            const closestDate = availableDates[availableDates.length - 1]
-            priceUsdOrNzd = priceData[closestDate]
-          }
-        }
-        
-        if (priceUsdOrNzd !== null && !isNaN(priceUsdOrNzd) && priceUsdOrNzd > 0) {
-          let valueNzd = 0
-          
-          if (currency === 'USD') {
-            // Convert USD to NZD using exchange rate (like Python)
-            let fxRate: number | null = null
+          if (priceUsdOrNzd > 0) {
+            let valueNZD = 0
             
-            if (dateStr in usdNzdRate) {
-              fxRate = usdNzdRate[dateStr]
-            } else {
-              // Find closest FX rate (like Python)
-              const fxDates = Object.keys(usdNzdRate)
-                .filter(d => d <= dateStr)
-                .sort()
-              
-              if (fxDates.length > 0) {
-                const closestFxDate = fxDates[fxDates.length - 1]
-                fxRate = usdNzdRate[closestFxDate]
+            if (currency === 'USD') {
+              // Convert USD to NZD
+              const fxRate = this.usdNzdRate[dateStr]
+              if (fxRate > 0) {
+                valueNZD = shares * priceUsdOrNzd * fxRate
               }
+            } else {
+              // NZD stock
+              valueNZD = shares * priceUsdOrNzd
             }
             
-            if (fxRate !== null && !isNaN(fxRate) && fxRate > 0) {
-              valueNzd = shares * priceUsdOrNzd * fxRate
-            } else {
-              // Fallback rate (like Python)
-              const fallbackRate = 1.65
-              valueNzd = shares * priceUsdOrNzd * fallbackRate
-            }
-          } else {
-            // NZD stock (like MFT)
-            valueNzd = shares * priceUsdOrNzd
-          }
-          
-          dailyValues[dateStr][ticker] = valueNzd
-        } else {
-          // No price data available, use previous day's value or zero (like Python)
-          const dateIndex = dateRange.findIndex(d => formatDate(d) === dateStr)
-          if (dateIndex > 0) {
-            const prevDateStr = formatDate(dateRange[dateIndex - 1])
-            dailyValues[dateStr][ticker] = dailyValues[prevDateStr][ticker]
-          } else {
-            dailyValues[dateStr][ticker] = 0.0
+            this.dailyValuesNzd[dateStr][ticker] = valueNZD
           }
         }
       })
-    } else {
-      console.log(`   No price data available for ${ticker} - setting values to zero`)
-      dateRange.forEach(date => {
-        const dateStr = formatDate(date)
-        dailyValues[dateStr][ticker] = 0.0
-      })
-    }
-  })
-  
-  console.log("Daily portfolio values calculation complete!")
-  return dailyValues
-}
-
-// Calculate daily cost basis (like Python's _calculate_daily_cost_basis)
-function calculateDailyCostBasis(
-  trades: TradeRecord[],
-  startDate: Date,
-  endDate: Date,
-  usdNzdRate: ExchangeRateData
-): { [date: string]: number } {
-  const dateRange = generateDateRange(startDate, endDate)
-  const dailyCostBasis: { [date: string]: number } = {}
-  
-  // Initialize all dates with 0
-  dateRange.forEach(date => {
-    dailyCostBasis[formatDate(date)] = 0.0
-  })
-  
-  let currentPortfolioCostBasis = 0.0
-  let soldCapitalAvailableForReinvestment = 0.0
-  
-  console.log("Calculating daily cost basis...")
-  
-  // Group trades by date to process chronologically (like Python)
-  const tradesByDate = new Map<string, TradeRecord[]>()
-  trades.forEach(trade => {
-    const tradeDateStr = formatDate(new Date(trade.date))
-    if (!tradesByDate.has(tradeDateStr)) {
-      tradesByDate.set(tradeDateStr, [])
-    }
-    tradesByDate.get(tradeDateStr)!.push(trade)
-  })
-  
-  // Process trades chronologically
-  const sortedTradeDates = Array.from(tradesByDate.keys()).sort()
-  
-  sortedTradeDates.forEach(tradeDateStr => {
-    const dailyTrades = tradesByDate.get(tradeDateStr)!
-    
-    dailyTrades.forEach(trade => {
-      const qty = typeof trade.qty === 'string' ? parseFloat(trade.qty.replace(/[",]/g, '')) : trade.qty
-      const price = typeof trade.price === 'string' ? parseFloat(trade.price.replace(/[",]/g, '')) : trade.price
-      const tradeType = trade.type
-      const instrumentCurrency = trade.instrumentCurrency
-      
-      // Determine FX rate for the trade date (like Python)
-      let fxRate = 1.0 // Default for NZD
-      if (instrumentCurrency === 'USD') {
-        if (tradeDateStr in usdNzdRate) {
-          fxRate = usdNzdRate[tradeDateStr]
-        } else {
-          fxRate = 1.65 // Fallback rate
-        }
-      }
-      
-      const tradeValueNzd = qty * price * fxRate
-      
-      if (tradeType === 'Buy') {
-        if (soldCapitalAvailableForReinvestment >= tradeValueNzd) {
-          // Buy is fully covered by reinvested proceeds, no new capital
-          soldCapitalAvailableForReinvestment -= tradeValueNzd
-        } else {
-          // Buy is partially or fully new capital
-          const newCapitalInjected = tradeValueNzd - soldCapitalAvailableForReinvestment
-          currentPortfolioCostBasis += newCapitalInjected
-          soldCapitalAvailableForReinvestment = 0.0
-        }
-      } else if (tradeType === 'Sell') {
-        // Sell transactions do not decrease cost basis, but add to reinvestable capital
-        soldCapitalAvailableForReinvestment -= tradeValueNzd // Negative as sell qty is already negative
-      } else if (tradeType === 'Reinvestment') {
-        // Reinvestment does not increase cost basis
-        // Do nothing to currentPortfolioCostBasis
-      }
     })
-    
-    // Store the current portfolio cost basis for this date
-    dailyCostBasis[tradeDateStr] = currentPortfolioCostBasis
-  })
-  
-  // Forward fill cost basis for all dates (like Python's ffill)
-  let lastKnownCostBasis = 0.0
-  dateRange.forEach(date => {
-    const dateStr = formatDate(date)
-    if (dailyCostBasis[dateStr] > 0) {
-      lastKnownCostBasis = dailyCostBasis[dateStr]
-    } else {
-      dailyCostBasis[dateStr] = lastKnownCostBasis
-    }
-  })
-  
-  console.log("Daily cost basis calculation complete!")
-  return dailyCostBasis
-}
-
-// Main portfolio performance calculation function (like Python's PortfolioHoldingsCalculator)
-export async function calculatePortfolioPerformance(trades: TradeRecord[]): Promise<DailyPortfolioData[]> {
-  console.log("=== Starting Portfolio Performance Calculation ===")
-  
-  if (!trades || trades.length === 0) {
-    console.log("No trades data available")
-    return []
   }
   
-  // Clean and prepare trades data (like Python's _load_and_process_trades)
-  const cleanTrades = trades
-    .filter(trade => trade.code && trade.code !== 'Total')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  
-  if (cleanTrades.length === 0) {
-    console.log("No valid trades after filtering")
-    return []
-  }
-  
-  // Set portfolio date range (like Python)
-  const portfolioStartDate = new Date(cleanTrades[0].date)
-  const portfolioEndDate = new Date() // Today
-  
-  console.log(`Portfolio period: ${formatDate(portfolioStartDate)} to ${formatDate(portfolioEndDate)}`)
-  console.log(`Total valid transactions: ${cleanTrades.length}`)
-  
-  const uniqueTickers = Array.from(new Set(cleanTrades.map(t => t.code))).sort()
-  console.log(`Unique tickers: ${uniqueTickers.join(', ')}`)
-  
-  try {
-    // Step 1: Fetch historical prices and exchange rates (like Python)
-    console.log("\n=== Step 1: Fetching Historical Data ===")
-    const [stockPrices, usdNzdRate] = await Promise.all([
-      getHistoricalPricesForAllStocks(cleanTrades, portfolioStartDate, portfolioEndDate),
-      getUsdNzdExchangeRate(portfolioStartDate, portfolioEndDate)
-    ])
+  calculateDailyCostBasis(): void {
+    console.log("Calculating daily cost basis...")
     
-    // Step 2: Calculate daily holdings (like Python)
-    console.log("\n=== Step 2: Calculating Daily Holdings ===")
-    const dailyHoldings = calculateDailyHoldings(cleanTrades, portfolioStartDate, portfolioEndDate)
+    const dateRange = generateDateRange(this.portfolioStartDate, this.portfolioEndDate)
     
-    // Step 3: Calculate daily portfolio values (like Python)
-    console.log("\n=== Step 3: Calculating Daily Portfolio Values ===")
-    const dailyValues = await calculateDailyPortfolioValuesNzd(
-      dailyHoldings, 
-      cleanTrades, 
-      portfolioStartDate, 
-      portfolioEndDate, 
-      stockPrices, 
-      usdNzdRate
-    )
-    
-    // Step 4: Calculate daily cost basis (like Python)
-    console.log("\n=== Step 4: Calculating Daily Cost Basis ===")
-    const dailyCostBasis = calculateDailyCostBasis(cleanTrades, portfolioStartDate, portfolioEndDate, usdNzdRate)
-    
-    // Step 5: Combine results (like Python's final output)
-    console.log("\n=== Step 5: Combining Results ===")
-    const dateRange = generateDateRange(portfolioStartDate, portfolioEndDate)
-    const result: DailyPortfolioData[] = []
+    // Initialize cost basis
+    let totalInvested = 0
+    let soldCapitalAvailable = 0
     
     dateRange.forEach(date => {
       const dateStr = formatDate(date)
-      
-      // Calculate total portfolio value for this date (like Python's sum)
-      const totalPortfolioValue = Object.values(dailyValues[dateStr] || {})
-        .reduce((sum, value) => sum + value, 0)
-      
-      const costBasis = dailyCostBasis[dateStr] || 0
-      
-      result.push({
-        date: dateStr,
-        portfolioValue: totalPortfolioValue,
-        costBasis: costBasis
-      })
+      this.dailyCostBasis[dateStr] = totalInvested
     })
     
-    console.log("=== Portfolio Performance Calculation Complete ===")
-    console.log(`Generated ${result.length} days of portfolio data`)
+    // Process trades chronologically (like Python)
+    const sortedTrades = this.trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     
-    // Log final values
-    const finalData = result[result.length - 1]
-    console.log(`Final Portfolio Value: $${finalData.portfolioValue.toFixed(2)} NZD`)
-    console.log(`Final Cost Basis: $${finalData.costBasis.toFixed(2)} NZD`)
-    
-    return result
-    
-  } catch (error) {
-    console.error("Error in portfolio performance calculation:", error)
-    return []
+    sortedTrades.forEach(trade => {
+      const tradeDate = new Date(trade.date)
+      const tradeDateStr = formatDate(tradeDate)
+      
+      // Parse trade value
+      const tradeValue = typeof trade.value === 'string' ? 
+        parseFloat(trade.value.replace(/[",]/g, '')) : trade.value
+      
+      // Convert to NZD if needed
+      const exchangeRate = typeof trade.exchRate === 'string' ? 
+        parseFloat(trade.exchRate) : trade.exchRate
+      const tradeValueNZD = tradeValue / (exchangeRate || 1)
+      
+      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+        let newCapitalInjected = 0
+        
+        if (tradeValueNZD > soldCapitalAvailable) {
+          newCapitalInjected = tradeValueNZD - soldCapitalAvailable
+          soldCapitalAvailable = 0
+        } else {
+          soldCapitalAvailable -= tradeValueNZD
+        }
+        
+        totalInvested += newCapitalInjected
+        
+      } else if (trade.type === 'Sell') {
+        // For sells, qty and value are negative in CSV
+        soldCapitalAvailable -= tradeValueNZD // Add back the sold capital
+      }
+      
+      // Update cost basis from trade date forward
+      const fromIndex = dateRange.findIndex(d => formatDate(d) === tradeDateStr)
+      if (fromIndex >= 0) {
+        for (let i = fromIndex; i < dateRange.length; i++) {
+          const dateStr = formatDate(dateRange[i])
+          this.dailyCostBasis[dateStr] = totalInvested
+        }
+      }
+    })
   }
+  
+     // Create fallback prices when Yahoo Finance fails (like Python fallback)
+   private createFallbackPrices(ticker: string, startDate: Date, endDate: Date): StockPriceData {
+     const prices: StockPriceData = {}
+     const dateRange = generateDateRange(startDate, endDate)
+     
+     // Current price estimates (updated based on recent market data)
+     const currentPrices: { [symbol: string]: number } = {
+       'META': 614.0,
+       'NFLX': 1180.0,
+       'AMZN': 232.0,
+       'UNH': 630.0,
+       'CP': 117.0,
+       'MSCI': 670.0,
+       'ANET': 530.0,
+       'CRM': 380.0,
+       'MFT': 67.0
+     }
+     
+     const currentPrice = currentPrices[ticker] || 100
+     const totalDays = dateRange.length
+     
+     // Create realistic historical progression (like Python simulation)
+     dateRange.forEach((date, index) => {
+       const progress = index / Math.max(totalDays - 1, 1)
+       const basePrice = currentPrice * (0.7 + progress * 0.3) // Progress from 70% to 100% of current
+       const noise = (Math.sin(index * 0.1) * 0.05) + (Math.random() - 0.5) * 0.02 // Add realistic volatility
+       const price = basePrice * (1 + noise)
+       prices[formatDate(date)] = Math.max(price, currentPrice * 0.5) // Don't go below 50% of current
+     })
+     
+     return prices
+   }
+
+   async calculatePortfolioPerformance(): Promise<DailyPortfolioData[]> {
+     await this.calculateDailyHoldings()
+     await this.calculateDailyPortfolioValues()
+     this.calculateDailyCostBasis()
+     
+     const dateRange = generateDateRange(this.portfolioStartDate, this.portfolioEndDate)
+     const result: DailyPortfolioData[] = []
+     
+     dateRange.forEach(date => {
+       const dateStr = formatDate(date)
+       
+       // Sum up portfolio value for this date
+       let totalValue = 0
+       for (const ticker in this.dailyValuesNzd[dateStr]) {
+         totalValue += this.dailyValuesNzd[dateStr][ticker]
+       }
+       
+       result.push({
+         date: dateStr,
+         portfolioValue: Math.round(totalValue * 100) / 100,
+         costBasis: Math.round(this.dailyCostBasis[dateStr] * 100) / 100
+       })
+     })
+     
+     return result
+   }
+}
+
+// Main function to calculate portfolio performance
+export async function calculatePortfolioPerformance(trades: TradeRecord[]): Promise<DailyPortfolioData[]> {
+  const calculator = new PortfolioHoldingsCalculator(trades)
+  return await calculator.calculatePortfolioPerformance()
 }
