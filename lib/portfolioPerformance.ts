@@ -24,19 +24,32 @@ function fillMissingDates(priceData: { [date: string]: number }, dateRange: Date
   const filledData: { [date: string]: number } = {}
   let lastKnownPrice: number | null = null
   
-  dateRange.forEach(date => {
-    const dateStr = formatDate(date)
-    
-    if (dateStr in priceData) {
-      // We have price data for this date
+  // First, find the first available price to start forward filling
+  const sortedDates = dateRange.map(d => formatDate(d)).sort()
+  let firstPriceFound = false
+  
+  for (const dateStr of sortedDates) {
+    if (dateStr in priceData && priceData[dateStr] > 0) {
       lastKnownPrice = priceData[dateStr]
       filledData[dateStr] = lastKnownPrice
-    } else if (lastKnownPrice !== null) {
-      // Forward fill with last known price
+      firstPriceFound = true
+    } else if (firstPriceFound && lastKnownPrice !== null) {
+      // Forward fill with last known price (only after we found the first price)
       filledData[dateStr] = lastKnownPrice
     }
-    // If we don't have a last known price, we skip this date (no data available yet)
-  })
+    // Before first price is found, we don't add anything (portfolio didn't exist yet)
+  }
+  
+  // Ensure we have continuous data - double check for any gaps
+  let previousPrice = null
+  for (const dateStr of sortedDates) {
+    if (dateStr in filledData) {
+      previousPrice = filledData[dateStr]
+    } else if (previousPrice !== null) {
+      // Fill any remaining gaps
+      filledData[dateStr] = previousPrice
+    }
+  }
   
   return filledData
 }
@@ -158,51 +171,23 @@ export async function calculateDailyPortfolioValues(
           return
         }
         
-        // Get price for this date - try exact match first, then closest previous
-        let priceUsdOrNzd: number | null = null
+        // Get price for this date (should always exist due to forward filling)
+        const priceUsdOrNzd = priceData[dateStr]
         
-        if (dateStr in priceData) {
-          priceUsdOrNzd = priceData[dateStr]
-        } else {
-          // Find the closest previous date with price data (like Python)
-          const availableDates = Object.keys(priceData)
-            .filter(d => d <= dateStr)
-            .sort()
-          
-          if (availableDates.length > 0) {
-            const closestDate = availableDates[availableDates.length - 1] // Most recent date <= current date
-            priceUsdOrNzd = priceData[closestDate]
-          }
-        }
-        
-        if (priceUsdOrNzd !== null && !isNaN(priceUsdOrNzd)) {
+        if (priceUsdOrNzd && !isNaN(priceUsdOrNzd) && priceUsdOrNzd > 0) {
           let valueNZD = 0
           
           if (currency === 'USD') {
-            // Convert USD to NZD using exchange rate
-            let fxRate: number | null = null
+            // Convert USD to NZD using exchange rate (should always exist due to forward filling)
+            const fxRate = exchangeRates[dateStr]
             
-            if (dateStr in exchangeRates) {
-              fxRate = exchangeRates[dateStr]
-            } else {
-              // Find closest FX rate (like Python)
-              const fxDates = Object.keys(exchangeRates)
-                .filter(d => d <= dateStr)
-                .sort()
-              
-              if (fxDates.length > 0) {
-                const closestFxDate = fxDates[fxDates.length - 1]
-                fxRate = exchangeRates[closestFxDate]
-              }
-            }
-            
-            if (fxRate !== null && !isNaN(fxRate)) {
+            if (fxRate && !isNaN(fxRate) && fxRate > 0) {
               valueNZD = shares * priceUsdOrNzd * fxRate
-                       } else {
-             // Fallback to current real rate
-             const fallbackRate = 1.66
-             valueNZD = shares * priceUsdOrNzd * fallbackRate
-           }
+            } else {
+              console.log(`Warning: Missing FX rate for ${dateStr}, using fallback`)
+              const fallbackRate = 1.66
+              valueNZD = shares * priceUsdOrNzd * fallbackRate
+            }
           } else {
             // NZD stock (like MFT)
             valueNZD = shares * priceUsdOrNzd
@@ -210,13 +195,21 @@ export async function calculateDailyPortfolioValues(
           
           dailyValues[dateStr][ticker] = valueNZD
         } else {
-          // No price data available, use previous day's value or zero (like Python)
+          // Missing price data - this should NOT happen with proper forward filling
+          console.log(`ERROR: Missing price for ${ticker} on ${dateStr}, shares: ${shares}`)
+          
+          // Use previous day's value as fallback
           const dateIndex = dateRange.findIndex(d => formatDate(d) === dateStr)
           if (dateIndex > 0) {
             const prevDateStr = formatDate(dateRange[dateIndex - 1])
-            dailyValues[dateStr][ticker] = dailyValues[prevDateStr][ticker]
+            const prevValue = dailyValues[prevDateStr][ticker] || 0
+            dailyValues[dateStr][ticker] = prevValue
+            if (prevValue === 0) {
+              console.log(`ERROR: No previous value for ${ticker} on ${prevDateStr}`)
+            }
           } else {
             dailyValues[dateStr][ticker] = 0
+            console.log(`ERROR: No price data for ${ticker} on first date ${dateStr}`)
           }
         }
       })
@@ -354,22 +347,47 @@ async function getHistoricalPrices(
     // Fetch all historical data in a single batch call
     const allHistoricalData = await fetchBatchYFinanceHistory(yfinanceSymbols, startDate, endDate)
     
-    // Process each symbol
+    // Process each symbol and ensure COMPLETE data for ALL dates
+    const dateRange = generateDateRange(startDate, endDate)
+    
     symbols.forEach(symbol => {
       const yfinanceSymbol = symbolMapping[symbol]
       const historicalData = allHistoricalData[yfinanceSymbol]
       
       if (historicalData && Object.keys(historicalData).length > 0) {
         // Forward fill missing dates (like Python's fill_missing_dates function)
-        const dateRange = generateDateRange(startDate, endDate)
-        prices[symbol] = fillMissingDates(historicalData, dateRange)
-        console.log(`   ${symbol}: ${Object.keys(prices[symbol]).length} days of price data`)
+        const filledData = fillMissingDates(historicalData, dateRange)
+        
+        // Ensure we have data for EVERY date in the range
+        if (Object.keys(filledData).length < dateRange.length) {
+          console.log(`   ${symbol}: Incomplete data (${Object.keys(filledData).length}/${dateRange.length} days), filling gaps`)
+          // Fill remaining gaps with fallback approach
+          const fallbackData = createFallbackHistoricalData(symbol, startDate, endDate)
+          const completeFallbackData = fillMissingDates(fallbackData, dateRange)
+          
+          // Merge real data with fallback for missing dates
+          dateRange.forEach(date => {
+            const dateStr = formatDate(date)
+            if (!(dateStr in filledData) && dateStr in completeFallbackData) {
+              filledData[dateStr] = completeFallbackData[dateStr]
+            }
+          })
+        }
+        
+        prices[symbol] = filledData
+        console.log(`   ${symbol}: ${Object.keys(prices[symbol]).length} days of complete price data`)
       } else {
-        console.log(`   ${symbol}: No data, using fallback`)
+        console.log(`   ${symbol}: No Yahoo data, using fallback`)
         // Use fallback historical data
         const fallbackData = createFallbackHistoricalData(symbol, startDate, endDate)
-        const dateRange = generateDateRange(startDate, endDate)
         prices[symbol] = fillMissingDates(fallbackData, dateRange)
+        console.log(`   ${symbol}: ${Object.keys(prices[symbol]).length} days of fallback data`)
+      }
+      
+      // Final safety check: ensure every date has a price
+      const finalDateCount = Object.keys(prices[symbol]).length
+      if (finalDateCount !== dateRange.length) {
+        console.log(`   WARNING: ${symbol} still missing data! Expected ${dateRange.length}, got ${finalDateCount}`)
       }
     })
     
@@ -532,12 +550,24 @@ async function getExchangeRates(startDate: Date, endDate: Date): Promise<Exchang
       }
     }
     
-    // Forward fill missing dates (like Python's fill_missing_dates function)
+        // Forward fill missing dates (like Python's fill_missing_dates function)
     const dateRange = generateDateRange(startDate, endDate)
     const filledRates = fillMissingDates(usdNzdData, dateRange)
-    
-    console.log(`   Success: USD/NZD rate data fetched with ${Object.keys(filledRates).length} days`)
-    
+
+    // Ensure we have exchange rates for EVERY date
+    if (Object.keys(filledRates).length < dateRange.length) {
+      console.log(`   Warning: Incomplete FX data (${Object.keys(filledRates).length}/${dateRange.length} days), filling gaps`)
+      const fallbackRate = 1.66
+      dateRange.forEach(date => {
+        const dateStr = formatDate(date)
+        if (!(dateStr in filledRates)) {
+          filledRates[dateStr] = fallbackRate
+        }
+      })
+    }
+
+    console.log(`   Success: USD/NZD rate data complete with ${Object.keys(filledRates).length} days`)
+
     return filledRates
     
   } catch (error) {
