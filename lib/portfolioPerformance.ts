@@ -19,6 +19,28 @@ function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
+// Forward fill missing dates in price data (like Python's fill_missing_dates function)
+function fillMissingDates(priceData: { [date: string]: number }, dateRange: Date[]): { [date: string]: number } {
+  const filledData: { [date: string]: number } = {}
+  let lastKnownPrice: number | null = null
+  
+  dateRange.forEach(date => {
+    const dateStr = formatDate(date)
+    
+    if (dateStr in priceData) {
+      // We have price data for this date
+      lastKnownPrice = priceData[dateStr]
+      filledData[dateStr] = lastKnownPrice
+    } else if (lastKnownPrice !== null) {
+      // Forward fill with last known price
+      filledData[dateStr] = lastKnownPrice
+    }
+    // If we don't have a last known price, we skip this date (no data available yet)
+  })
+  
+  return filledData
+}
+
 // Helper function to parse date from string
 function parseDate(dateStr: string): Date {
   return new Date(dateStr + 'T00:00:00.000Z')
@@ -91,54 +113,132 @@ export function calculateDailyHoldings(trades: TradeRecord[], startDate: Date, e
   return dailyHoldings
 }
 
-// Calculate daily portfolio values in NZD
+// Calculate daily portfolio values in NZD - following Python logic exactly
 export async function calculateDailyPortfolioValues(
   dailyHoldings: { [date: string]: { [symbol: string]: number } },
   trades: TradeRecord[],
   startDate: Date,
   endDate: Date
 ): Promise<{ [date: string]: number }> {
-  const dailyValues: { [date: string]: number } = {}
   const dateRange = generateDateRange(startDate, endDate)
+  const tickers = Array.from(new Set(trades.map(trade => trade.code)))
   
-  // Get historical prices for all stocks (mock implementation)
-  // In a real implementation, you'd fetch from yfinance or similar API
+  // Get historical prices for all stocks and exchange rates
   const stockPrices = await getHistoricalPrices(trades, startDate, endDate)
   const exchangeRates = await getExchangeRates(startDate, endDate)
   
+  // Create daily values structure like Python: date -> ticker -> value
+  const dailyValues: { [date: string]: { [ticker: string]: number } } = {}
+  
+  // Initialize daily values structure
   dateRange.forEach(date => {
     const dateStr = formatDate(date)
-    let totalValue = 0
-    
-    const holdings = dailyHoldings[dateStr]
-    if (!holdings) return
-    
-    Object.entries(holdings).forEach(([symbol, shares]) => {
-      if (shares === 0) return
-      
-      // Get currency for this stock
-      const sampleTrade = trades.find(t => t.code === symbol)
-      const currency = sampleTrade?.instrumentCurrency || 'USD'
-      
-      // Get price for this date (using closest available price)
-      const price = getClosestPrice(stockPrices[symbol], dateStr)
-      if (!price) return
-      
-      let valueNZD = shares * price
-      
-      // Convert USD to NZD if needed
-      if (currency === 'USD') {
-        const fxRate = getClosestExchangeRate(exchangeRates, dateStr)
-        valueNZD *= fxRate
-      }
-      
-      totalValue += valueNZD
+    dailyValues[dateStr] = {}
+    tickers.forEach(ticker => {
+      dailyValues[dateStr][ticker] = 0
     })
-    
-    dailyValues[dateStr] = totalValue
   })
   
-  return dailyValues
+  // Process each ticker separately (like Python)
+  tickers.forEach(ticker => {
+    console.log(`Processing values for ${ticker}...`)
+    
+    if (ticker in stockPrices && stockPrices[ticker]) {
+      const priceData = stockPrices[ticker]
+      
+      // Determine currency for this ticker
+      const sampleTrade = trades.find(t => t.code === ticker)
+      const currency = sampleTrade?.instrumentCurrency || 'USD'
+      
+      // Calculate values for each date (like Python's for date_idx in daily_values.index)
+      dateRange.forEach(date => {
+        const dateStr = formatDate(date)
+        const shares = dailyHoldings[dateStr][ticker]
+        
+        if (shares === 0) {
+          dailyValues[dateStr][ticker] = 0
+          return
+        }
+        
+        // Get price for this date - try exact match first, then closest previous
+        let priceUsdOrNzd: number | null = null
+        
+        if (dateStr in priceData) {
+          priceUsdOrNzd = priceData[dateStr]
+        } else {
+          // Find the closest previous date with price data (like Python)
+          const availableDates = Object.keys(priceData)
+            .filter(d => d <= dateStr)
+            .sort()
+          
+          if (availableDates.length > 0) {
+            const closestDate = availableDates[availableDates.length - 1] // Most recent date <= current date
+            priceUsdOrNzd = priceData[closestDate]
+          }
+        }
+        
+        if (priceUsdOrNzd !== null && !isNaN(priceUsdOrNzd)) {
+          let valueNZD = 0
+          
+          if (currency === 'USD') {
+            // Convert USD to NZD using exchange rate
+            let fxRate: number | null = null
+            
+            if (dateStr in exchangeRates) {
+              fxRate = exchangeRates[dateStr]
+            } else {
+              // Find closest FX rate (like Python)
+              const fxDates = Object.keys(exchangeRates)
+                .filter(d => d <= dateStr)
+                .sort()
+              
+              if (fxDates.length > 0) {
+                const closestFxDate = fxDates[fxDates.length - 1]
+                fxRate = exchangeRates[closestFxDate]
+              }
+            }
+            
+            if (fxRate !== null && !isNaN(fxRate)) {
+              valueNZD = shares * priceUsdOrNzd * fxRate
+            } else {
+              // Fallback to approximate rate (like Python)
+              const fallbackRate = 1.65
+              valueNZD = shares * priceUsdOrNzd * fallbackRate
+            }
+          } else {
+            // NZD stock (like MFT)
+            valueNZD = shares * priceUsdOrNzd
+          }
+          
+          dailyValues[dateStr][ticker] = valueNZD
+        } else {
+          // No price data available, use previous day's value or zero (like Python)
+          const dateIndex = dateRange.findIndex(d => formatDate(d) === dateStr)
+          if (dateIndex > 0) {
+            const prevDateStr = formatDate(dateRange[dateIndex - 1])
+            dailyValues[dateStr][ticker] = dailyValues[prevDateStr][ticker]
+          } else {
+            dailyValues[dateStr][ticker] = 0
+          }
+        }
+      })
+    } else {
+      console.log(`   No price data available for ${ticker} - setting values to zero`)
+      dateRange.forEach(date => {
+        const dateStr = formatDate(date)
+        dailyValues[dateStr][ticker] = 0
+      })
+    }
+  })
+  
+  // Calculate total portfolio value for each date (like Python's daily_values.sum(axis=1))
+  const totalDailyValues: { [date: string]: number } = {}
+  dateRange.forEach(date => {
+    const dateStr = formatDate(date)
+    totalDailyValues[dateStr] = Object.values(dailyValues[dateStr]).reduce((sum, value) => sum + value, 0)
+  })
+  
+  return totalDailyValues
 }
 
 // Calculate daily cost basis in NZD
@@ -221,13 +321,13 @@ export async function calculateDailyCostBasis(
 function getCurrentPriceEstimates(): { [symbol: string]: number } {
   return {
     'META': 714.8,   // Meta current price
-    'MA': 520,       // Mastercard (estimate) 
+    'MA': 563.5,     // Mastercard current price 
     'AMZN': 232.23,  // Amazon current price
     'NFLX': 1180.76, // Netflix current price
     'UBER': 90.87,   // Uber current price
     'GOOGL': 192.17, // Google current price
-    'SPGI': 520,     // S&P Global (estimate)
-    'ASML': 750,     // ASML (estimate)
+    'SPGI': 530.85,  // S&P Global current price
+    'ASML': 725.08,  // ASML current price
     'MFT': 75        // Mainfreight (estimate, NZD)
   }
 }
@@ -245,22 +345,33 @@ async function getHistoricalPrices(
   const currentPrices = getCurrentPriceEstimates()
   
   symbols.forEach(symbol => {
-    prices[symbol] = {}
+    const rawPrices: { [date: string]: number } = {}
     const dateRange = generateDateRange(startDate, endDate)
     
     // Use current price as the end point and work backwards
     const currentPrice = currentPrices[symbol] || getAverageTradePrice(trades, symbol)
     const avgTradePrice = getAverageTradePrice(trades, symbol)
     
+    // Generate base price data with some gaps (simulating real market data)
     dateRange.forEach((date, index) => {
       const dateStr = formatDate(date)
       const progress = index / (dateRange.length - 1) // 0 to 1
       
-      // Interpolate from average trade price to current price with some volatility
-      const basePrice = avgTradePrice + (currentPrice - avgTradePrice) * progress
-      const volatility = 0.95 + Math.random() * 0.1 // +/- 5% random volatility
-      prices[symbol][dateStr] = Math.max(basePrice * volatility, avgTradePrice * 0.5) // Never go below 50% of trade price
+      // Skip weekends and some random days to simulate real price data gaps
+      const dayOfWeek = date.getDay()
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+      const randomSkip = Math.random() < 0.05 // 5% chance to skip a day
+      
+      if (!isWeekend && !randomSkip) {
+        // Interpolate from average trade price to current price with some volatility
+        const basePrice = avgTradePrice + (currentPrice - avgTradePrice) * progress
+        const volatility = 0.95 + Math.random() * 0.1 // +/- 5% random volatility
+        rawPrices[dateStr] = Math.max(basePrice * volatility, avgTradePrice * 0.5) // Never go below 50% of trade price
+      }
     })
+    
+    // Forward fill missing dates (like Python's fill_missing_dates function)
+    prices[symbol] = fillMissingDates(rawPrices, dateRange)
   })
   
   return prices
