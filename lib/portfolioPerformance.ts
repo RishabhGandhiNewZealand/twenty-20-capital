@@ -95,29 +95,57 @@ export function calculateDailyHoldings(trades: TradeRecord[], startDate: Date, e
       dailyHoldings[formatDate(date)][ticker] = 0
     })
     
-    // Process trades chronologically and update holdings from trade date forward
+    // Calculate cumulative holdings and update from trade date forward (like Python logic)
+    let currentHoldings = 0
+    
+    // Group trades by date like Python: for i, (trade_date, group) in enumerate(ticker_trades.groupby('Date'))
+    const tradesByDate = new Map<string, TradeRecord[]>()
     tickerTrades.forEach(trade => {
-      const tradeDate = new Date(trade.date)
-      const tradeDateStr = formatDate(tradeDate)
-      const qty = typeof trade.qty === 'string' ? parseFloat(trade.qty.replace(/[",]/g, '')) : trade.qty
-      
-      // Calculate net change for this trade
-      let netChange = 0
-      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
-        netChange = qty
-      } else if (trade.type === 'Sell') {
-        // For sells, qty might be negative or positive, ensure we subtract
-        netChange = qty < 0 ? qty : -qty
+      const tradeDateStr = formatDate(new Date(trade.date))
+      if (!tradesByDate.has(tradeDateStr)) {
+        tradesByDate.set(tradeDateStr, [])
       }
+      tradesByDate.get(tradeDateStr)!.push(trade)
+    })
+    
+    // Process trades chronologically by date (exactly like Python logic)
+    const sortedTradeDates = Array.from(tradesByDate.keys()).sort()
+    sortedTradeDates.forEach((tradeDateStr, i) => {
+      const dailyTrades = tradesByDate.get(tradeDateStr)!
       
-      // Find the trade date index in our date range
+      // Get previous day's holdings (like Python logic)
+      let prevHoldings = 0.0
       const tradeDateIndex = dateRange.findIndex(date => formatDate(date) === tradeDateStr)
       
+      if (i > 0 || tradeDateIndex > 0) {
+        const prevDateIndex = tradeDateIndex - 1
+        if (prevDateIndex >= 0) {
+          const prevDateStr = formatDate(dateRange[prevDateIndex])
+          prevHoldings = dailyHoldings[prevDateStr][ticker]
+        }
+      }
+      
+      // Calculate net change for all trades on this date (like Python)
+      let buyQty = 0
+      let sellQty = 0
+      
+      dailyTrades.forEach(trade => {
+        const qty = typeof trade.qty === 'string' ? parseFloat(trade.qty.replace(/[",]/g, '')) : trade.qty
+        if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+          buyQty += qty
+        } else if (trade.type === 'Sell') {
+          sellQty += qty // qty is already negative for sells in CSV
+        }
+      })
+      
+      const netChange = buyQty + sellQty
+      currentHoldings = prevHoldings + netChange // Like Python: current_holdings = prev_holdings + net_change
+      
+      // Update holdings from this trade date forward (like Python's daily_holdings.loc[trade_date:, ticker] = current_holdings)
       if (tradeDateIndex >= 0) {
-        // Update holdings from this date forward (like Python's daily_holdings.loc[trade_date:, ticker])
         for (let i = tradeDateIndex; i < dateRange.length; i++) {
           const currentDateStr = formatDate(dateRange[i])
-          dailyHoldings[currentDateStr][ticker] += netChange
+          dailyHoldings[currentDateStr][ticker] = currentHoldings
         }
       }
     })
