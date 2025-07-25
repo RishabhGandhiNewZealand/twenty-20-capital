@@ -210,6 +210,21 @@ export async function calculateDailyCostBasis(
   return dailyCostBasis
 }
 
+// Current price estimates based on recent market data (July 2025)
+function getCurrentPriceEstimates(): { [symbol: string]: number } {
+  return {
+    'META': 580,   // Meta around $580
+    'MA': 520,     // Mastercard around $520  
+    'AMZN': 200,   // Amazon around $200
+    'NFLX': 720,   // Netflix around $720
+    'UBER': 75,    // Uber around $75
+    'GOOGL': 180,  // Google around $180
+    'SPGI': 520,   // S&P Global around $520
+    'ASML': 750,   // ASML around $750
+    'MFT': 75      // Mainfreight around $75 NZD
+  }
+}
+
 // Mock function to get historical prices (in a real app, this would call external APIs)
 async function getHistoricalPrices(
   trades: TradeRecord[], 
@@ -219,20 +234,25 @@ async function getHistoricalPrices(
   const symbols = Array.from(new Set(trades.map(t => t.code)))
   const prices: { [symbol: string]: StockPriceData } = {}
   
-  // Mock price data - in reality you'd fetch from yfinance or similar
+  // Get current price estimates to anchor the simulation
+  const currentPrices = getCurrentPriceEstimates()
+  
   symbols.forEach(symbol => {
     prices[symbol] = {}
     const dateRange = generateDateRange(startDate, endDate)
     
-    // Use average price from trades as base, then simulate some growth
-    const avgPrice = getAverageTradePrice(trades, symbol)
+    // Use current price as the end point and work backwards
+    const currentPrice = currentPrices[symbol] || getAverageTradePrice(trades, symbol)
+    const avgTradePrice = getAverageTradePrice(trades, symbol)
     
     dateRange.forEach((date, index) => {
       const dateStr = formatDate(date)
-      // Simple simulation: base price with some growth and volatility
-      const growth = 1 + (index / dateRange.length) * 0.3 // 30% growth over period
+      const progress = index / (dateRange.length - 1) // 0 to 1
+      
+      // Interpolate from average trade price to current price with some volatility
+      const basePrice = avgTradePrice + (currentPrice - avgTradePrice) * progress
       const volatility = 0.95 + Math.random() * 0.1 // +/- 5% random volatility
-      prices[symbol][dateStr] = avgPrice * growth * volatility
+      prices[symbol][dateStr] = Math.max(basePrice * volatility, avgTradePrice * 0.5) // Never go below 50% of trade price
     })
   })
   
