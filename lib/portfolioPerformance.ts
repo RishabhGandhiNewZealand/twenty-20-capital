@@ -141,8 +141,6 @@ export async function calculateDailyPortfolioValues(
   
   // Process each ticker separately (like Python)
   tickers.forEach(ticker => {
-    console.log(`Processing values for ${ticker}...`)
-    
     if (ticker in stockPrices && stockPrices[ticker]) {
       const priceData = stockPrices[ticker]
       
@@ -200,11 +198,11 @@ export async function calculateDailyPortfolioValues(
             
             if (fxRate !== null && !isNaN(fxRate)) {
               valueNZD = shares * priceUsdOrNzd * fxRate
-            } else {
-              // Fallback to approximate rate (like Python)
-              const fallbackRate = 1.65
-              valueNZD = shares * priceUsdOrNzd * fallbackRate
-            }
+                       } else {
+             // Fallback to approximate rate (like Python)
+             const fallbackRate = 1.70
+             valueNZD = shares * priceUsdOrNzd * fallbackRate
+           }
           } else {
             // NZD stock (like MFT)
             valueNZD = shares * priceUsdOrNzd
@@ -222,13 +220,12 @@ export async function calculateDailyPortfolioValues(
           }
         }
       })
-    } else {
-      console.log(`   No price data available for ${ticker} - setting values to zero`)
-      dateRange.forEach(date => {
-        const dateStr = formatDate(date)
-        dailyValues[dateStr][ticker] = 0
-      })
-    }
+          } else {
+        dateRange.forEach(date => {
+          const dateStr = formatDate(date)
+          dailyValues[dateStr][ticker] = 0
+        })
+      }
   })
   
   // Calculate total portfolio value for each date (like Python's daily_values.sum(axis=1))
@@ -328,7 +325,7 @@ function getCurrentPriceEstimates(): { [symbol: string]: number } {
     'GOOGL': 192.17, // Google current price
     'SPGI': 530.85,  // S&P Global current price
     'ASML': 725.08,  // ASML current price
-    'MFT': 75        // Mainfreight (estimate, NZD)
+    'MFT': 65        // Mainfreight (conservative estimate, NZD)
   }
 }
 
@@ -382,10 +379,10 @@ async function getExchangeRates(startDate: Date, endDate: Date): Promise<Exchang
   const exchangeRates: ExchangeRateData = {}
   const dateRange = generateDateRange(startDate, endDate)
   
-  // Mock USD/NZD rate around 1.65 with some variation
+  // Mock USD/NZD rate around 1.70 with some variation  
   dateRange.forEach(date => {
     const dateStr = formatDate(date)
-    exchangeRates[dateStr] = 1.6 + Math.random() * 0.1 // 1.6 to 1.7
+    exchangeRates[dateStr] = 1.68 + Math.random() * 0.04 // 1.68 to 1.72, centered around 1.70
   })
   
   return exchangeRates
