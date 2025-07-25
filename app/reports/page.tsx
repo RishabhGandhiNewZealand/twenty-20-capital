@@ -10,7 +10,7 @@ export default function ReportsPage() {
       date: "December 31, 2024",
       href: "/reports/2024-review",
       type: "Annual",
-      performance: "+24.3%",
+      performance: "+48.39%",
     },
   ]
 
