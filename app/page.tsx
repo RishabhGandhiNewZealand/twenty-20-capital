@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { PortfolioHolding, ExitedPosition } from "@/types/portfolio"
 import { StockPrice, StockPriceError } from "@/types/stock"
 import { calculatePortfolioAllocations } from "@/lib/portfolio"
+import PortfolioPerformanceChart from "@/components/portfolio-performance-chart"
 
 interface EnhancedPortfolioHolding extends PortfolioHolding {
   currentPrice?: number
@@ -232,21 +233,10 @@ export default function HomePage() {
           })}
         </div>
 
-        {/* Portfolio Performance Chart Placeholder */}
-        <Card className="border-blue-100 mb-8">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg font-medium">Portfolio Performance Chart</p>
-                <p className="text-gray-400 text-sm">Chart will be generated in a future update</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Portfolio Performance Chart */}
+        <div className="mb-8">
+          <PortfolioPerformanceChart />
+        </div>
 
         {/* Portfolio Holdings Table */}
         <Card className="border-blue-100">
