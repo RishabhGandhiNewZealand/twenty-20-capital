@@ -130,8 +130,8 @@ export default function HomePage() {
             }).format(latestHistory.portfolioValue)
 
             // Calculate CAGR from the gain percentages
-            // Assuming roughly 1.75 years since inception (Oct 2023 to July 2025)
-            const yearsSinceInception = 1.75
+            // From September 2023 to July 2025 is approximately 1.83 years
+            const yearsSinceInception = 1.83
             const portfolioCAGR = Math.pow(1 + updatedSummary.totalGainPercent / 100, 1 / yearsSinceInception) - 1
             const sp500CAGR = Math.pow(1 + updatedSummary.sp500GainPercent / 100, 1 / yearsSinceInception) - 1
 
@@ -168,8 +168,8 @@ export default function HomePage() {
           }).format(totalValueNZD)
 
           // Calculate CAGR from the gain percentages
-          // Assuming roughly 1.75 years since inception (Oct 2023 to July 2025)
-          const yearsSinceInception = 1.75
+          // From September 2023 to July 2025 is approximately 1.83 years
+          const yearsSinceInception = 1.83
           const portfolioCAGR = Math.pow(1 + totalGainPercent / 100, 1 / yearsSinceInception) - 1
           const sp500CAGR = Math.pow(1 + sp500GainPercent / 100, 1 / yearsSinceInception) - 1
 
@@ -245,7 +245,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio</h1>
-          <p className="text-gray-600">Since inception: October 2023</p>
+          <p className="text-gray-600">Since September 2023</p>
         </div>
 
         {/* Portfolio Stats */}
@@ -314,9 +314,6 @@ export default function HomePage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Gain/Loss
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Allocation
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -339,10 +336,12 @@ export default function HomePage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatNumber(holding.shares, 4)}
+                          {formatNumber(holding.shares, 2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(holding.currentPrice, holding.currency)}
+                          {holding.currency === 'NZD' 
+                            ? `NZ$${holding.currentPrice.toFixed(2)}`
+                            : formatCurrency(holding.currentPrice, holding.currency)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatCurrency(holding.currentValueNZD)}
@@ -356,17 +355,6 @@ export default function HomePage() {
                             <span className="text-xs ml-1">
                               ({holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%)
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
-                                style={{ width: `${holding.allocation}%` }}
-                              />
-                            </div>
-                            <span className="text-sm text-gray-900">{holding.allocation.toFixed(1)}%</span>
                           </div>
                         </td>
                       </tr>
@@ -392,9 +380,6 @@ export default function HomePage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          100.0%
-                        </td>
                       </tr>
                       <tr className="bg-blue-50">
                         <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
@@ -413,9 +398,6 @@ export default function HomePage() {
                               ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
                             </span>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-500">
-                          -
                         </td>
                       </tr>
                     </tfoot>
