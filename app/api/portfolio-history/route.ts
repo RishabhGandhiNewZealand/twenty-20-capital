@@ -15,6 +15,15 @@ interface StockPrice {
   close: number
 }
 
+// Simple in-memory cache with TTL
+interface CacheEntry {
+  data: DailyPortfolioData[]
+  timestamp: number
+}
+
+const cache: Map<string, CacheEntry> = new Map()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
 // Get historical prices for a stock
 async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Date): Promise<Map<string, number>> {
   try {
@@ -24,11 +33,16 @@ async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Dat
       yfinanceTicker = 'MFT.NZ'
     }
 
+    console.log(`Fetching history for ${yfinanceTicker} from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    
+    // Fetch all historical data at once
     const quotes = await yahooFinance.historical(yfinanceTicker, {
       period1: startDate,
       period2: endDate,
       interval: '1d'
     })
+
+    console.log(`Got ${quotes.length} quotes for ${yfinanceTicker}`)
 
     const priceMap = new Map<string, number>()
     quotes.forEach(quote => {
@@ -46,11 +60,15 @@ async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Dat
 // Get USD/NZD exchange rate
 async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string, number>> {
   try {
+    console.log(`Fetching USD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    
     const quotes = await yahooFinance.historical('NZDUSD=X', {
       period1: startDate,
       period2: endDate,
       interval: '1d'
     })
+
+    console.log(`Got ${quotes.length} exchange rate quotes`)
 
     const rateMap = new Map<string, number>()
     quotes.forEach(quote => {
@@ -90,6 +108,21 @@ function fillMissingDates(priceMap: Map<string, number>, startDate: Date, endDat
 
 export async function GET() {
   try {
+    // Check cache first
+    const cacheKey = 'portfolio-history'
+    const cached = cache.get(cacheKey)
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log('Returning cached portfolio history')
+      return NextResponse.json({
+        history: cached.data,
+        lastUpdated: new Date(cached.timestamp).toISOString(),
+        cached: true
+      })
+    }
+
+    console.log('Cache miss, calculating portfolio history...')
+
     // Read and parse CSV
     const csvPath = path.join(process.cwd(), 'RishTrades22July25.csv')
     const csvContent = fs.readFileSync(csvPath, 'utf-8')
@@ -109,17 +142,23 @@ export async function GET() {
     // Get unique tickers
     const tickers = [...new Set(trades.map(t => t.code))]
 
-    // Fetch all historical prices and exchange rates
+    // Fetch all historical prices and exchange rates in parallel
     console.log('Fetching historical prices for tickers:', tickers)
-    const pricePromises = tickers.map(ticker => getHistoricalPrices(ticker, startDate, endDate))
+    console.log('This may take a moment as we fetch all historical data...')
     
     try {
-      const [exchangeRateMap, ...stockPriceMaps] = await Promise.all([
+      // Create all promises at once for parallel execution
+      const allPromises = [
         getUSDNZDRate(startDate, endDate),
-        ...pricePromises
-      ])
+        ...tickers.map(ticker => getHistoricalPrices(ticker, startDate, endDate))
+      ]
       
-      console.log('Successfully fetched price data')
+      // Execute all fetches in parallel
+      const startTime = Date.now()
+      const [exchangeRateMap, ...stockPriceMaps] = await Promise.all(allPromises)
+      const fetchTime = Date.now() - startTime
+      
+      console.log(`Successfully fetched all price data in ${fetchTime}ms`)
       console.log('Exchange rate entries:', exchangeRateMap.size)
       stockPriceMaps.forEach((map, index) => {
         console.log(`${tickers[index]} price entries:`, map.size)
@@ -226,9 +265,16 @@ export async function GET() {
         processDate.setDate(processDate.getDate() + 1)
       }
 
+      // Cache the result
+      cache.set(cacheKey, {
+        data: portfolioHistory,
+        timestamp: Date.now()
+      })
+
       return NextResponse.json({
         history: portfolioHistory,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        cached: false
       })
     } catch (error) {
       console.error('Error during price fetching:', error)

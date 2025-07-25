@@ -131,15 +131,19 @@ export function PortfolioChart() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-blue-100">
         <CardHeader>
-          <CardTitle>Portfolio Performance</CardTitle>
+          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
           <CardDescription>Portfolio value and cost basis over time</CardDescription>
         </CardHeader>
         <CardContent className="h-[400px] flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading portfolio history...</span>
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div className="text-center">
+              <p className="font-medium">Loading portfolio history...</p>
+              <p className="text-sm text-gray-500 mt-1">Fetching historical data from Yahoo Finance</p>
+              <p className="text-xs text-gray-400 mt-2">This may take a moment on first load</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -148,9 +152,9 @@ export function PortfolioChart() {
 
   if (error) {
     return (
-      <Card>
+      <Card className="border-blue-100">
         <CardHeader>
-          <CardTitle>Portfolio Performance</CardTitle>
+          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
           <CardDescription>Portfolio value and cost basis over time</CardDescription>
         </CardHeader>
         <CardContent className="h-[400px] flex items-center justify-center">
@@ -164,9 +168,9 @@ export function PortfolioChart() {
 
   if (data.length === 0) {
     return (
-      <Card>
+      <Card className="border-blue-100">
         <CardHeader>
-          <CardTitle>Portfolio Performance</CardTitle>
+          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
           <CardDescription>Portfolio value and cost basis over time</CardDescription>
         </CardHeader>
         <CardContent className="h-[400px] flex items-center justify-center">
@@ -179,9 +183,9 @@ export function PortfolioChart() {
   }
 
   return (
-    <Card>
+    <Card className="border-blue-100">
       <CardHeader>
-        <CardTitle>Portfolio Performance</CardTitle>
+        <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
         <CardDescription>Portfolio value and cost basis over time</CardDescription>
       </CardHeader>
       <CardContent>
