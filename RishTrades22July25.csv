@@ -1,4 +1,4 @@
-Code,Market Code,Name,Date,Type,Qty,Price,Instrument Currency,Brokerage,Brokerage Currency,Exch. Rate,Value
+Code,Market Code,Name,Date,Type,Qty,Price,Instrument Currency,Brokerage,Brokerage Currency,Exch. Rate,Value in NZD
 META,NASDAQ,Meta Platforms Inc - Ordinary Shares - Class A,2024-03-15,Buy,1.0000,488.25,USD,3.00,USD,0.61,805.22
 META,NASDAQ,Meta Platforms Inc - Ordinary Shares - Class A,2024-03-15,Buy,0.2420,490.57,USD,0.00,USD,0.61,194.59
 META,NASDAQ,Meta Platforms Inc - Ordinary Shares - Class A,2024-04-30,Buy,2.0342,431.61,USD,1.00,USD,0.59,"1,493.04"
@@ -70,6 +70,8 @@ ANET,NYSE,Arista Networks Inc,2025-02-21,Sell,-2.9221,99.53,USD,1.01,USD,0.57,-5
 CRM,NYSE,Salesforce Inc,2025-03-12,Sell,-2.0000,282.71,USD,1.02,USD,0.57,-985.05
 UBER,NYSE,Uber Technologies Inc,2025-03-31,Buy,1.0000,72.86,USD,0.73,USD,0.57,129.59
 CRM,NYSE,Salesforce Inc,2025-03-31,Sell,-5.0000,267.92,USD,1.04,USD,0.57,"-2,357.21"
+ZETA,NYSE,Zeta Global Holdings Corp - Ordinary Shares - Class A,2025-07-21,Buy,70.0000,16.25,USD,1.00,USD,0.60,"1,907.56"
+ZETA,NYSE,Zeta Global Holdings Corp - Ordinary Shares - Class A,2025-07-22,Buy,4.0000,15.55,USD,0.62,USD,0.60,104.67
 MFT,NZX,Mainfreight Limited,2023-09-04,Buy,7.5245,66.45,NZD,0.00,NZD,1.00,500.00
 MFT,NZX,Mainfreight Limited,2023-09-12,Buy,14.9813,66.75,NZD,0.00,NZD,1.00,"1,000.00"
 MFT,NZX,Mainfreight Limited,2023-10-10,Buy,0.0585,62.54,NZD,0.00,NZD,1.00,3.66
