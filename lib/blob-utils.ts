@@ -1,6 +1,21 @@
 import { list, head } from '@vercel/blob'
 import { logger } from './logger'
-import { TRADE_DATA_BLOB_PATHNAME } from './constants'
+import { TRADE_DATA_BLOB_URL } from './constants'
+
+/**
+ * Extracts the pathname from a Vercel Blob URL
+ * Example: https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv
+ * Returns: TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv
+ */
+function extractPathnameFromBlobUrl(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    // Remove leading slash from pathname
+    return urlObj.pathname.startsWith('/') ? urlObj.pathname.slice(1) : urlObj.pathname
+  } catch (error) {
+    throw new Error(`Invalid blob URL: ${url}`)
+  }
+}
 
 /**
  * Downloads the trade data CSV from Vercel Blob storage using the SDK
@@ -8,8 +23,15 @@ import { TRADE_DATA_BLOB_PATHNAME } from './constants'
  */
 export async function downloadTradeDataFromBlob(): Promise<string> {
   try {
+    if (!TRADE_DATA_BLOB_URL) {
+      throw new Error('TRADE_DATA_BLOB_URL environment variable is not configured')
+    }
+
+    // Extract pathname from the full URL
+    const pathname = extractPathnameFromBlobUrl(TRADE_DATA_BLOB_URL)
+    
     // First, check if the blob exists by getting its metadata
-    const blobMetadata = await head(TRADE_DATA_BLOB_PATHNAME)
+    const blobMetadata = await head(pathname)
     
     if (!blobMetadata) {
       throw new Error('Trade data blob not found')

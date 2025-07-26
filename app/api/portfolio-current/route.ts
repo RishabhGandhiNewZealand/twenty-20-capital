@@ -66,6 +66,15 @@ async function getHistoricalPrice(ticker: string, date: Date): Promise<number> {
 
 export async function GET() {
   try {
+    // Check if blob URL is configured
+    if (!process.env.TRADE_DATA_BLOB_URL) {
+      logger.error('TRADE_DATA_BLOB_URL environment variable is not configured')
+      return NextResponse.json(
+        { error: 'Portfolio data source not configured' },
+        { status: 500 }
+      )
+    }
+
     // Download CSV from Vercel Blob storage using SDK
     const csvContent = await downloadTradeDataFromBlob()
     const trades = parseCSVData(csvContent)

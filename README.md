@@ -13,46 +13,45 @@ This is a simple Next.js-based personal website to track your portfolio, company
 
 The portfolio trade data is stored in Vercel Blob storage and accessed securely using the Vercel Blob SDK:
 - Uses authenticated access with `BLOB_READ_WRITE_TOKEN`
-- The blob pathname is configured in `lib/constants.ts`
+- The blob URL is configured via `TRADE_DATA_BLOB_URL` environment variable
 - All data fetching happens server-side using the SDK
 
-### Vercel Blob Setup
+### Required Environment Variables
 
-When you create a Blob store in Vercel and connect it to your project, Vercel automatically:
-1. Creates a `BLOB_READ_WRITE_TOKEN` environment variable
-2. Makes it available to your application at runtime
-3. The `@vercel/blob` SDK uses this token automatically
+The application requires two environment variables:
+
+1. **`BLOB_READ_WRITE_TOKEN`** - Automatically set by Vercel when you connect a Blob store
+2. **`TRADE_DATA_BLOB_URL`** - The full URL to your trade data CSV file
+
+### Vercel Setup
+
+In your Vercel deployment, both environment variables should be available:
+- `BLOB_READ_WRITE_TOKEN` is automatically created when you connect the Blob store
+- `TRADE_DATA_BLOB_URL` should be set to your blob file URL
 
 ### Local Development Setup
 
-For local development, you need to set the token manually:
-1. Go to your Vercel project dashboard
-2. Navigate to **Storage** → Select your Blob store
-3. Go to the **Tokens** tab
-4. Copy the read/write token
-5. Create a `.env.local` file with:
-   ```
-   BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxxx
-   ```
+For local development, create a `.env.local` file:
+```env
+# Get from Vercel Dashboard → Storage → Your Blob Store → Tokens
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxxx
+
+# Your trade data blob URL
+TRADE_DATA_BLOB_URL=https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv
+```
 
 ### Security Features
 
 - ✅ **Authenticated access**: Uses Vercel's blob tokens for secure access
 - ✅ **Server-side only**: All blob operations happen in API routes
-- ✅ **No URLs exposed**: The blob URLs are never sent to the client
+- ✅ **No client exposure**: Environment variables are never sent to the client
 - ✅ **SDK handles auth**: Authentication is handled automatically by the SDK
 
 ### Updating Trade Data
 
-1. Upload a new CSV file to your Vercel Blob storage with the same pathname
-2. Or update the `TRADE_DATA_BLOB_PATHNAME` in `lib/constants.ts` if using a different file
+1. Upload a new CSV file to your Vercel Blob storage
+2. Update the `TRADE_DATA_BLOB_URL` environment variable if the URL changes
 3. The changes take effect immediately
-
-### Trade Data File Location
-
-The current trade data file is located at:
-- **Blob pathname:** `TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv`
-- This can be changed in `lib/constants.ts`
 
 ## Adding Content
 
