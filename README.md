@@ -9,6 +9,19 @@ This is a simple Next.js-based personal website to track your portfolio, company
 - **Reports:** Store and view markdown files for quarterly and yearly progress reports.
 - **About:** Simple about page.
 
+## Trade Data Storage
+
+The portfolio trade data is stored in Vercel Blob storage. The application reads the CSV file directly from the blob URL:
+- Blob URL: `https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv`
+- No local file storage is required
+- The data is fetched on-demand when portfolio calculations are performed
+
+To update the trade data:
+1. Upload a new CSV file to your Vercel Blob storage
+2. Update the `TRADE_DATA_BLOB_URL` constant in `lib/constants.ts`
+
+The blob URL is centrally configured in `lib/constants.ts` and used across all API routes that need to access the trade data.
+
 ## Adding Content
 
 ### Add a New Company Analysis

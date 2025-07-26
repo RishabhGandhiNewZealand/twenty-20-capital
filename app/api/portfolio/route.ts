@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
-    const { holdings, exitedPositions } = generatePortfolioData()
+    const { holdings, exitedPositions } = await generatePortfolioData()
     
     return NextResponse.json({
       holdings,

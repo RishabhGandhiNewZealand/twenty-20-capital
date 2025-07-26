@@ -1,15 +1,19 @@
 import { PortfolioHolding, ExitedPosition } from '@/types/portfolio'
 import { parseCSVData, calculatePortfolioData } from './portfolio'
-import fs from 'fs'
-import path from 'path'
 import { logger } from './logger'
+import { TRADE_DATA_BLOB_URL } from './constants'
 
 // This function can only be used server-side
-export function generatePortfolioData(): { holdings: PortfolioHolding[], exitedPositions: ExitedPosition[] } {
+export async function generatePortfolioData(): Promise<{ holdings: PortfolioHolding[], exitedPositions: ExitedPosition[] }> {
   try {
-    // Read the CSV file from the root directory
-    const csvPath = path.join(process.cwd(), 'RishTrades22July25.csv')
-    const csvContent = fs.readFileSync(csvPath, 'utf-8')
+    // Read CSV from Vercel Blob storage
+    const response = await fetch(TRADE_DATA_BLOB_URL)
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CSV from blob storage: ${response.statusText}`)
+    }
+    
+    const csvContent = await response.text()
     
     // Parse trades and calculate holdings
     const trades = parseCSVData(csvContent)

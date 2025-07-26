@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { parseCSVData } from '@/lib/portfolio'
-import fs from 'fs'
-import path from 'path'
+import { calculateDailyReturns } from '@/lib/portfolioCalculations'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
-import { CACHE_TTL, FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import { CACHE_TTL, FALLBACK_USD_TO_NZD_RATE, TRADE_DATA_BLOB_URL } from '@/lib/constants'
 
 interface DailyPortfolioData {
   date: string
@@ -125,9 +124,14 @@ export async function GET() {
 
     logger.debug('Cache miss, calculating portfolio history...')
 
-    // Read and parse CSV
-    const csvPath = path.join(process.cwd(), 'RishTrades22July25.csv')
-    const csvContent = fs.readFileSync(csvPath, 'utf-8')
+    // Read CSV from Vercel Blob storage
+    const response = await fetch(TRADE_DATA_BLOB_URL)
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CSV from blob storage: ${response.statusText}`)
+    }
+    
+    const csvContent = await response.text()
     const trades = parseCSVData(csvContent)
 
     // Sort trades by date
