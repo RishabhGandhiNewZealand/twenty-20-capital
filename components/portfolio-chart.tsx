@@ -31,7 +31,19 @@ interface PerformanceData {
   sp500Performance: number
 }
 
-export function PortfolioChart() {
+interface PortfolioStat {
+  title: string
+  value: string
+  subtitle?: string
+  description?: string
+  icon: any
+}
+
+interface PortfolioChartProps {
+  portfolioStats?: PortfolioStat[]
+}
+
+export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   const [data, setData] = useState<PortfolioHistoryData[]>([])
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
   const [loading, setLoading] = useState(true)
@@ -239,11 +251,7 @@ export function PortfolioChart() {
   if (loading) {
     return (
       <Card className="border-blue-100">
-        <CardHeader>
-          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-          <CardDescription>Portfolio value and cost basis over time</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
+        <CardContent className="h-[450px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             <div className="text-center">
@@ -260,11 +268,7 @@ export function PortfolioChart() {
   if (error) {
     return (
       <Card className="border-blue-100">
-        <CardHeader>
-          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-          <CardDescription>Portfolio value and cost basis over time</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
+        <CardContent className="h-[450px] flex items-center justify-center">
           <div className="text-red-600 dark:text-red-400">
             Error loading portfolio history: {error}
           </div>
@@ -276,11 +280,7 @@ export function PortfolioChart() {
   if (data.length === 0) {
     return (
       <Card className="border-blue-100">
-        <CardHeader>
-          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-          <CardDescription>Portfolio value and cost basis over time</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
+        <CardContent className="h-[450px] flex items-center justify-center">
           <div className="text-gray-500 dark:text-gray-400">
             No portfolio history data available
           </div>
@@ -291,16 +291,9 @@ export function PortfolioChart() {
 
   return (
     <Card className="border-blue-100">
-      <CardHeader>
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-            <CardDescription>
-              {showPercentage 
-                ? "Performance relative to cost basis over time" 
-                : "Portfolio value vs S&P 500 benchmark and cost basis over time"}
-            </CardDescription>
-          </div>
+          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
           <div className="flex items-center space-x-2">
             <Label htmlFor="view-toggle" className="text-sm text-gray-600 flex items-center gap-1">
               <DollarSign className="h-4 w-4" />
@@ -320,7 +313,22 @@ export function PortfolioChart() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[400px] w-full">
+        <div className="h-[400px] w-full relative">
+          {/* Portfolio Stats Overlay */}
+          {portfolioStats.length > 0 && (
+            <div className="absolute top-2 left-24 z-10 space-y-1.5">
+              {portfolioStats.map((stat) => {
+                return (
+                  <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-3 py-1.5 shadow-sm">
+                    <div>
+                      <p className="text-[10px] text-gray-600 leading-tight">{stat.title}</p>
+                      <p className="text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
           <ResponsiveContainer width="100%" height="100%">
             {showPercentage ? (
               <LineChart
