@@ -48,13 +48,13 @@ export default function HomePage() {
     {
       title: "Portfolio Yearly CAGR", 
       value: "Loading...",
-      description: "Money-weighted return since inception",
+      description: "Total Value Returns since inception",
       icon: BarChart3,
     },
     {
       title: "S&P 500 Yearly CAGR",
       value: "Loading...",
-      description: "S&P 500 money-weighted return since inception",
+      description: "S&P 500 Total Value Returns since inception",
       icon: Calendar,
     },
   ])
@@ -119,13 +119,13 @@ export default function HomePage() {
               {
                 title: "Portfolio Yearly CAGR", 
                 value: formatPercentage(portfolioCAGR),
-                description: "Money-weighted return since inception",
+                description: "Total Value Returns since inception",
                 icon: BarChart3,
               },
               {
                 title: "S&P 500 Yearly CAGR",
                 value: formatPercentage(sp500CAGR),
-                description: "S&P 500 money-weighted return since inception",
+                description: "S&P 500 Total Value Returns since inception",
                 icon: Calendar,
               },
             ])
@@ -151,13 +151,13 @@ export default function HomePage() {
                           {
                 title: "Portfolio Yearly CAGR", 
                 value: formatPercentage(portfolioCAGR),
-                description: "Money-weighted return since inception",
+                description: "Total Value Returns since inception",
                 icon: BarChart3,
               },
               {
                 title: "S&P 500 Yearly CAGR",
                 value: formatPercentage(sp500CAGR),
-                description: "S&P 500 money-weighted return since inception",
+                description: "S&P 500 Total Value Returns since inception",
                 icon: Calendar,
               },
           ])
@@ -238,6 +238,18 @@ export default function HomePage() {
             )
           })}
         </div>
+
+        {/* Calculation Methodology */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900 text-lg">Calculation Methodology</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-700">
+              The portfolio and S&P 500 returns are calculated on a Total Value CAGR basis. This method measures the compound annual growth rate of the total portfolio value, including all capital contributions and withdrawals, from inception to the current date. The CAGR represents the annualized rate of return that would be required to grow the initial investment to its current value over the investment period.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Portfolio Performance Chart */}
         <div className="mb-8">
