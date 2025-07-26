@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
+import { CACHE_REVALIDATE } from '@/lib/constants'
 
 export async function GET(
   request: NextRequest,
@@ -22,8 +23,8 @@ export async function GET(
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
-      // Cache for 5 minutes to avoid excessive API calls
-      next: { revalidate: 300 }
+      // Cache to avoid excessive API calls
+      next: { revalidate: CACHE_REVALIDATE.STOCK_PRICE }
     })
 
     if (!response.ok) {

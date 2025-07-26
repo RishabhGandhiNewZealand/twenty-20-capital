@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import { FALLBACK_USD_TO_NZD_RATE, CACHE_REVALIDATE } from '@/lib/constants'
 
 export async function GET() {
   try {
     // Using a free exchange rate API
     const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
-      next: { revalidate: 3600 } // Cache for 1 hour
+      next: { revalidate: CACHE_REVALIDATE.EXCHANGE_RATE }
     })
 
     if (!response.ok) {

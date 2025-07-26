@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { parseCSVData } from '@/lib/portfolio'
 import { logger } from '@/lib/logger'
-import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
 import fs from 'fs'
 import path from 'path'
 import yahooFinance from 'yahoo-finance2'
@@ -39,7 +39,7 @@ async function getCurrentPrice(ticker: string): Promise<number> {
 async function getCurrentUSDNZDRate(): Promise<number> {
   try {
     const quote = await yahooFinance.quote('NZDUSD=X')
-    return 1 / (quote.regularMarketPrice || 0.61)
+    return 1 / (quote.regularMarketPrice || FALLBACK_NZD_TO_USD_RATE)
   } catch (error) {
     logger.error('Error fetching USD/NZD rate:', error)
     return FALLBACK_USD_TO_NZD_RATE
@@ -148,7 +148,7 @@ export async function GET() {
         soldCapitalAvailable += tradeValueNZD
       }
 
-      if (current.shares > 0.001) { // Only keep positions with shares
+      if (current.shares > MIN_SHARE_THRESHOLD) { // Only keep positions with shares
         holdingsBySymbol.set(trade.code, current)
       } else {
         holdingsBySymbol.delete(trade.code)

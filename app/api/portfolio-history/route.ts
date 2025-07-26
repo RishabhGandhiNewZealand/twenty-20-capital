@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
-import { CACHE_TTL } from '@/lib/constants'
+import { CACHE_TTL, FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
 interface DailyPortfolioData {
   date: string
@@ -266,7 +266,7 @@ export async function GET() {
             const currency = tickerTrade?.instrumentCurrency || 'NZD'
             
             if (currency === 'USD') {
-              const exchangeRate = filledExchangeRates.get(dateStr) || 1.65
+              const exchangeRate = filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
               portfolioValue += shares * price * exchangeRate
             } else {
               portfolioValue += shares * price
@@ -278,7 +278,7 @@ export async function GET() {
         const todaysTrades = trades.filter(t => t.date === dateStr)
         todaysTrades.forEach(trade => {
           const exchangeRate = trade.instrumentCurrency === 'USD' 
-            ? (filledExchangeRates.get(dateStr) || 1.65)
+            ? (filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE)
             : 1
           
           const tradeValueNZD = Math.abs(trade.qty * trade.price * exchangeRate)
@@ -294,7 +294,7 @@ export async function GET() {
               // Calculate how many SPY shares we could buy with this new capital
               const spyPrice = getNearestSPYPrice(dateStr, filledSPYPrices)
               if (spyPrice > 0) {
-                const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || 1.65)
+                const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE)
                 const newSp500Shares = newCapital / spyPriceNZD
                 sp500Shares += newSp500Shares
                 sp500CostBasis += newCapital
@@ -313,7 +313,7 @@ export async function GET() {
 
         // Calculate S&P 500 value
         const spyPrice = getNearestSPYPrice(dateStr, filledSPYPrices)
-        const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || 1.65)
+        const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE)
         const sp500Value = sp500Shares * spyPriceNZD
 
         // For the first day with trades, ensure S&P 500 value equals cost basis if no price is available

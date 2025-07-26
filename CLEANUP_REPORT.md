@@ -107,3 +107,33 @@ All refactoring was done carefully to ensure:
 - All existing features continue to work
 - The user experience remains unchanged
 - API contracts remain the same
+
+## Second Pass Improvements (Double-Check)
+
+### Additional Hardcoded Values Fixed
+1. **Exchange Rate Fallbacks**:
+   - Fixed inconsistent fallback rates (1.65 vs 1.78)
+   - All now use `FALLBACK_USD_TO_NZD_RATE` from constants
+   - Added `FALLBACK_NZD_TO_USD_RATE` for reverse conversions
+
+2. **Cache Revalidation Times**:
+   - Moved hardcoded cache times to `CACHE_REVALIDATE` constants
+   - Applied to stock price and exchange rate APIs
+
+3. **Portfolio Thresholds**:
+   - Created `MIN_SHARE_THRESHOLD` constant for minimum share count
+
+4. **Dynamic Date Display**:
+   - Replaced hardcoded "Since September 2023" with dynamic date from `PORTFOLIO_INCEPTION_DATE`
+
+5. **Type Safety Improvements**:
+   - Fixed all `any` types in portfolio-chart.tsx
+   - Added proper Recharts tooltip types
+
+6. **Removed Unused Code**:
+   - Removed unused `getCurrentUSDToNZDRate` function that had hardcoded value
+
+### Remaining Technical Debt
+- Report pages (q1-2025, q2-2025, 2024-review) still contain hardcoded portfolio data
+- Created `app/reports/README.md` documenting this issue and recommended approach
+- This requires significant refactoring and should be addressed separately

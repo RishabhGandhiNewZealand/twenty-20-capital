@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
 import { getLogoUrl } from "@/lib/company-utils"
-import { getYearsSinceInception } from "@/lib/constants"
+import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
 
 interface CurrentHolding {
@@ -212,7 +212,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio</h1>
-          <p className="text-gray-600">Since September 2023</p>
+          <p className="text-gray-600">Since {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
         </div>
 
         {/* Portfolio Stats */}

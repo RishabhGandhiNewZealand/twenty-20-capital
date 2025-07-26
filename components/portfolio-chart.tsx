@@ -13,8 +13,10 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  TooltipProps
 } from "recharts"
+import { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent"
 
 interface PortfolioHistoryData {
   date: string
@@ -137,11 +139,11 @@ export function PortfolioChart() {
   }
 
   // Custom tooltip for value view
-  const CustomTooltipValue = ({ active, payload, label }: any) => {
+  const CustomTooltipValue = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length) {
-      const portfolioValue = payload.find((p: any) => p.dataKey === 'portfolioValue')?.value
-      const costBasis = payload.find((p: any) => p.dataKey === 'costBasis')?.value
-      const sp500Value = payload.find((p: any) => p.dataKey === 'sp500Value')?.value
+      const portfolioValue = payload.find((p) => p.dataKey === 'portfolioValue')?.value as number
+      const costBasis = payload.find((p) => p.dataKey === 'costBasis')?.value as number
+      const sp500Value = payload.find((p) => p.dataKey === 'sp500Value')?.value as number
       const gain = portfolioValue - costBasis
       const gainPercent = costBasis > 0 ? ((gain / costBasis) * 100) : 0
       const sp500Gain = sp500Value - costBasis
@@ -191,10 +193,10 @@ export function PortfolioChart() {
   }
 
   // Custom tooltip for percentage view
-  const CustomTooltipPercentage = ({ active, payload, label }: any) => {
+  const CustomTooltipPercentage = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length) {
-      const portfolioPerformance = payload.find((p: any) => p.dataKey === 'portfolioPerformance')?.value
-      const sp500Performance = payload.find((p: any) => p.dataKey === 'sp500Performance')?.value
+      const portfolioPerformance = payload.find((p) => p.dataKey === 'portfolioPerformance')?.value as number
+      const sp500Performance = payload.find((p) => p.dataKey === 'sp500Performance')?.value as number
       const outperformance = portfolioPerformance - sp500Performance
 
       return (
