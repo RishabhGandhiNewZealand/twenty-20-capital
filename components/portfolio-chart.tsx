@@ -292,7 +292,8 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   return (
     <Card className="border-blue-100">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
           <div className="flex items-center space-x-2">
             <Label htmlFor="view-toggle" className="text-sm text-gray-600 flex items-center gap-1">
               <DollarSign className="h-4 w-4" />
@@ -315,17 +316,13 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         <div className="h-[400px] w-full relative">
           {/* Portfolio Stats Overlay */}
           {portfolioStats.length > 0 && (
-            <div className="absolute top-2 left-12 z-10 space-y-1.5">
+            <div className="absolute top-2 left-24 z-10 space-y-1.5">
               {portfolioStats.map((stat) => {
-                const Icon = stat.icon
                 return (
-                  <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-2.5 py-1.5 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-gray-600 leading-tight">{stat.title}</p>
-                        <p className="text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
-                      </div>
+                  <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-3 py-1.5 shadow-sm">
+                    <div>
+                      <p className="text-[10px] text-gray-600 leading-tight">{stat.title}</p>
+                      <p className="text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
                     </div>
                   </div>
                 )
