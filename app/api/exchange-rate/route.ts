@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
+import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
 export async function GET() {
   try {
@@ -20,10 +22,10 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('Error fetching exchange rate:', error)
+    logger.error('Error fetching exchange rate:', error)
     // Return a fallback rate if API fails
     return NextResponse.json({
-      rate: 1.78, // Approximate fallback rate
+      rate: FALLBACK_USD_TO_NZD_RATE,
       lastUpdated: new Date().toISOString(),
       isFallback: true
     })

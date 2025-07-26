@@ -3,6 +3,8 @@ import { parseCSVData } from '@/lib/portfolio'
 import fs from 'fs'
 import path from 'path'
 import yahooFinance from 'yahoo-finance2'
+import { logger } from '@/lib/logger'
+import { CACHE_TTL } from '@/lib/constants'
 
 interface DailyPortfolioData {
   date: string
@@ -23,7 +25,6 @@ interface CacheEntry {
 }
 
 const cache: Map<string, CacheEntry> = new Map()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 // Get historical prices for a stock
 async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Date): Promise<Map<string, number>> {
@@ -34,7 +35,7 @@ async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Dat
       yfinanceTicker = 'MFT.NZ'
     }
 
-    console.log(`Fetching history for ${yfinanceTicker} from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    logger.debug(`Fetching history for ${yfinanceTicker} from ${startDate.toISOString()} to ${endDate.toISOString()}`)
     
     // Fetch all historical data at once
     const quotes = await yahooFinance.historical(yfinanceTicker, {
@@ -43,7 +44,7 @@ async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Dat
       interval: '1d'
     })
 
-    console.log(`Got ${quotes.length} quotes for ${yfinanceTicker}`)
+    logger.debug(`Got ${quotes.length} quotes for ${yfinanceTicker}`)
 
     const priceMap = new Map<string, number>()
     quotes.forEach(quote => {
@@ -53,7 +54,7 @@ async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Dat
 
     return priceMap
   } catch (error) {
-    console.error(`Error fetching prices for ${ticker}:`, error)
+    logger.error(`Error fetching prices for ${ticker}:`, error)
     return new Map()
   }
 }
@@ -61,7 +62,7 @@ async function getHistoricalPrices(ticker: string, startDate: Date, endDate: Dat
 // Get USD/NZD exchange rate
 async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string, number>> {
   try {
-    console.log(`Fetching USD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    logger.debug(`Fetching USD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`)
     
     const quotes = await yahooFinance.historical('NZDUSD=X', {
       period1: startDate,
@@ -69,7 +70,7 @@ async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string
       interval: '1d'
     })
 
-    console.log(`Got ${quotes.length} exchange rate quotes`)
+    logger.debug(`Got ${quotes.length} exchange rate quotes`)
 
     const rateMap = new Map<string, number>()
     quotes.forEach(quote => {
@@ -80,7 +81,7 @@ async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string
 
     return rateMap
   } catch (error) {
-    console.error('Error fetching USD/NZD rate:', error)
+    logger.error('Error fetching USD/NZD rate:', error)
     return new Map()
   }
 }
@@ -113,8 +114,8 @@ export async function GET() {
     const cacheKey = 'portfolio-history'
     const cached = cache.get(cacheKey)
     
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log('Returning cached portfolio history')
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL.PORTFOLIO_HISTORY) {
+      logger.debug('Returning cached portfolio history')
       return NextResponse.json({
         history: cached.data,
         lastUpdated: new Date(cached.timestamp).toISOString(),
@@ -122,7 +123,7 @@ export async function GET() {
       })
     }
 
-    console.log('Cache miss, calculating portfolio history...')
+    logger.debug('Cache miss, calculating portfolio history...')
 
     // Read and parse CSV
     const csvPath = path.join(process.cwd(), 'RishTrades22July25.csv')
@@ -136,16 +137,15 @@ export async function GET() {
     const startDate = new Date(trades[0].date)
     const endDate = new Date()
     
-    console.log('Portfolio history calculation started')
-    console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString())
-    console.log('Number of trades:', trades.length)
+    logger.info('Portfolio history calculation started')
+    logger.debug('Date range:', { start: startDate.toISOString(), end: endDate.toISOString() })
+    logger.debug('Number of trades:', trades.length)
 
     // Get unique tickers
     const tickers = [...new Set(trades.map(t => t.code))]
 
     // Fetch all historical prices and exchange rates in parallel
-    console.log('Fetching historical prices for tickers:', tickers)
-    console.log('This may take a moment as we fetch all historical data...')
+    logger.info('Fetching historical prices for tickers:', tickers)
     
     try {
       // Create all promises at once for parallel execution
@@ -160,11 +160,14 @@ export async function GET() {
       const [exchangeRateMap, spyPriceMap, ...stockPriceMaps] = await Promise.all(allPromises)
       const fetchTime = Date.now() - startTime
       
-      console.log(`Successfully fetched all price data in ${fetchTime}ms`)
-      console.log('Exchange rate entries:', exchangeRateMap.size)
-      console.log('SPY price entries:', spyPriceMap.size)
-      stockPriceMaps.forEach((map, index) => {
-        console.log(`${tickers[index]} price entries:`, map.size)
+      logger.info(`Successfully fetched all price data in ${fetchTime}ms`)
+      logger.debug('Price data stats:', {
+        exchangeRateEntries: exchangeRateMap.size,
+        spyPriceEntries: spyPriceMap.size,
+        stockPriceEntries: stockPriceMaps.map((map, index) => ({
+          ticker: tickers[index],
+          entries: map.size
+        }))
       })
 
       // Create ticker to price map
@@ -192,7 +195,7 @@ export async function GET() {
           futureDate.setDate(futureDate.getDate() + i)
           const futureDateStr = futureDate.toISOString().split('T')[0]
           if (filledPrices.has(futureDateStr)) {
-            console.log(`Using SPY price from ${futureDateStr} for ${dateStr}`)
+            logger.debug(`Using SPY price from ${futureDateStr} for ${dateStr}`)
             return filledPrices.get(futureDateStr)!
           }
           
@@ -201,7 +204,7 @@ export async function GET() {
           pastDate.setDate(pastDate.getDate() - i)
           const pastDateStr = pastDate.toISOString().split('T')[0]
           if (filledPrices.has(pastDateStr)) {
-            console.log(`Using SPY price from ${pastDateStr} for ${dateStr}`)
+            logger.debug(`Using SPY price from ${pastDateStr} for ${dateStr}`)
             return filledPrices.get(pastDateStr)!
           }
         }
@@ -295,7 +298,11 @@ export async function GET() {
                 const newSp500Shares = newCapital / spyPriceNZD
                 sp500Shares += newSp500Shares
                 sp500CostBasis += newCapital
-                console.log(`Date ${dateStr}: Investing ${newCapital.toFixed(2)} NZD in S&P 500, buying ${newSp500Shares.toFixed(4)} shares at ${spyPriceNZD.toFixed(2)} NZD per share`)
+                logger.debug(`Date ${dateStr}: Investing ${newCapital.toFixed(2)} NZD in S&P 500`, {
+                  newCapital: newCapital.toFixed(2),
+                  newShares: newSp500Shares.toFixed(4),
+                  priceNZD: spyPriceNZD.toFixed(2)
+                })
               }
             }
           } else if (trade.type === 'Sell') {
@@ -311,7 +318,7 @@ export async function GET() {
 
         // For the first day with trades, ensure S&P 500 value equals cost basis if no price is available
         if (sp500CostBasis > 0 && sp500Value === 0 && todaysTrades.length > 0) {
-          console.log(`Warning: No S&P 500 price available for ${dateStr}, using cost basis`)
+          logger.warn(`No S&P 500 price available for ${dateStr}, using cost basis`)
           portfolioHistory.push({
             date: dateStr,
             portfolioValue: Math.round(portfolioValue * 100) / 100,
@@ -342,11 +349,11 @@ export async function GET() {
         cached: false
       })
     } catch (error) {
-      console.error('Error during price fetching:', error)
+      logger.error('Error during price fetching:', error)
       throw error
     }
   } catch (error) {
-    console.error('Error calculating portfolio history:', error)
+    logger.error('Error calculating portfolio history:', error)
     return NextResponse.json(
       { error: 'Failed to calculate portfolio history' },
       { status: 500 }

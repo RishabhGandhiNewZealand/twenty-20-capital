@@ -39,13 +39,11 @@ export function PortfolioChart() {
   useEffect(() => {
     async function fetchPortfolioHistory() {
       try {
-        console.log('Fetching portfolio history...')
         const response = await fetch('/api/portfolio-history')
         if (!response.ok) {
           throw new Error('Failed to fetch portfolio history')
         }
         const result = await response.json()
-        console.log('Portfolio history result:', result)
         
         if (!result.history || result.history.length === 0) {
           setError('No portfolio history data available')
@@ -62,11 +60,9 @@ export function PortfolioChart() {
         const sampledData = sampleData(formattedData, 200)
         const sampledPerformanceData = sampleData(performanceData, 200)
         
-        console.log('Sampled data:', sampledData.length, 'points')
         setData(sampledData)
         setPerformanceData(sampledPerformanceData)
       } catch (err) {
-        console.error('Error fetching portfolio history:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
         setLoading(false)

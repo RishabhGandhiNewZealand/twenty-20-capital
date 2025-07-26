@@ -2,6 +2,7 @@ import { PortfolioHolding, ExitedPosition } from '@/types/portfolio'
 import { parseCSVData, calculatePortfolioData } from './portfolio'
 import fs from 'fs'
 import path from 'path'
+import { logger } from './logger'
 
 // This function can only be used server-side
 export function generatePortfolioData(): { holdings: PortfolioHolding[], exitedPositions: ExitedPosition[] } {
@@ -16,7 +17,7 @@ export function generatePortfolioData(): { holdings: PortfolioHolding[], exitedP
     
     return { holdings, exitedPositions }
   } catch (error) {
-    console.error('Error generating portfolio data:', error)
+    logger.error('Error generating portfolio data:', error)
     return { holdings: [], exitedPositions: [] }
   }
 } 

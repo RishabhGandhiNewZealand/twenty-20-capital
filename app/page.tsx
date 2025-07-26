@@ -5,6 +5,9 @@ import { Target, Calendar, BarChart3, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
+import { getLogoUrl } from "@/lib/company-utils"
+import { getYearsSinceInception } from "@/lib/constants"
+import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
 
 interface CurrentHolding {
   symbol: string
@@ -56,30 +59,7 @@ export default function HomePage() {
     },
   ])
 
-  // Function to get company logo URL
-  const getLogoUrl = (symbol: string) => {
-    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
-  }
 
-  const getCompanyDomain = (symbol: string) => {
-    const domains: { [key: string]: string } = {
-      'UBER': 'uber.com',
-      'GOOGL': 'google.com',
-      'AMZN': 'amazon.com',
-      'META': 'meta.com',
-      'NFLX': 'netflix.com',
-      'MA': 'mastercard.com',
-      'ASML': 'asml.com',
-      'SPGI': 'spglobal.com',
-      'MFT': 'mainfreight.com',
-      'CRM': 'salesforce.com',
-      'UNH': 'unitedhealthgroup.com',
-      'ANET': 'arista.com',
-      'CP': 'cpr.ca',
-      'MSCI': 'msci.com'
-    }
-    return domains[symbol] || `${symbol.toLowerCase()}.com`
-  }
 
   useEffect(() => {
     const fetchPortfolioData = async () => {
@@ -122,18 +102,12 @@ export default function HomePage() {
             setSummary(updatedSummary)
 
             // Update portfolio stats with the accurate data
-            const formattedValue = new Intl.NumberFormat('en-NZ', {
-              style: 'currency',
-              currency: 'NZD',
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0,
-            }).format(latestHistory.portfolioValue)
+            const formattedValue = formatCurrency(latestHistory.portfolioValue)
 
             // Calculate CAGR from the gain percentages
-            // From September 2023 to July 2025 is approximately 1.83 years
-            const yearsSinceInception = 1.83
-            const portfolioCAGR = Math.pow(1 + updatedSummary.totalGainPercent / 100, 1 / yearsSinceInception) - 1
-            const sp500CAGR = Math.pow(1 + updatedSummary.sp500GainPercent / 100, 1 / yearsSinceInception) - 1
+            const yearsSinceInception = getYearsSinceInception()
+            const portfolioCAGR = calculateCAGRFromGainPercent(updatedSummary.totalGainPercent, yearsSinceInception)
+            const sp500CAGR = calculateCAGRFromGainPercent(updatedSummary.sp500GainPercent, yearsSinceInception)
 
             setPortfolioStats([
               {
@@ -144,13 +118,13 @@ export default function HomePage() {
               },
               {
                 title: "Portfolio Yearly CAGR", 
-                value: `${portfolioCAGR >= 0 ? '+' : ''}${(portfolioCAGR * 100).toFixed(1)}%`,
+                value: formatPercentage(portfolioCAGR),
                 description: "Money-weighted return since inception",
                 icon: BarChart3,
               },
               {
                 title: "S&P 500 Yearly CAGR",
-                value: `${sp500CAGR >= 0 ? '+' : ''}${(sp500CAGR * 100).toFixed(1)}%`,
+                value: formatPercentage(sp500CAGR),
                 description: "S&P 500 money-weighted return since inception",
                 icon: Calendar,
               },
@@ -160,18 +134,12 @@ export default function HomePage() {
           // Fallback to using data from portfolio-current if history fails
           const { totalValueNZD, totalGainPercent, sp500GainPercent } = currentData.summary
           
-          const formattedValue = new Intl.NumberFormat('en-NZ', {
-            style: 'currency',
-            currency: 'NZD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }).format(totalValueNZD)
+          const formattedValue = formatCurrency(totalValueNZD)
 
           // Calculate CAGR from the gain percentages
-          // From September 2023 to July 2025 is approximately 1.83 years
-          const yearsSinceInception = 1.83
-          const portfolioCAGR = Math.pow(1 + totalGainPercent / 100, 1 / yearsSinceInception) - 1
-          const sp500CAGR = Math.pow(1 + sp500GainPercent / 100, 1 / yearsSinceInception) - 1
+          const yearsSinceInception = getYearsSinceInception()
+          const portfolioCAGR = calculateCAGRFromGainPercent(totalGainPercent, yearsSinceInception)
+          const sp500CAGR = calculateCAGRFromGainPercent(sp500GainPercent, yearsSinceInception)
 
           setPortfolioStats([
             {
@@ -180,23 +148,22 @@ export default function HomePage() {
               subtitle: "Current portfolio value",
               icon: Target,
             },
-            {
-              title: "Portfolio Yearly CAGR", 
-              value: `${portfolioCAGR >= 0 ? '+' : ''}${(portfolioCAGR * 100).toFixed(1)}%`,
-              description: "Money-weighted return since inception",
-              icon: BarChart3,
-            },
-            {
-              title: "S&P 500 Yearly CAGR",
-              value: `${sp500CAGR >= 0 ? '+' : ''}${(sp500CAGR * 100).toFixed(1)}%`,
-              description: "S&P 500 money-weighted return since inception",
-              icon: Calendar,
-            },
+                          {
+                title: "Portfolio Yearly CAGR", 
+                value: formatPercentage(portfolioCAGR),
+                description: "Money-weighted return since inception",
+                icon: BarChart3,
+              },
+              {
+                title: "S&P 500 Yearly CAGR",
+                value: formatPercentage(sp500CAGR),
+                description: "S&P 500 money-weighted return since inception",
+                icon: Calendar,
+              },
           ])
         }
 
       } catch (error) {
-        console.error('Error fetching portfolio data:', error)
         // Update portfolio stats to show error
         setPortfolioStats(prev => prev.map((stat, index) => 
           index === 0 ? { 

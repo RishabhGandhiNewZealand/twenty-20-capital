@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -54,7 +55,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error fetching stock price:', error)
+    logger.error('Error fetching stock price:', error)
     return NextResponse.json(
       { error: 'Failed to fetch stock price' },
       { status: 500 }

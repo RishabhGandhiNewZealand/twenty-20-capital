@@ -2,31 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, AlertTriangle, Target, Plus, Minus } from "lucide-react"
+import { getLogoUrl } from "@/lib/company-utils"
 
 export default function Q1Report2025Page() {
-  // Function to get company logo URL
-  const getLogoUrl = (symbol: string) => {
-    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
-  }
-
-  const getCompanyDomain = (symbol: string) => {
-    const domains: { [key: string]: string } = {
-      'UBER': 'uber.com',
-      'GOOGL': 'google.com',
-      'AMZN': 'amazon.com',
-      'META': 'meta.com',
-      'NFLX': 'netflix.com',
-      'MA': 'mastercard.com',
-      'ASML': 'asml.com',
-      'SPGI': 'spglobal.com',
-      'MFT': 'mainfreight.com',
-      'CP': 'cpr.ca',
-      'MSCI': 'msci.com',
-      'CRM': 'salesforce.com',
-      'ANET': 'arista.com'
-    }
-    return domains[symbol] || `${symbol.toLowerCase()}.com`
-  }
 
   const quarterStats = [
     { label: "Q1 Return", value: "-5.4%", icon: TrendingUp },
