@@ -177,6 +177,38 @@ export async function GET() {
       const filledExchangeRates = fillMissingDates(exchangeRateMap, startDate, endDate)
       const filledSPYPrices = fillMissingDates(spyPriceMap, startDate, endDate)
 
+      // Helper function to get the nearest available SPY price
+      const getNearestSPYPrice = (dateStr: string, filledPrices: Map<string, number>): number => {
+        // First try the exact date
+        if (filledPrices.has(dateStr)) {
+          return filledPrices.get(dateStr)!
+        }
+        
+        // Look for the nearest price within 5 days
+        const targetDate = new Date(dateStr)
+        for (let i = 1; i <= 5; i++) {
+          // Try future dates
+          const futureDate = new Date(targetDate)
+          futureDate.setDate(futureDate.getDate() + i)
+          const futureDateStr = futureDate.toISOString().split('T')[0]
+          if (filledPrices.has(futureDateStr)) {
+            console.log(`Using SPY price from ${futureDateStr} for ${dateStr}`)
+            return filledPrices.get(futureDateStr)!
+          }
+          
+          // Try past dates
+          const pastDate = new Date(targetDate)
+          pastDate.setDate(pastDate.getDate() - i)
+          const pastDateStr = pastDate.toISOString().split('T')[0]
+          if (filledPrices.has(pastDateStr)) {
+            console.log(`Using SPY price from ${pastDateStr} for ${dateStr}`)
+            return filledPrices.get(pastDateStr)!
+          }
+        }
+        
+        return 0
+      }
+
       // Calculate daily holdings
       const dailyHoldings = new Map<string, Map<string, number>>() // date -> ticker -> shares
       const currentHoldings = new Map<string, number>() // ticker -> shares
@@ -212,6 +244,7 @@ export async function GET() {
       let currentCostBasis = 0
       let soldCapitalAvailable = 0
       let sp500Shares = 0
+      let sp500CostBasis = 0 // Track the actual amount invested in S&P 500
 
       const processDate = new Date(startDate)
       while (processDate <= endDate) {
@@ -256,10 +289,13 @@ export async function GET() {
               soldCapitalAvailable = 0
               
               // Calculate how many SPY shares we could buy with this new capital
-              const spyPrice = filledSPYPrices.get(dateStr) || 0
+              const spyPrice = getNearestSPYPrice(dateStr, filledSPYPrices)
               if (spyPrice > 0) {
                 const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || 1.65)
-                sp500Shares += newCapital / spyPriceNZD
+                const newSp500Shares = newCapital / spyPriceNZD
+                sp500Shares += newSp500Shares
+                sp500CostBasis += newCapital
+                console.log(`Date ${dateStr}: Investing ${newCapital.toFixed(2)} NZD in S&P 500, buying ${newSp500Shares.toFixed(4)} shares at ${spyPriceNZD.toFixed(2)} NZD per share`)
               }
             }
           } else if (trade.type === 'Sell') {
@@ -269,16 +305,27 @@ export async function GET() {
         })
 
         // Calculate S&P 500 value
-        const spyPrice = filledSPYPrices.get(dateStr) || 0
+        const spyPrice = getNearestSPYPrice(dateStr, filledSPYPrices)
         const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || 1.65)
         const sp500Value = sp500Shares * spyPriceNZD
 
-        portfolioHistory.push({
-          date: dateStr,
-          portfolioValue: Math.round(portfolioValue * 100) / 100,
-          costBasis: Math.round(currentCostBasis * 100) / 100,
-          sp500Value: Math.round(sp500Value * 100) / 100
-        })
+        // For the first day with trades, ensure S&P 500 value equals cost basis if no price is available
+        if (sp500CostBasis > 0 && sp500Value === 0 && todaysTrades.length > 0) {
+          console.log(`Warning: No S&P 500 price available for ${dateStr}, using cost basis`)
+          portfolioHistory.push({
+            date: dateStr,
+            portfolioValue: Math.round(portfolioValue * 100) / 100,
+            costBasis: Math.round(currentCostBasis * 100) / 100,
+            sp500Value: Math.round(sp500CostBasis * 100) / 100
+          })
+        } else {
+          portfolioHistory.push({
+            date: dateStr,
+            portfolioValue: Math.round(portfolioValue * 100) / 100,
+            costBasis: Math.round(currentCostBasis * 100) / 100,
+            sp500Value: Math.round(sp500Value * 100) / 100
+          })
+        }
 
         processDate.setDate(processDate.getDate() + 1)
       }
