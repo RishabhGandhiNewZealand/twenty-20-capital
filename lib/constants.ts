@@ -29,4 +29,5 @@ export const FALLBACK_NZD_TO_USD_RATE = 0.606
 export const MIN_SHARE_THRESHOLD = 0.001
 
 // Vercel Blob storage URL for trade data
-export const TRADE_DATA_BLOB_URL = 'https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv'
+// Use environment variable if available, otherwise fall back to hardcoded URL
+export const TRADE_DATA_BLOB_URL = process.env.TRADE_DATA_BLOB_URL || 'https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv'

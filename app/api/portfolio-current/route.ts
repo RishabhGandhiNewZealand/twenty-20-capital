@@ -69,7 +69,8 @@ export async function GET() {
     const response = await fetch(TRADE_DATA_BLOB_URL)
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch CSV from blob storage: ${response.statusText}`)
+      logger.error('Failed to fetch trade data from blob storage', { status: response.status })
+      throw new Error('Failed to fetch trade data')
     }
     
     const csvContent = await response.text()

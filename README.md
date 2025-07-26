@@ -18,9 +18,23 @@ The portfolio trade data is stored in Vercel Blob storage. The application reads
 
 To update the trade data:
 1. Upload a new CSV file to your Vercel Blob storage
-2. Update the `TRADE_DATA_BLOB_URL` constant in `lib/constants.ts`
+2. Update the `TRADE_DATA_BLOB_URL` constant in `lib/constants.ts` or set it as an environment variable
 
 The blob URL is centrally configured in `lib/constants.ts` and used across all API routes that need to access the trade data.
+
+### Security Considerations
+
+**Important**: The current setup uses a public blob URL which could be discovered by users through browser developer tools. If your trade data is sensitive:
+
+1. **Use Environment Variables**: Set `TRADE_DATA_BLOB_URL` in your Vercel environment variables instead of hardcoding it
+2. **Consider Private Blobs**: For enhanced security, consider using Vercel Blob's authenticated access with read tokens
+3. **Monitor Access**: The blob URL is unguessable but public. Monitor your Vercel Blob dashboard for unexpected access
+
+To use environment variables:
+```bash
+# In your Vercel dashboard or .env.local file
+TRADE_DATA_BLOB_URL=your-blob-url-here
+```
 
 ## Adding Content
 
