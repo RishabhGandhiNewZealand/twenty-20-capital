@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Target, Calendar, BarChart3, Loader2 } from "lucide-react"
+import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
@@ -43,19 +43,19 @@ export default function HomePage() {
       title: "Portfolio Value (NZD)",
       value: "Loading...",
       subtitle: "Calculating current value",
-      icon: Target,
+      icon: DollarSign,
     },
     {
       title: "Portfolio Yearly CAGR", 
       value: "Loading...",
       description: "Total Value Returns since inception",
-      icon: BarChart3,
+      icon: TrendingUp,
     },
     {
       title: "S&P 500 Yearly CAGR",
       value: "Loading...",
       description: "S&P 500 Total Value Returns since inception",
-      icon: Calendar,
+      icon: ChartLine,
     },
   ])
 
@@ -114,19 +114,19 @@ export default function HomePage() {
                 title: "Portfolio Value (NZD)",
                 value: formattedValue,
                 subtitle: "Current portfolio value",
-                icon: Target,
+                icon: DollarSign,
               },
               {
                 title: "Portfolio Yearly CAGR", 
                 value: formatPercentage(portfolioCAGR),
                 description: "Total Value Returns since inception",
-                icon: BarChart3,
+                icon: TrendingUp,
               },
               {
                 title: "S&P 500 Yearly CAGR",
                 value: formatPercentage(sp500CAGR),
                 description: "S&P 500 Total Value Returns since inception",
-                icon: Calendar,
+                icon: ChartLine,
               },
             ])
           }
@@ -146,19 +146,19 @@ export default function HomePage() {
               title: "Portfolio Value (NZD)",
               value: formattedValue,
               subtitle: "Current portfolio value",
-              icon: Target,
+              icon: DollarSign,
             },
                           {
                 title: "Portfolio Yearly CAGR", 
                 value: formatPercentage(portfolioCAGR),
                 description: "Total Value Returns since inception",
-                icon: BarChart3,
+                icon: TrendingUp,
               },
               {
                 title: "S&P 500 Yearly CAGR",
                 value: formatPercentage(sp500CAGR),
                 description: "S&P 500 Total Value Returns since inception",
-                icon: Calendar,
+                icon: ChartLine,
               },
           ])
         }
@@ -209,51 +209,16 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Portfolio Performance Chart with integrated stats */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio</h1>
-          <p className="text-gray-600">Since {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+          <PortfolioChart portfolioStats={portfolioStats} />
         </div>
 
-        {/* Portfolio Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {portfolioStats.map((stat) => {
-            const Icon = stat.icon
-            return (
-              <Card key={stat.title} className="border-blue-100">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                  <Icon className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                  {stat.subtitle && (
-                    <p className="text-sm text-gray-700 mt-1">{stat.subtitle}</p>
-                  )}
-                  {stat.description && (
-                    <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        {/* Calculation Methodology */}
-        <Card className="border-blue-100 mb-8">
-          <CardHeader>
-            <CardTitle className="text-gray-900 text-lg">Calculation Methodology</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-700">
-              The portfolio and S&P 500 returns are calculated on a Total Value CAGR basis. This method measures the compound annual growth rate of the total portfolio value, including all capital contributions and withdrawals, from inception to the current date. The CAGR represents the annualized rate of return that would be required to grow the initial investment to its current value over the investment period.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Portfolio Performance Chart */}
-        <div className="mb-8">
-          <PortfolioChart />
+        {/* Calculation Methodology as caption below chart */}
+        <div className="mb-8 px-4">
+          <p className="text-sm text-gray-600 text-center">
+            The portfolio and S&P 500 returns are calculated on a Total Value CAGR basis. This method measures the compound annual growth rate of the total portfolio value, including all capital contributions and withdrawals, from inception to the current date. The CAGR represents the annualized rate of return that would be required to grow the initial investment to its current value over the investment period.
+          </p>
         </div>
 
         {/* Portfolio Holdings Table */}
