@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { generatePortfolioData } from '@/lib/portfolioServerData'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
       lastUpdated: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Error generating portfolio data:', error)
+    logger.error('Error generating portfolio data:', error)
     return NextResponse.json(
       { error: 'Failed to generate portfolio data' },
       { status: 500 }

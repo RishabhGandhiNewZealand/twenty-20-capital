@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { parseCSVData } from '@/lib/portfolio'
+import { logger } from '@/lib/logger'
+import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
 import fs from 'fs'
 import path from 'path'
 import yahooFinance from 'yahoo-finance2'
@@ -28,7 +30,7 @@ async function getCurrentPrice(ticker: string): Promise<number> {
     const quote = await yahooFinance.quote(yfinanceTicker)
     return quote.regularMarketPrice || 0
   } catch (error) {
-    console.error(`Error fetching current price for ${ticker}:`, error)
+    logger.error(`Error fetching current price for ${ticker}:`, error)
     return 0
   }
 }
@@ -37,10 +39,10 @@ async function getCurrentPrice(ticker: string): Promise<number> {
 async function getCurrentUSDNZDRate(): Promise<number> {
   try {
     const quote = await yahooFinance.quote('NZDUSD=X')
-    return 1 / (quote.regularMarketPrice || 0.61)
+    return 1 / (quote.regularMarketPrice || FALLBACK_NZD_TO_USD_RATE)
   } catch (error) {
-    console.error('Error fetching USD/NZD rate:', error)
-    return 1.65 // fallback rate
+    logger.error('Error fetching USD/NZD rate:', error)
+    return FALLBACK_USD_TO_NZD_RATE
   }
 }
 
@@ -58,7 +60,7 @@ async function getHistoricalPrice(ticker: string, date: Date): Promise<number> {
 
     return quotes.length > 0 ? quotes[0].close : 0
   } catch (error) {
-    console.error(`Error fetching historical price for ${ticker} on ${date}:`, error)
+    logger.error(`Error fetching historical price for ${ticker} on ${date}:`, error)
     return 0
   }
 }
@@ -146,7 +148,7 @@ export async function GET() {
         soldCapitalAvailable += tradeValueNZD
       }
 
-      if (current.shares > 0.001) { // Only keep positions with shares
+      if (current.shares > MIN_SHARE_THRESHOLD) { // Only keep positions with shares
         holdingsBySymbol.set(trade.code, current)
       } else {
         holdingsBySymbol.delete(trade.code)
@@ -227,7 +229,7 @@ export async function GET() {
       lastUpdated: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Error calculating current portfolio:', error)
+    logger.error('Error calculating current portfolio:', error)
     return NextResponse.json(
       { error: 'Failed to calculate current portfolio' },
       { status: 500 }

@@ -193,12 +193,6 @@ export function calculateCurrentHoldings(trades: TradeRecord[]): PortfolioHoldin
   return calculatePortfolioData(trades).holdings
 }
 
-// Helper function to get current exchange rate (USD to NZD)
-// You might want to use a real API for this, but for now using approximate current rate
-export function getCurrentUSDToNZDRate(): number {
-  return 1.78 // Approximate current rate - you could fetch this from an API
-}
-
 export function calculatePortfolioAllocations(holdings: PortfolioHolding[]): PortfolioHolding[] {
   const totalValue = holdings.reduce((sum, holding) => sum + (holding.currentValueNZD || 0), 0)
   
