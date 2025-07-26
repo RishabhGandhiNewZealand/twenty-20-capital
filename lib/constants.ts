@@ -28,14 +28,7 @@ export const FALLBACK_NZD_TO_USD_RATE = 0.606
 // Minimum share threshold for current holdings
 export const MIN_SHARE_THRESHOLD = 0.001
 
-// Vercel Blob storage URL for trade data
-// IMPORTANT: This uses process.env which is only available server-side in Next.js
-// The environment variable is NOT exposed to the client/browser
-// Only set TRADE_DATA_BLOB_URL in your server environment variables (Vercel dashboard)
-// Do NOT use NEXT_PUBLIC_ prefix as that would expose it to the client
-export const TRADE_DATA_BLOB_URL = process.env.TRADE_DATA_BLOB_URL || ''
-
-// Warn if URL is not configured (only on server-side)
-if (typeof window === 'undefined' && !TRADE_DATA_BLOB_URL) {
-  console.warn('WARNING: TRADE_DATA_BLOB_URL environment variable is not set. Portfolio data will not be available.')
-}
+// Vercel Blob pathname for trade data
+// This is the path within your blob store (not the full URL)
+// The SDK will use BLOB_READ_WRITE_TOKEN automatically for authentication
+export const TRADE_DATA_BLOB_PATHNAME = 'TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv'

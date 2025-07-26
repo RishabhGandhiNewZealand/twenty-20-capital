@@ -3,7 +3,8 @@ import { parseCSVData } from '@/lib/portfolio'
 import { calculateDailyReturns } from '@/lib/portfolioCalculations'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
-import { CACHE_TTL, FALLBACK_USD_TO_NZD_RATE, TRADE_DATA_BLOB_URL } from '@/lib/constants'
+import { CACHE_TTL, FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import { downloadTradeDataFromBlob } from '@/lib/blob-utils'
 
 interface DailyPortfolioData {
   date: string
@@ -124,24 +125,8 @@ export async function GET() {
 
     logger.debug('Cache miss, calculating portfolio history...')
 
-    // Check if blob URL is configured
-    if (!TRADE_DATA_BLOB_URL) {
-      logger.error('TRADE_DATA_BLOB_URL environment variable is not configured')
-      return NextResponse.json(
-        { error: 'Portfolio data source not configured' },
-        { status: 500 }
-      )
-    }
-
-    // Read CSV from Vercel Blob storage
-    const response = await fetch(TRADE_DATA_BLOB_URL)
-    
-    if (!response.ok) {
-      logger.error('Failed to fetch trade data from blob storage', { status: response.status })
-      throw new Error('Failed to fetch trade data')
-    }
-    
-    const csvContent = await response.text()
+    // Download CSV from Vercel Blob storage using SDK
+    const csvContent = await downloadTradeDataFromBlob()
     const trades = parseCSVData(csvContent)
 
     // Sort trades by date

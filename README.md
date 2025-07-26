@@ -11,34 +11,48 @@ This is a simple Next.js-based personal website to track your portfolio, company
 
 ## Trade Data Storage
 
-The portfolio trade data is stored in Vercel Blob storage and accessed securely:
-- The blob URL is stored as a server-side environment variable
-- The URL is NEVER exposed to the client/browser
-- All data fetching happens in API routes (server-side)
+The portfolio trade data is stored in Vercel Blob storage and accessed securely using the Vercel Blob SDK:
+- Uses authenticated access with `BLOB_READ_WRITE_TOKEN`
+- The blob pathname is configured in `lib/constants.ts`
+- All data fetching happens server-side using the SDK
 
-### Setting up in Vercel
+### Vercel Blob Setup
 
+When you create a Blob store in Vercel and connect it to your project, Vercel automatically:
+1. Creates a `BLOB_READ_WRITE_TOKEN` environment variable
+2. Makes it available to your application at runtime
+3. The `@vercel/blob` SDK uses this token automatically
+
+### Local Development Setup
+
+For local development, you need to set the token manually:
 1. Go to your Vercel project dashboard
-2. Navigate to **Settings** → **Environment Variables**
-3. Add a new environment variable:
-   - **Name:** `TRADE_DATA_BLOB_URL`
-   - **Value:** Your blob URL (e.g., `https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv`)
-   - **Environment:** Select all (Production, Preview, Development)
-
-**Important:** Do NOT use `NEXT_PUBLIC_` prefix - this ensures the URL stays server-side only.
+2. Navigate to **Storage** → Select your Blob store
+3. Go to the **Tokens** tab
+4. Copy the read/write token
+5. Create a `.env.local` file with:
+   ```
+   BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxxx
+   ```
 
 ### Security Features
 
-- ✅ **Server-side only**: The blob URL is only accessible in API routes
-- ✅ **No client exposure**: Users cannot see the blob URL through developer tools
-- ✅ **Environment variable**: Sensitive URL is not in the repository
-- ✅ **Generic error messages**: API errors don't expose the blob URL
+- ✅ **Authenticated access**: Uses Vercel's blob tokens for secure access
+- ✅ **Server-side only**: All blob operations happen in API routes
+- ✅ **No URLs exposed**: The blob URLs are never sent to the client
+- ✅ **SDK handles auth**: Authentication is handled automatically by the SDK
 
 ### Updating Trade Data
 
-1. Upload a new CSV file to your Vercel Blob storage
-2. Update the `TRADE_DATA_BLOB_URL` environment variable in Vercel dashboard if the URL changes
-3. The changes take effect immediately (no redeploy needed)
+1. Upload a new CSV file to your Vercel Blob storage with the same pathname
+2. Or update the `TRADE_DATA_BLOB_PATHNAME` in `lib/constants.ts` if using a different file
+3. The changes take effect immediately
+
+### Trade Data File Location
+
+The current trade data file is located at:
+- **Blob pathname:** `TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv`
+- This can be changed in `lib/constants.ts`
 
 ## Adding Content
 
