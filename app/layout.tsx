@@ -23,7 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Navigation />
         {children}
-        <Analytics />
+        <Analytics debug={process.env.NODE_ENV === 'development'} />
       </body>
     </html>
   )
