@@ -4,9 +4,7 @@ import { TRADE_DATA_BLOB_URL } from './constants'
 
 /**
  * Extracts the pathname from a Vercel Blob URL
- * Example: https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv
- * Returns: TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv
- */
+**/
 function extractPathnameFromBlobUrl(url: string): string {
   try {
     const urlObj = new URL(url)
