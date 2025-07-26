@@ -11,32 +11,34 @@ This is a simple Next.js-based personal website to track your portfolio, company
 
 ## Trade Data Storage
 
-The portfolio trade data is stored in Vercel Blob storage:
-- The blob URL is hardcoded in `lib/constants.ts`
-- Despite being in the repository, the URL is NOT exposed to website visitors
-- All data fetching happens server-side in API routes
+The portfolio trade data is stored in Vercel Blob storage and accessed securely:
+- The blob URL is stored as a server-side environment variable
+- The URL is NEVER exposed to the client/browser
+- All data fetching happens in API routes (server-side)
 
-### How Security Works
+### Setting up in Vercel
 
-Even though the blob URL is in the repository, it remains hidden from website users because:
+1. Go to your Vercel project dashboard
+2. Navigate to **Settings** → **Environment Variables**
+3. Add a new environment variable:
+   - **Name:** `TRADE_DATA_BLOB_URL`
+   - **Value:** Your blob URL (e.g., `https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv`)
+   - **Environment:** Select all (Production, Preview, Development)
 
-1. **Server-Side Only**: The URL is only imported and used in API route files (`app/api/*`)
-2. **API Routes Run on Server**: Next.js API routes execute on the server, not in the browser
-3. **No Client Bundle**: The constant is never imported by client components, so it's not included in the JavaScript sent to browsers
-4. **Users Only See API Responses**: Website visitors can only see the JSON responses from your API endpoints, not the implementation details
+**Important:** Do NOT use `NEXT_PUBLIC_` prefix - this ensures the URL stays server-side only.
+
+### Security Features
+
+- ✅ **Server-side only**: The blob URL is only accessible in API routes
+- ✅ **No client exposure**: Users cannot see the blob URL through developer tools
+- ✅ **Environment variable**: Sensitive URL is not in the repository
+- ✅ **Generic error messages**: API errors don't expose the blob URL
 
 ### Updating Trade Data
 
 1. Upload a new CSV file to your Vercel Blob storage
-2. Update the `TRADE_DATA_BLOB_URL` constant in `lib/constants.ts`
-3. Commit and deploy the change
-
-### What Users Can See
-
-- ✅ API endpoints like `/api/portfolio-current`
-- ✅ JSON responses with portfolio data
-- ❌ The actual blob storage URL
-- ❌ How the data is fetched
+2. Update the `TRADE_DATA_BLOB_URL` environment variable in Vercel dashboard if the URL changes
+3. The changes take effect immediately (no redeploy needed)
 
 ## Adding Content
 
