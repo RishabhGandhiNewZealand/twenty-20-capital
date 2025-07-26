@@ -6,12 +6,6 @@ import { TRADE_DATA_BLOB_URL } from './constants'
 // This function can only be used server-side
 export async function generatePortfolioData(): Promise<{ holdings: PortfolioHolding[], exitedPositions: ExitedPosition[] }> {
   try {
-    // Check if blob URL is configured
-    if (!TRADE_DATA_BLOB_URL) {
-      logger.error('TRADE_DATA_BLOB_URL environment variable is not configured')
-      return { holdings: [], exitedPositions: [] }
-    }
-
     // Read CSV from Vercel Blob storage
     const response = await fetch(TRADE_DATA_BLOB_URL)
     

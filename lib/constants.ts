@@ -29,13 +29,9 @@ export const FALLBACK_NZD_TO_USD_RATE = 0.606
 export const MIN_SHARE_THRESHOLD = 0.001
 
 // Vercel Blob storage URL for trade data
-// IMPORTANT: This uses process.env which is only available server-side in Next.js
-// The environment variable is NOT exposed to the client/browser
-// Only set TRADE_DATA_BLOB_URL in your server environment variables (Vercel dashboard)
-// Do NOT use NEXT_PUBLIC_ prefix as that would expose it to the client
-export const TRADE_DATA_BLOB_URL = process.env.TRADE_DATA_BLOB_URL || ''
-
-// Throw error if URL is not configured (only on server-side)
-if (typeof window === 'undefined' && !TRADE_DATA_BLOB_URL) {
-  console.warn('WARNING: TRADE_DATA_BLOB_URL environment variable is not set. Portfolio data will not be available.')
-}
+// This constant is only used in server-side API routes
+// Even though it's in the repo, it's never sent to the client because:
+// 1. It's only imported in API route files (app/api/*)
+// 2. API routes run on the server, not in the browser
+// 3. The client only sees the API response, not the implementation
+export const TRADE_DATA_BLOB_URL = 'https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv'
