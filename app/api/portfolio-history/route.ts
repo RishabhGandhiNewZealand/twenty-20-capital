@@ -124,6 +124,15 @@ export async function GET() {
 
     logger.debug('Cache miss, calculating portfolio history...')
 
+    // Check if blob URL is configured
+    if (!TRADE_DATA_BLOB_URL) {
+      logger.error('TRADE_DATA_BLOB_URL environment variable is not configured')
+      return NextResponse.json(
+        { error: 'Portfolio data source not configured' },
+        { status: 500 }
+      )
+    }
+
     // Read CSV from Vercel Blob storage
     const response = await fetch(TRADE_DATA_BLOB_URL)
     

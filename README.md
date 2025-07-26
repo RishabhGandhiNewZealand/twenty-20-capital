@@ -11,30 +11,32 @@ This is a simple Next.js-based personal website to track your portfolio, company
 
 ## Trade Data Storage
 
-The portfolio trade data is stored in Vercel Blob storage. The application reads the CSV file directly from the blob URL:
-- Blob URL: `https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv`
-- No local file storage is required
-- The data is fetched on-demand when portfolio calculations are performed
+The portfolio trade data is stored in Vercel Blob storage and accessed securely server-side only:
+- The blob URL is stored as a server-side environment variable
+- The URL is NEVER exposed to the client/browser
+- All data fetching happens in API routes (server-side)
 
-To update the trade data:
+### Setting up Trade Data Access
+
+1. **Local Development**: Copy `.env.example` to `.env.local` and set your blob URL
+2. **Production (Vercel)**: 
+   - Go to your Vercel dashboard
+   - Navigate to Settings → Environment Variables
+   - Add `TRADE_DATA_BLOB_URL` with your blob URL
+   - **Important**: Do NOT use `NEXT_PUBLIC_` prefix
+
+### Security Features
+
+✅ **Server-side only**: The blob URL is only accessible in API routes, not in client code
+✅ **No client exposure**: Users cannot see the blob URL through developer tools
+✅ **Environment variable**: Sensitive URL is not hardcoded in the repository
+✅ **Generic error messages**: API errors don't expose the blob URL
+
+### Updating Trade Data
+
 1. Upload a new CSV file to your Vercel Blob storage
-2. Update the `TRADE_DATA_BLOB_URL` constant in `lib/constants.ts` or set it as an environment variable
-
-The blob URL is centrally configured in `lib/constants.ts` and used across all API routes that need to access the trade data.
-
-### Security Considerations
-
-**Important**: The current setup uses a public blob URL which could be discovered by users through browser developer tools. If your trade data is sensitive:
-
-1. **Use Environment Variables**: Set `TRADE_DATA_BLOB_URL` in your Vercel environment variables instead of hardcoding it
-2. **Consider Private Blobs**: For enhanced security, consider using Vercel Blob's authenticated access with read tokens
-3. **Monitor Access**: The blob URL is unguessable but public. Monitor your Vercel Blob dashboard for unexpected access
-
-To use environment variables:
-```bash
-# In your Vercel dashboard or .env.local file
-TRADE_DATA_BLOB_URL=your-blob-url-here
-```
+2. Update the `TRADE_DATA_BLOB_URL` environment variable in Vercel dashboard
+3. Redeploy or wait for the environment variable to propagate
 
 ## Adding Content
 
