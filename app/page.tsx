@@ -37,7 +37,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [portfolioStats, setPortfolioStats] = useState([
     {
-      title: "Portfolio Value",
+      title: "Portfolio Value (NZD)",
       value: "Loading...",
       subtitle: "Calculating current value",
       icon: Target,
@@ -137,7 +137,7 @@ export default function HomePage() {
 
             setPortfolioStats([
               {
-                title: "Portfolio Value",
+                title: "Portfolio Value (NZD)",
                 value: formattedValue,
                 subtitle: "Current portfolio value",
                 icon: Target,
@@ -175,7 +175,7 @@ export default function HomePage() {
 
           setPortfolioStats([
             {
-              title: "Portfolio Value",
+              title: "Portfolio Value (NZD)",
               value: formattedValue,
               subtitle: "Current portfolio value",
               icon: Target,
@@ -306,13 +306,13 @@ export default function HomePage() {
                         Current Price
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Market Value
+                        Market Value (NZD)
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Cost Basis
+                        Cost Basis (NZD)
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Gain/Loss
+                        Gain/Loss (NZD)
                       </th>
                     </tr>
                   </thead>
