@@ -21,9 +21,19 @@ export const CACHE_REVALIDATE = {
   EXCHANGE_RATE: 3600, // 1 hour
 }
 
-// Fallback exchange rates
-export const FALLBACK_USD_TO_NZD_RATE = 1.78
-export const FALLBACK_NZD_TO_USD_RATE = 0.56 // 1 / 1.78
+// USD to NZD exchange rate fallback
+export const FALLBACK_USD_TO_NZD_RATE = 1.65
+export const FALLBACK_NZD_TO_USD_RATE = 0.606
 
-// Portfolio thresholds
-export const MIN_SHARE_THRESHOLD = 0.001 // Minimum shares to keep a position
+// Minimum share threshold for current holdings
+export const MIN_SHARE_THRESHOLD = 0.001
+
+// Vercel Blob storage URL for trade data
+// This environment variable is available in the deployment
+// The SDK will use BLOB_READ_WRITE_TOKEN automatically for authentication
+export const TRADE_DATA_BLOB_URL = process.env.TRADE_DATA_BLOB_URL || ''
+
+// Warn if URL is not configured (only on server-side)
+if (typeof window === 'undefined' && !TRADE_DATA_BLOB_URL) {
+  console.warn('WARNING: TRADE_DATA_BLOB_URL environment variable is not set. Portfolio data will not be available.')
+}

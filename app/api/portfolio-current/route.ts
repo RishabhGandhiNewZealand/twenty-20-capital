@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server'
 import { parseCSVData } from '@/lib/portfolio'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
-import fs from 'fs'
-import path from 'path'
 import yahooFinance from 'yahoo-finance2'
+import { downloadTradeDataFromBlob } from '@/lib/blob-utils'
 
 interface CurrentHolding {
   symbol: string
@@ -67,9 +66,17 @@ async function getHistoricalPrice(ticker: string, date: Date): Promise<number> {
 
 export async function GET() {
   try {
-    // Read and parse CSV
-    const csvPath = path.join(process.cwd(), 'RishTrades22July25.csv')
-    const csvContent = fs.readFileSync(csvPath, 'utf-8')
+    // Check if blob URL is configured
+    if (!process.env.TRADE_DATA_BLOB_URL) {
+      logger.error('TRADE_DATA_BLOB_URL environment variable is not configured')
+      return NextResponse.json(
+        { error: 'Portfolio data source not configured' },
+        { status: 500 }
+      )
+    }
+
+    // Download CSV from Vercel Blob storage using SDK
+    const csvContent = await downloadTradeDataFromBlob()
     const trades = parseCSVData(csvContent)
 
     // Sort trades by date
