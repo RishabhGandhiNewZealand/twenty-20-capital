@@ -37,7 +37,7 @@ For local development, create a `.env.local` file:
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxxx
 
 # Your trade data blob URL
-TRADE_DATA_BLOB_URL=https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv
+TRADE_DATA_BLOB_URL=https://your-store-id.public.blob.vercel-storage.com/path/to/your/trade-data.csv
 ```
 
 ### Security Features
