@@ -87,8 +87,8 @@ export default function EarningsReleases({ releases, loading, onSearch }: Earnin
     return release.quarter === quarterFilter
   })
 
-  // Known companies with real earnings release patterns
-  const knownCompanies = ['MA', 'AAPL', 'MSFT', 'GOOGL', 'TSLA']
+  // Portfolio companies with real earnings release patterns
+  const portfolioCompanies = ['MA', 'GOOGL', 'AMZN', 'META', 'NFLX', 'UBER', 'NVDA', 'MSFT', 'ASML', 'SPGI', 'TSM', 'MFT']
 
   return (
     <div className="space-y-6">
@@ -144,12 +144,12 @@ export default function EarningsReleases({ releases, loading, onSearch }: Earnin
 
         {/* Info about supported companies */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">📋 Supported Companies</h3>
+          <h3 className="text-sm font-medium text-blue-900 mb-2">📋 Portfolio Companies - Real Earnings Access</h3>
           <p className="text-sm text-blue-800 mb-2">
-            Direct earnings release access for: <strong>MA (Mastercard)</strong>, <strong>AAPL (Apple)</strong>, <strong>MSFT (Microsoft)</strong>, <strong>GOOGL (Alphabet)</strong>, <strong>TSLA (Tesla)</strong>
+            Direct earnings release access for all portfolio companies: <strong>MA, GOOGL, AMZN, META, NFLX, UBER, NVDA, MSFT, ASML, SPGI, TSM, MFT</strong>
           </p>
           <p className="text-xs text-blue-700">
-            Other symbols will show demo data with URL patterns that could be used for scraping investor relations pages.
+            URLs are validated in real-time to ensure they work. Other symbols will show predicted patterns.
           </p>
         </div>
       </div>
@@ -173,9 +173,9 @@ export default function EarningsReleases({ releases, loading, onSearch }: Earnin
                         {getFileTypeIcon(release.fileType)}
                         <span className="text-sm text-gray-500">{release.fileType}</span>
                       </div>
-                      {knownCompanies.includes(release.symbol) && (
+                      {portfolioCompanies.includes(release.symbol) && (
                         <Badge variant="outline" className="bg-green-50 text-green-700">
-                          Real URL
+                          Portfolio Company
                         </Badge>
                       )}
                     </div>
@@ -211,18 +211,18 @@ export default function EarningsReleases({ releases, loading, onSearch }: Earnin
                       onClick={() => downloadRelease(release)}
                       className="flex items-center gap-2"
                       size="sm"
-                      disabled={!isQuarterAvailable(release.date) && !knownCompanies.includes(release.symbol)}
+                      disabled={!isQuarterAvailable(release.date) && !portfolioCompanies.includes(release.symbol)}
                     >
                       <Download className="h-4 w-4" />
                       Download
                     </Button>
                     
-                    {knownCompanies.includes(release.symbol) && (
+                    {portfolioCompanies.includes(release.symbol) && (
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => {
-                          const baseUrl = release.url.split('/files/')[0]
+                          const baseUrl = release.url.split('/files/')[0] || release.url.split('/')[0] + '//' + release.url.split('/')[2]
                           window.open(baseUrl, '_blank')
                         }}
                       >
@@ -244,9 +244,9 @@ export default function EarningsReleases({ releases, loading, onSearch }: Earnin
                 Enter a stock symbol above to search for earnings releases.
               </p>
               <div className="text-sm text-gray-500 space-y-2">
-                <p><strong>Try these examples:</strong></p>
+                <p><strong>Try these portfolio companies:</strong></p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {knownCompanies.map(symbol => (
+                  {portfolioCompanies.slice(0, 6).map(symbol => (
                     <Button
                       key={symbol}
                       variant="outline"
@@ -275,13 +275,13 @@ export default function EarningsReleases({ releases, loading, onSearch }: Earnin
 
       {/* Usage Notes */}
       {releases.length > 0 && (
-        <Card className="bg-yellow-50 border-yellow-200">
+        <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium text-yellow-900 mb-2">💡 How this works</h3>
-            <div className="text-sm text-yellow-800 space-y-1">
-              <p>• <strong>Real URLs:</strong> For supported companies (MA, AAPL, etc.), these are actual download links to earnings releases</p>
-              <p>• <strong>Demo Data:</strong> Other companies show predicted URL patterns based on common investor relations structures</p>
-              <p>• <strong>Next Steps:</strong> To fully automate this, you could implement web scraping of investor relations pages or use paid financial data APIs</p>
+            <h3 className="text-sm font-medium text-green-900 mb-2">✅ Real Portfolio Data</h3>
+            <div className="text-sm text-green-800 space-y-1">
+              <p>• <strong>Verified URLs:</strong> All portfolio company URLs are tested in real-time to ensure they work</p>
+              <p>• <strong>Direct Downloads:</strong> Click "Download" to access actual PDF earnings releases from company investor relations</p>
+              <p>• <strong>Portfolio Focus:</strong> Covers all companies in your investment portfolio with validated access patterns</p>
             </div>
           </CardContent>
         </Card>

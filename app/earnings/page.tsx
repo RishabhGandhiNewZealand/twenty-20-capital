@@ -246,47 +246,7 @@ export default function EarningsPage() {
           </TabsContent>
         </Tabs>
 
-        {/* Footer Information */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <Card className="bg-gray-50">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Sources & Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Earnings Calendar</h4>
-                  <ul className="text-gray-600 space-y-1">
-                    <li>• Financial Modeling Prep API</li>
-                    <li>• EOD Historical Data</li>
-                    <li>• Demo data for testing</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">SEC Filings</h4>
-                  <ul className="text-gray-600 space-y-1">
-                    <li>• SEC EDGAR Database</li>
-                    <li>• Real-time filings access</li>
-                    <li>• XBRL data support</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Earnings Releases</h4>
-                  <ul className="text-gray-600 space-y-1">
-                    <li>• Company investor relations</li>
-                    <li>• Direct PDF downloads</li>
-                    <li>• Real URLs for major companies</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-gray-300">
-                <p className="text-xs text-gray-500">
-                  <strong>Note:</strong> This application demonstrates how to access various earnings data sources. 
-                  Some APIs require registration and may have rate limits. Always comply with data provider terms of service.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+
       </div>
     </div>
   )
