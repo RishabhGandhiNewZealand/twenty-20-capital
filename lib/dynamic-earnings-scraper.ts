@@ -194,44 +194,30 @@ async function scrapeMicrosoft(year: string, quarter?: string): Promise<Earnings
 // Scrape earnings data for Meta
 async function scrapeMeta(year: string, quarter?: string): Promise<EarningsURL[]> {
   const results: EarningsURL[] = []
+  const quarters = quarter ? [quarter] : ['Q1', 'Q2', 'Q3', 'Q4']
   
-  try {
-    const response = await axios.get('https://investor.fb.com/investor-news/', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    })
+  for (const q of quarters) {
+    // Meta uses date-based naming pattern: Meta-09-30-2024-Exhibit-99-1_FINAL.pdf
+    const quarterEndDates = {
+      'Q1': '03-31',
+      'Q2': '06-30',
+      'Q3': '09-30',
+      'Q4': '12-31'
+    }
+    const endDate = quarterEndDates[q as keyof typeof quarterEndDates]
+    const url = `https://s21.q4cdn.com/399680738/files/doc_financials/${year}/${q.toLowerCase()}/Meta-${endDate}-${year}-Exhibit-99-1_FINAL.pdf`
+    const isValid = await validateURL(url)
     
-    const $ = cheerio.load(response.data)
-    
-    // Look for earnings releases
-    $('a').each((index, element) => {
-      const href = $(element).attr('href')
-      const text = $(element).text().toLowerCase()
-      
-      if (href && (text.includes('earnings') || text.includes('quarterly')) && 
-          (href.includes('.pdf') || href.includes('exhibit')) && 
-          (href.includes(year) || text.includes(year))) {
-        
-        const fullUrl = href.startsWith('http') ? href : `https://investor.fb.com${href}`
-        
-        const quarterMatch = text.match(/q[1-4]/i) || href.match(/q[1-4]/i)
-        const detectedQuarter = quarterMatch ? quarterMatch[0].toUpperCase() : 'Q1'
-        
-        if (!quarter || detectedQuarter === quarter) {
-          results.push({
-            url: fullUrl,
-            title: `Meta ${detectedQuarter} ${year} Earnings Release`,
-            quarter: detectedQuarter,
-            year,
-            date: getActualEarningsDate('META', year, detectedQuarter),
-            isValid: true
-          })
-        }
-      }
-    })
-  } catch (error) {
-    console.error('Error scraping Meta earnings:', error)
+    if (isValid) {
+      results.push({
+        url,
+        title: `Meta ${q} ${year} Earnings Release`,
+        quarter: q,
+        year,
+        date: getActualEarningsDate('META', year, q),
+        isValid: true
+      })
+    }
   }
   
   return results
@@ -251,6 +237,32 @@ function getActualEarningsDate(symbol: string, year: string, quarter: string): s
   return earningsSeasons[quarter]?.[year] || `${year}-12-31`
 }
 
+// Scrape earnings data for Uber
+async function scrapeUber(year: string, quarter?: string): Promise<EarningsURL[]> {
+  const results: EarningsURL[] = []
+  const quarters = quarter ? [quarter] : ['Q1', 'Q2', 'Q3', 'Q4']
+  
+  for (const q of quarters) {
+    const yearShort = year.slice(-2)
+    // Uber pattern: Uber-Q3-24-Earnings-Press-Release.pdf
+    const url = `https://s23.q4cdn.com/407969754/files/doc_earnings/${year}/${q.toLowerCase()}/earnings-result/Uber-${q}-${yearShort}-Earnings-Press-Release.pdf`
+    const isValid = await validateURL(url)
+    
+    if (isValid) {
+      results.push({
+        url,
+        title: `Uber ${q} ${year} Earnings Press Release`,
+        quarter: q,
+        year,
+        date: getActualEarningsDate('UBER', year, q),
+        isValid: true
+      })
+    }
+  }
+  
+  return results
+}
+
 // Main scraping function that delegates to company-specific scrapers
 async function scrapeCompanyEarnings(symbol: string, year: string, quarter?: string): Promise<EarningsURL[]> {
   switch (symbol) {
@@ -262,6 +274,8 @@ async function scrapeCompanyEarnings(symbol: string, year: string, quarter?: str
       return await scrapeMicrosoft(year, quarter)
     case 'META':
       return await scrapeMeta(year, quarter)
+    case 'UBER':
+      return await scrapeUber(year, quarter)
     default:
       return []
   }

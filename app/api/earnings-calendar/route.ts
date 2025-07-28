@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { scrapePortfolioEarnings } from '@/lib/dynamic-earnings-scraper'
 
 interface EarningsEvent {
   date: string
@@ -11,32 +10,29 @@ interface EarningsEvent {
   source: string
 }
 
-// Get current portfolio companies dynamically
-async function getPortfolioCompanies() {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/portfolio-current`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch portfolio data')
-    }
-    const data = await response.json()
-    return data.holdings.map((holding: any) => ({
-      symbol: holding.symbol,
-      name: holding.name
-    }))
-  } catch (error) {
-    console.error('Error fetching portfolio companies:', error)
-    return []
-  }
-}
+// Keep it simple - use known portfolio symbols
+const PORTFOLIO_COMPANIES = [
+  { symbol: 'MA', name: 'Mastercard Inc.' },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+  { symbol: 'META', name: 'Meta Platforms Inc.' },
+  { symbol: 'UBER', name: 'Uber Technologies Inc.' },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation' },
+  { symbol: 'MSFT', name: 'Microsoft Corporation' },
+  { symbol: 'NFLX', name: 'Netflix Inc.' },
+  { symbol: 'ASML', name: 'ASML Holding N.V.' },
+  { symbol: 'SPGI', name: 'S&P Global Inc.' },
+  { symbol: 'TSM', name: 'Taiwan Semiconductor Manufacturing Company' },
+  { symbol: 'MFT', name: 'Mainfreight Limited' }
+]
 
-function getCompanyName(symbol: string, portfolioCompanies: any[]): string {
-  const company = portfolioCompanies.find(c => c.symbol === symbol)
+function getCompanyName(symbol: string): string {
+  const company = PORTFOLIO_COMPANIES.find(c => c.symbol === symbol)
   return company?.name || `${symbol} Inc.`
 }
 
 // Generate realistic earnings events for portfolio companies
-async function generateEarningsEvents(): Promise<EarningsEvent[]> {
-  const portfolioCompanies = await getPortfolioCompanies()
+function generateEarningsEvents(): EarningsEvent[] {
   const events: EarningsEvent[] = []
   
   // Get recent and upcoming quarters
@@ -47,7 +43,7 @@ async function generateEarningsEvents(): Promise<EarningsEvent[]> {
   // Determine current quarter
   const currentQuarter = Math.ceil(currentMonth / 3)
   
-  for (const company of portfolioCompanies) {
+  for (const company of PORTFOLIO_COMPANIES) {
     // Add recent quarters (last 2 quarters)
     for (let i = 0; i < 2; i++) {
       let quarter = currentQuarter - i
@@ -154,7 +150,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Get earnings events for portfolio companies
-    const earningsEvents = await generateEarningsEvents()
+    const earningsEvents = generateEarningsEvents()
     
     // Filter by symbol if specified
     const filteredEvents = symbol 
