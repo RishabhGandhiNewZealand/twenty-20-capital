@@ -6,8 +6,9 @@ import { getEnhancedEarningsData } from '@/lib/earnings-data-enhanced'
 import { parseCSVData } from '@/lib/portfolio'
 import { downloadTradeDataFromBlob } from '@/lib/blob-utils'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 3600 // Revalidate every hour
+// Static generation - data fetched at build time only
+export const dynamic = 'force-static'
+export const revalidate = false
 
 // Try to use enhanced scraper if available
 let scrapeEarningsDataEnhanced: typeof scrapeEarningsData | null = null
@@ -28,12 +29,9 @@ export async function GET() {
       const cached = await fs.readFile(cacheFile, 'utf-8')
       const cachedData = JSON.parse(cached)
       
-      // If cache is less than 1 hour old, return it
-      const cacheAge = Date.now() - new Date(cachedData.lastUpdated).getTime()
-      if (cacheAge < 3600000) {
-        logger.info('Returning cached earnings data')
-        return NextResponse.json(cachedData)
-      }
+      // Always return cached data if it exists (build-time only)
+      logger.info('Returning cached earnings data from build')
+      return NextResponse.json(cachedData)
     } catch (e) {
       // Cache miss or error, continue with fresh fetch
       logger.info('Cache miss or error, fetching fresh data')

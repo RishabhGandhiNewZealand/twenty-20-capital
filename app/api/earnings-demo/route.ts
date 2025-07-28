@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { getEnhancedEarningsData } from '@/lib/earnings-data-enhanced'
 
-export const dynamic = 'force-dynamic'
+// Static generation - data fetched at build time only
+export const dynamic = 'force-static'
+export const revalidate = false
 
 // Demo portfolio holdings
 const DEMO_HOLDINGS = [

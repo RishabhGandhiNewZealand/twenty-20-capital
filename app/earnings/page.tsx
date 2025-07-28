@@ -256,9 +256,9 @@ export default function EarningsPage() {
       
       <div className="text-center mt-4">
         <p className="text-sm text-gray-500">
-          Last updated: {format(parseISO(earningsData.lastUpdated), 'MMM dd, yyyy HH:mm')}
+          Data from build: {format(parseISO(earningsData.lastUpdated), 'MMM dd, yyyy')}
         </p>
-        {(earningsData as any).demo && (
+        {((earningsData as any).demo || (earningsData as any).static) && (
           <p className="text-sm text-amber-600 mt-1">
             Demo Mode: Showing sample portfolio companies
           </p>

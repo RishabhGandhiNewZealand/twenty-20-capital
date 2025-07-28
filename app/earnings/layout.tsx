@@ -2,7 +2,7 @@ import { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Earnings Calendar & Reports | Rish Investing Journey",
-  description: "Track upcoming earnings dates and access historical earnings reports for portfolio companies with 5 years of quarterly data",
+  description: "Track upcoming earnings dates and access historical earnings reports for portfolio companies with 5 years of quarterly data. Data updated at build time.",
 }
 
 export default function EarningsLayout({
