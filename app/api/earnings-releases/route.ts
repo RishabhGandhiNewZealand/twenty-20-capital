@@ -29,26 +29,28 @@ export async function GET(request: NextRequest) {
 
   try {
     const releases: EarningsRelease[] = []
-
-    // Check if we support this symbol
     const supportedSymbols = getSupportedSymbols()
     
     if (supportedSymbols.includes(symbol)) {
-      // Use real scraper for supported companies
       try {
         const scraperResults = await scrapeEarningsReleases(symbol, year, quarter)
         
         for (const result of scraperResults) {
+          // Determine file type from URL
+          const fileType = result.url.includes('.pdf') ? 'PDF' :
+                          result.url.includes('.docx') ? 'DOCX' :
+                          result.url.includes('nvidia') ? 'HTML' : 'PDF'
+          
           releases.push({
             title: result.title,
-            date: result.date,
+            date: result.date, // Now uses real earnings announcement dates
             quarter: result.quarter,
             year: result.year,
             url: result.url,
             type: 'earnings_release',
-            company: result.title.split(' ')[0] + ' Inc.', // Extract company name from title
+            company: getCompanyName(symbol),
             symbol,
-            fileType: 'PDF',
+            fileType,
             source: result.isValid ? 'Verified Company URL' : 'Predicted Pattern'
           })
         }
@@ -56,18 +58,18 @@ export async function GET(request: NextRequest) {
         console.error(`Error scraping ${symbol}:`, error)
       }
     } else {
-      // Fallback for unsupported companies
+      // For unsupported companies, provide demo patterns
       const quarters = quarter ? [quarter] : ['Q1', 'Q2', 'Q3', 'Q4']
       
       for (const q of quarters) {
         releases.push({
           title: `${symbol} ${q} ${year} Earnings Release`,
-          date: getQuarterDate(q, parseInt(year)),
+          date: getQuarterEndDate(q, parseInt(year)),
           quarter: q,
           year,
           url: `https://example-ir.com/${symbol.toLowerCase()}/${year}-${q.toLowerCase()}-earnings.pdf`,
           type: 'earnings_release',
-          company: `${symbol} Inc.`,
+          company: getCompanyName(symbol),
           symbol,
           fileType: 'PDF',
           source: 'Unsupported Company - Demo Pattern'
@@ -92,7 +94,25 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function getQuarterDate(quarter: string, year: number): string {
+function getCompanyName(symbol: string): string {
+  const companyNames: Record<string, string> = {
+    'MA': 'Mastercard Inc.',
+    'GOOGL': 'Alphabet Inc.',
+    'AMZN': 'Amazon.com Inc.',
+    'META': 'Meta Platforms Inc.',
+    'NFLX': 'Netflix Inc.',
+    'UBER': 'Uber Technologies Inc.',
+    'NVDA': 'NVIDIA Corporation',
+    'MSFT': 'Microsoft Corporation',
+    'ASML': 'ASML Holding N.V.',
+    'SPGI': 'S&P Global Inc.',
+    'TSM': 'Taiwan Semiconductor Manufacturing Company',
+    'MFT': 'Mainfreight Limited'
+  }
+  return companyNames[symbol] || `${symbol} Inc.`
+}
+
+function getQuarterEndDate(quarter: string, year: number): string {
   const quarterDates = {
     'Q1': `${year}-03-31`,
     'Q2': `${year}-06-30`, 

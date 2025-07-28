@@ -1,0 +1,482 @@
+[
+  {
+    "symbol": "MA",
+    "quarter": "Q1",
+    "year": "2023",
+    "url": "https://s25.q4cdn.com/479285134/files/doc_financials/2023/q1/1Q23-Mastercard-Earnings-Release.pdf",
+    "status": 200,
+    "valid": true,
+    "actualDate": "2023-04-27",
+    "patternIndex": 1
+  },
+  {
+    "symbol": "MA",
+    "quarter": "Q2",
+    "year": "2023",
+    "url": "https://s25.q4cdn.com/479285134/files/doc_financials/2023/q2/2Q23-Mastercard-Earnings-Release.pdf",
+    "status": 200,
+    "valid": true,
+    "actualDate": "2023-07-27",
+    "patternIndex": 1
+  },
+  {
+    "symbol": "MA",
+    "quarter": "Q3",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "MA",
+    "quarter": "Q4",
+    "year": "2023",
+    "url": "https://s25.q4cdn.com/479285134/files/doc_financials/2023/q4/4Q23-Mastercard-Earnings-Release.pdf",
+    "status": 200,
+    "valid": true,
+    "actualDate": "2024-01-31",
+    "patternIndex": 1
+  },
+  {
+    "symbol": "MA",
+    "quarter": "Q1",
+    "year": "2024",
+    "url": "https://s25.q4cdn.com/479285134/files/doc_financials/2024/q1/1Q24-Mastercard-Earnings-Release.pdf",
+    "status": 200,
+    "valid": true,
+    "actualDate": "2024-05-01",
+    "patternIndex": 1
+  },
+  {
+    "symbol": "MA",
+    "quarter": "Q2",
+    "year": "2024",
+    "url": "https://s25.q4cdn.com/479285134/files/doc_financials/2024/q2/2Q24-Mastercard-Earnings-Release.pdf",
+    "status": 200,
+    "valid": true,
+    "actualDate": "2024-07-31",
+    "patternIndex": 1
+  },
+  {
+    "symbol": "MA",
+    "quarter": "Q3",
+    "year": "2024",
+    "url": "https://s25.q4cdn.com/479285134/files/doc_financials/2024/q3/3Q24-Mastercard-Earnings-Release.pdf",
+    "status": 200,
+    "valid": true,
+    "actualDate": "2024-10-31",
+    "patternIndex": 1
+  },
+  {
+    "symbol": "MA",
+    "quarter": "Q4",
+    "year": "2024",
+    "url": "https://s25.q4cdn.com/479285134/files/doc_financials/2024/q4/4Q24-Mastercard-Earnings-Release.pdf",
+    "status": 200,
+    "valid": true,
+    "actualDate": "2025-01-30",
+    "patternIndex": 1
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q1",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q2",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q3",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q4",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q1",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q2",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q3",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "GOOGL",
+    "quarter": "Q4",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q1",
+    "year": "2023",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2023-Q1/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q2",
+    "year": "2023",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2023-Q2/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q3",
+    "year": "2023",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2023-Q3/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q4",
+    "year": "2023",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2023-Q4/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q1",
+    "year": "2024",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2024-Q1/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q2",
+    "year": "2024",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2024-Q2/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q3",
+    "year": "2024",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2024-Q3/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "MSFT",
+    "quarter": "Q4",
+    "year": "2024",
+    "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2024-Q4/press-release-webcast",
+    "status": 200,
+    "valid": true,
+    "actualDate": null,
+    "patternIndex": 2
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q1",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q2",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q3",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q4",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q1",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q2",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q3",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "META",
+    "quarter": "Q4",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q1",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q2",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q3",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q4",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q1",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q2",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q3",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "AMZN",
+    "quarter": "Q4",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q1",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q2",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q3",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q4",
+    "year": "2023",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q1",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q2",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q3",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  },
+  {
+    "symbol": "NVDA",
+    "quarter": "Q4",
+    "year": "2024",
+    "url": null,
+    "status": "NOT_FOUND",
+    "valid": false,
+    "actualDate": null,
+    "patternIndex": null
+  }
+]
