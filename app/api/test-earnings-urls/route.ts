@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { testCompanyURLs, getSupportedSymbols } from '@/lib/earnings-scraper'
+import { testCompanyURLs, getSupportedSymbols } from '@/lib/dynamic-earnings-scraper'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -16,63 +16,49 @@ export async function GET(request: NextRequest) {
           symbol: result.symbol,
           validUrls: result.validUrls,
           totalUrls: result.totalUrls,
-          successRate: Math.round((result.validUrls / result.totalUrls) * 100)
+          successRate: result.totalUrls > 0 ? Math.round((result.validUrls / result.totalUrls) * 100) : 0
         }
       })
     } else {
       // Test all supported companies
-      const supportedSymbols = getSupportedSymbols()
+      const supportedSymbols = await getSupportedSymbols()
       const results = []
-      let totalValid = 0
-      let totalUrls = 0
-
-      for (const companySymbol of supportedSymbols) {
+      
+      for (const testSymbol of supportedSymbols) {
         try {
-          const result = await testCompanyURLs(companySymbol)
+          const result = await testCompanyURLs(testSymbol)
           results.push(result)
-          totalValid += result.validUrls
-          totalUrls += result.totalUrls
-          
-          // Add delay to be respectful to servers
-          await new Promise(resolve => setTimeout(resolve, 500))
         } catch (error) {
-          console.error(`Error testing ${companySymbol}:`, error)
+          console.error(`Error testing ${testSymbol}:`, error)
           results.push({
-            symbol: companySymbol,
+            symbol: testSymbol,
             validUrls: 0,
             totalUrls: 0,
-            results: [],
+            urls: [],
             error: error instanceof Error ? error.message : 'Unknown error'
           })
         }
       }
-
+      
+      const totalValid = results.reduce((sum, r) => sum + r.validUrls, 0)
+      const totalUrls = results.reduce((sum, r) => sum + r.totalUrls, 0)
+      
       return NextResponse.json({
         success: true,
         data: results,
         summary: {
-          totalCompanies: supportedSymbols.length,
-          totalUrls,
-          totalValid,
-          overallSuccessRate: Math.round((totalValid / totalUrls) * 100),
-          companiesWithValidUrls: results.filter(r => r.validUrls > 0).length,
-          companyBreakdown: results.map(r => ({
-            symbol: r.symbol,
-            validUrls: r.validUrls,
-            totalUrls: r.totalUrls,
-            successRate: r.totalUrls > 0 ? Math.round((r.validUrls / r.totalUrls) * 100) : 0
-          }))
+          totalCompanies: results.length,
+          totalValidUrls: totalValid,
+          totalUrls: totalUrls,
+          overallSuccessRate: totalUrls > 0 ? Math.round((totalValid / totalUrls) * 100) : 0,
+          supportedSymbols
         }
       })
     }
   } catch (error) {
     console.error('Error testing earnings URLs:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to test earnings URLs',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { success: false, error: 'Failed to test earnings URLs' },
       { status: 500 }
     )
   }
