@@ -39,6 +39,7 @@ export default function HomePage() {
   const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null)
   const [portfolioStats, setPortfolioStats] = useState([
     {
       title: "Portfolio Value (NZD)",
@@ -212,7 +213,10 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         {/* Portfolio Performance Chart with integrated stats */}
         <div className="mb-6 sm:mb-8">
-          <PortfolioChart portfolioStats={portfolioStats} />
+          <PortfolioChart 
+            portfolioStats={portfolioStats} 
+            onDateHover={setHoveredDate}
+          />
         </div>
 
         {/* Calculation Methodology as caption below chart */}
@@ -223,9 +227,12 @@ export default function HomePage() {
         </div>
 
         {/* Portfolio Treemap */}
-        {!loading && holdings.length > 0 && (
+        {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioTreemap holdings={holdings} />
+            <PortfolioTreemap 
+              holdings={holdings} 
+              hoveredDate={hoveredDate}
+            />
           </div>
         )}
 

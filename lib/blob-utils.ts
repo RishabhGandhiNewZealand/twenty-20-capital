@@ -27,6 +27,20 @@ export async function downloadTradeDataFromBlob(): Promise<string> {
       throw new Error('TRADE_DATA_BLOB_URL environment variable is not configured')
     }
 
+    // For local development or when BLOB_READ_WRITE_TOKEN is not available,
+    // fetch directly from the URL
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      logger.debug('BLOB_READ_WRITE_TOKEN not found, fetching directly from URL')
+      const response = await fetch(TRADE_DATA_BLOB_URL)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download blob: ${response.statusText}`)
+      }
+      
+      const csvContent = await response.text()
+      return csvContent
+    }
+
     // Extract pathname from the full URL
     const pathname = extractPathnameFromBlobUrl(TRADE_DATA_BLOB_URL)
     

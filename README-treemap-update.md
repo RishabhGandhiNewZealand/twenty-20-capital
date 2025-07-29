@@ -1,0 +1,83 @@
+# Dynamic Treemap Update
+
+## Overview
+
+The portfolio treemap on the homepage now dynamically updates based on the date being hovered on the portfolio value graph. This provides a historical view of portfolio composition over time.
+
+## Features
+
+1. **Dynamic Date-based Updates**: The treemap updates in real-time as users hover over different dates on the portfolio chart
+2. **Pre-cached Data**: All historical portfolio compositions are cached at build time for smooth performance
+3. **Fallback to API**: If a date is not in the cache, the system falls back to the API endpoint
+4. **Smooth Transitions**: The treemap animates between different compositions
+
+## Implementation Details
+
+### New Components/Files
+
+1. **`/app/api/portfolio-composition/[date]/route.ts`**: API endpoint that calculates portfolio composition for a specific date
+2. **`/scripts/cache-portfolio-compositions.ts`**: Script that pre-caches all historical compositions at build time
+3. **Updated `portfolio-treemap.tsx`**: Now accepts a `hoveredDate` prop and fetches/displays historical data
+4. **Updated `portfolio-chart.tsx`**: Emits hover events with the date being hovered
+
+### Build Process
+
+The build process now includes a caching step:
+```bash
+npm run build  # This runs cache-compositions before next build
+```
+
+### Environment Variables
+
+Required environment variable:
+```
+TRADE_DATA_BLOB_URL=<your-blob-storage-url>
+```
+
+For local development, you can use the test URL provided in `.env.example`.
+
+### Data Flow
+
+1. User hovers over a date on the portfolio chart
+2. Chart component emits the hovered date via `onDateHover` callback
+3. Homepage passes the date to the treemap component
+4. Treemap checks:
+   - First: In-memory cache
+   - Second: Pre-cached JSON file (`/public/data/portfolio-compositions.json`)
+   - Third: API endpoint (if not found in cache)
+5. Treemap displays the composition for that date with smooth animation
+
+## Testing
+
+To test the functionality:
+
+1. Set up the environment variable:
+   ```bash
+   export TRADE_DATA_BLOB_URL="https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv"
+   ```
+
+2. Run the caching script:
+   ```bash
+   npm run cache-compositions
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Navigate to the homepage and hover over different points on the portfolio chart to see the treemap update
+
+## Performance Considerations
+
+- The pre-cached data file is ~900KB and contains all historical compositions
+- The file is loaded once when the treemap component mounts
+- Subsequent date changes use the in-memory data for instant updates
+- The API endpoint is only used as a fallback for dates not in the cache
+
+## Future Enhancements
+
+- Consider implementing data compression for the cached file
+- Add loading states for smoother transitions
+- Implement partial loading of cached data for very large portfolios
+- Add date range selection for comparing compositions across periods
