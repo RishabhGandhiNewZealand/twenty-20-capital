@@ -35,7 +35,11 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
       // Use darker colors
       color: `hsl(${(index * 360) / holdings.length}, 40%, 35%)`
     }))
-    .filter(item => item.percentage >= 0.1)
+    .filter(item => item.percentage >= 0.1 && item.value > 0)
+    .sort((a, b) => b.value - a.value) // Sort by value descending
+
+  // If no holdings meet the criteria, return null
+  if (treemapData.length === 0) return null
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-NZ', {
@@ -72,8 +76,8 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
   const CustomContent = (props: any) => {
     const { x, y, width, height, symbol, percentage, color } = props
     
-    // Only show content if the rectangle is large enough
-    if (width < 50 || height < 30) return null
+    // Only show content if the rectangle is large enough AND percentage is meaningful
+    if (width < 50 || height < 30 || !percentage || percentage < 0.1) return null
 
     return (
       <g>
@@ -88,16 +92,17 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
           rx={4}
           className="opacity-90 hover:opacity-100 transition-opacity"
         />
-        {width > 60 && height > 40 && (
+        {width > 60 && height > 40 && percentage >= 0.1 && (
           <>
             <text
               x={x + width / 2}
               y={y + height / 2 - 8}
               textAnchor="middle"
-              fill="#000"
+              fill="#000000"
               fontSize={Math.min(16, width / 5)}
               fontWeight="bold"
               className="pointer-events-none"
+              style={{ fill: '#000000' }}
             >
               {symbol}
             </text>
@@ -105,11 +110,12 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               x={x + width / 2}
               y={y + height / 2 + 10}
               textAnchor="middle"
-              fill="#000"
+              fill="#000000"
               fontSize={Math.min(14, width / 6)}
               className="pointer-events-none"
+              style={{ fill: '#000000' }}
             >
-              {percentage?.toFixed(1) || '0.0'}%
+              {percentage.toFixed(1)}%
             </text>
           </>
         )}
@@ -132,6 +138,7 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               stroke="#fff"
               fill="#8884d8"
               content={<CustomContent />}
+              isAnimationActive={false}
             >
               <Tooltip content={<CustomTooltip />} />
             </Treemap>
