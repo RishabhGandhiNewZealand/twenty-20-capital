@@ -491,10 +491,10 @@ export default function HomePage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Stock</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Entry Date</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Exit Date</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Holding Period</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Invested (NZD)</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Return (NZD)</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (NZD)</th>
@@ -512,6 +512,24 @@ export default function HomePage() {
                         const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                         const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
                         
+                        // Calculate holding period in a readable format
+                        const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                        const years = Math.floor(totalDays / 365)
+                        const remainingDays = totalDays % 365
+                        const months = Math.floor(remainingDays / 30)
+                        const days = remainingDays % 30
+                        
+                        let holdingPeriod = ''
+                        if (years > 0) {
+                          holdingPeriod += `${years}y `
+                        }
+                        if (months > 0) {
+                          holdingPeriod += `${months}m `
+                        }
+                        if (days > 0 || holdingPeriod === '') {
+                          holdingPeriod += `${days}d`
+                        }
+                        
                         return (
                       <tr key={position.symbol + position.exitDate} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                         <td className="py-3 px-2">
@@ -519,23 +537,25 @@ export default function HomePage() {
                             <img 
                               src={getLogoUrl(position.symbol)} 
                               alt={`${position.symbol} logo`}
-                              className="w-6 h-6 rounded mr-2"
+                              className="w-8 h-8 rounded-full mr-3"
                               onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=3b82f6&color=fff`
                               }}
                             />
-                            <span className="font-bold text-gray-900">{position.symbol}</span>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{position.symbol}</div>
+                              <div className="text-sm text-gray-500">{position.name}</div>
+                            </div>
                           </div>
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className="text-sm text-gray-700">{position.name}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-sm text-gray-600">{formatDate(position.entryDate)}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-sm text-gray-600">{formatDate(position.exitDate)}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-sm text-gray-600">{holdingPeriod.trim()}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-gray-700">{formatCurrency(position.totalInvestedNZD, 'NZD')}</span>
@@ -576,6 +596,24 @@ export default function HomePage() {
                     const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                     const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
                     
+                    // Calculate holding period in a readable format
+                    const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                    const years = Math.floor(totalDays / 365)
+                    const remainingDays = totalDays % 365
+                    const months = Math.floor(remainingDays / 30)
+                    const days = remainingDays % 30
+                    
+                    let holdingPeriod = ''
+                    if (years > 0) {
+                      holdingPeriod += `${years}y `
+                    }
+                    if (months > 0) {
+                      holdingPeriod += `${months}m `
+                    }
+                    if (days > 0 || holdingPeriod === '') {
+                      holdingPeriod += `${days}d`
+                    }
+                    
                     return (
                   <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-start justify-between mb-3">
@@ -583,10 +621,9 @@ export default function HomePage() {
                         <img 
                           src={getLogoUrl(position.symbol)} 
                           alt={`${position.symbol} logo`}
-                          className="w-8 h-8 rounded mr-2"
+                          className="w-8 h-8 rounded-full mr-2"
                           onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=3b82f6&color=fff`
                           }}
                         />
                         <div>
@@ -620,6 +657,10 @@ export default function HomePage() {
                       <div>
                         <div className="text-gray-500">Exit Date</div>
                         <div className="font-medium">{formatDate(position.exitDate)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Holding Period</div>
+                        <div className="font-medium">{holdingPeriod.trim()}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">Total Invested</div>
