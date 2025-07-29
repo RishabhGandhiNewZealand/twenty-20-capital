@@ -263,6 +263,9 @@ export default function HomePage() {
                           Cost Basis (Per Share)
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Market Value (NZD)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Gain/Loss (NZD)
                         </th>
                       </tr>
@@ -299,6 +302,9 @@ export default function HomePage() {
                               ? `NZ$${(holding.costBasisNZD / holding.shares).toFixed(2)}`
                               : formatCurrency(holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), holding.currency)}
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatCurrency(holding.currentValueNZD)}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
                               {formatCurrency(holding.gainNZD)}
@@ -313,7 +319,7 @@ export default function HomePage() {
                     {summary && (
                       <tfoot>
                         <tr className="bg-gray-50">
-                          <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
                             Total Portfolio
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
@@ -329,7 +335,7 @@ export default function HomePage() {
                           </td>
                         </tr>
                         <tr className="bg-blue-50">
-                          <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
                             S&P 500 Benchmark
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
