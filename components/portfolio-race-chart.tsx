@@ -236,12 +236,16 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
     return null
   }
 
-  // Custom label component for the bars
+    // Custom label component for the bars
   const CustomLabel = (props: any) => {
-    const { x, y, width, height, value, symbol, percentage } = props
+    const { x, y, width, height, value, chartData } = props
     
     // Only show label if bar is wide enough
     if (width < 50) return null
+    
+    // Find the data for this bar
+    const data = chartData?.find((d: ChartData) => Math.abs(d.value - value) < 0.01)
+    if (!data) return null
     
     return (
       <g>
@@ -254,7 +258,7 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
           fontSize={14}
           fontWeight="500"
         >
-          {symbol}
+          {data.symbol}
         </text>
         <text
           x={x + width - 10}
@@ -264,7 +268,7 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
           dominantBaseline="middle"
           fontSize={12}
         >
-          {percentage.toFixed(1)}%
+          {data.percentage ? data.percentage.toFixed(1) : '0.0'}%
         </text>
       </g>
     )
@@ -385,7 +389,7 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
                   dataKey="value" 
                   radius={[0, 4, 4, 0]}
                   animationDuration={300}
-                  label={<CustomLabel />}
+                  label={(props: any) => <CustomLabel {...props} chartData={chartData} />}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
