@@ -12,6 +12,40 @@ body {
   }
 }
 
+/* Mobile-specific improvements */
+@layer base {
+  /* Prevent horizontal scroll on mobile */
+  html {
+    overflow-x: hidden;
+  }
+  
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Prevent text selection on UI elements */
+    button, nav {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Better table scrolling on mobile */
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
