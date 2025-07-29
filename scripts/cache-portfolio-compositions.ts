@@ -2,6 +2,7 @@ import { parseCSVData } from '@/lib/portfolio'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import { getCompanyColor } from '@/lib/company-colors'
 import fs from 'fs/promises'
 import path from 'path'
 
@@ -18,14 +19,15 @@ interface CompositionData {
   [date: string]: HoldingAtDate[]
 }
 
-// Test data URL for local development
-const TEST_DATA_URL = 'https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv'
-
 async function downloadTestData(): Promise<string> {
-  console.log('Downloading test data from:', TEST_DATA_URL)
-  const response = await fetch(TEST_DATA_URL)
+  const url = process.env.TRADE_DATA_BLOB_URL
+  if (!url) {
+    throw new Error('TRADE_DATA_BLOB_URL environment variable is not set')
+  }
+  console.log('Downloading data from blob storage...')
+  const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to download test data: ${response.statusText}`)
+    throw new Error(`Failed to download data: ${response.statusText}`)
   }
   return await response.text()
 }

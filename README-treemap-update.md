@@ -10,6 +10,7 @@ The portfolio treemap on the homepage now dynamically updates based on the date 
 2. **Pre-cached Data**: All historical portfolio compositions are cached at build time for smooth performance
 3. **Fallback to API**: If a date is not in the cache, the system falls back to the API endpoint
 4. **Smooth Transitions**: The treemap animates between different compositions
+5. **Consistent Company Colors**: Each company maintains the same color throughout time for easy visual tracking
 
 ## Implementation Details
 
@@ -17,8 +18,9 @@ The portfolio treemap on the homepage now dynamically updates based on the date 
 
 1. **`/app/api/portfolio-composition/[date]/route.ts`**: API endpoint that calculates portfolio composition for a specific date
 2. **`/scripts/cache-portfolio-compositions.ts`**: Script that pre-caches all historical compositions at build time
-3. **Updated `portfolio-treemap.tsx`**: Now accepts a `hoveredDate` prop and fetches/displays historical data
-4. **Updated `portfolio-chart.tsx`**: Emits hover events with the date being hovered
+3. **`/lib/company-colors.ts`**: Utility to generate consistent colors for companies based on their ticker symbols
+4. **Updated `portfolio-treemap.tsx`**: Now accepts a `hoveredDate` prop and fetches/displays historical data with consistent colors
+5. **Updated `portfolio-chart.tsx`**: Emits hover events with the date being hovered
 
 ### Build Process
 
@@ -34,7 +36,7 @@ Required environment variable:
 TRADE_DATA_BLOB_URL=<your-blob-storage-url>
 ```
 
-For local development, you can use the test URL provided in `.env.example`.
+This should be set in your environment or deployment configuration.
 
 ### Data Flow
 
@@ -53,7 +55,7 @@ To test the functionality:
 
 1. Set up the environment variable:
    ```bash
-   export TRADE_DATA_BLOB_URL="https://vdfsglfxeuhocbce.public.blob.vercel-storage.com/TradeData/TradeHistory-W2MjQv93Q7uN12MlNIH8MVx9Vf70R7.csv"
+   export TRADE_DATA_BLOB_URL="<your-blob-storage-url>"
    ```
 
 2. Run the caching script:

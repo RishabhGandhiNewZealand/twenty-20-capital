@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts"
 import { useEffect, useState, useRef } from "react"
 import { Loader2 } from "lucide-react"
+import { getCompanyColor } from "@/lib/company-colors"
 
 interface TreemapData {
   name: string
@@ -126,12 +127,12 @@ export function PortfolioTreemap({ holdings: currentHoldings, hoveredDate }: Por
   // Transform holdings data for treemap
   const treemapData: TreemapData[] = displayHoldings
     .filter(holding => holding.percentage >= 0.1 && holding.value > 0)
-    .map((holding, index) => ({
+    .map((holding) => ({
       name: holding.name,
       symbol: holding.symbol,
       value: holding.value,
       percentage: holding.percentage,
-      color: `hsl(${(index * 360) / displayHoldings.length}, 40%, 35%)`
+      color: getCompanyColor(holding.symbol)
     }))
     .sort((a, b) => b.value - a.value)
 

@@ -219,12 +219,7 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Calculation Methodology as caption below chart */}
-        <div className="mb-6 sm:mb-8 px-2 sm:px-4">
-          <p className="text-xs sm:text-sm text-gray-600 text-center">
-            The portfolio and S&P 500 returns are calculated on a Total Value CAGR basis. This method measures the compound annual growth rate of the total portfolio value, including all capital contributions and withdrawals, from inception to the current date. The CAGR represents the annualized rate of return that would be required to grow the initial investment to its current value over the investment period.
-          </p>
-        </div>
+
 
         {/* Portfolio Treemap */}
         {!loading && (
