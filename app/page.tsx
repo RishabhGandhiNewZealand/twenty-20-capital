@@ -512,23 +512,9 @@ export default function HomePage() {
                         const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                         const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
                         
-                        // Calculate holding period in a readable format
+                        // Calculate holding period in days
                         const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
-                        const years = Math.floor(totalDays / 365)
-                        const remainingDays = totalDays % 365
-                        const months = Math.floor(remainingDays / 30)
-                        const days = remainingDays % 30
-                        
-                        let holdingPeriod = ''
-                        if (years > 0) {
-                          holdingPeriod += `${years}y `
-                        }
-                        if (months > 0) {
-                          holdingPeriod += `${months}m `
-                        }
-                        if (days > 0 || holdingPeriod === '') {
-                          holdingPeriod += `${days}d`
-                        }
+                        const holdingPeriod = `${totalDays} days`
                         
                         return (
                       <tr key={position.symbol + position.exitDate} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
@@ -555,7 +541,7 @@ export default function HomePage() {
                           <span className="text-sm text-gray-600">{formatDate(position.exitDate)}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
-                          <span className="text-sm text-gray-600">{holdingPeriod.trim()}</span>
+                          <span className="text-sm text-gray-600">{holdingPeriod}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-gray-700">{formatCurrency(position.totalInvestedNZD, 'NZD')}</span>
@@ -596,23 +582,9 @@ export default function HomePage() {
                     const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                     const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
                     
-                    // Calculate holding period in a readable format
+                    // Calculate holding period in days
                     const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
-                    const years = Math.floor(totalDays / 365)
-                    const remainingDays = totalDays % 365
-                    const months = Math.floor(remainingDays / 30)
-                    const days = remainingDays % 30
-                    
-                    let holdingPeriod = ''
-                    if (years > 0) {
-                      holdingPeriod += `${years}y `
-                    }
-                    if (months > 0) {
-                      holdingPeriod += `${months}m `
-                    }
-                    if (days > 0 || holdingPeriod === '') {
-                      holdingPeriod += `${days}d`
-                    }
+                    const holdingPeriod = `${totalDays} days`
                     
                     return (
                   <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
@@ -660,7 +632,7 @@ export default function HomePage() {
                       </div>
                       <div>
                         <div className="text-gray-500">Holding Period</div>
-                        <div className="font-medium">{holdingPeriod.trim()}</div>
+                        <div className="font-medium">{holdingPeriod}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">Total Invested</div>
