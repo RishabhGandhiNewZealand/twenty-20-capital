@@ -7,9 +7,8 @@ interface TreemapData {
   name: string
   symbol: string
   value: number
-  gain: number
-  gainPercent: number
-  color?: string
+  percentage: number
+  color: string
 }
 
 interface PortfolioTreemapProps {
@@ -23,17 +22,17 @@ interface PortfolioTreemapProps {
 }
 
 export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
+  // Calculate total portfolio value
+  const totalValue = holdings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
+  
   // Transform holdings data for treemap
-  const treemapData: TreemapData[] = holdings.map((holding) => ({
+  const treemapData: TreemapData[] = holdings.map((holding, index) => ({
     name: holding.name,
     symbol: holding.symbol,
     value: holding.currentValueNZD,
-    gain: holding.gainNZD,
-    gainPercent: holding.gainPercent,
-    // Color based on gain/loss
-    color: holding.gainNZD >= 0 
-      ? `hsl(142, ${Math.min(70, Math.abs(holding.gainPercent))}%, ${50 - Math.min(20, Math.abs(holding.gainPercent) / 2)}%)`
-      : `hsl(0, ${Math.min(70, Math.abs(holding.gainPercent))}%, ${50 - Math.min(20, Math.abs(holding.gainPercent) / 2)}%)`
+    percentage: (holding.currentValueNZD / totalValue) * 100,
+    // Use a consistent color palette
+    color: `hsl(${(index * 360) / holdings.length}, 70%, 50%)`
   }))
 
   const formatCurrency = (value: number) => {
@@ -51,17 +50,15 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
           <p className="font-semibold text-gray-900">{data.symbol}</p>
-          <p className="text-sm text-gray-600">{data.name}</p>
-          <div className="mt-2 space-y-1">
+          <p className="text-sm text-gray-600 mb-2">{data.name}</p>
+          <div className="space-y-1">
             <p className="text-sm">
               <span className="text-gray-500">Value:</span>
               <span className="font-medium ml-1">{formatCurrency(data.value)}</span>
             </p>
-            <p className={`text-sm ${data.gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              <span>Return:</span>
-              <span className="font-medium ml-1">
-                {formatCurrency(data.gain)} ({data.gainPercent >= 0 ? '+' : ''}{data.gainPercent.toFixed(1)}%)
-              </span>
+            <p className="text-sm">
+              <span className="text-gray-500">Allocation:</span>
+              <span className="font-medium ml-1">{data.percentage.toFixed(1)}%</span>
             </p>
           </div>
         </div>
@@ -71,7 +68,7 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
   }
 
   const CustomContent = (props: any) => {
-    const { x, y, width, height, symbol, value, gainPercent, color } = props
+    const { x, y, width, height, symbol, percentage, color } = props
     
     // Only show content if the rectangle is large enough
     if (width < 50 || height < 30) return null
@@ -87,16 +84,18 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
           stroke="#fff"
           strokeWidth={2}
           rx={4}
+          className="opacity-80 hover:opacity-100 transition-opacity"
         />
         {width > 60 && height > 40 && (
           <>
             <text
               x={x + width / 2}
-              y={y + height / 2 - 10}
+              y={y + height / 2 - 8}
               textAnchor="middle"
               fill="#fff"
-              fontSize={Math.min(16, width / 6)}
+              fontSize={Math.min(16, width / 5)}
               fontWeight="bold"
+              className="pointer-events-none"
             >
               {symbol}
             </text>
@@ -105,9 +104,10 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               y={y + height / 2 + 10}
               textAnchor="middle"
               fill="#fff"
-              fontSize={Math.min(14, width / 8)}
+              fontSize={Math.min(14, width / 6)}
+              className="pointer-events-none"
             >
-              {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(1)}%
+              {percentage?.toFixed(1) || '0.0'}%
             </text>
           </>
         )}
@@ -121,7 +121,7 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
         <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Allocation</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] sm:h-[400px] w-full">
+        <div className="h-[250px] sm:h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <Treemap
               data={treemapData}
@@ -135,15 +135,8 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
             </Treemap>
           </ResponsiveContainer>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2 justify-center">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-4 h-4 bg-green-500 rounded"></div>
-            <span className="text-gray-600">Positive Returns</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <span className="text-gray-600">Negative Returns</span>
-          </div>
+        <div className="mt-4 text-center text-sm text-gray-600">
+          Size represents allocation percentage in portfolio
         </div>
       </CardContent>
     </Card>

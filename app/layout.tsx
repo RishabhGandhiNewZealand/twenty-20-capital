@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   description: "Track your personal investing journey and portfolio performance",
   generator: 'v0.dev',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
