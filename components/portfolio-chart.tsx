@@ -316,7 +316,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         <div className="h-[300px] sm:h-[400px] w-full relative">
           {/* Portfolio Stats Overlay - Mobile Responsive */}
           {portfolioStats.length > 0 && (
-            <div className="absolute top-1 left-1 sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
+            <div className="absolute top-1 left-12 sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
               {portfolioStats.map((stat) => {
                 return (
                   <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm">

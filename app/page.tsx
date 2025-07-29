@@ -355,7 +355,7 @@ export default function HomePage() {
                 <div className="md:hidden space-y-4 px-4">
                   {holdings.map((holding) => (
                     <div key={holding.symbol} className="bg-white rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center">
                           <img 
                             src={getLogoUrl(holding.symbol)} 
@@ -367,16 +367,24 @@ export default function HomePage() {
                           />
                           <div>
                             <div className="font-semibold text-gray-900">{holding.symbol}</div>
-                            <div className="text-sm text-gray-500">{holding.name}</div>
+                            <div className="text-sm text-gray-500 line-clamp-1">{holding.name}</div>
                           </div>
                         </div>
-                        <div className={`text-right ${holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          <div className="font-semibold">
-                            {holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%
-                          </div>
-                          <div className="text-sm">
-                            {formatCurrency(holding.gainNZD)}
-                          </div>
+                      </div>
+                      
+                      {/* Prominent Gain/Loss Display */}
+                      <div className={`text-center py-3 mb-3 rounded-lg ${
+                        holding.gainNZD >= 0 ? 'bg-green-50' : 'bg-red-50'
+                      }`}>
+                        <div className={`text-2xl font-bold ${
+                          holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%
+                        </div>
+                        <div className={`text-sm font-medium ${
+                          holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {formatCurrency(holding.gainNZD)}
                         </div>
                       </div>
                       
@@ -386,7 +394,7 @@ export default function HomePage() {
                           <div className="font-medium">{formatNumber(holding.shares, 2)}</div>
                         </div>
                         <div>
-                          <div className="text-gray-500">Price</div>
+                          <div className="text-gray-500">Current Price</div>
                           <div className="font-medium">
                             {holding.currency === 'NZD' 
                               ? `NZ$${holding.currentPrice.toFixed(2)}`
@@ -395,11 +403,11 @@ export default function HomePage() {
                         </div>
                         <div>
                           <div className="text-gray-500">Market Value</div>
-                          <div className="font-medium">{formatCurrency(holding.currentValueNZD)}</div>
+                          <div className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD)}</div>
                         </div>
                         <div>
                           <div className="text-gray-500">Cost Basis</div>
-                          <div className="font-medium">{formatCurrency(holding.costBasisNZD)}</div>
+                          <div className="font-medium text-gray-600">{formatCurrency(holding.costBasisNZD)}</div>
                         </div>
                       </div>
                     </div>
@@ -410,40 +418,48 @@ export default function HomePage() {
                     <>
                       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
                         <div className="font-semibold text-gray-900 mb-3">Total Portfolio</div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <div className="text-gray-500">Market Value</div>
-                            <div className="font-medium">{formatCurrency(summary.totalValueNZD)}</div>
+                            <div className="font-medium text-lg">{formatCurrency(summary.totalValueNZD)}</div>
                           </div>
                           <div>
                             <div className="text-gray-500">Cost Basis</div>
                             <div className="font-medium">{formatCurrency(summary.totalCostBasisNZD)}</div>
                           </div>
-                          <div className="col-span-2">
-                            <div className="text-gray-500">Total Gain/Loss</div>
-                            <div className={`font-medium ${summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatCurrency(summary.totalGainNZD)} ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
-                            </div>
+                        </div>
+                        <div className={`text-center py-2 rounded-lg ${
+                          summary.totalGainNZD >= 0 ? 'bg-green-50' : 'bg-red-50'
+                        }`}>
+                          <div className="text-gray-600 text-xs mb-1">Total Return</div>
+                          <div className={`font-bold text-lg ${
+                            summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {formatCurrency(summary.totalGainNZD)} ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
                           </div>
                         </div>
                       </div>
                       
                       <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
                         <div className="font-semibold text-gray-900 mb-3">S&P 500 Benchmark</div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <div className="text-gray-600">Market Value</div>
-                            <div className="font-medium">{formatCurrency(summary.sp500Value)}</div>
+                            <div className="font-medium text-lg">{formatCurrency(summary.sp500Value)}</div>
                           </div>
                           <div>
                             <div className="text-gray-600">Cost Basis</div>
                             <div className="font-medium">{formatCurrency(summary.totalCostBasisNZD)}</div>
                           </div>
-                          <div className="col-span-2">
-                            <div className="text-gray-600">Total Gain/Loss</div>
-                            <div className={`font-medium ${summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatCurrency(summary.sp500GainNZD)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
-                            </div>
+                        </div>
+                        <div className={`text-center py-2 rounded-lg ${
+                          summary.sp500GainNZD >= 0 ? 'bg-green-50' : 'bg-red-50'
+                        }`}>
+                          <div className="text-gray-600 text-xs mb-1">Total Return</div>
+                          <div className={`font-bold text-lg ${
+                            summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {formatCurrency(summary.sp500GainNZD)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
                           </div>
                         </div>
                       </div>
@@ -533,7 +549,7 @@ export default function HomePage() {
                   .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
                   .map((position) => (
                   <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center">
                         <img 
                           src={getLogoUrl(position.symbol)} 
@@ -546,16 +562,24 @@ export default function HomePage() {
                         />
                         <div>
                           <div className="font-semibold text-gray-900">{position.symbol}</div>
-                          <div className="text-sm text-gray-500">{position.name}</div>
+                          <div className="text-sm text-gray-500 line-clamp-1">{position.name}</div>
                         </div>
                       </div>
-                      <div className={`text-right ${position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        <div className="font-semibold">
-                          {position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%
-                        </div>
-                        <div className="text-sm">
-                          {formatCurrency(position.profitLossNZD, 'NZD')}
-                        </div>
+                    </div>
+                    
+                    {/* Prominent Profit/Loss Display */}
+                    <div className={`text-center py-3 mb-3 rounded-lg ${
+                      position.profitLossNZD >= 0 ? 'bg-green-50' : 'bg-red-50'
+                    }`}>
+                      <div className={`text-2xl font-bold ${
+                        position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%
+                      </div>
+                      <div className={`text-sm font-medium ${
+                        position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {formatCurrency(position.profitLossNZD, 'NZD')}
                       </div>
                     </div>
                     
@@ -570,11 +594,11 @@ export default function HomePage() {
                       </div>
                       <div>
                         <div className="text-gray-500">Total Invested</div>
-                        <div className="font-medium">{formatCurrency(position.totalInvestedNZD, 'NZD')}</div>
+                        <div className="font-medium text-gray-600">{formatCurrency(position.totalInvestedNZD, 'NZD')}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">Total Return</div>
-                        <div className="font-medium">{formatCurrency(position.totalReturnNZD, 'NZD')}</div>
+                        <div className="font-medium text-gray-900">{formatCurrency(position.totalReturnNZD, 'NZD')}</div>
                       </div>
                     </div>
                   </div>
