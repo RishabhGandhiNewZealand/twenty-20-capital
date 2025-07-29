@@ -98,11 +98,11 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               x={x + width / 2}
               y={y + height / 2 - 8}
               textAnchor="middle"
-              fill="#000000"
+              fill="#ffffff"
               fontSize={Math.min(16, width / 5)}
-              fontWeight="bold"
+              fontWeight="300"
               className="pointer-events-none"
-              style={{ fill: '#000000' }}
+              style={{ fill: '#ffffff' }}
             >
               {symbol}
             </text>
@@ -110,10 +110,11 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               x={x + width / 2}
               y={y + height / 2 + 10}
               textAnchor="middle"
-              fill="#000000"
+              fill="#ffffff"
               fontSize={Math.min(14, width / 6)}
+              fontWeight="300"
               className="pointer-events-none"
-              style={{ fill: '#000000' }}
+              style={{ fill: '#ffffff' }}
             >
               {percentage.toFixed(1)}%
             </text>
