@@ -2,9 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts"
-import { useEffect, useState, useRef } from "react"
-import { Loader2 } from "lucide-react"
+import { useEffect, useState, useRef, useCallback } from "react"
+import { Loader2, Play, Pause } from "lucide-react"
 import { getCompanyColor } from "@/lib/company-colors"
+import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 
 interface TreemapData {
   name: string
@@ -35,16 +38,19 @@ interface PortfolioTreemapProps {
     gainNZD: number
     gainPercent: number
   }>
-  hoveredDate?: string | null
 }
 
-export function PortfolioTreemap({ holdings: currentHoldings, hoveredDate }: PortfolioTreemapProps) {
+export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemapProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [displayDate, setDisplayDate] = useState<string | null>(null)
+  const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [sliderValue, setSliderValue] = useState<number>(0)
+  const [isPlaying, setIsPlaying] = useState(false)
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
+  const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load the pre-cached composition data on mount
   useEffect(() => {
@@ -56,6 +62,17 @@ export function PortfolioTreemap({ holdings: currentHoldings, hoveredDate }: Por
         }
         const data = await response.json()
         setCompositionData(data)
+        
+        // Get available dates and sort them
+        const dates = Object.keys(data).sort()
+        setAvailableDates(dates)
+        
+        // Set initial slider to the latest date
+        if (dates.length > 0) {
+          setSliderValue(dates.length - 1)
+          setDisplayDate(dates[dates.length - 1])
+        }
+        
         setLoading(false)
       } catch (err) {
         console.error('Error loading composition data:', err)
@@ -67,62 +84,103 @@ export function PortfolioTreemap({ holdings: currentHoldings, hoveredDate }: Por
     loadCompositionData()
   }, [])
 
-  // Update display when hoveredDate changes
+  // Update display when slider value changes
   useEffect(() => {
-    if (!hoveredDate) {
-      // Use current holdings when no date is hovered
-      if (currentHoldings && currentHoldings.length > 0) {
-        const totalValue = currentHoldings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
-        const transformed: HoldingAtDate[] = currentHoldings.map(holding => ({
-          symbol: holding.symbol,
-          name: holding.name,
-          shares: 0, // Not used in display
-          value: holding.currentValueNZD,
-          percentage: (holding.currentValueNZD / totalValue) * 100,
-          currency: 'NZD'
-        }))
-        setDisplayHoldings(transformed)
-        setDisplayDate(null)
+    if (availableDates.length > 0 && sliderValue >= 0 && sliderValue < availableDates.length) {
+      const selectedDate = availableDates[sliderValue]
+      setDisplayDate(selectedDate)
+      
+      // Check cache first
+      if (cacheRef.current.has(selectedDate)) {
+        setDisplayHoldings(cacheRef.current.get(selectedDate)!)
+        return
       }
-      return
-    }
 
-    // Check cache first
-    if (cacheRef.current.has(hoveredDate)) {
-      setDisplayHoldings(cacheRef.current.get(hoveredDate)!)
-      setDisplayDate(hoveredDate)
-      return
-    }
+      // Check pre-cached data
+      if (compositionData && compositionData[selectedDate]) {
+        const holdings = compositionData[selectedDate]
+        cacheRef.current.set(selectedDate, holdings)
+        setDisplayHoldings(holdings)
+        return
+      }
 
-    // Check pre-cached data
-    if (compositionData && compositionData[hoveredDate]) {
-      const holdings = compositionData[hoveredDate]
-      cacheRef.current.set(hoveredDate, holdings)
-      setDisplayHoldings(holdings)
-      setDisplayDate(hoveredDate)
-      return
-    }
-
-    // If not in pre-cached data, fetch from API
-    async function fetchComposition() {
-      try {
-        const response = await fetch(`/api/portfolio-composition/${hoveredDate}`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch composition')
+      // If not in pre-cached data, fetch from API
+      async function fetchComposition() {
+        try {
+          const response = await fetch(`/api/portfolio-composition/${selectedDate}`)
+          if (!response.ok) {
+            throw new Error('Failed to fetch composition')
+          }
+          const data = await response.json()
+          if (data.holdings) {
+            cacheRef.current.set(selectedDate, data.holdings)
+            setDisplayHoldings(data.holdings)
+          }
+        } catch (err) {
+          console.error('Error fetching composition:', err)
         }
-        const data = await response.json()
-        if (data.holdings) {
-          cacheRef.current.set(hoveredDate, data.holdings)
-          setDisplayHoldings(data.holdings)
-          setDisplayDate(hoveredDate)
-        }
-      } catch (err) {
-        console.error('Error fetching composition:', err)
+      }
+
+      fetchComposition()
+    } else if (sliderValue === availableDates.length && currentHoldings) {
+      // Use current holdings when slider is at the end
+      const totalValue = currentHoldings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
+      const transformed: HoldingAtDate[] = currentHoldings.map(holding => ({
+        symbol: holding.symbol,
+        name: holding.name,
+        shares: 0, // Not used in display
+        value: holding.currentValueNZD,
+        percentage: (holding.currentValueNZD / totalValue) * 100,
+        currency: 'NZD'
+      }))
+      setDisplayHoldings(transformed)
+      setDisplayDate(null)
+    }
+  }, [sliderValue, availableDates, compositionData, currentHoldings])
+
+  // Play/pause functionality
+  const togglePlay = useCallback(() => {
+    if (isPlaying) {
+      // Stop playing
+      setIsPlaying(false)
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current)
+        playIntervalRef.current = null
+      }
+    } else {
+      // Start playing
+      setIsPlaying(true)
+      
+      // Reset to start if at the end
+      if (sliderValue >= availableDates.length - 1) {
+        setSliderValue(0)
+      }
+      
+      playIntervalRef.current = setInterval(() => {
+        setSliderValue(prev => {
+          if (prev >= availableDates.length - 1) {
+            // Stop at the end
+            setIsPlaying(false)
+            if (playIntervalRef.current) {
+              clearInterval(playIntervalRef.current)
+              playIntervalRef.current = null
+            }
+            return prev
+          }
+          return prev + 1
+        })
+      }, 100) // Update every 100ms for smooth animation
+    }
+  }, [isPlaying, sliderValue, availableDates.length])
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current)
       }
     }
-
-    fetchComposition()
-  }, [hoveredDate, currentHoldings, compositionData])
+  }, [])
 
   // Transform holdings data for treemap
   const treemapData: TreemapData[] = displayHoldings
@@ -257,10 +315,10 @@ export function PortfolioTreemap({ holdings: currentHoldings, hoveredDate }: Por
     )
   }
 
-  if (treemapData.length === 0) {
-    return (
-      <Card className="border-blue-100">
-        <CardHeader>
+  return (
+    <Card className="border-blue-100">
+      <CardHeader>
+        <div className="flex items-center justify-between">
           <CardTitle className="text-gray-900 text-lg sm:text-xl">
             Portfolio Allocation
             {displayDate && (
@@ -269,45 +327,70 @@ export function PortfolioTreemap({ holdings: currentHoldings, hoveredDate }: Por
               </span>
             )}
           </CardTitle>
-        </CardHeader>
-        <CardContent>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={togglePlay}
+              className="flex items-center gap-2"
+            >
+              {isPlaying ? (
+                <>
+                  <Pause className="h-4 w-4" />
+                  Pause
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Play
+                </>
+              )}
+            </Button>
+            <div className="flex items-center gap-3 min-w-[200px]">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-NZ', { 
+                  year: 'numeric',
+                  month: 'short'
+                })}
+              </span>
+              <Slider
+                value={[sliderValue]}
+                onValueChange={(value) => setSliderValue(value[0])}
+                max={availableDates.length}
+                step={1}
+                className="flex-1"
+                disabled={isPlaying}
+              />
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                {displayDate ? formatDate(displayDate) : 'Today'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {treemapData.length === 0 ? (
           <div className="h-[250px] sm:h-[350px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card className="border-blue-100">
-      <CardHeader>
-        <CardTitle className="text-gray-900 text-lg sm:text-xl">
-          Portfolio Allocation
-          {displayDate && (
-            <span className="text-sm font-normal text-gray-500 ml-2">
-              as of {formatDate(displayDate)}
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[250px] sm:h-[350px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <Treemap
-              data={treemapData}
-              dataKey="value"
-              aspectRatio={4 / 3}
-              stroke="#fff"
-              fill="#8884d8"
-              content={<CustomContent />}
-              isAnimationActive={true}
-              animationDuration={300}
-            >
-              <Tooltip content={<CustomTooltip />} />
-            </Treemap>
-          </ResponsiveContainer>
-        </div>
+        ) : (
+          <div className="h-[250px] sm:h-[350px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <Treemap
+                data={treemapData}
+                dataKey="value"
+                aspectRatio={4 / 3}
+                stroke="#fff"
+                fill="#8884d8"
+                content={<CustomContent />}
+                isAnimationActive={true}
+                animationDuration={300}
+              >
+                <Tooltip content={<CustomTooltip />} />
+              </Treemap>
+            </ResponsiveContainer>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

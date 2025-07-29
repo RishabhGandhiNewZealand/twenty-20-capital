@@ -2,15 +2,16 @@
 
 ## Overview
 
-The portfolio treemap on the homepage now dynamically updates based on the date being hovered on the portfolio value graph. This provides a historical view of portfolio composition over time.
+The portfolio treemap on the homepage now includes an interactive timeline slider and play button, allowing users to explore how portfolio composition has changed over time independently from the portfolio chart.
 
 ## Features
 
-1. **Dynamic Date-based Updates**: The treemap updates in real-time as users hover over different dates on the portfolio chart
-2. **Pre-cached Data**: All historical portfolio compositions are cached at build time for smooth performance
-3. **Fallback to API**: If a date is not in the cache, the system falls back to the API endpoint
-4. **Smooth Transitions**: The treemap animates between different compositions
-5. **Consistent Company Colors**: Each company maintains the same color throughout time for easy visual tracking
+1. **Interactive Timeline Slider**: Users can drag a slider to view portfolio composition at any date from inception to today
+2. **Play Button Animation**: Automatically animate through the portfolio history to see how allocations evolved
+3. **Pre-cached Data**: All historical portfolio compositions are cached at build time for smooth performance
+4. **Fallback to API**: If a date is not in the cache, the system falls back to the API endpoint
+5. **Smooth Transitions**: The treemap animates between different compositions
+6. **Consistent Company Colors**: Each company maintains the same color throughout time for easy visual tracking
 
 ## Implementation Details
 
@@ -40,14 +41,14 @@ This should be set in your environment or deployment configuration.
 
 ### Data Flow
 
-1. User hovers over a date on the portfolio chart
-2. Chart component emits the hovered date via `onDateHover` callback
-3. Homepage passes the date to the treemap component
-4. Treemap checks:
+1. User interacts with the timeline slider or clicks play button
+2. Treemap component updates the selected date based on slider position
+3. Component checks for data in this order:
    - First: In-memory cache
    - Second: Pre-cached JSON file (`/public/data/portfolio-compositions.json`)
    - Third: API endpoint (if not found in cache)
-5. Treemap displays the composition for that date with smooth animation
+4. Treemap displays the composition for that date with smooth animation
+5. If playing, automatically advances through dates at 100ms intervals
 
 ## Testing
 
@@ -68,7 +69,10 @@ To test the functionality:
    npm run dev
    ```
 
-4. Navigate to the homepage and hover over different points on the portfolio chart to see the treemap update
+4. Navigate to the homepage and:
+   - Use the slider to explore different dates
+   - Click the Play button to see an animated progression
+   - The treemap will update to show portfolio composition at each selected date
 
 ## Performance Considerations
 

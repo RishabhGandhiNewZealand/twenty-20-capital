@@ -39,7 +39,6 @@ export default function HomePage() {
   const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [hoveredDate, setHoveredDate] = useState<string | null>(null)
   const [portfolioStats, setPortfolioStats] = useState([
     {
       title: "Portfolio Value (NZD)",
@@ -215,7 +214,6 @@ export default function HomePage() {
         <div className="mb-6 sm:mb-8">
           <PortfolioChart 
             portfolioStats={portfolioStats} 
-            onDateHover={setHoveredDate}
           />
         </div>
 
@@ -226,7 +224,6 @@ export default function HomePage() {
           <div className="mb-6 sm:mb-8">
             <PortfolioTreemap 
               holdings={holdings} 
-              hoveredDate={hoveredDate}
             />
           </div>
         )}
