@@ -56,6 +56,28 @@ const mockReports: Record<string, { quarterly: Report[], annual: Report[] }> = {
       { title: 'Half Year Report 2023', date: '2022-11-10', url: 'https://www.mainfreight.com/getmedia/4e3e5b3a-7c3b-4f89-8e3e-3b8c5e8f5b3a/Mainfreight-Half-Year-Report-2023.pdf', type: 'annual' },
       { title: 'Annual Report 2022', date: '2022-05-26', url: 'https://www.mainfreight.com/getmedia/3e3e5b3a-7c3b-4f89-8e3e-3b8c5e8f5b3a/Mainfreight-Annual-Report-2022.pdf', type: 'annual' },
     ]
+  },
+  'UBER': {
+    quarterly: [
+      { title: 'Q2 2024 Earnings Report', date: '2024-08-06', url: 'https://s23.q4cdn.com/407969754/files/doc_financials/2024/q2/Uber-Q2-2024-Earnings-Report.pdf', type: 'quarterly' },
+      { title: 'Q1 2024 Earnings Report', date: '2024-05-08', url: 'https://s23.q4cdn.com/407969754/files/doc_financials/2024/q1/Uber-Q1-2024-Earnings-Report.pdf', type: 'quarterly' },
+      { title: 'Q4 2023 Earnings Report', date: '2024-02-07', url: 'https://s23.q4cdn.com/407969754/files/doc_financials/2023/q4/Q4-2023-Earnings-Report.pdf', type: 'quarterly' },
+    ],
+    annual: [
+      { title: '2023 Annual Report', date: '2024-02-15', url: 'https://s23.q4cdn.com/407969754/files/doc_financials/2023/ar/2023-Annual-Report.pdf', type: 'annual' },
+      { title: '2022 Annual Report', date: '2023-02-16', url: 'https://s23.q4cdn.com/407969754/files/doc_financials/2022/ar/2022-Annual-Report.pdf', type: 'annual' },
+    ]
+  },
+  'SPGI': {
+    quarterly: [
+      { title: 'Q2 2024 Earnings Release', date: '2024-07-30', url: 'https://investor.spglobal.com/file/4610224/Index?KeyFile=1500180789', type: 'quarterly' },
+      { title: 'Q1 2024 Earnings Release', date: '2024-04-30', url: 'https://investor.spglobal.com/file/4610224/Index?KeyFile=1500179654', type: 'quarterly' },
+      { title: 'Q4 2023 Earnings Release', date: '2024-02-06', url: 'https://investor.spglobal.com/file/4610224/Index?KeyFile=1500178321', type: 'quarterly' },
+    ],
+    annual: [
+      { title: '2023 Annual Report', date: '2024-02-27', url: 'https://investor.spglobal.com/file/4610224/Index?KeyFile=1500178890', type: 'annual' },
+      { title: '2022 Annual Report', date: '2023-02-28', url: 'https://investor.spglobal.com/file/4610224/Index?KeyFile=1500171234', type: 'annual' },
+    ]
   }
 }
 
@@ -71,7 +93,7 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    // Get investor relations URL
+    // Get investor relations URL - this will always return something now
     const irUrl = getInvestorRelationsUrl(symbol)
     
     // Check if we have mock data for this symbol
@@ -98,7 +120,7 @@ export async function GET(request: NextRequest) {
         quarterly: [],
         annual: [],
       },
-      message: 'Reports not available. Please visit the investor relations page.',
+      message: 'Direct report links are not available yet for this company. Please visit the investor relations page to access financial reports.',
       lastUpdated: new Date().toISOString()
     })
     
