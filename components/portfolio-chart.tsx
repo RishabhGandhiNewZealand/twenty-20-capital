@@ -292,9 +292,9 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   return (
     <Card className="border-blue-100">
       <CardHeader className="pb-2 sm:pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Performance</CardTitle>
-          <div className="flex items-center space-x-2 justify-end">
+          <div className="flex items-center space-x-2">
             <Label htmlFor="view-toggle" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
               <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Value</span>
@@ -316,7 +316,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         <div className="h-[300px] sm:h-[400px] w-full relative">
           {/* Portfolio Stats Overlay - Mobile Responsive */}
           {portfolioStats.length > 0 && (
-            <div className="absolute top-1 left-12 sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
+            <div className="absolute top-1 left-[55px] sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
               {portfolioStats.map((stat) => {
                 return (
                   <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm">
