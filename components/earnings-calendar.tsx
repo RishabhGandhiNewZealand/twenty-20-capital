@@ -1,11 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, TrendingUp, AlertCircle, Clock, CheckCircle } from "lucide-react"
+import { Calendar, TrendingUp, AlertCircle, Clock, CheckCircle, ExternalLink, FileText, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { getLogoUrl } from "@/lib/company-utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface EarningsData {
   symbol: string
@@ -19,13 +23,39 @@ interface EarningsData {
   daysUntilEarnings?: number
 }
 
+interface Report {
+  title: string
+  date: string
+  url: string
+  type: 'quarterly' | 'annual'
+}
+
+interface InvestorReportsData {
+  symbol: string
+  investorRelationsUrl: string | null
+  reports: {
+    quarterly: Report[]
+    annual: Report[]
+  }
+  message?: string
+}
+
 export function EarningsCalendar() {
   const [earnings, setEarnings] = useState<EarningsData[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedCompany, setSelectedCompany] = useState<EarningsData | null>(null)
+  const [investorReports, setInvestorReports] = useState<InvestorReportsData | null>(null)
+  const [loadingReports, setLoadingReports] = useState(false)
 
   useEffect(() => {
     fetchEarnings()
   }, [])
+
+  useEffect(() => {
+    if (selectedCompany) {
+      fetchInvestorReports(selectedCompany.symbol)
+    }
+  }, [selectedCompany])
 
   const fetchEarnings = async () => {
     try {
@@ -37,6 +67,24 @@ export function EarningsCalendar() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchInvestorReports = async (symbol: string) => {
+    setLoadingReports(true)
+    try {
+      const response = await fetch(`/api/investor-reports?symbol=${symbol}`)
+      const data = await response.json()
+      setInvestorReports(data)
+    } catch (error) {
+      console.error('Error fetching investor reports:', error)
+      setInvestorReports(null)
+    } finally {
+      setLoadingReports(false)
+    }
+  }
+
+  const handleCardClick = (earning: EarningsData) => {
+    setSelectedCompany(earning)
   }
 
   const renderEarningsCard = (earning: EarningsData) => {
@@ -59,7 +107,11 @@ export function EarningsCalendar() {
     const reportingFrequency = isMainfreight ? 'Half-Yearly' : 'Quarterly'
     
     return (
-      <Card key={earning.symbol} className="hover:shadow-lg transition-shadow">
+      <Card 
+        key={earning.symbol} 
+        className="hover:shadow-lg transition-all cursor-pointer hover:scale-[1.02]"
+        onClick={() => handleCardClick(earning)}
+      >
         <CardContent className="p-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
@@ -141,6 +193,47 @@ export function EarningsCalendar() {
     )
   }
 
+  const renderReportsList = (reports: Report[], type: 'quarterly' | 'annual') => {
+    if (reports.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          No {type} reports available
+        </div>
+      )
+    }
+
+    return (
+      <ScrollArea className="h-[400px]">
+        <div className="space-y-2">
+          {reports.map((report, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <FileText className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="font-medium text-sm">{report.title}</p>
+                  <p className="text-xs text-gray-500">{format(new Date(report.date), 'MMM d, yyyy')}</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                onClick={(e) => e.stopPropagation()}
+              >
+                <a href={report.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </Button>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -158,59 +251,138 @@ export function EarningsCalendar() {
   const noDateEarnings = earnings.filter(e => !e.hasReported && !e.nextEarningsDate && !e.lastEarningsDate)
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+    <>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
             <CardTitle>Portfolio Companies Earnings</CardTitle>
-            <div className="flex items-center text-sm text-gray-600">
-              <Clock className="w-4 h-4 mr-1" />
-              <span>±45 days window</span>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Upcoming Earnings */}
-          {upcomingEarnings.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-gray-900">
-                Upcoming Earnings ({upcomingEarnings.length})
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {upcomingEarnings.map(earning => renderEarningsCard(earning))}
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Upcoming Earnings */}
+            {upcomingEarnings.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">
+                  Upcoming Earnings ({upcomingEarnings.length})
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {upcomingEarnings.map(earning => renderEarningsCard(earning))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Recently Reported */}
-          {reportedEarnings.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-gray-900">
-                Recently Reported ({reportedEarnings.length})
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {reportedEarnings.map(earning => renderEarningsCard(earning))}
+            {/* Recently Reported */}
+            {reportedEarnings.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">
+                  Recently Reported ({reportedEarnings.length})
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {reportedEarnings.map(earning => renderEarningsCard(earning))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* No Date Available */}
-          {noDateEarnings.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-gray-900">
-                No Earnings Date Available ({noDateEarnings.length})
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {noDateEarnings.map(earning => renderEarningsCard(earning))}
+            {/* No Date Available */}
+            {noDateEarnings.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">
+                  No Earnings Date Available ({noDateEarnings.length})
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {noDateEarnings.map(earning => renderEarningsCard(earning))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {earnings.length === 0 && (
-            <p className="text-gray-500 text-center py-8">No earnings data available</p>
+            {earnings.length === 0 && (
+              <p className="text-gray-500 text-center py-8">No earnings data available</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Expanded View Dialog */}
+      <Dialog open={!!selectedCompany} onOpenChange={(open) => !open && setSelectedCompany(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          {selectedCompany && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={getLogoUrl(selectedCompany.symbol)}
+                      alt={`${selectedCompany.name} logo`}
+                      className="w-10 h-10 rounded-lg object-contain bg-gray-50 p-1"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${selectedCompany.symbol}&background=0D9488&color=fff&size=40`
+                      }}
+                    />
+                    <div>
+                      <h2 className="text-xl font-bold">{selectedCompany.name}</h2>
+                      <p className="text-sm text-gray-600">{selectedCompany.symbol}</p>
+                    </div>
+                  </div>
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="mt-4">
+                {loadingReports ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : investorReports ? (
+                  <div className="space-y-4">
+                    {investorReports.investorRelationsUrl && (
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <span className="text-sm font-medium">Investor Relations Page</span>
+                        <Button variant="outline" size="sm" asChild>
+                          <a 
+                            href={investorReports.investorRelationsUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                          >
+                            Visit IR Page
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+
+                    <Tabs defaultValue="quarterly" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="quarterly">
+                          Quarterly Reports ({investorReports.reports.quarterly.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="annual">
+                          Annual Reports ({investorReports.reports.annual.length})
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="quarterly" className="mt-4">
+                        {renderReportsList(investorReports.reports.quarterly, 'quarterly')}
+                      </TabsContent>
+                      
+                      <TabsContent value="annual" className="mt-4">
+                        {renderReportsList(investorReports.reports.annual, 'annual')}
+                      </TabsContent>
+                    </Tabs>
+
+                    {investorReports.message && (
+                      <p className="text-sm text-gray-500 text-center mt-4">
+                        {investorReports.message}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    Unable to load investor reports
+                  </div>
+                )}
+              </div>
+            </>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
