@@ -154,15 +154,6 @@ export function PortfolioChart({ portfolioStats = [], onDateHover }: PortfolioCh
 
   // Custom tooltip for value view
   const CustomTooltipValue = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-    // Hide stats when tooltip is active
-    useEffect(() => {
-      setHideStats(active || false)
-      // Call the callback with the date when hovering
-      if (onDateHover) {
-        onDateHover(active && label ? label : null)
-      }
-    }, [active, label])
-
     if (active && payload && payload.length) {
       const portfolioValue = payload.find((p) => p.dataKey === 'portfolioValue')?.value as number
       const costBasis = payload.find((p) => p.dataKey === 'costBasis')?.value as number
@@ -217,15 +208,6 @@ export function PortfolioChart({ portfolioStats = [], onDateHover }: PortfolioCh
 
   // Custom tooltip for percentage view
   const CustomTooltipPercentage = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-    // Hide stats when tooltip is active
-    useEffect(() => {
-      setHideStats(active || false)
-      // Call the callback with the date when hovering
-      if (onDateHover) {
-        onDateHover(active && label ? label : null)
-      }
-    }, [active, label])
-
     if (active && payload && payload.length) {
       const portfolioPerformance = payload.find((p) => p.dataKey === 'portfolioPerformance')?.value as number
       const sp500Performance = payload.find((p) => p.dataKey === 'sp500Performance')?.value as number
@@ -266,6 +248,23 @@ export function PortfolioChart({ portfolioStats = [], onDateHover }: PortfolioCh
       )
     }
     return null
+  }
+
+  // Handle mouse events on the chart
+  const handleMouseMove = (e: any) => {
+    if (e && e.activeLabel) {
+      setHideStats(true)
+      if (onDateHover) {
+        onDateHover(e.activeLabel)
+      }
+    }
+  }
+
+  const handleMouseLeave = () => {
+    setHideStats(false)
+    if (onDateHover) {
+      onDateHover(null)
+    }
   }
 
   if (loading) {
@@ -354,6 +353,8 @@ export function PortfolioChart({ portfolioStats = [], onDateHover }: PortfolioCh
               <LineChart
                 data={performanceData}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
@@ -414,6 +415,8 @@ export function PortfolioChart({ portfolioStats = [], onDateHover }: PortfolioCh
               <LineChart
                 data={data}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 

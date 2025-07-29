@@ -24,8 +24,6 @@ interface PortfolioTreemapProps {
 }
 
 export function PortfolioTreemap({ holdings, selectedDate }: PortfolioTreemapProps) {
-  console.log('PortfolioTreemap render - holdings:', holdings.length, 'selectedDate:', selectedDate)
-  
   // Calculate total portfolio value
   const totalValue = holdings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
   
@@ -34,7 +32,6 @@ export function PortfolioTreemap({ holdings, selectedDate }: PortfolioTreemapPro
   
   // Transform holdings data for treemap - filter out holdings less than 0.1%
   const treemapData: TreemapData[] = useMemo(() => {
-    console.log('Recalculating treemap data, holdings:', holdings.length, 'totalValue:', totalValue)
     const data = holdings
       .map((holding, index) => ({
         name: holding.name,
@@ -47,7 +44,6 @@ export function PortfolioTreemap({ holdings, selectedDate }: PortfolioTreemapPro
       .filter(item => item.percentage >= 0.1 && item.value > 0)
       .sort((a, b) => b.value - a.value) // Sort by value descending
     
-    console.log('Treemap data after filter:', data.length, 'items')
     return data
   }, [holdings, totalValue])
 

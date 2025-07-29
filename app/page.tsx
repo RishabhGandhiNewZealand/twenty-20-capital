@@ -66,7 +66,6 @@ export default function HomePage() {
   // Function to fetch historical holdings for a specific date
   const fetchHistoricalHoldings = async (date: string) => {
     try {
-      console.log('Fetching historical holdings for date:', date)
       setLoadingHistorical(true)
       const response = await fetch(`/api/portfolio-holdings-history?date=${date}`)
       if (!response.ok) {
@@ -76,7 +75,6 @@ export default function HomePage() {
       }
       
       const data = await response.json()
-      console.log('Historical holdings data:', data)
       setHistoricalHoldings(data.holdings || [])
     } catch (error) {
       console.error('Error fetching historical holdings:', error)
@@ -89,7 +87,6 @@ export default function HomePage() {
 
   // Handle date hover from chart
   const handleDateHover = (date: string | null) => {
-    console.log('Date hover:', date)
     setSelectedDate(date)
     if (date && holdings.length > 0) {
       fetchHistoricalHoldings(date)
