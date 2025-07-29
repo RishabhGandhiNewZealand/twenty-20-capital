@@ -1,21 +1,13 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Treemap, ResponsiveContainer, Tooltip } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { Loader2, Play, Pause } from "lucide-react"
 import { getCompanyColor } from "@/lib/company-colors"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
-
-interface TreemapData {
-  name: string
-  symbol: string
-  value: number
-  percentage: number
-  color: string
-}
 
 interface HoldingAtDate {
   symbol: string
@@ -30,7 +22,15 @@ interface CompositionCache {
   [date: string]: HoldingAtDate[]
 }
 
-interface PortfolioTreemapProps {
+interface ChartData {
+  symbol: string
+  name: string
+  value: number
+  percentage: number
+  color: string
+}
+
+interface PortfolioRaceChartProps {
   holdings?: Array<{
     symbol: string
     name: string
@@ -40,7 +40,7 @@ interface PortfolioTreemapProps {
   }>
 }
 
-export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemapProps) {
+export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceChartProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
@@ -169,7 +169,7 @@ export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemap
           }
           return prev + 1
         })
-      }, 100) // Update every 100ms for smooth animation
+      }, 50) // Update every 50ms for smooth animation
     }
   }, [isPlaying, sliderValue, availableDates.length])
 
@@ -182,17 +182,19 @@ export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemap
     }
   }, [])
 
-  // Transform holdings data for treemap
-  const treemapData: TreemapData[] = displayHoldings
-    .filter(holding => holding.percentage >= 0.1 && holding.value > 0)
+  // Transform holdings data for race chart - show top 10
+  const chartData: ChartData[] = displayHoldings
+    .filter(holding => holding.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10)
     .map((holding) => ({
-      name: holding.name,
       symbol: holding.symbol,
+      name: holding.name,
       value: holding.value,
       percentage: holding.percentage,
       color: getCompanyColor(holding.symbol)
     }))
-    .sort((a, b) => b.value - a.value)
+    .reverse() // Reverse to show highest at top
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-NZ', {
@@ -234,53 +236,36 @@ export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemap
     return null
   }
 
-  const CustomContent = (props: any) => {
-    const { x, y, width, height, symbol, percentage, color } = props
+  // Custom label component for the bars
+  const CustomLabel = (props: any) => {
+    const { x, y, width, height, value, symbol, percentage } = props
     
-    // Only show content if the rectangle is large enough AND percentage is meaningful
-    if (width < 50 || height < 30 || !percentage || percentage < 0.1) return null
-
+    // Only show label if bar is wide enough
+    if (width < 50) return null
+    
     return (
       <g>
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill={color}
-          stroke="#fff"
-          strokeWidth={2}
-          rx={4}
-          className="opacity-90 hover:opacity-100 transition-opacity"
-        />
-        {width > 60 && height > 40 && percentage >= 0.1 && (
-          <>
-            <text
-              x={x + width / 2}
-              y={y + height / 2 - 8}
-              textAnchor="middle"
-              fill="#ffffff"
-              fontSize={Math.min(16, width / 5)}
-              fontWeight="300"
-              className="pointer-events-none"
-              style={{ fill: '#ffffff' }}
-            >
-              {symbol}
-            </text>
-            <text
-              x={x + width / 2}
-              y={y + height / 2 + 10}
-              textAnchor="middle"
-              fill="#ffffff"
-              fontSize={Math.min(14, width / 6)}
-              fontWeight="300"
-              className="pointer-events-none"
-              style={{ fill: '#ffffff' }}
-            >
-              {percentage.toFixed(1)}%
-            </text>
-          </>
-        )}
+        <text
+          x={x + 10}
+          y={y + height / 2}
+          fill="#ffffff"
+          textAnchor="start"
+          dominantBaseline="middle"
+          fontSize={14}
+          fontWeight="500"
+        >
+          {symbol}
+        </text>
+        <text
+          x={x + width - 10}
+          y={y + height / 2}
+          fill="#ffffff"
+          textAnchor="end"
+          dominantBaseline="middle"
+          fontSize={12}
+        >
+          {percentage.toFixed(1)}%
+        </text>
       </g>
     )
   }
@@ -292,7 +277,7 @@ export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemap
           <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Allocation</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] sm:h-[350px] flex items-center justify-center">
+          <div className="h-[400px] sm:h-[500px] flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         </CardContent>
@@ -307,13 +292,16 @@ export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemap
           <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Allocation</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] sm:h-[350px] flex items-center justify-center">
+          <div className="h-[400px] sm:h-[500px] flex items-center justify-center">
             <p className="text-red-600">{error}</p>
           </div>
         </CardContent>
       </Card>
     )
   }
+
+  // Calculate max value for consistent scale
+  const maxValue = Math.max(...chartData.map(d => d.value), 1)
 
   return (
     <Card className="border-blue-100">
@@ -369,25 +357,41 @@ export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemap
         </div>
       </CardHeader>
       <CardContent>
-        {treemapData.length === 0 ? (
-          <div className="h-[250px] sm:h-[350px] flex items-center justify-center">
+        {chartData.length === 0 ? (
+          <div className="h-[400px] sm:h-[500px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[250px] sm:h-[350px] w-full">
+          <div className="h-[400px] sm:h-[500px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <Treemap
-                data={treemapData}
-                dataKey="value"
-                aspectRatio={4 / 3}
-                stroke="#fff"
-                fill="#8884d8"
-                content={<CustomContent />}
-                isAnimationActive={true}
-                animationDuration={300}
+              <BarChart
+                data={chartData}
+                layout="horizontal"
+                margin={{ top: 20, right: 30, bottom: 20, left: 80 }}
               >
+                <XAxis 
+                  type="number" 
+                  domain={[0, maxValue * 1.1]}
+                  hide
+                />
+                <YAxis 
+                  type="category" 
+                  dataKey="symbol"
+                  tick={{ fontSize: 14 }}
+                  width={60}
+                />
                 <Tooltip content={<CustomTooltip />} />
-              </Treemap>
+                <Bar 
+                  dataKey="value" 
+                  radius={[0, 4, 4, 0]}
+                  animationDuration={300}
+                  label={<CustomLabel />}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         )}

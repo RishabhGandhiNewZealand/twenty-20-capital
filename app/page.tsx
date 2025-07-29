@@ -5,7 +5,7 @@ import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
-import { PortfolioTreemap } from "@/components/portfolio-treemap"
+import { PortfolioRaceChart } from "@/components/portfolio-race-chart"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
@@ -219,10 +219,10 @@ export default function HomePage() {
 
 
 
-        {/* Portfolio Treemap */}
+        {/* Portfolio Race Chart */}
         {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioTreemap 
+            <PortfolioRaceChart 
               holdings={holdings} 
             />
           </div>
