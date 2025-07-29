@@ -41,9 +41,10 @@ interface PortfolioStat {
 
 interface PortfolioChartProps {
   portfolioStats?: PortfolioStat[]
+  onDateHover?: (date: string | null) => void
 }
 
-export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
+export function PortfolioChart({ portfolioStats = [], onDateHover }: PortfolioChartProps) {
   const [data, setData] = useState<PortfolioHistoryData[]>([])
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
   const [loading, setLoading] = useState(true)
@@ -156,7 +157,11 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     // Hide stats when tooltip is active
     useEffect(() => {
       setHideStats(active || false)
-    }, [active])
+      // Call the callback with the date when hovering
+      if (onDateHover) {
+        onDateHover(active && label ? label : null)
+      }
+    }, [active, label])
 
     if (active && payload && payload.length) {
       const portfolioValue = payload.find((p) => p.dataKey === 'portfolioValue')?.value as number
@@ -215,7 +220,11 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     // Hide stats when tooltip is active
     useEffect(() => {
       setHideStats(active || false)
-    }, [active])
+      // Call the callback with the date when hovering
+      if (onDateHover) {
+        onDateHover(active && label ? label : null)
+      }
+    }, [active, label])
 
     if (active && payload && payload.length) {
       const portfolioPerformance = payload.find((p) => p.dataKey === 'portfolioPerformance')?.value as number

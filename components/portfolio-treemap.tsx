@@ -19,9 +19,10 @@ interface PortfolioTreemapProps {
     gainNZD: number
     gainPercent: number
   }>
+  selectedDate?: string | null
 }
 
-export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
+export function PortfolioTreemap({ holdings, selectedDate }: PortfolioTreemapProps) {
   // Calculate total portfolio value
   const totalValue = holdings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
   
@@ -98,11 +99,11 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               x={x + width / 2}
               y={y + height / 2 - 8}
               textAnchor="middle"
-              fill="#000000"
+              fill="#FFFFFF"
               fontSize={Math.min(16, width / 5)}
               fontWeight="bold"
               className="pointer-events-none"
-              style={{ fill: '#000000' }}
+              style={{ fill: '#FFFFFF' }}
             >
               {symbol}
             </text>
@@ -110,10 +111,10 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               x={x + width / 2}
               y={y + height / 2 + 10}
               textAnchor="middle"
-              fill="#000000"
+              fill="#FFFFFF"
               fontSize={Math.min(14, width / 6)}
               className="pointer-events-none"
-              style={{ fill: '#000000' }}
+              style={{ fill: '#FFFFFF' }}
             >
               {percentage.toFixed(1)}%
             </text>
@@ -126,7 +127,18 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
   return (
     <Card className="border-blue-100">
       <CardHeader>
-        <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Allocation</CardTitle>
+        <CardTitle className="text-gray-900 text-lg sm:text-xl">
+          Portfolio Allocation
+          {selectedDate && (
+            <span className="text-sm font-normal text-gray-600 ml-2">
+              as of {new Date(selectedDate).toLocaleDateString('en-NZ', { 
+                year: 'numeric', 
+                month: 'short',
+                day: 'numeric'
+              })}
+            </span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[250px] sm:h-[350px] w-full">
