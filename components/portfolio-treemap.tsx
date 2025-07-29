@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts"
+import { useMemo } from "react"
 
 interface TreemapData {
   name: string
@@ -23,21 +24,32 @@ interface PortfolioTreemapProps {
 }
 
 export function PortfolioTreemap({ holdings, selectedDate }: PortfolioTreemapProps) {
+  console.log('PortfolioTreemap render - holdings:', holdings.length, 'selectedDate:', selectedDate)
+  
   // Calculate total portfolio value
   const totalValue = holdings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
   
+  // Create a unique key based on holdings data
+  const holdingsKey = holdings.map(h => `${h.symbol}-${h.currentValueNZD.toFixed(2)}`).join(',')
+  
   // Transform holdings data for treemap - filter out holdings less than 0.1%
-  const treemapData: TreemapData[] = holdings
-    .map((holding, index) => ({
-      name: holding.name,
-      symbol: holding.symbol,
-      value: holding.currentValueNZD,
-      percentage: (holding.currentValueNZD / totalValue) * 100,
-      // Use darker colors
-      color: `hsl(${(index * 360) / holdings.length}, 40%, 35%)`
-    }))
-    .filter(item => item.percentage >= 0.1 && item.value > 0)
-    .sort((a, b) => b.value - a.value) // Sort by value descending
+  const treemapData: TreemapData[] = useMemo(() => {
+    console.log('Recalculating treemap data, holdings:', holdings.length, 'totalValue:', totalValue)
+    const data = holdings
+      .map((holding, index) => ({
+        name: holding.name,
+        symbol: holding.symbol,
+        value: holding.currentValueNZD,
+        percentage: (holding.currentValueNZD / totalValue) * 100,
+        // Use darker colors
+        color: `hsl(${(index * 360) / holdings.length}, 40%, 35%)`
+      }))
+      .filter(item => item.percentage >= 0.1 && item.value > 0)
+      .sort((a, b) => b.value - a.value) // Sort by value descending
+    
+    console.log('Treemap data after filter:', data.length, 'items')
+    return data
+  }, [holdings, totalValue])
 
   // If no holdings meet the criteria, return null
   if (treemapData.length === 0) return null
@@ -143,6 +155,7 @@ export function PortfolioTreemap({ holdings, selectedDate }: PortfolioTreemapPro
         <div className="h-[250px] sm:h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <Treemap
+              key={holdingsKey} // Use holdings-based key for better updates
               data={treemapData}
               dataKey="value"
               aspectRatio={4 / 3}

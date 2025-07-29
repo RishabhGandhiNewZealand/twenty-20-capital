@@ -41,6 +41,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [historicalHoldings, setHistoricalHoldings] = useState<CurrentHolding[]>([])
+  const [loadingHistorical, setLoadingHistorical] = useState(false)
   const [portfolioStats, setPortfolioStats] = useState([
     {
       title: "Portfolio Value (NZD)",
@@ -65,27 +66,35 @@ export default function HomePage() {
   // Function to fetch historical holdings for a specific date
   const fetchHistoricalHoldings = async (date: string) => {
     try {
+      console.log('Fetching historical holdings for date:', date)
+      setLoadingHistorical(true)
       const response = await fetch(`/api/portfolio-holdings-history?date=${date}`)
       if (!response.ok) {
+        const errorData = await response.text()
+        console.error('API error:', errorData)
         throw new Error('Failed to fetch historical holdings')
       }
       
       const data = await response.json()
-      setHistoricalHoldings(data.holdings)
+      console.log('Historical holdings data:', data)
+      setHistoricalHoldings(data.holdings || [])
     } catch (error) {
       console.error('Error fetching historical holdings:', error)
       // Fallback to current holdings if historical data fails
       setHistoricalHoldings(holdings)
+    } finally {
+      setLoadingHistorical(false)
     }
   }
 
   // Handle date hover from chart
   const handleDateHover = (date: string | null) => {
+    console.log('Date hover:', date)
     setSelectedDate(date)
-    if (date) {
+    if (date && holdings.length > 0) {
       fetchHistoricalHoldings(date)
     } else {
-      setHistoricalHoldings(holdings)
+      setHistoricalHoldings([])
     }
   }
 
@@ -250,10 +259,10 @@ export default function HomePage() {
         </div>
 
         {/* Portfolio Treemap */}
-        {!loading && (historicalHoldings.length > 0 || holdings.length > 0) && (
+        {!loading && holdings.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <PortfolioTreemap 
-              holdings={selectedDate ? historicalHoldings : holdings} 
+              holdings={selectedDate && !loadingHistorical && historicalHoldings.length > 0 ? historicalHoldings : holdings} 
               selectedDate={selectedDate}
             />
           </div>
