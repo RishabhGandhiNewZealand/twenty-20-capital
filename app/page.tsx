@@ -5,6 +5,7 @@ import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
+import { PortfolioTreemap } from "@/components/portfolio-treemap"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
@@ -220,6 +221,13 @@ export default function HomePage() {
             The portfolio and S&P 500 returns are calculated on a Total Value CAGR basis. This method measures the compound annual growth rate of the total portfolio value, including all capital contributions and withdrawals, from inception to the current date. The CAGR represents the annualized rate of return that would be required to grow the initial investment to its current value over the investment period.
           </p>
         </div>
+
+        {/* Portfolio Treemap */}
+        {!loading && holdings.length > 0 && (
+          <div className="mb-6 sm:mb-8">
+            <PortfolioTreemap holdings={holdings} />
+          </div>
+        )}
 
         {/* Portfolio Holdings Table */}
         <Card className="border-blue-100 mb-6 sm:mb-8">
