@@ -208,25 +208,25 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         {/* Portfolio Performance Chart with integrated stats */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <PortfolioChart portfolioStats={portfolioStats} />
         </div>
 
         {/* Calculation Methodology as caption below chart */}
-        <div className="mb-8 px-4">
-          <p className="text-sm text-gray-600 text-center">
+        <div className="mb-6 sm:mb-8 px-2 sm:px-4">
+          <p className="text-xs sm:text-sm text-gray-600 text-center">
             The portfolio and S&P 500 returns are calculated on a Total Value CAGR basis. This method measures the compound annual growth rate of the total portfolio value, including all capital contributions and withdrawals, from inception to the current date. The CAGR represents the annualized rate of return that would be required to grow the initial investment to its current value over the investment period.
           </p>
         </div>
 
         {/* Portfolio Holdings Table */}
-        <Card className="border-blue-100">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Portfolio Holdings</CardTitle>
+        <Card className="border-blue-100 mb-6 sm:mb-8">
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Holdings</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 sm:px-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -236,130 +236,234 @@ export default function HomePage() {
                 <div className="text-gray-500">No holdings found</div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Stock
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Shares
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Current Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Market Value (NZD)
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Cost Basis (NZD)
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Gain/Loss (NZD)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {holdings.map((holding) => (
-                      <tr key={holding.symbol} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <img 
-                              src={getLogoUrl(holding.symbol)} 
-                              alt={holding.symbol}
-                              className="h-8 w-8 rounded-full mr-3"
-                              onError={(e) => {
-                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=3b82f6&color=fff`
-                              }}
-                            />
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{holding.symbol}</div>
-                              <div className="text-sm text-gray-500">{holding.name}</div>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Stock
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Shares
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Current Price
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Market Value (NZD)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Cost Basis (NZD)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Gain/Loss (NZD)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {holdings.map((holding) => (
+                        <tr key={holding.symbol} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <img 
+                                src={getLogoUrl(holding.symbol)} 
+                                alt={holding.symbol}
+                                className="h-8 w-8 rounded-full mr-3"
+                                onError={(e) => {
+                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=3b82f6&color=fff`
+                                }}
+                              />
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{holding.symbol}</div>
+                                <div className="text-sm text-gray-500">{holding.name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatNumber(holding.shares, 2)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {holding.currency === 'NZD' 
+                              ? `NZ$${holding.currentPrice.toFixed(2)}`
+                              : formatCurrency(holding.currentPrice, holding.currency)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatCurrency(holding.currentValueNZD)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatCurrency(holding.costBasisNZD)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {formatCurrency(holding.gainNZD)}
+                              <span className="text-xs ml-1">
+                                ({holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%)
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    {summary && (
+                      <tfoot>
+                        <tr className="bg-gray-50">
+                          <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                            Total Portfolio
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {formatCurrency(summary.totalValueNZD)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {formatCurrency(summary.totalCostBasisNZD)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            <div className={summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {formatCurrency(summary.totalGainNZD)}
+                              <span className="text-xs ml-1">
+                                ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr className="bg-blue-50">
+                          <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                            S&P 500 Benchmark
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {formatCurrency(summary.sp500Value)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {formatCurrency(summary.totalCostBasisNZD)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {formatCurrency(summary.sp500GainNZD)}
+                              <span className="text-xs ml-1">
+                                ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4 px-4">
+                  {holdings.map((holding) => (
+                    <div key={holding.symbol} className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <img 
+                            src={getLogoUrl(holding.symbol)} 
+                            alt={holding.symbol}
+                            className="h-10 w-10 rounded-full mr-3"
+                            onError={(e) => {
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=3b82f6&color=fff`
+                            }}
+                          />
+                          <div>
+                            <div className="font-semibold text-gray-900">{holding.symbol}</div>
+                            <div className="text-sm text-gray-500">{holding.name}</div>
+                          </div>
+                        </div>
+                        <div className={`text-right ${holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className="font-semibold">
+                            {holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%
+                          </div>
+                          <div className="text-sm">
+                            {formatCurrency(holding.gainNZD)}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="text-gray-500">Shares</div>
+                          <div className="font-medium">{formatNumber(holding.shares, 2)}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Price</div>
+                          <div className="font-medium">
+                            {holding.currency === 'NZD' 
+                              ? `NZ$${holding.currentPrice.toFixed(2)}`
+                              : formatCurrency(holding.currentPrice, holding.currency)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Market Value</div>
+                          <div className="font-medium">{formatCurrency(holding.currentValueNZD)}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Cost Basis</div>
+                          <div className="font-medium">{formatCurrency(holding.costBasisNZD)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Summary Cards for Mobile */}
+                  {summary && (
+                    <>
+                      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                        <div className="font-semibold text-gray-900 mb-3">Total Portfolio</div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-gray-500">Market Value</div>
+                            <div className="font-medium">{formatCurrency(summary.totalValueNZD)}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Cost Basis</div>
+                            <div className="font-medium">{formatCurrency(summary.totalCostBasisNZD)}</div>
+                          </div>
+                          <div className="col-span-2">
+                            <div className="text-gray-500">Total Gain/Loss</div>
+                            <div className={`font-medium ${summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatCurrency(summary.totalGainNZD)} ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatNumber(holding.shares, 2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {holding.currency === 'NZD' 
-                            ? `NZ$${holding.currentPrice.toFixed(2)}`
-                            : formatCurrency(holding.currentPrice, holding.currency)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(holding.currentValueNZD)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(holding.costBasisNZD)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {formatCurrency(holding.gainNZD)}
-                            <span className="text-xs ml-1">
-                              ({holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%)
-                            </span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                        <div className="font-semibold text-gray-900 mb-3">S&P 500 Benchmark</div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-gray-600">Market Value</div>
+                            <div className="font-medium">{formatCurrency(summary.sp500Value)}</div>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  {summary && (
-                    <tfoot>
-                      <tr className="bg-gray-50">
-                        <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
-                          Total Portfolio
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {formatCurrency(summary.totalValueNZD)}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {formatCurrency(summary.totalCostBasisNZD)}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium">
-                          <div className={summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {formatCurrency(summary.totalGainNZD)}
-                            <span className="text-xs ml-1">
-                              ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
-                            </span>
+                          <div>
+                            <div className="text-gray-600">Cost Basis</div>
+                            <div className="font-medium">{formatCurrency(summary.totalCostBasisNZD)}</div>
                           </div>
-                        </td>
-                      </tr>
-                      <tr className="bg-blue-50">
-                        <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
-                          S&P 500 Benchmark
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {formatCurrency(summary.sp500Value)}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {formatCurrency(summary.totalCostBasisNZD)}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium">
-                          <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {formatCurrency(summary.sp500GainNZD)}
-                            <span className="text-xs ml-1">
-                              ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
-                            </span>
+                          <div className="col-span-2">
+                            <div className="text-gray-600">Total Gain/Loss</div>
+                            <div className={`font-medium ${summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatCurrency(summary.sp500GainNZD)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
+                            </div>
                           </div>
-                        </td>
-                      </tr>
-                    </tfoot>
+                        </div>
+                      </div>
+                    </>
                   )}
-                </table>
-              </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
         {/* Exited Positions */}
         {!loading && exitedPositions.length > 0 && (
-          <Card className="border-blue-100 mt-8">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Exited Positions</CardTitle>
+          <Card className="border-blue-100">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-gray-900 text-lg sm:text-xl">Exited Positions</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
+            <CardContent className="px-0 sm:px-6">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
@@ -421,6 +525,60 @@ export default function HomePage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4 px-4">
+                {exitedPositions
+                  .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
+                  .map((position) => (
+                  <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <img 
+                          src={getLogoUrl(position.symbol)} 
+                          alt={`${position.symbol} logo`}
+                          className="w-8 h-8 rounded mr-2"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                        <div>
+                          <div className="font-semibold text-gray-900">{position.symbol}</div>
+                          <div className="text-sm text-gray-500">{position.name}</div>
+                        </div>
+                      </div>
+                      <div className={`text-right ${position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className="font-semibold">
+                          {position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%
+                        </div>
+                        <div className="text-sm">
+                          {formatCurrency(position.profitLossNZD, 'NZD')}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <div className="text-gray-500">Entry Date</div>
+                        <div className="font-medium">{formatDate(position.entryDate)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Exit Date</div>
+                        <div className="font-medium">{formatDate(position.exitDate)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Total Invested</div>
+                        <div className="font-medium">{formatCurrency(position.totalInvestedNZD, 'NZD')}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Total Return</div>
+                        <div className="font-medium">{formatCurrency(position.totalReturnNZD, 'NZD')}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

@@ -291,38 +291,38 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
 
   return (
     <Card className="border-blue-100">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-gray-900">Portfolio Performance</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="view-toggle" className="text-sm text-gray-600 flex items-center gap-1">
-              <DollarSign className="h-4 w-4" />
-              <span>Value</span>
+      <CardHeader className="pb-2 sm:pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Performance</CardTitle>
+          <div className="flex items-center space-x-2 justify-end">
+            <Label htmlFor="view-toggle" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Value</span>
             </Label>
             <Switch
               id="view-toggle"
               checked={showPercentage}
               onCheckedChange={setShowPercentage}
-              className="data-[state=checked]:bg-blue-600"
+              className="data-[state=checked]:bg-blue-600 scale-75 sm:scale-100"
             />
-            <Label htmlFor="view-toggle" className="text-sm text-gray-600 flex items-center gap-1">
-              <TrendingUp className="h-4 w-4" />
-              <span>Percentage</span>
+            <Label htmlFor="view-toggle" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Percentage</span>
             </Label>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[400px] w-full relative">
-          {/* Portfolio Stats Overlay */}
+      <CardContent className="px-2 sm:px-6">
+        <div className="h-[300px] sm:h-[400px] w-full relative">
+          {/* Portfolio Stats Overlay - Mobile Responsive */}
           {portfolioStats.length > 0 && (
-            <div className="absolute top-2 left-24 z-10 space-y-1.5">
+            <div className="absolute top-1 left-1 sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
               {portfolioStats.map((stat) => {
                 return (
-                  <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-3 py-1.5 shadow-sm">
+                  <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm">
                     <div>
-                      <p className="text-[10px] text-gray-600 leading-tight">{stat.title}</p>
-                      <p className="text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
+                      <p className="text-[8px] sm:text-[10px] text-gray-600 leading-tight">{stat.title}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
                     </div>
                   </div>
                 )
@@ -333,14 +333,14 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             {showPercentage ? (
               <LineChart
                 data={performanceData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   interval="preserveStartEnd"
-                  minTickGap={50}
+                  minTickGap={30}
                   tickFormatter={(value) => {
                     const date = new Date(value)
                     return date.toLocaleDateString('en-NZ', { 
@@ -350,13 +350,14 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   tickFormatter={(value) => `${value.toFixed(0)}%`}
                   domain={['dataMin - 10', 'dataMax + 10']}
+                  width={40}
                 />
                 <Tooltip content={<CustomTooltipPercentage />} />
                 <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
+                  wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
                   iconType="line"
                 />
                 <Line 
@@ -366,7 +367,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   strokeWidth={2}
                   name="Portfolio Performance"
                   dot={false}
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 4 }}
                 />
                 <Line 
                   type="monotone" 
@@ -375,7 +376,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   strokeWidth={2}
                   name="S&P 500 Performance"
                   dot={false}
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 4 }}
                 />
                 {/* Zero line for reference */}
                 <Line 
@@ -392,14 +393,14 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             ) : (
               <LineChart
                 data={data}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   interval="preserveStartEnd"
-                  minTickGap={50}
+                  minTickGap={30}
                   tickFormatter={(value) => {
                     const date = new Date(value)
                     return date.toLocaleDateString('en-NZ', { 
@@ -409,12 +410,13 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  width={45}
                 />
                 <Tooltip content={<CustomTooltipValue />} />
                 <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
+                  wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
                   iconType="line"
                 />
                 <Line 
@@ -424,7 +426,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   strokeWidth={2}
                   name="Portfolio Value"
                   dot={false}
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 4 }}
                 />
                 <Line 
                   type="monotone" 
@@ -433,7 +435,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   strokeWidth={2}
                   name="S&P 500 Value"
                   dot={false}
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 4 }}
                 />
                 <Line 
                   type="monotone" 
@@ -442,7 +444,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   strokeWidth={2}
                   name="Cost Basis"
                   dot={false}
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 4 }}
                   strokeDasharray="5 5"
                 />
               </LineChart>
