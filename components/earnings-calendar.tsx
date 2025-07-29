@@ -41,9 +41,18 @@ export function EarningsCalendar() {
 
   const renderEarningsCard = (earning: EarningsData) => {
     const logoUrl = getLogoUrl(earning.symbol)
-    const earningsDate = earning.hasReported 
-      ? (earning.lastEarningsDate ? new Date(earning.lastEarningsDate) : null)
-      : (earning.nextEarningsDate ? new Date(earning.nextEarningsDate) : null)
+    
+    // Determine which date to show
+    let displayDate: Date | null = null
+    let dateLabel = ""
+    
+    if (earning.hasReported && earning.lastEarningsDate) {
+      displayDate = new Date(earning.lastEarningsDate)
+      dateLabel = "Reported: "
+    } else if (earning.nextEarningsDate) {
+      displayDate = new Date(earning.nextEarningsDate)
+      dateLabel = "Reports: "
+    }
     
     // Special handling for Mainfreight (MFT)
     const isMainfreight = earning.symbol === 'MFT' || earning.symbol === 'MFT.NZ'
@@ -84,7 +93,7 @@ export function EarningsCalendar() {
           </div>
           
           <div className="mt-3 space-y-2">
-            {earningsDate ? (
+            {displayDate ? (
               <div className="flex items-center text-sm">
                 {earning.hasReported ? (
                   <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
@@ -92,8 +101,8 @@ export function EarningsCalendar() {
                   <Calendar className="w-4 h-4 mr-2 text-gray-500" />
                 )}
                 <span className={earning.hasReported ? "text-gray-600" : ""}>
-                  {earning.hasReported ? "Reported: " : "Reports: "}
-                  {format(earningsDate, 'MMM d, yyyy')}
+                  {dateLabel}
+                  {format(displayDate, 'MMM d, yyyy')}
                 </span>
                 {earning.daysUntilEarnings !== undefined && (
                   <span className={`ml-2 ${
@@ -146,7 +155,7 @@ export function EarningsCalendar() {
   // Separate companies that have reported vs upcoming
   const reportedEarnings = earnings.filter(e => e.hasReported)
   const upcomingEarnings = earnings.filter(e => !e.hasReported && e.nextEarningsDate)
-  const noDateEarnings = earnings.filter(e => !e.hasReported && !e.nextEarningsDate)
+  const noDateEarnings = earnings.filter(e => !e.hasReported && !e.nextEarningsDate && !e.lastEarningsDate)
 
   return (
     <div className="space-y-6">
