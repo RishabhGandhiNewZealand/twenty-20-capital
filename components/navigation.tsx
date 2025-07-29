@@ -9,6 +9,7 @@ export default function Navigation() {
 
   const navItems = [
     { href: "/", label: "Portfolio" },
+    { href: "/earnings", label: "Earnings" },
     { href: "/reports", label: "Reports" },
     { href: "/analyses", label: "Analyses" },
     { href: "/about", label: "About" },
