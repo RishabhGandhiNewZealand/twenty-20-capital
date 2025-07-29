@@ -260,10 +260,10 @@ export default function HomePage() {
                           Current Price
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Market Value (NZD)
+                          Cost Basis (Per Share)
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Cost Basis (NZD)
+                          Market Value (NZD)
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Gain/Loss (NZD)
@@ -298,10 +298,12 @@ export default function HomePage() {
                               : formatCurrency(holding.currentPrice, holding.currency)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(holding.currentValueNZD)}
+                            {holding.currency === 'NZD' 
+                              ? `NZ$${(holding.costBasisNZD / holding.shares).toFixed(2)}`
+                              : formatCurrency(holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), holding.currency)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(holding.costBasisNZD)}
+                            {formatCurrency(holding.currentValueNZD)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -317,14 +319,11 @@ export default function HomePage() {
                     {summary && (
                       <tfoot>
                         <tr className="bg-gray-50">
-                          <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
                             Total Portfolio
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.totalValueNZD)}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.totalCostBasisNZD)}
+                            Value: {formatCurrency(summary.totalValueNZD)}
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <div className={summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -336,14 +335,11 @@ export default function HomePage() {
                           </td>
                         </tr>
                         <tr className="bg-blue-50">
-                          <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
                             S&P 500 Benchmark
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.sp500Value)}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.totalCostBasisNZD)}
+                            Value: {formatCurrency(summary.sp500Value)}
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -410,12 +406,16 @@ export default function HomePage() {
                           </div>
                         </div>
                         <div>
-                          <div className="text-gray-500">Market Value</div>
-                          <div className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD)}</div>
+                          <div className="text-gray-500">Cost Basis (Per Share)</div>
+                          <div className="font-medium text-gray-600">
+                            {holding.currency === 'NZD' 
+                              ? `NZ$${(holding.costBasisNZD / holding.shares).toFixed(2)}`
+                              : formatCurrency(holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), holding.currency)}
+                          </div>
                         </div>
                         <div>
-                          <div className="text-gray-500">Cost Basis</div>
-                          <div className="font-medium text-gray-600">{formatCurrency(holding.costBasisNZD)}</div>
+                          <div className="text-gray-500">Total Value</div>
+                          <div className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD)}</div>
                         </div>
                       </div>
                     </div>
@@ -491,43 +491,57 @@ export default function HomePage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Symbol</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Company</th>
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Stock</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Entry Date</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Exit Date</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Holding Period</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Invested (NZD)</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Return (NZD)</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (NZD)</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (%)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">CAGR</th>
                     </tr>
                   </thead>
                   <tbody>
                     {exitedPositions
                       .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
-                      .map((position, index) => (
+                      .map((position, index) => {
+                        // Calculate CAGR for the position
+                        const entryDate = new Date(position.entryDate)
+                        const exitDate = new Date(position.exitDate)
+                        const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                        const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                        
+                        // Calculate holding period in days
+                        const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                        const holdingPeriod = `${totalDays} days`
+                        
+                        return (
                       <tr key={position.symbol + position.exitDate} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                         <td className="py-3 px-2">
                           <div className="flex items-center">
                             <img 
                               src={getLogoUrl(position.symbol)} 
                               alt={`${position.symbol} logo`}
-                              className="w-6 h-6 rounded mr-2"
+                              className="w-8 h-8 rounded-full mr-3"
                               onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=3b82f6&color=fff`
                               }}
                             />
-                            <span className="font-bold text-gray-900">{position.symbol}</span>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{position.symbol}</div>
+                              <div className="text-sm text-gray-500">{position.name}</div>
+                            </div>
                           </div>
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className="text-sm text-gray-700">{position.name}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-sm text-gray-600">{formatDate(position.entryDate)}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-sm text-gray-600">{formatDate(position.exitDate)}</span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-sm text-gray-600">{holdingPeriod}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-gray-700">{formatCurrency(position.totalInvestedNZD, 'NZD')}</span>
@@ -545,8 +559,14 @@ export default function HomePage() {
                             {position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%
                           </span>
                         </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className={`font-medium ${cagr >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatPercentage(cagr)}
+                          </span>
+                        </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -555,17 +575,27 @@ export default function HomePage() {
               <div className="md:hidden space-y-4 px-4">
                 {exitedPositions
                   .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
-                  .map((position) => (
+                  .map((position) => {
+                    // Calculate CAGR for the position
+                    const entryDate = new Date(position.entryDate)
+                    const exitDate = new Date(position.exitDate)
+                    const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                    const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                    
+                    // Calculate holding period in days
+                    const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                    const holdingPeriod = `${totalDays} days`
+                    
+                    return (
                   <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center">
                         <img 
                           src={getLogoUrl(position.symbol)} 
                           alt={`${position.symbol} logo`}
-                          className="w-8 h-8 rounded mr-2"
+                          className="w-8 h-8 rounded-full mr-2"
                           onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=3b82f6&color=fff`
                           }}
                         />
                         <div>
@@ -601,6 +631,10 @@ export default function HomePage() {
                         <div className="font-medium">{formatDate(position.exitDate)}</div>
                       </div>
                       <div>
+                        <div className="text-gray-500">Holding Period</div>
+                        <div className="font-medium">{holdingPeriod}</div>
+                      </div>
+                      <div>
                         <div className="text-gray-500">Total Invested</div>
                         <div className="font-medium text-gray-600">{formatCurrency(position.totalInvestedNZD, 'NZD')}</div>
                       </div>
@@ -608,14 +642,21 @@ export default function HomePage() {
                         <div className="text-gray-500">Total Return</div>
                         <div className="font-medium text-gray-900">{formatCurrency(position.totalReturnNZD, 'NZD')}</div>
                       </div>
+                      <div>
+                        <div className="text-gray-500">CAGR</div>
+                        <div className="font-medium text-gray-600">
+                          {formatPercentage(cagr)}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
+  </div>
   )
 }
