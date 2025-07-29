@@ -10,6 +10,8 @@ interface EarningsData {
   estimatedEPS?: number
   actualEPS?: number
   isActive: boolean // whether currently in portfolio
+  hasReported?: boolean // whether earnings have already been reported
+  daysUntilEarnings?: number // positive for future, negative for past
 }
 
 export async function GET() {
@@ -46,19 +48,36 @@ export async function GET() {
           console.log(`Calendar data not available for ${symbol}`)
         }
         
-        const earningsData: EarningsData = {
-          symbol,
-          name: data.name,
-          nextEarningsDate: quote.earningsTimestamp ? new Date(quote.earningsTimestamp * 1000) : null,
-          lastEarningsDate: null,
-          estimatedEPS: calendarData?.earnings?.earningsChart?.quarterly?.[0]?.estimate,
-          actualEPS: calendarData?.earnings?.earningsChart?.quarterly?.[0]?.actual,
-          isActive: data.isActive
-        }
+        let earningsDate: Date | null = null
         
         // If we have calendar events, use those dates
         if (calendarData?.calendarEvents?.earnings?.earningsDate) {
-          earningsData.nextEarningsDate = new Date(calendarData.calendarEvents.earnings.earningsDate)
+          earningsDate = new Date(calendarData.calendarEvents.earnings.earningsDate)
+        } else if (quote.earningsTimestamp) {
+          earningsDate = new Date(quote.earningsTimestamp * 1000)
+        }
+        
+        // Calculate days until earnings
+        let daysUntilEarnings: number | undefined
+        let hasReported = false
+        
+        if (earningsDate) {
+          const now = new Date()
+          const diffTime = earningsDate.getTime() - now.getTime()
+          daysUntilEarnings = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+          hasReported = daysUntilEarnings < 0
+        }
+        
+        const earningsData: EarningsData = {
+          symbol,
+          name: data.name,
+          nextEarningsDate: earningsDate,
+          lastEarningsDate: hasReported ? earningsDate : null,
+          estimatedEPS: calendarData?.earnings?.earningsChart?.quarterly?.[0]?.estimate,
+          actualEPS: calendarData?.earnings?.earningsChart?.quarterly?.[0]?.actual,
+          isActive: data.isActive,
+          hasReported,
+          daysUntilEarnings
         }
         
         return earningsData
@@ -69,23 +88,31 @@ export async function GET() {
           name: data.name,
           nextEarningsDate: null,
           lastEarningsDate: null,
-          isActive: data.isActive
+          isActive: data.isActive,
+          hasReported: false,
+          daysUntilEarnings: undefined
         }
       }
     })
     
     const earningsResults = await Promise.all(earningsPromises)
     
-    // Sort by next earnings date (null dates at the end)
-    earningsResults.sort((a, b) => {
-      if (!a.nextEarningsDate && !b.nextEarningsDate) return 0
-      if (!a.nextEarningsDate) return 1
-      if (!b.nextEarningsDate) return -1
-      return a.nextEarningsDate.getTime() - b.nextEarningsDate.getTime()
+    // Filter to only include companies with earnings within ±45 days
+    const filteredResults = earningsResults.filter(e => {
+      if (!e.daysUntilEarnings) return true // Include companies without earnings data
+      return Math.abs(e.daysUntilEarnings) <= 45
+    })
+    
+    // Sort by earnings date (past to future, null dates at the end)
+    filteredResults.sort((a, b) => {
+      if (!a.daysUntilEarnings && !b.daysUntilEarnings) return 0
+      if (!a.daysUntilEarnings) return 1
+      if (!b.daysUntilEarnings) return -1
+      return a.daysUntilEarnings - b.daysUntilEarnings
     })
     
     return NextResponse.json({
-      earnings: earningsResults,
+      earnings: filteredResults,
       lastUpdated: new Date().toISOString()
     })
   } catch (error) {
