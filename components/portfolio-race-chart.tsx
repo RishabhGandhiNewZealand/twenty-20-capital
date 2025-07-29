@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, CartesianGrid } from "recharts"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { Loader2, Play, Pause } from "lucide-react"
 import { getCompanyColor } from "@/lib/company-colors"
@@ -67,10 +67,19 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
         const dates = Object.keys(data).sort()
         setAvailableDates(dates)
         
-        // Set initial slider to the latest date
+        // Find the first date with actual holdings
+        let initialIndex = dates.length - 1
+        for (let i = dates.length - 1; i >= 0; i--) {
+          if (data[dates[i]] && data[dates[i]].length > 0) {
+            initialIndex = i
+            break
+          }
+        }
+        
+        // Set initial slider to the latest date with holdings
         if (dates.length > 0) {
-          setSliderValue(dates.length - 1)
-          setDisplayDate(dates[dates.length - 1])
+          setSliderValue(initialIndex)
+          setDisplayDate(dates[initialIndex])
         }
         
         setLoading(false)
@@ -100,7 +109,7 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
       if (compositionData && compositionData[selectedDate]) {
         const holdings = compositionData[selectedDate]
         cacheRef.current.set(selectedDate, holdings)
-        setDisplayHoldings(holdings)
+        setDisplayHoldings(holdings || [])
         return
       }
 
@@ -124,17 +133,22 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
       fetchComposition()
     } else if (sliderValue === availableDates.length && currentHoldings) {
       // Use current holdings when slider is at the end
-      const totalValue = currentHoldings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
-      const transformed: HoldingAtDate[] = currentHoldings.map(holding => ({
-        symbol: holding.symbol,
-        name: holding.name,
-        shares: 0, // Not used in display
-        value: holding.currentValueNZD,
-        percentage: (holding.currentValueNZD / totalValue) * 100,
-        currency: 'NZD'
-      }))
-      setDisplayHoldings(transformed)
-      setDisplayDate(null)
+      const totalValue = currentHoldings.reduce((sum, holding) => sum + (holding.currentValueNZD || 0), 0)
+      if (totalValue > 0) {
+        const transformed: HoldingAtDate[] = currentHoldings.map(holding => ({
+          symbol: holding.symbol,
+          name: holding.name,
+          shares: 0, // Not used in display
+          value: holding.currentValueNZD || 0,
+          percentage: totalValue > 0 ? ((holding.currentValueNZD || 0) / totalValue) * 100 : 0,
+          currency: 'NZD'
+        }))
+        setDisplayHoldings(transformed)
+        setDisplayDate(null)
+      } else {
+        setDisplayHoldings([])
+        setDisplayDate(null)
+      }
     }
   }, [sliderValue, availableDates, compositionData, currentHoldings])
 
@@ -184,17 +198,19 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
 
   // Transform holdings data for race chart - show top 10
   const chartData: ChartData[] = displayHoldings
-    .filter(holding => holding.value > 0)
+    .filter(holding => holding.value > 0 && !isNaN(holding.value) && !isNaN(holding.percentage))
     .sort((a, b) => b.value - a.value)
     .slice(0, 10)
     .map((holding) => ({
       symbol: holding.symbol,
       name: holding.name,
-      value: holding.value,
-      percentage: holding.percentage,
+      value: Math.max(0, holding.value || 0),
+      percentage: Math.max(0, holding.percentage || 0),
       color: getCompanyColor(holding.symbol)
     }))
     .reverse() // Reverse to show highest at top
+
+
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-NZ', {
@@ -305,7 +321,8 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
   }
 
   // Calculate max value for consistent scale
-  const maxValue = Math.max(...chartData.map(d => d.value), 1)
+  const validValues = chartData.map(d => d.value).filter(v => !isNaN(v) && isFinite(v))
+  const maxValue = validValues.length > 0 ? Math.max(...validValues, 1) : 100
 
   return (
     <Card className="border-blue-100">
@@ -366,33 +383,39 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[400px] sm:h-[500px] w-full">
+          <div className="h-[400px] sm:h-[500px] w-full bg-gray-50">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
                 layout="horizontal"
                 margin={{ top: 20, right: 30, bottom: 20, left: 80 }}
               >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e0e0e0" />
                 <XAxis 
                   type="number" 
-                  domain={[0, maxValue * 1.1]}
-                  hide
+                  domain={[0, dataMax => Math.max(dataMax * 1.1, 100)]}
+                  tick={false}
+                  axisLine={false}
                 />
                 <YAxis 
                   type="category" 
                   dataKey="symbol"
                   tick={{ fontSize: 14 }}
                   width={60}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
                   dataKey="value" 
                   radius={[0, 4, 4, 0]}
                   animationDuration={300}
+                  isAnimationActive={true}
+                  fill="#8884d8"
                   label={(props: any) => <CustomLabel {...props} chartData={chartData} />}
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${entry.symbol}-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
               </BarChart>
