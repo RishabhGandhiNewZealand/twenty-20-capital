@@ -101,7 +101,6 @@ export function PortfolioTreemap({ holdings, selectedDate }: PortfolioTreemapPro
               textAnchor="middle"
               fill="#FFFFFF"
               fontSize={Math.min(16, width / 5)}
-              fontWeight="bold"
               className="pointer-events-none"
               style={{ fill: '#FFFFFF' }}
             >

@@ -65,12 +65,16 @@ export default function HomePage() {
   // Function to fetch historical holdings for a specific date
   const fetchHistoricalHoldings = async (date: string) => {
     try {
-      // For now, we'll use the current holdings as we don't have historical data API
-      // In a real implementation, you would fetch historical data for the specific date
-      // This is a placeholder that shows the current holdings
-      setHistoricalHoldings(holdings)
+      const response = await fetch(`/api/portfolio-holdings-history?date=${date}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch historical holdings')
+      }
+      
+      const data = await response.json()
+      setHistoricalHoldings(data.holdings)
     } catch (error) {
       console.error('Error fetching historical holdings:', error)
+      // Fallback to current holdings if historical data fails
       setHistoricalHoldings(holdings)
     }
   }
