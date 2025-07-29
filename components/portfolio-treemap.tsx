@@ -25,15 +25,17 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
   // Calculate total portfolio value
   const totalValue = holdings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
   
-  // Transform holdings data for treemap
-  const treemapData: TreemapData[] = holdings.map((holding, index) => ({
-    name: holding.name,
-    symbol: holding.symbol,
-    value: holding.currentValueNZD,
-    percentage: (holding.currentValueNZD / totalValue) * 100,
-    // Use a consistent color palette
-    color: `hsl(${(index * 360) / holdings.length}, 70%, 50%)`
-  }))
+  // Transform holdings data for treemap - filter out holdings less than 0.1%
+  const treemapData: TreemapData[] = holdings
+    .map((holding, index) => ({
+      name: holding.name,
+      symbol: holding.symbol,
+      value: holding.currentValueNZD,
+      percentage: (holding.currentValueNZD / totalValue) * 100,
+      // Use darker colors
+      color: `hsl(${(index * 360) / holdings.length}, 40%, 35%)`
+    }))
+    .filter(item => item.percentage >= 0.1)
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-NZ', {
@@ -84,7 +86,7 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
           stroke="#fff"
           strokeWidth={2}
           rx={4}
-          className="opacity-80 hover:opacity-100 transition-opacity"
+          className="opacity-90 hover:opacity-100 transition-opacity"
         />
         {width > 60 && height > 40 && (
           <>
@@ -92,7 +94,7 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               x={x + width / 2}
               y={y + height / 2 - 8}
               textAnchor="middle"
-              fill="#fff"
+              fill="#000"
               fontSize={Math.min(16, width / 5)}
               fontWeight="bold"
               className="pointer-events-none"
@@ -103,7 +105,7 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               x={x + width / 2}
               y={y + height / 2 + 10}
               textAnchor="middle"
-              fill="#fff"
+              fill="#000"
               fontSize={Math.min(14, width / 6)}
               className="pointer-events-none"
             >
@@ -134,9 +136,6 @@ export function PortfolioTreemap({ holdings }: PortfolioTreemapProps) {
               <Tooltip content={<CustomTooltip />} />
             </Treemap>
           </ResponsiveContainer>
-        </div>
-        <div className="mt-4 text-center text-sm text-gray-600">
-          Size represents allocation percentage in portfolio
         </div>
       </CardContent>
     </Card>
