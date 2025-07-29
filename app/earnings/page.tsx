@@ -20,6 +20,7 @@ interface EarningsReport {
   date: string
   title: string
   url: string
+  pdfUrl?: string
   quarter: string
   year: string
   fiscalQuarter?: string
@@ -231,13 +232,19 @@ export default function EarningsPage() {
                       {displayReports.map((report, index) => (
                         <a
                           key={`${symbol}-${index}`}
-                          href={report.url}
+                          href={report.url || report.pdfUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border"
+                          title={report.url?.endsWith('.pdf') || report.pdfUrl?.endsWith('.pdf') ? 'View PDF Report' : 'View Investor Relations Page'}
                         >
                           <div className="flex-1">
-                            <p className="font-medium text-sm">{report.title}</p>
+                            <p className="font-medium text-sm">
+                              {report.title}
+                              {(report.url?.endsWith('.pdf') || report.pdfUrl?.endsWith('.pdf')) && (
+                                <span className="ml-2 text-xs text-blue-600 font-normal">(PDF)</span>
+                              )}
+                            </p>
                             <p className="text-xs text-gray-600">
                               {report.fiscalQuarter || `${report.quarter} ${report.year}`} • {format(parseISO(report.date), 'MMM dd, yyyy')}
                             </p>
