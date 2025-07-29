@@ -260,10 +260,7 @@ export default function HomePage() {
                           Current Price
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Market Value (NZD)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Cost Basis (NZD)
+                          Cost Basis (Per Share)
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Gain/Loss (NZD)
@@ -298,10 +295,9 @@ export default function HomePage() {
                               : formatCurrency(holding.currentPrice, holding.currency)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(holding.currentValueNZD)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(holding.costBasisNZD)}
+                            {holding.currency === 'NZD' 
+                              ? `NZ$${(holding.costBasisNZD / holding.shares).toFixed(2)}`
+                              : formatCurrency(holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), holding.currency)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -321,10 +317,7 @@ export default function HomePage() {
                             Total Portfolio
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.totalValueNZD)}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.totalCostBasisNZD)}
+                            Value: {formatCurrency(summary.totalValueNZD)}
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <div className={summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -340,10 +333,7 @@ export default function HomePage() {
                             S&P 500 Benchmark
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.sp500Value)}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(summary.totalCostBasisNZD)}
+                            Value: {formatCurrency(summary.sp500Value)}
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -410,12 +400,16 @@ export default function HomePage() {
                           </div>
                         </div>
                         <div>
-                          <div className="text-gray-500">Market Value</div>
-                          <div className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD)}</div>
+                          <div className="text-gray-500">Cost Basis (Per Share)</div>
+                          <div className="font-medium text-gray-600">
+                            {holding.currency === 'NZD' 
+                              ? `NZ$${(holding.costBasisNZD / holding.shares).toFixed(2)}`
+                              : formatCurrency(holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), holding.currency)}
+                          </div>
                         </div>
                         <div>
-                          <div className="text-gray-500">Cost Basis</div>
-                          <div className="font-medium text-gray-600">{formatCurrency(holding.costBasisNZD)}</div>
+                          <div className="text-gray-500">Total Value</div>
+                          <div className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD)}</div>
                         </div>
                       </div>
                     </div>
@@ -499,12 +493,20 @@ export default function HomePage() {
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Return (NZD)</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (NZD)</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (%)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">CAGR</th>
                     </tr>
                   </thead>
                   <tbody>
                     {exitedPositions
                       .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
-                      .map((position, index) => (
+                      .map((position, index) => {
+                        // Calculate CAGR for the position
+                        const entryDate = new Date(position.entryDate)
+                        const exitDate = new Date(position.exitDate)
+                        const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                        const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                        
+                        return (
                       <tr key={position.symbol + position.exitDate} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                         <td className="py-3 px-2">
                           <div className="flex items-center">
@@ -545,8 +547,14 @@ export default function HomePage() {
                             {position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%
                           </span>
                         </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className={`font-medium ${cagr >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatPercentage(cagr)}
+                          </span>
+                        </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -555,7 +563,14 @@ export default function HomePage() {
               <div className="md:hidden space-y-4 px-4">
                 {exitedPositions
                   .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
-                  .map((position) => (
+                  .map((position) => {
+                    // Calculate CAGR for the position
+                    const entryDate = new Date(position.entryDate)
+                    const exitDate = new Date(position.exitDate)
+                    const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                    const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                    
+                    return (
                   <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center">
@@ -608,14 +623,21 @@ export default function HomePage() {
                         <div className="text-gray-500">Total Return</div>
                         <div className="font-medium text-gray-900">{formatCurrency(position.totalReturnNZD, 'NZD')}</div>
                       </div>
+                      <div>
+                        <div className="text-gray-500">CAGR</div>
+                        <div className="font-medium text-gray-600">
+                          {formatPercentage(cagr)}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
+  </div>
   )
 }
