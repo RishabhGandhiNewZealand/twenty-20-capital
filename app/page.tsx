@@ -5,7 +5,7 @@ import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
-import { PortfolioTreemap } from "@/components/portfolio-treemap"
+import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
@@ -212,20 +212,19 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         {/* Portfolio Performance Chart with integrated stats */}
         <div className="mb-6 sm:mb-8">
-          <PortfolioChart portfolioStats={portfolioStats} />
+          <PortfolioChart 
+            portfolioStats={portfolioStats} 
+          />
         </div>
 
-        {/* Calculation Methodology as caption below chart */}
-        <div className="mb-6 sm:mb-8 px-2 sm:px-4">
-          <p className="text-xs sm:text-sm text-gray-600 text-center">
-            The portfolio and S&P 500 returns are calculated on a Total Value CAGR basis. This method measures the compound annual growth rate of the total portfolio value, including all capital contributions and withdrawals, from inception to the current date. The CAGR represents the annualized rate of return that would be required to grow the initial investment to its current value over the investment period.
-          </p>
-        </div>
 
-        {/* Portfolio Treemap */}
-        {!loading && holdings.length > 0 && (
+
+        {/* Portfolio Horizontal Bar Chart */}
+        {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioTreemap holdings={holdings} />
+            <PortfolioHorizontalBarChart 
+              holdings={holdings} 
+            />
           </div>
         )}
 
