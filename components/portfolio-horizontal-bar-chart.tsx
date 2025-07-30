@@ -537,7 +537,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={45}
+                  width={55}
                   axisLine={false}
                   tickLine={false}
                 />
