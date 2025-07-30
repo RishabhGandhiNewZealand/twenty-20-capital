@@ -127,8 +127,16 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
           }
           const data = await response.json()
           if (data.holdings) {
-            cacheRef.current.set(selectedDate, data.holdings)
-            setDisplayHoldings(data.holdings)
+            const validHoldings = (data.holdings || []).filter((h: HoldingAtDate) => {
+              return h && 
+                     !isNaN(h.value) && 
+                     isFinite(h.value) && 
+                     !isNaN(h.percentage) && 
+                     isFinite(h.percentage) &&
+                     h.value > 0
+            })
+            cacheRef.current.set(selectedDate, validHoldings)
+            setDisplayHoldings(validHoldings)
           }
         } catch (err) {
           console.error('Error fetching composition:', err)
@@ -138,16 +146,29 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
       fetchComposition()
     } else if (sliderValue === availableDates.length && currentHoldings) {
       // Use current holdings when slider is at the end
-      const totalValue = currentHoldings.reduce((sum, holding) => sum + (holding.currentValueNZD || 0), 0)
+      const totalValue = currentHoldings.reduce((sum, holding) => {
+        const value = holding.currentValueNZD || 0
+        return sum + (isNaN(value) || !isFinite(value) ? 0 : value)
+      }, 0)
+      
       if (totalValue > 0) {
-        const transformed: HoldingAtDate[] = currentHoldings.map(holding => ({
-          symbol: holding.symbol,
-          name: holding.name,
-          shares: 0, // Not used in display
-          value: holding.currentValueNZD || 0,
-          percentage: totalValue > 0 ? ((holding.currentValueNZD || 0) / totalValue) * 100 : 0,
-          currency: 'NZD'
-        }))
+        const transformed: HoldingAtDate[] = currentHoldings
+          .filter(holding => {
+            const value = holding.currentValueNZD || 0
+            return !isNaN(value) && isFinite(value) && value > 0
+          })
+          .map(holding => {
+            const value = holding.currentValueNZD || 0
+            const percentage = totalValue > 0 ? (value / totalValue) * 100 : 0
+            return {
+              symbol: holding.symbol,
+              name: holding.name,
+              shares: 0, // Not used in display
+              value: Math.max(0, value),
+              percentage: Math.max(0, isNaN(percentage) || !isFinite(percentage) ? 0 : percentage),
+              currency: 'NZD'
+            }
+          })
         setDisplayHoldings(transformed)
         setDisplayDate(null)
       } else {
@@ -279,43 +300,7 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
     return null
   }
 
-    // Custom label component for the bars
-  const CustomLabel = (props: any) => {
-    const { x, y, width, height, value, chartData } = props
-    
-    // Only show label if bar is wide enough
-    if (width < 50) return null
-    
-    // Find the data for this bar
-    const data = chartData?.find((d: ChartData) => Math.abs(d.value - value) < 0.01)
-    if (!data) return null
-    
-    return (
-      <g>
-        <text
-          x={x + 10}
-          y={y + height / 2}
-          fill="#ffffff"
-          textAnchor="start"
-          dominantBaseline="middle"
-          fontSize={14}
-          fontWeight="500"
-        >
-          {data.symbol}
-        </text>
-        <text
-          x={x + width - 10}
-          y={y + height / 2}
-          fill="#ffffff"
-          textAnchor="end"
-          dominantBaseline="middle"
-          fontSize={12}
-        >
-          {data.percentage ? data.percentage.toFixed(1) : '0.0'}%
-        </text>
-      </g>
-    )
-  }
+  
 
   if (loading) {
     return (
@@ -441,6 +426,26 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
                   dataKey="value" 
                   fill="#8884d8"
                   isAnimationActive={false}
+                  label={(props: any) => {
+                    const { x, y, width, height, value } = props
+                    const data = chartData.find(d => Math.abs(d.value - value) < 0.01)
+                    if (!data || !x || !y || !width || !height) return null
+                    
+                    return (
+                      <g>
+                        <text
+                          x={x + width + 5}
+                          y={y + height / 2}
+                          fill="#374151"
+                          textAnchor="start"
+                          dominantBaseline="middle"
+                          fontSize="12"
+                        >
+                          {data.symbol} ({data.percentage ? data.percentage.toFixed(1) : '0.0'}%)
+                        </text>
+                      </g>
+                    )
+                  }}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${entry.symbol}-${index}`} fill={entry.color} />

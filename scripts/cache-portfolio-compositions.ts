@@ -36,6 +36,16 @@ async function cachePortfolioCompositions() {
   try {
     console.log('Starting portfolio composition caching...')
     
+    // Clear existing cache file if it exists
+    const outputPath = path.join(process.cwd(), 'public', 'data', 'portfolio-compositions.json')
+    try {
+      await fs.access(outputPath)
+      await fs.unlink(outputPath)
+      console.log('Cleared existing cache file')
+    } catch (error) {
+      // File doesn't exist, which is fine
+    }
+    
     // Download CSV data
     const csvContent = await downloadTestData()
     const trades = parseCSVData(csvContent)
@@ -228,7 +238,6 @@ async function cachePortfolioCompositions() {
     }
     
     // Save to file
-    const outputPath = path.join(process.cwd(), 'public', 'data', 'portfolio-compositions.json')
     await fs.mkdir(path.dirname(outputPath), { recursive: true })
     await fs.writeFile(outputPath, JSON.stringify(compositions, null, 2))
     
