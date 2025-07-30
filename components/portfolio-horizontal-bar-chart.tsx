@@ -371,14 +371,14 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       <g transform={`translate(${x},${y})`}>
         <image 
           href={logoUrl} 
-          x={-55} 
+          x={-50} 
           y={-10} 
           width={20} 
           height={20}
           preserveAspectRatio="xMidYMid meet"
         />
         <text 
-          x={-30} 
+          x={-25} 
           y={4} 
           textAnchor="start" 
           fontSize={10}
