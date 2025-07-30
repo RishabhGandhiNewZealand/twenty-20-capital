@@ -366,20 +366,19 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   // Custom Y-axis tick component to render company logos
   const CustomYAxisTick = ({ x, y, payload }: any) => {
     const logoUrl = getLogoUrl(payload.value)
-    const leftOffset = isMobile ? -42 : -52
     
     return (
       <g transform={`translate(${x},${y})`}>
         <image 
           href={logoUrl} 
-          x={leftOffset} 
+          x={-65} 
           y={-10} 
           width={20} 
           height={20}
           preserveAspectRatio="xMidYMid meet"
         />
         <text 
-          x={leftOffset + 25} 
+          x={-40} 
           y={4} 
           textAnchor="start" 
           fontSize={12}
@@ -509,7 +508,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           </div>
         </div>
               </CardHeader>
-        <CardContent className="overflow-visible pl-3 pr-3 sm:pl-6 sm:pr-6">
+        <CardContent className="overflow-visible">
           {chartData.length === 0 ? (
           <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
@@ -523,7 +522,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 margin={{ 
                   top: 20, 
                   right: 45, 
-                  left: isMobile ? 45 : 55, 
+                  left: 65, 
                   bottom: 20 
                 }}
               >
@@ -538,7 +537,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={isMobile ? 45 : 55}
+                  width={65}
                   axisLine={false}
                   tickLine={false}
                 />
