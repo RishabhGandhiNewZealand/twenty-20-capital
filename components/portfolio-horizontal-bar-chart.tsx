@@ -508,7 +508,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           </div>
         </div>
               </CardHeader>
-        <CardContent className="overflow-visible">
+        <CardContent className="overflow-visible p-0">
           {chartData.length === 0 ? (
           <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
