@@ -366,21 +366,19 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   // Custom Y-axis tick component to render company logos
   const CustomYAxisTick = ({ x, y, payload }: any) => {
     const logoUrl = getLogoUrl(payload.value)
-    // Adjust position to align with CardHeader padding (16px on mobile, 24px on desktop)
-    const leftAlign = isMobile ? -81 : -89
     
     return (
       <g transform={`translate(${x},${y})`}>
         <image 
           href={logoUrl} 
-          x={leftAlign} 
+          x={0} 
           y={-10} 
           width={20} 
           height={20}
           preserveAspectRatio="xMidYMid meet"
         />
         <text 
-          x={leftAlign + 25} 
+          x={25} 
           y={4} 
           textAnchor="start" 
           fontSize={12}
@@ -516,16 +514,16 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[450px] sm:h-[550px] w-full overflow-visible">
+          <div className="h-[450px] sm:h-[550px] w-full overflow-visible py-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
                 layout="vertical"
                 margin={{ 
-                  top: 20, 
+                  top: 0, 
                   right: 45, 
-                  left: 65, 
-                  bottom: 20 
+                  left: 0, 
+                  bottom: 0 
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -539,7 +537,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={65}
+                  width={70}
                   axisLine={false}
                   tickLine={false}
                 />
