@@ -39,55 +39,59 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Investment Reports</h1>
-          <p className="text-gray-600">Quarterly and annual performance reviews</p>
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Investment Reports</h1>
+          <p className="text-sm sm:text-base text-gray-600">Quarterly and annual performance reviews</p>
         </div>
 
         {/* 2025 Reports */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">2025 Reports</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">2025 Reports</h2>
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
             {reports2025.map((report) => (
               <Link key={report.href} href={report.href}>
-                <Card className="border-blue-100 hover:border-blue-300 transition-colors cursor-pointer h-full">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {report.type}
-                      </span>
-                      <FileText className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <CardTitle className="text-gray-900">{report.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4">{report.description}</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center text-gray-500">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {report.date}
-                        </div>
-                        <div className={`flex items-center ${
-                          report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          <TrendingUp className="h-4 w-4 mr-1" />
-                          {report.performance}
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                        <div>
+                          <CardTitle className="text-base sm:text-lg">{report.title}</CardTitle>
+                          <div className="flex items-center mt-1 text-xs sm:text-sm text-gray-500">
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            {report.date}
+                          </div>
                         </div>
                       </div>
-                      {report.portfolioValue && (
-                        <div className="text-sm text-center">
-                          <span className="text-gray-500">Portfolio Value: </span>
-                          <span className="font-medium text-gray-900">{report.portfolioValue}</span>
-                        </div>
-                      )}
-                      {report.additions && (
-                        <div className="text-sm text-center">
-                          <span className="text-gray-500">Additions: </span>
-                          <span className="font-medium text-blue-600">{report.additions}</span>
-                        </div>
-                      )}
+                      <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                        {report.type}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 mb-3 sm:mb-4">{report.description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
+                      <div>
+                        <p className="text-xs text-gray-500">Performance</p>
+                        <p className={`text-base sm:text-lg font-semibold ${
+                          report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {report.performance}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Portfolio Value</p>
+                        <p className="text-base sm:text-lg font-semibold text-gray-900">
+                          {report.portfolioValue}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 sm:mt-4 flex items-center text-blue-600 text-sm">
+                      <span>View Report</span>
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                     </div>
                   </CardContent>
                 </Card>
@@ -98,35 +102,41 @@ export default function ReportsPage() {
 
         {/* 2024 Reports */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">2024 Reports</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">2024 Reports</h2>
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
             {reports2024.map((report) => (
               <Link key={report.href} href={report.href}>
-                <Card className="border-blue-100 hover:border-blue-300 transition-colors cursor-pointer h-full">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {report.type}
-                      </span>
-                      <FileText className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <CardTitle className="text-gray-900">{report.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4">{report.description}</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center text-gray-500">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {report.date}
-                        </div>
-                        <div className={`flex items-center ${
-                          report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          <TrendingUp className="h-4 w-4 mr-1" />
-                          {report.performance}
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                        <div>
+                          <CardTitle className="text-base sm:text-lg">{report.title}</CardTitle>
+                          <div className="flex items-center mt-1 text-xs sm:text-sm text-gray-500">
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            {report.date}
+                          </div>
                         </div>
                       </div>
+                      <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded">
+                        {report.type}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 mb-3 sm:mb-4">{report.description}</p>
+                    
+                    <div className="pt-3 sm:pt-4 border-t">
+                      <p className="text-xs text-gray-500 mb-1">Annual Performance</p>
+                      <p className={`text-lg sm:text-xl font-semibold text-green-600`}>
+                        {report.performance}
+                      </p>
+                    </div>
+                    
+                    <div className="mt-3 sm:mt-4 flex items-center text-blue-600 text-sm">
+                      <span>View Report</span>
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                     </div>
                   </CardContent>
                 </Card>

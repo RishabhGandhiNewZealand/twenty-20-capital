@@ -9,7 +9,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Rish Investing Journey",
   description: "Track your personal investing journey and portfolio performance",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

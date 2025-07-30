@@ -101,63 +101,71 @@ export default function AnalysesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Investment Analyses</h1>
-          <p className="text-gray-600">In-depth analysis of individual companies and investment opportunities</p>
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Stock Analyses</h1>
+          <p className="text-sm sm:text-base text-gray-600">In-depth fundamental analysis of portfolio companies</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {analyses.map((analysis) => (
-            <Link key={analysis.symbol} href={analysis.href}>
-              <Card className="border-blue-100 hover:border-blue-300 transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-12 h-12 ${analysis.logoColor} rounded-lg flex items-center justify-center`}>
-                      <span className="text-white font-bold text-sm">{analysis.logo}</span>
+            <Link key={analysis.href} href={analysis.href}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                <CardHeader className="pb-3 sm:pb-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg ${analysis.logoColor} text-white flex items-center justify-center font-bold text-sm sm:text-base`}>
+                        {analysis.logo}
+                      </div>
+                      <div>
+                        <CardTitle className="text-base sm:text-lg text-gray-900">{analysis.company}</CardTitle>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-xs sm:text-sm text-gray-500">
+                          <span>{analysis.symbol}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span>{analysis.sector}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-gray-900">{analysis.company}</CardTitle>
-                      <p className="text-sm text-gray-500">
-                        {analysis.symbol} • {analysis.sector}
-                      </p>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Intrinsic Value</p>
+                      <p className="text-base sm:text-lg font-semibold text-gray-900">{analysis.intrinsicValue}</p>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-gray-500">Current Price</p>
-                        {analysis.loading ? (
-                          <div className="flex items-center space-x-2">
-                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                            <span className="text-sm text-gray-400">Loading...</span>
-                          </div>
-                        ) : analysis.error ? (
-                          <p className="text-sm text-red-500">Price unavailable</p>
-                        ) : (
-                          <p className="text-lg font-semibold text-gray-900">
-                            {formatPrice(analysis.currentPrice!, analysis.currency)}
+                  <p className="text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-3">{analysis.summary}</p>
+                  
+                  <div className="flex items-center justify-between pt-3 sm:pt-4 border-t">
+                    <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      {analysis.lastUpdated}
+                    </div>
+                    <div className="text-right">
+                      {analysis.loading ? (
+                        <div className="flex items-center space-x-2 text-gray-500">
+                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                          <span className="text-xs sm:text-sm">Loading price...</span>
+                        </div>
+                      ) : analysis.error ? (
+                        <span className="text-xs sm:text-sm text-red-600">{analysis.error}</span>
+                      ) : analysis.currentPrice ? (
+                        <div>
+                          <p className="text-xs text-gray-500">Current Price</p>
+                          <p className="text-base sm:text-lg font-semibold">
+                            {analysis.currency === 'USD' ? '$' : analysis.currency === 'EUR' ? '€' : '$'}
+                            {analysis.currentPrice.toFixed(2)}
                           </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">Intrinsic Value</p>
-                        <p className="text-lg font-semibold text-blue-600">{analysis.intrinsicValue}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 mb-2">Investment Summary:</p>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        {analysis.summary}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center text-sm text-gray-500 pt-2 border-t">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Last updated: {analysis.lastUpdated}
+                          <p className={`text-xs sm:text-sm ${
+                            analysis.currentPrice < parseFloat(analysis.intrinsicValue.replace(/[$€,]/g, ''))
+                              ? 'text-green-600' : 'text-gray-500'
+                          }`}>
+                            {((parseFloat(analysis.intrinsicValue.replace(/[$€,]/g, '')) / analysis.currentPrice - 1) * 100).toFixed(1)}% {
+                              analysis.currentPrice < parseFloat(analysis.intrinsicValue.replace(/[$€,]/g, ''))
+                                ? 'undervalued' : 'premium'
+                            }
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </CardContent>
