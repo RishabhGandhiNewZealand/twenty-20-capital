@@ -51,6 +51,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const [sliderValue, setSliderValue] = useState<number>(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1) // 0.5, 1, or 2
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -180,6 +181,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         setSliderValue(0)
       }
       
+      const intervalTime = playbackSpeed === 0.5 ? 40 : playbackSpeed === 2 ? 10 : 20
+      
       playIntervalRef.current = setInterval(() => {
         setSliderValue(prev => {
           if (prev >= availableDates.length - 1) {
@@ -193,9 +196,36 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           }
           return prev + 1
         })
-      }, 10) // Update every 10ms for smooth animation
+      }, intervalTime)
     }
-  }, [isPlaying, sliderValue, availableDates.length])
+  }, [isPlaying, sliderValue, availableDates.length, playbackSpeed])
+
+  // Update speed and restart if playing
+  const changeSpeed = (newSpeed: number) => {
+    setPlaybackSpeed(newSpeed)
+    if (isPlaying) {
+      // Stop and restart with new speed
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current)
+      }
+      
+      const intervalTime = newSpeed === 0.5 ? 40 : newSpeed === 2 ? 10 : 20
+      
+      playIntervalRef.current = setInterval(() => {
+        setSliderValue(prev => {
+          if (prev >= availableDates.length - 1) {
+            setIsPlaying(false)
+            if (playIntervalRef.current) {
+              clearInterval(playIntervalRef.current)
+              playIntervalRef.current = null
+            }
+            return prev
+          }
+          return prev + 1
+        })
+      }, intervalTime)
+    }
+  }
 
   // Cleanup interval on unmount
   useEffect(() => {
@@ -341,11 +371,13 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     
     return (
       <g transform={`translate(${x},${y})`}>
-        <foreignObject x={isMobile ? -95 : -120} y={-12} width={isMobile ? 90 : 110} height={24}>
-          <div className="flex items-center justify-end gap-1 sm:gap-2 w-full h-full">
-            <span className={`text-xs font-medium text-gray-600 truncate ${isMobile ? 'max-w-[45px]' : 'max-w-[70px]'}`}>
-              {companyName}
-            </span>
+        <foreignObject x={isMobile ? -90 : -120} y={-12} width={isMobile ? 85 : 110} height={24}>
+          <div className="flex items-center justify-end gap-1 w-full h-full pr-1">
+            {!isMobile && (
+              <span className="text-xs font-medium text-gray-600 truncate max-w-[70px]">
+                {companyName}
+              </span>
+            )}
             <img 
               src={logoUrl} 
               alt={payload.value}
@@ -356,7 +388,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 target.style.display = 'none'
               }}
             />
-            <span className="text-xs font-semibold text-gray-700 w-8 sm:w-10 text-right">
+            <span className="text-xs font-semibold text-gray-700 w-8 sm:w-10 text-left sm:text-right">
               {payload.value}
             </span>
           </div>
@@ -408,24 +440,58 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 </span>
               )}
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={togglePlay}
-              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-            >
-              {isPlaying ? (
-                <>
-                  <Pause className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Pause</span>
-                </>
-              ) : (
-                <>
-                  <Play className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Play</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={togglePlay}
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Play</span>
+                  </>
+                )}
+              </Button>
+              <div className="flex items-center gap-0.5 border rounded-md">
+                <button
+                  onClick={() => changeSpeed(0.5)}
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
+                    playbackSpeed === 0.5 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  0.5x
+                </button>
+                <button
+                  onClick={() => changeSpeed(1)}
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
+                    playbackSpeed === 1 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  1x
+                </button>
+                <button
+                  onClick={() => changeSpeed(2)}
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
+                    playbackSpeed === 2 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  2x
+                </button>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 w-full">
             <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
@@ -462,7 +528,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 margin={{ 
                   top: 20, 
                   right: 45, 
-                  left: isMobile ? 100 : 130, 
+                  left: isMobile ? 80 : 130, 
                   bottom: 20 
                 }}
               >
@@ -477,7 +543,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={isMobile ? 90 : 120}
+                  width={isMobile ? 75 : 120}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
