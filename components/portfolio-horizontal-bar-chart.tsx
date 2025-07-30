@@ -181,7 +181,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         setSliderValue(0)
       }
       
-      const intervalTime = playbackSpeed === 0.5 ? 40 : playbackSpeed === 2 ? 10 : 20
+      const intervalTime = playbackSpeed === 0.5 ? 100 : playbackSpeed === 2 ? 25 : 50
       
       playIntervalRef.current = setInterval(() => {
         setSliderValue(prev => {
@@ -209,7 +209,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         clearInterval(playIntervalRef.current)
       }
       
-      const intervalTime = newSpeed === 0.5 ? 40 : newSpeed === 2 ? 10 : 20
+      const intervalTime = newSpeed === 0.5 ? 100 : newSpeed === 2 ? 25 : 50
       
       playIntervalRef.current = setInterval(() => {
         setSliderValue(prev => {
@@ -363,32 +363,25 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     return `$${Math.round(value)}`
   }
 
-  // Custom Y-axis tick component to render company logos and names
+  // Custom Y-axis tick component to render company logos
   const CustomYAxisTick = ({ x, y, payload }: any) => {
     const logoUrl = getLogoUrl(payload.value)
-    const holding = displayHoldings.find(h => h.symbol === payload.value)
-    const companyName = holding?.name || payload.value
     
     return (
       <g transform={`translate(${x},${y})`}>
-        <foreignObject x={isMobile ? -90 : -120} y={-12} width={isMobile ? 85 : 110} height={24}>
-          <div className="flex items-center justify-end gap-1 w-full h-full pr-1">
-            {!isMobile && (
-              <span className="text-xs font-medium text-gray-600 truncate max-w-[70px]">
-                {companyName}
-              </span>
-            )}
+        <foreignObject x={-55} y={-12} width={50} height={24}>
+          <div className="flex items-center justify-end gap-1.5 w-full h-full">
             <img 
               src={logoUrl} 
               alt={payload.value}
-              className="w-4 h-4 sm:w-5 sm:h-5 object-contain rounded flex-shrink-0"
+              className="w-5 h-5 object-contain rounded flex-shrink-0"
               onError={(e) => {
                 // Fallback to symbol if image fails to load
                 const target = e.target as HTMLImageElement
                 target.style.display = 'none'
               }}
             />
-            <span className="text-xs font-semibold text-gray-700 w-8 sm:w-10 text-left sm:text-right">
+            <span className="text-xs font-semibold text-gray-700 w-10 text-right">
               {payload.value}
             </span>
           </div>
@@ -528,7 +521,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 margin={{ 
                   top: 20, 
                   right: 45, 
-                  left: isMobile ? 80 : 130, 
+                  left: 60, 
                   bottom: 20 
                 }}
               >
@@ -543,7 +536,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={isMobile ? 75 : 120}
+                  width={50}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
