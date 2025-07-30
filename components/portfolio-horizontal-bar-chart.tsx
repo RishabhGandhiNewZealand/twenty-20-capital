@@ -522,7 +522,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 margin={{ 
                   top: 5, 
                   right: 50, 
-                  left: 10, 
+                  left: 0, 
                   bottom: 5 
                 }}
               >
@@ -537,7 +537,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={65}
+                  width={75}
                   axisLine={false}
                   tickLine={false}
                 />
