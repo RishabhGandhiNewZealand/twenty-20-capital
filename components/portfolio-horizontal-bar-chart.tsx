@@ -521,7 +521,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 layout="vertical"
                 margin={{ 
                   top: 5, 
-                  right: 25, 
+                  right: 50, 
                   left: 0, 
                   bottom: 5 
                 }}
