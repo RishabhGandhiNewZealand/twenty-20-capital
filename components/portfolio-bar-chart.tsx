@@ -153,7 +153,7 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
           
           return next
         })
-      }, 200) // Update every 200ms
+      }, 25) // Update every 25ms
     }
   }, [isPlaying, sliderValue, availableDates, compositionData, handleSliderChange])
 
@@ -215,7 +215,7 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
     return null
   }
 
-  const CustomXAxisTick = ({ x, y, payload }: any) => {
+  const CustomYAxisTick = ({ x, y, payload }: any) => {
     const data = barChartData.find(d => d.symbol === payload.value)
     if (!data) return null
 
@@ -224,8 +224,8 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
         <text 
           x={0} 
           y={0} 
-          dy={16} 
-          textAnchor="middle" 
+          dy={4} 
+          textAnchor="end" 
           fill="#374151"
           className="text-xs sm:text-sm"
         >
@@ -325,28 +325,27 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
             No holdings data available
           </div>
         ) : (
-          <div className="h-[400px] sm:h-[500px] w-full">
+          <div className="h-[400px] sm:h-[600px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={barChartData}
-                margin={{ top: 20, right: 30, left: 80, bottom: 60 }}
+                margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
                 layout="horizontal"
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
-                  dataKey="symbol"
-                  tick={<CustomXAxisTick />}
-                  interval={0}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
+                  type="number"
+                  tickFormatter={(value) => formatCurrency(value)}
                 />
                 <YAxis 
-                  tickFormatter={(value) => formatCurrency(value)}
+                  dataKey="symbol"
+                  type="category"
+                  tick={<CustomYAxisTick />}
                   width={80}
+                  interval={0}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {barChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
