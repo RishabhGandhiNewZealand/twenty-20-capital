@@ -366,19 +366,21 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   // Custom Y-axis tick component to render company logos
   const CustomYAxisTick = ({ x, y, payload }: any) => {
     const logoUrl = getLogoUrl(payload.value)
+    // Adjust position to align with CardHeader padding (16px on mobile, 24px on desktop)
+    const leftAlign = isMobile ? -81 : -89
     
     return (
       <g transform={`translate(${x},${y})`}>
         <image 
           href={logoUrl} 
-          x={-65} 
+          x={leftAlign} 
           y={-10} 
           width={20} 
           height={20}
           preserveAspectRatio="xMidYMid meet"
         />
         <text 
-          x={-40} 
+          x={leftAlign + 25} 
           y={4} 
           textAnchor="start" 
           fontSize={12}
@@ -423,7 +425,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
 
   return (
     <Card className="border-blue-100">
-      <CardHeader className="pb-2 sm:pb-4">
+      <CardHeader className="px-4 sm:px-6 pb-2 sm:pb-4">
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between">
             <CardTitle className="text-gray-900 text-lg sm:text-xl">
@@ -508,7 +510,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           </div>
         </div>
               </CardHeader>
-        <CardContent className="overflow-visible p-0">
+        <CardContent className="overflow-visible px-4 sm:px-6 py-0">
           {chartData.length === 0 ? (
           <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
