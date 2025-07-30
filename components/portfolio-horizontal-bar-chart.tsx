@@ -378,9 +378,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           preserveAspectRatio="xMidYMid meet"
         />
         <text 
-          x={-8} 
+          x={-10} 
           y={4} 
-          textAnchor="end" 
+          textAnchor="start" 
           fontSize={10}
           fontWeight={600}
           fill="#374151"
@@ -521,7 +521,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 layout="vertical"
                 margin={{ 
                   top: 5, 
-                  right: 10, 
+                  right: 60, 
                   left: 10, 
                   bottom: 5 
                 }}
