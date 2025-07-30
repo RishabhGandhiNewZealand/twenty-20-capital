@@ -50,6 +50,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const [availableDates, setAvailableDates] = useState<string[]>([])
   const [sliderValue, setSliderValue] = useState<number>(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -83,6 +84,17 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
 
     loadCompositionData()
+  }, [])
+
+  // Handle responsive sizing
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640)
+    }
+    
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   // Update display when slider value changes
@@ -181,7 +193,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           }
           return prev + 1
         })
-      }, 5) // Update every 5ms for faster animation
+      }, 10) // Update every 10ms for smooth animation
     }
   }, [isPlaying, sliderValue, availableDates.length])
 
@@ -234,6 +246,51 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }).format(value)
   }
 
+  // Custom bar shape to include value text inside
+  const CustomBar = (props: any) => {
+    const { x, y, width, height, fill, value, index } = props
+    const data = chartData[index]
+    const showValue = width > (isMobile ? 50 : 60)
+    
+    return (
+      <g>
+        <rect 
+          x={x} 
+          y={y} 
+          width={width} 
+          height={height} 
+          fill={fill} 
+          rx={4} 
+          ry={4}
+        />
+        {showValue && (
+          <text 
+            x={x + (isMobile ? 5 : 10)} 
+            y={y + height / 2} 
+            fill="white" 
+            textAnchor="start" 
+            dominantBaseline="middle"
+            fontSize={isMobile ? "10" : "11"}
+            fontWeight="500"
+          >
+            {formatCurrency(value)}
+          </text>
+        )}
+        <text 
+          x={x + width + 5} 
+          y={y + height / 2} 
+          fill="#4b5563" 
+          textAnchor="start" 
+          dominantBaseline="middle"
+          fontSize={isMobile ? "10" : "11"}
+          fontWeight="600"
+        >
+          {data.percentage.toFixed(1)}%
+        </text>
+      </g>
+    )
+  }
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-NZ', {
       year: 'numeric',
@@ -276,30 +333,30 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     return `$${Math.round(value)}`
   }
 
-  // Custom Y-axis tick component to render company logos
+  // Custom Y-axis tick component to render company logos and names
   const CustomYAxisTick = ({ x, y, payload }: any) => {
     const logoUrl = getLogoUrl(payload.value)
+    const holding = displayHoldings.find(h => h.symbol === payload.value)
+    const companyName = holding?.name || payload.value
     
     return (
       <g transform={`translate(${x},${y})`}>
-        <foreignObject x={-40} y={-12} width={32} height={24}>
-          <div className="flex items-center justify-end w-full h-full">
+        <foreignObject x={isMobile ? -95 : -120} y={-12} width={isMobile ? 90 : 110} height={24}>
+          <div className="flex items-center justify-end gap-1 sm:gap-2 w-full h-full">
+            <span className={`text-xs font-medium text-gray-600 truncate ${isMobile ? 'max-w-[45px]' : 'max-w-[70px]'}`}>
+              {companyName}
+            </span>
             <img 
               src={logoUrl} 
               alt={payload.value}
-              className="w-6 h-6 object-contain rounded"
+              className="w-4 h-4 sm:w-5 sm:h-5 object-contain rounded flex-shrink-0"
               onError={(e) => {
-                // Fallback to text if image fails to load
+                // Fallback to symbol if image fails to load
                 const target = e.target as HTMLImageElement
                 target.style.display = 'none'
-                const textElement = target.nextElementSibling as HTMLElement
-                if (textElement) textElement.style.display = 'block'
               }}
             />
-            <span 
-              className="text-xs font-medium text-gray-700 hidden"
-              style={{ display: 'none' }}
-            >
+            <span className="text-xs font-semibold text-gray-700 w-8 sm:w-10 text-right">
               {payload.value}
             </span>
           </div>
@@ -340,54 +397,54 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
 
   return (
     <Card className="border-blue-100">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-gray-900 text-lg sm:text-xl">
-            Portfolio Allocation
-            {displayDate && (
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                as of {formatDate(displayDate)}
-              </span>
-            )}
-          </CardTitle>
-          <div className="flex items-center gap-4">
+      <CardHeader className="pb-2 sm:pb-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between">
+            <CardTitle className="text-gray-900 text-lg sm:text-xl">
+              Portfolio Allocation
+              {displayDate && (
+                <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2 block sm:inline">
+                  as of {formatDate(displayDate)}
+                </span>
+              )}
+            </CardTitle>
             <Button
               variant="outline"
               size="sm"
               onClick={togglePlay}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
             >
               {isPlaying ? (
                 <>
-                  <Pause className="h-4 w-4" />
-                  Pause
+                  <Pause className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Pause</span>
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4" />
-                  Play
+                  <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Play</span>
                 </>
               )}
             </Button>
-            <div className="flex items-center gap-3 min-w-[200px]">
-              <span className="text-sm text-gray-600 whitespace-nowrap">
-                {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-NZ', { 
-                  year: 'numeric',
-                  month: 'short'
-                })}
-              </span>
-              <Slider
-                value={[sliderValue]}
-                onValueChange={(value) => setSliderValue(value[0])}
-                max={availableDates.length}
-                step={1}
-                className="flex-1"
-                disabled={isPlaying}
-              />
-              <span className="text-sm text-gray-600 whitespace-nowrap">
-                {displayDate ? formatDate(displayDate) : 'Today'}
-              </span>
-            </div>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 w-full">
+            <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+              {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-NZ', { 
+                year: 'numeric',
+                month: 'short'
+              })}
+            </span>
+            <Slider
+              value={[sliderValue]}
+              onValueChange={(value) => setSliderValue(value[0])}
+              max={availableDates.length}
+              step={1}
+              className="flex-1"
+              disabled={isPlaying}
+            />
+            <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+              {displayDate ? formatDate(displayDate) : 'Today'}
+            </span>
           </div>
         </div>
       </CardHeader>
@@ -402,7 +459,12 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
               <BarChart
                 data={chartData}
                 layout="vertical"
-                margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
+                margin={{ 
+                  top: 20, 
+                  right: 45, 
+                  left: isMobile ? 100 : 130, 
+                  bottom: 20 
+                }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
@@ -415,13 +477,14 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={60}
+                  width={isMobile ? 90 : 120}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
                   dataKey="value" 
-                  radius={[0, 4, 4, 0]}
+                  shape={<CustomBar />}
                   animationDuration={300}
+                  isAnimationActive={true}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
