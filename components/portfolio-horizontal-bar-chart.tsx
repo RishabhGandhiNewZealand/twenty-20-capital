@@ -366,19 +366,22 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   // Custom Y-axis tick component to render company logos
   const CustomYAxisTick = ({ x, y, payload }: any) => {
     const logoUrl = getLogoUrl(payload.value)
+    // The tick is positioned relative to the Y-axis line
+    // We need to account for CardHeader padding (16px mobile, 24px desktop) + left margin
+    const leftOffset = isMobile ? -81 : -89
     
     return (
       <g transform={`translate(${x},${y})`}>
         <image 
           href={logoUrl} 
-          x={0} 
+          x={leftOffset} 
           y={-10} 
           width={20} 
           height={20}
           preserveAspectRatio="xMidYMid meet"
         />
         <text 
-          x={25} 
+          x={leftOffset + 25} 
           y={4} 
           textAnchor="start" 
           fontSize={12}
@@ -508,22 +511,22 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           </div>
         </div>
               </CardHeader>
-        <CardContent className="overflow-visible px-4 sm:px-6 py-0">
+        <CardContent className="overflow-visible pl-0 pr-4 sm:pr-6 py-0">
           {chartData.length === 0 ? (
           <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[450px] sm:h-[550px] w-full overflow-visible py-4">
+          <div className="h-[450px] sm:h-[550px] w-full overflow-visible pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
                 layout="vertical"
                 margin={{ 
-                  top: 0, 
+                  top: 20, 
                   right: 45, 
-                  left: 0, 
-                  bottom: 0 
+                  left: isMobile ? 81 : 89, 
+                  bottom: 20 
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -537,7 +540,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={70}
+                  width={65}
                   axisLine={false}
                   tickLine={false}
                 />
