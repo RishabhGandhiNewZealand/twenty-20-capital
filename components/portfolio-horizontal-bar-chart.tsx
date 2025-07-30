@@ -124,17 +124,28 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       fetchComposition()
     } else if (sliderValue === availableDates.length && currentHoldings) {
       // Use current holdings when slider is at the end
-      const totalValue = currentHoldings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
-      const transformed: HoldingAtDate[] = currentHoldings.map(holding => ({
-        symbol: holding.symbol,
-        name: holding.name,
-        shares: 0, // Not used in display
-        value: holding.currentValueNZD,
-        percentage: (holding.currentValueNZD / totalValue) * 100,
-        currency: 'NZD'
-      }))
-      setDisplayHoldings(transformed)
-      setDisplayDate(null)
+      const totalValue = currentHoldings.reduce((sum, holding) => {
+        const value = holding.currentValueNZD || 0;
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0)
+      
+      if (totalValue > 0) {
+        const transformed: HoldingAtDate[] = currentHoldings
+          .filter(holding => holding.currentValueNZD > 0 && !isNaN(holding.currentValueNZD))
+          .map(holding => ({
+            symbol: holding.symbol,
+            name: holding.name,
+            shares: 0, // Not used in display
+            value: holding.currentValueNZD,
+            percentage: (holding.currentValueNZD / totalValue) * 100,
+            currency: 'NZD'
+          }))
+        setDisplayHoldings(transformed)
+        setDisplayDate(null)
+      } else {
+        setDisplayHoldings([])
+        setDisplayDate(null)
+      }
     }
   }, [sliderValue, availableDates, compositionData, currentHoldings])
 
@@ -184,16 +195,34 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
 
   // Transform holdings data for bar chart and sort by value
   const chartData: ChartData[] = displayHoldings
-    .filter(holding => holding.percentage >= 0.1 && holding.value > 0)
+    .filter(holding => {
+      // Ensure we have valid numeric values
+      const hasValidPercentage = typeof holding.percentage === 'number' && 
+                                !isNaN(holding.percentage) && 
+                                isFinite(holding.percentage) && 
+                                holding.percentage >= 0.1;
+      const hasValidValue = typeof holding.value === 'number' && 
+                           !isNaN(holding.value) && 
+                           isFinite(holding.value) && 
+                           holding.value > 0;
+      return hasValidPercentage && hasValidValue;
+    })
     .map((holding) => ({
-      name: holding.symbol,
+      name: holding.name || holding.symbol,
       symbol: holding.symbol,
-      value: holding.value,
-      percentage: holding.percentage,
+      value: Math.round(holding.value), // Round to avoid decimal issues
+      percentage: Math.round(holding.percentage * 10) / 10, // Round to 1 decimal place
       color: getCompanyColor(holding.symbol)
     }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 15) // Show top 15 holdings for better visibility
+
+  // Debug logging
+  useEffect(() => {
+    if (chartData.length > 0) {
+      console.log('Chart data:', chartData);
+    }
+  }, [chartData])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-NZ', {
@@ -237,12 +266,13 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   }
 
   const formatTickValue = (value: number) => {
+    if (!value || isNaN(value)) return '$0';
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`
     } else if (value >= 1000) {
       return `$${(value / 1000).toFixed(0)}K`
     }
-    return `$${value}`
+    return `$${Math.round(value)}`
   }
 
   if (loading) {
@@ -252,7 +282,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Allocation</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] sm:h-[500px] flex items-center justify-center">
+          <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         </CardContent>
@@ -267,7 +297,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Allocation</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] sm:h-[500px] flex items-center justify-center">
+          <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-red-600">{error}</p>
           </div>
         </CardContent>
@@ -330,16 +360,16 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
-          <div className="h-[400px] sm:h-[500px] flex items-center justify-center">
+          <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[400px] sm:h-[500px] w-full">
+          <div className="h-[450px] sm:h-[550px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
-                layout="horizontal"
-                margin={{ top: 20, right: 30, left: 60, bottom: 20 }}
+                layout="vertical"
+                margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
@@ -350,9 +380,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 />
                 <YAxis 
                   type="category" 
-                  dataKey="name" 
+                  dataKey="symbol" 
                   tick={{ fontSize: 12 }}
-                  width={50}
+                  width={60}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
