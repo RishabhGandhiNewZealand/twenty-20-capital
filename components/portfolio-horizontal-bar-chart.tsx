@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useEffect, useState, useRef, useCallback } from "react"
 import { Loader2, Play, Pause } from "lucide-react"
 import { getCompanyColor } from "@/lib/company-colors"
+import { getLogoUrl } from "@/lib/company-utils"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
@@ -180,7 +181,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           }
           return prev + 1
         })
-      }, 100) // Update every 100ms for smooth animation
+      }, 5) // Update every 5ms for faster animation
     }
   }, [isPlaying, sliderValue, availableDates.length])
 
@@ -222,7 +223,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     if (chartData.length > 0) {
       console.log('Chart data:', chartData);
     }
-  }, [chartData])
+  }, [chartData.length]) // Only depend on length to avoid infinite loops
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-NZ', {
@@ -273,6 +274,38 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       return `$${(value / 1000).toFixed(0)}K`
     }
     return `$${Math.round(value)}`
+  }
+
+  // Custom Y-axis tick component to render company logos
+  const CustomYAxisTick = ({ x, y, payload }: any) => {
+    const logoUrl = getLogoUrl(payload.value)
+    
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <foreignObject x={-40} y={-12} width={32} height={24}>
+          <div className="flex items-center justify-end w-full h-full">
+            <img 
+              src={logoUrl} 
+              alt={payload.value}
+              className="w-6 h-6 object-contain rounded"
+              onError={(e) => {
+                // Fallback to text if image fails to load
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+                const textElement = target.nextElementSibling as HTMLElement
+                if (textElement) textElement.style.display = 'block'
+              }}
+            />
+            <span 
+              className="text-xs font-medium text-gray-700 hidden"
+              style={{ display: 'none' }}
+            >
+              {payload.value}
+            </span>
+          </div>
+        </foreignObject>
+      </g>
+    )
   }
 
   if (loading) {
@@ -371,17 +404,17 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 layout="vertical"
                 margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   type="number" 
                   tickFormatter={formatTickValue}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10, fill: '#6b7280' }}
                   domain={[0, 'dataMax']}
                 />
                 <YAxis 
                   type="category" 
                   dataKey="symbol" 
-                  tick={{ fontSize: 12 }}
+                  tick={<CustomYAxisTick />}
                   width={60}
                 />
                 <Tooltip content={<CustomTooltip />} />
