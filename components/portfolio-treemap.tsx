@@ -169,7 +169,7 @@ export function PortfolioTreemap({ holdings: currentHoldings }: PortfolioTreemap
           }
           return prev + 1
         })
-      }, 100) // Update every 100ms for smooth animation
+      }, 50) // Update every 50ms for smooth animation
     }
   }, [isPlaying, sliderValue, availableDates.length])
 

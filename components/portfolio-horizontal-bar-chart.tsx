@@ -53,7 +53,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const [isMobile, setIsMobile] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState(1) // 0.5, 1, or 2
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
-  const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
+  const lastUpdateTimeRef = useRef<number>(0)
 
   // Load the pre-cached composition data on mount
   useEffect(() => {
@@ -163,14 +164,41 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
   }, [sliderValue, availableDates, compositionData, currentHoldings])
 
+  // Smooth animation function using requestAnimationFrame
+  const animate = useCallback(() => {
+    const now = performance.now()
+    const elapsed = now - lastUpdateTimeRef.current
+    const targetInterval = 50 / playbackSpeed
+    
+    if (elapsed >= targetInterval) {
+      setSliderValue(prev => {
+        if (prev >= availableDates.length - 1) {
+          // Stop at the end
+          setIsPlaying(false)
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current)
+            animationFrameRef.current = null
+          }
+          return prev
+        }
+        lastUpdateTimeRef.current = now
+        return prev + 1
+      })
+    }
+    
+    if (animationFrameRef.current !== null) {
+      animationFrameRef.current = requestAnimationFrame(animate)
+    }
+  }, [availableDates.length, playbackSpeed])
+
   // Play/pause functionality
   const togglePlay = useCallback(() => {
     if (isPlaying) {
       // Stop playing
       setIsPlaying(false)
-      if (playIntervalRef.current) {
-        clearInterval(playIntervalRef.current)
-        playIntervalRef.current = null
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
       }
     } else {
       // Start playing
@@ -181,57 +209,23 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         setSliderValue(0)
       }
       
-      const intervalTime = playbackSpeed === 0.5 ? 100 : playbackSpeed === 2 ? 25 : 50
-      
-      playIntervalRef.current = setInterval(() => {
-        setSliderValue(prev => {
-          if (prev >= availableDates.length - 1) {
-            // Stop at the end
-            setIsPlaying(false)
-            if (playIntervalRef.current) {
-              clearInterval(playIntervalRef.current)
-              playIntervalRef.current = null
-            }
-            return prev
-          }
-          return prev + 1
-        })
-      }, intervalTime)
+      lastUpdateTimeRef.current = performance.now()
+      animationFrameRef.current = requestAnimationFrame(animate)
     }
-  }, [isPlaying, sliderValue, availableDates.length, playbackSpeed])
+  }, [isPlaying, sliderValue, availableDates.length, animate])
 
   // Update speed and restart if playing
   const changeSpeed = (newSpeed: number) => {
     setPlaybackSpeed(newSpeed)
-    if (isPlaying) {
-      // Stop and restart with new speed
-      if (playIntervalRef.current) {
-        clearInterval(playIntervalRef.current)
-      }
-      
-      const intervalTime = newSpeed === 0.5 ? 100 : newSpeed === 2 ? 25 : 50
-      
-      playIntervalRef.current = setInterval(() => {
-        setSliderValue(prev => {
-          if (prev >= availableDates.length - 1) {
-            setIsPlaying(false)
-            if (playIntervalRef.current) {
-              clearInterval(playIntervalRef.current)
-              playIntervalRef.current = null
-            }
-            return prev
-          }
-          return prev + 1
-        })
-      }, intervalTime)
-    }
+    // Speed change is automatically handled by the animate function
+    // No need to restart animation as it will adjust on next frame
   }
 
-  // Cleanup interval on unmount
+  // Cleanup animation on unmount
   useEffect(() => {
     return () => {
-      if (playIntervalRef.current) {
-        clearInterval(playIntervalRef.current)
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
       }
     }
   }, [])
