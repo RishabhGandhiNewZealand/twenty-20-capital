@@ -101,16 +101,21 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
       
       // Check cache first
       if (cacheRef.current.has(selectedDate)) {
-        setDisplayHoldings(cacheRef.current.get(selectedDate)!)
-        return
+        const cached = cacheRef.current.get(selectedDate)
+        if (cached && Array.isArray(cached)) {
+          setDisplayHoldings(cached)
+          return
+        }
       }
 
       // Check pre-cached data
       if (compositionData && compositionData[selectedDate]) {
         const holdings = compositionData[selectedDate]
-        cacheRef.current.set(selectedDate, holdings)
-        setDisplayHoldings(holdings || [])
-        return
+        if (holdings && Array.isArray(holdings)) {
+          cacheRef.current.set(selectedDate, holdings)
+          setDisplayHoldings(holdings)
+          return
+        }
       }
 
       // If not in pre-cached data, fetch from API
@@ -181,7 +186,22 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
             }
             return prev
           }
-          return prev + 1
+          // Skip to next valid date
+          let nextIndex = prev + 1
+          while (nextIndex < availableDates.length) {
+            const date = availableDates[nextIndex]
+            if (compositionData && compositionData[date] && compositionData[date].length > 0) {
+              return nextIndex
+            }
+            nextIndex++
+          }
+          // If no more valid dates, stop playing
+          setIsPlaying(false)
+          if (playIntervalRef.current) {
+            clearInterval(playIntervalRef.current)
+            playIntervalRef.current = null
+          }
+          return prev
         })
       }, 50) // Update every 50ms for smooth animation
     }
@@ -198,15 +218,22 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
 
   // Transform holdings data for race chart - show top 10
   const chartData: ChartData[] = displayHoldings
-    .filter(holding => holding.value > 0 && !isNaN(holding.value) && !isNaN(holding.percentage))
+    .filter(holding => {
+      return holding && 
+             holding.value > 0 && 
+             !isNaN(holding.value) && 
+             isFinite(holding.value) &&
+             !isNaN(holding.percentage) && 
+             isFinite(holding.percentage)
+    })
     .sort((a, b) => b.value - a.value)
     .slice(0, 10)
     .map((holding) => ({
-      symbol: holding.symbol,
-      name: holding.name,
-      value: Math.max(0, holding.value || 0),
-      percentage: Math.max(0, holding.percentage || 0),
-      color: getCompanyColor(holding.symbol)
+      symbol: holding.symbol || 'Unknown',
+      name: holding.name || 'Unknown',
+      value: Number(holding.value) || 0,
+      percentage: Number(holding.percentage) || 0,
+      color: getCompanyColor(holding.symbol || 'Unknown')
     }))
     .reverse() // Reverse to show highest at top
 
@@ -383,7 +410,11 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[400px] sm:h-[500px] w-full bg-gray-50">
+          <div className="h-[400px] sm:h-[500px] w-full">
+            <div className="text-xs text-gray-500 mb-2">
+              Showing {chartData.length} holdings
+              {chartData.length > 0 && ` (Max value: ${formatCurrency(maxValue)})`}
+            </div>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -393,7 +424,7 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e0e0e0" />
                 <XAxis 
                   type="number" 
-                  domain={[0, dataMax => Math.max(dataMax * 1.1, 100)]}
+                  domain={[0, 'dataMax']}
                   tick={false}
                   axisLine={false}
                 />
@@ -408,11 +439,8 @@ export function PortfolioRaceChart({ holdings: currentHoldings }: PortfolioRaceC
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
                   dataKey="value" 
-                  radius={[0, 4, 4, 0]}
-                  animationDuration={300}
-                  isAnimationActive={true}
                   fill="#8884d8"
-                  label={(props: any) => <CustomLabel {...props} chartData={chartData} />}
+                  isAnimationActive={false}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${entry.symbol}-${index}`} fill={entry.color} />

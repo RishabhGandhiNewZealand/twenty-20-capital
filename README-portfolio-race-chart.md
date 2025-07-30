@@ -80,7 +80,7 @@ To test the functionality:
 ## Performance Considerations
 
 - The pre-cached data file is ~900KB and contains all historical compositions
-- The file is loaded once when the treemap component mounts
+- The file is loaded once when the race chart component mounts
 - Subsequent date changes use the in-memory data for instant updates
 - The API endpoint is only used as a fallback for dates not in the cache
 
