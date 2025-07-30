@@ -2,12 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Loader2, Play, Pause } from "lucide-react"
 import { getCompanyColor } from "@/lib/company-colors"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
-import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 
 interface BarChartData {
   name: string
@@ -15,19 +14,6 @@ interface BarChartData {
   value: number
   percentage: number
   color: string
-}
-
-interface HoldingAtDate {
-  symbol: string
-  name: string
-  shares: number
-  value: number
-  percentage: number
-  currency: string
-}
-
-interface CompositionCache {
-  [date: string]: HoldingAtDate[]
 }
 
 interface PortfolioBarChartProps {
@@ -41,121 +27,133 @@ interface PortfolioBarChartProps {
 }
 
 export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarChartProps) {
-  const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
-  const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [displayDate, setDisplayDate] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [barChartData, setBarChartData] = useState<BarChartData[]>([])
+  const [historicalData, setHistoricalData] = useState<any>(null)
   const [availableDates, setAvailableDates] = useState<string[]>([])
-  const [sliderValue, setSliderValue] = useState<number>(0)
+  const [currentDateIndex, setCurrentDateIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Load historical composition data
+  // Initialize with current holdings
   useEffect(() => {
-    const loadCompositionData = async () => {
+    if (currentHoldings && currentHoldings.length > 0) {
+      const totalValue = currentHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
+      const data = currentHoldings
+        .filter(h => h.currentValueNZD > 0)
+        .map(holding => ({
+          name: holding.name,
+          symbol: holding.symbol,
+          value: holding.currentValueNZD,
+          percentage: (holding.currentValueNZD / totalValue) * 100,
+          color: getCompanyColor(holding.symbol)
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 15) // Top 15 holdings
+
+      setBarChartData(data)
+    }
+  }, [currentHoldings])
+
+  // Load historical data
+  useEffect(() => {
+    const loadHistoricalData = async () => {
       try {
+        setLoading(true)
         const response = await fetch('/api/portfolio-composition')
-        if (!response.ok) {
-          throw new Error('Failed to load composition data')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.compositionData) {
+            setHistoricalData(data.compositionData)
+            const dates = Object.keys(data.compositionData).sort()
+            setAvailableDates(dates)
+            setCurrentDateIndex(dates.length - 1) // Start with most recent
+            updateChartData(data.compositionData, dates.length - 1, dates)
+          }
         }
-        const data = await response.json()
-        setCompositionData(data.compositionData)
-        
-        // Set available dates from the data
-        const dates = Object.keys(data.compositionData).sort()
-        setAvailableDates(dates)
-        
-        // Set initial display to most recent date
-        if (dates.length > 0) {
-          const mostRecentDate = dates[dates.length - 1]
-          setDisplayDate(mostRecentDate)
-          setSliderValue(dates.length - 1)
-          setDisplayHoldings(data.compositionData[mostRecentDate] || [])
-        }
-        
-        setLoading(false)
-      } catch (err) {
-        console.error('Error loading composition data:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load data')
-        
-        // Fall back to current holdings if available
-        if (currentHoldings) {
-          const totalValue = currentHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-          const fallbackHoldings: HoldingAtDate[] = currentHoldings.map(h => ({
-            symbol: h.symbol,
-            name: h.name,
-            shares: 0,
-            value: h.currentValueNZD,
-            percentage: (h.currentValueNZD / totalValue) * 100,
-            currency: 'NZD'
-          }))
-          setDisplayHoldings(fallbackHoldings)
-          setDisplayDate(new Date().toISOString().split('T')[0])
-          setAvailableDates([new Date().toISOString().split('T')[0]])
-          setSliderValue(0)
-        }
-        
+      } catch (error) {
+        console.error('Failed to load historical data:', error)
+      } finally {
         setLoading(false)
       }
     }
 
-    loadCompositionData()
-  }, [currentHoldings])
+    loadHistoricalData()
+  }, [])
 
-  // Update display when slider changes
-  const handleSliderChange = useCallback((value: number[]) => {
-    const index = value[0]
-    setSliderValue(index)
+  // Update chart data based on selected date
+  const updateChartData = (data: any, index: number, dates: string[]) => {
+    if (!data || !dates[index]) return
+
+    const selectedDate = dates[index]
+    const holdings = data[selectedDate]
     
-    if (compositionData && availableDates.length > 0) {
-      const selectedDate = availableDates[index]
-      setDisplayDate(selectedDate)
-      setDisplayHoldings(compositionData[selectedDate] || [])
+    if (holdings && Array.isArray(holdings)) {
+      const totalValue = holdings.reduce((sum: number, h: any) => sum + (h.value || 0), 0)
+      const chartData = holdings
+        .filter((h: any) => h.value > 0 && h.percentage >= 0.1)
+        .map((holding: any) => ({
+          name: holding.name,
+          symbol: holding.symbol,
+          value: holding.value,
+          percentage: holding.percentage,
+          color: getCompanyColor(holding.symbol)
+        }))
+        .sort((a: any, b: any) => b.value - a.value)
+        .slice(0, 15)
+
+      setBarChartData(chartData)
     }
-  }, [compositionData, availableDates])
+  }
+
+  // Handle slider change
+  const handleSliderChange = (value: number[]) => {
+    const newIndex = value[0]
+    setCurrentDateIndex(newIndex)
+    updateChartData(historicalData, newIndex, availableDates)
+  }
 
   // Play/pause functionality
-  const togglePlay = useCallback(() => {
+  const togglePlay = () => {
     if (isPlaying) {
+      // Stop playing
       setIsPlaying(false)
       if (playIntervalRef.current) {
         clearInterval(playIntervalRef.current)
         playIntervalRef.current = null
       }
     } else {
+      // Start playing
       setIsPlaying(true)
       
-      // Start from beginning if at the end
-      if (sliderValue >= availableDates.length - 1) {
-        setSliderValue(0)
-        handleSliderChange([0])
+      // Reset to beginning if at the end
+      if (currentDateIndex >= availableDates.length - 1) {
+        setCurrentDateIndex(0)
+        updateChartData(historicalData, 0, availableDates)
       }
-      
+
+      // Set up interval
       playIntervalRef.current = setInterval(() => {
-        setSliderValue(prev => {
-          const next = prev + 1
-          if (next >= availableDates.length) {
+        setCurrentDateIndex(prevIndex => {
+          const nextIndex = prevIndex + 1
+          
+          if (nextIndex >= availableDates.length) {
+            // Reached the end, stop playing
             setIsPlaying(false)
             if (playIntervalRef.current) {
               clearInterval(playIntervalRef.current)
               playIntervalRef.current = null
             }
-            return prev
+            return prevIndex
           }
-          
-          // Update display for the new position
-          if (compositionData && availableDates.length > 0) {
-            const selectedDate = availableDates[next]
-            setDisplayDate(selectedDate)
-            setDisplayHoldings(compositionData[selectedDate] || [])
-          }
-          
-          return next
+
+          // Update chart with new data
+          updateChartData(historicalData, nextIndex, availableDates)
+          return nextIndex
         })
-      }, 25) // Update every 25ms
+      }, 200) // Update every 200ms
     }
-  }, [isPlaying, sliderValue, availableDates, compositionData, handleSliderChange])
+  }
 
   // Clean up interval on unmount
   useEffect(() => {
@@ -165,19 +163,6 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
       }
     }
   }, [])
-
-  // Transform holdings data for bar chart
-  const barChartData: BarChartData[] = displayHoldings
-    .filter(holding => holding.percentage >= 0.1 && holding.value > 0)
-    .map((holding) => ({
-      name: holding.name,
-      symbol: holding.symbol,
-      value: holding.value,
-      percentage: holding.percentage,
-      color: getCompanyColor(holding.symbol)
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 15) // Show top 15 holdings for better visibility
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-NZ', {
@@ -216,9 +201,6 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
   }
 
   const CustomYAxisTick = ({ x, y, payload }: any) => {
-    const data = barChartData.find(d => d.symbol === payload.value)
-    if (!data) return null
-
     return (
       <g transform={`translate(${x},${y})`}>
         <text 
@@ -235,37 +217,7 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
     )
   }
 
-  if (loading) {
-    return (
-      <Card className="border-blue-100">
-        <CardHeader className="px-4 sm:px-6">
-          <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Composition</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6">
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (error && !displayHoldings.length) {
-    return (
-      <Card className="border-blue-100">
-        <CardHeader className="px-4 sm:px-6">
-          <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Composition</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6">
-          <div className="text-center py-12">
-            <p className="text-red-600">Error: {error}</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const totalValue = displayHoldings.reduce((sum, h) => sum + h.value, 0)
+  const totalValue = barChartData.reduce((sum, h) => sum + h.value, 0)
 
   return (
     <Card className="border-blue-100">
@@ -287,6 +239,7 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
                 size="sm"
                 onClick={togglePlay}
                 className="flex items-center gap-2"
+                disabled={loading}
               >
                 {isPlaying ? (
                   <>
@@ -302,25 +255,29 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
               </Button>
               <div className="flex-1">
                 <Slider
-                  value={[sliderValue]}
+                  value={[currentDateIndex]}
                   onValueChange={handleSliderChange}
                   max={availableDates.length - 1}
                   step={1}
                   className="w-full"
-                  disabled={isPlaying}
+                  disabled={isPlaying || loading}
                 />
               </div>
             </div>
-            {displayDate && (
+            {availableDates[currentDateIndex] && (
               <div className="text-center text-sm text-gray-600">
-                {formatDate(displayDate)}
+                {formatDate(availableDates[currentDateIndex])}
               </div>
             )}
           </div>
         )}
 
         {/* Bar Chart */}
-        {barChartData.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          </div>
+        ) : barChartData.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             No holdings data available
           </div>
@@ -357,7 +314,7 @@ export function PortfolioBarChart({ holdings: currentHoldings }: PortfolioBarCha
 
         {/* Legend */}
         <div className="mt-4 text-xs text-gray-500 text-center">
-          Showing top holdings by value (minimum 0.1% of portfolio)
+          Showing top 15 holdings by value (minimum 0.1% of portfolio)
         </div>
       </CardContent>
     </Card>
