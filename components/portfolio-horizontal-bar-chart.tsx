@@ -369,23 +369,24 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     
     return (
       <g transform={`translate(${x},${y})`}>
-        <foreignObject x={-55} y={-12} width={50} height={24}>
-          <div className="flex items-center justify-end gap-1.5 w-full h-full">
-            <img 
-              src={logoUrl} 
-              alt={payload.value}
-              className="w-5 h-5 object-contain rounded flex-shrink-0"
-              onError={(e) => {
-                // Fallback to symbol if image fails to load
-                const target = e.target as HTMLImageElement
-                target.style.display = 'none'
-              }}
-            />
-            <span className="text-xs font-semibold text-gray-700 w-10 text-right">
-              {payload.value}
-            </span>
-          </div>
-        </foreignObject>
+        <image 
+          href={logoUrl} 
+          x={-45} 
+          y={-10} 
+          width={20} 
+          height={20}
+          preserveAspectRatio="xMidYMid meet"
+        />
+        <text 
+          x={-20} 
+          y={4} 
+          textAnchor="start" 
+          fontSize={12}
+          fontWeight={600}
+          fill="#374151"
+        >
+          {payload.value}
+        </text>
       </g>
     )
   }
@@ -506,14 +507,14 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
             </span>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {chartData.length === 0 ? (
+              </CardHeader>
+        <CardContent className="overflow-visible">
+          {chartData.length === 0 ? (
           <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[450px] sm:h-[550px] w-full">
+          <div className="h-[450px] sm:h-[550px] w-full overflow-visible">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -521,7 +522,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 margin={{ 
                   top: 20, 
                   right: 45, 
-                  left: 60, 
+                  left: 55, 
                   bottom: 20 
                 }}
               >
@@ -536,7 +537,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={50}
+                  width={55}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
