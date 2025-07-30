@@ -371,14 +371,14 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       <g transform={`translate(${x},${y})`}>
         <image 
           href={logoUrl} 
-          x={-45} 
+          x={-50} 
           y={-10} 
           width={20} 
           height={20}
           preserveAspectRatio="xMidYMid meet"
         />
         <text 
-          x={-20} 
+          x={-25} 
           y={4} 
           textAnchor="start" 
           fontSize={12}
@@ -522,7 +522,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 margin={{ 
                   top: 20, 
                   right: 45, 
-                  left: 55, 
+                  left: 50, 
                   bottom: 20 
                 }}
               >
@@ -537,7 +537,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                   type="category" 
                   dataKey="symbol" 
                   tick={<CustomYAxisTick />}
-                  width={55}
+                  width={48}
                   axisLine={false}
                   tickLine={false}
                 />
