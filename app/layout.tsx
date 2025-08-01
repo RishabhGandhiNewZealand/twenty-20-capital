@@ -27,6 +27,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Navigation />
         {children}
+        <Analytics />
       </body>
     </html>
   )
