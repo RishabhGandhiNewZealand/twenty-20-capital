@@ -41,8 +41,8 @@ export default function Review2024Page() {
   }
 
   const yearStats = [
-    { label: "Portfolio Return (ex. MFT)", value: "+48.39%", icon: TrendingUp, positive: true },
-    { label: "S&P 500 Return", value: "+24.89%", icon: TrendingUp, positive: true },
+    { label: "Portfolio Return", value: "+16.6%", icon: TrendingUp, positive: true },
+    { label: "S&P 500 Return", value: "+20.8%", icon: TrendingUp, positive: true },
   ]
 
   const watchlist = [
@@ -114,7 +114,7 @@ export default function Review2024Page() {
                 
                 <p>All new capital was deployed on the NYSE and NASDAQ. The reason for this is that the USA still is the best capital market in the world and will likely continue to be so. It has a very wide moat, and the biggest business of the last 100 years originated there. This is because the availability of capital is by far the most abundant. The types of business I wish to invest in are all listed on these exchanges natively or through ADR's. While these businesses are listed on these exchanges their revenues and profits are diversified across the globe.</p>
                 
-                <p>The S&P 500 returned ~21% on a money-weighted basis this year, while my portfolio returned ~16%.</p>
+                <p>The S&P 500 returned 20.8% on a money-weighted basis this year, while my portfolio returned 16.6%.</p>
 
                 <p>A few general thoughts on why I think the portfolio was fairly in line with the index. We did have some underperformance and that was largely contributed by holding Mainfreight as the largest holding in my portfolio for the majority of the year. This meant the performanace was largely tied to the performance of Mainfreight which had mediocore stock performance. Albeit the company did well fundamentally. The underperfomance was counteracted slightly by the NZ dollar getting significantly weaker against the US dollar. Falling from 0.63 to 0.56 through the year. Excluding Mainfreight and FX effects the perfomance of the portfolio was likely in the range of ~30%. </p>
 
