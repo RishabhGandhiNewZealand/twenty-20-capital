@@ -3,13 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "npm run cache-data && next build",
+    "build": "npm run cache-compositions && next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "cache-data": "npm run cache-compositions && npm run cache-companies",
-    "cache-compositions": "tsx scripts/cache-portfolio-compositions.ts",
-    "cache-companies": "tsx scripts/cache-portfolio-companies.ts"
+    "cache-compositions": "tsx scripts/cache-portfolio-compositions.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

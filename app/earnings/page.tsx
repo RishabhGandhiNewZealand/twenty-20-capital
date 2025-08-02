@@ -41,7 +41,8 @@ export default function EarningsPage() {
       }
       setLoadingMessage('Processing earnings information...')
       const data = await response.json()
-      setEarnings(data.earnings)
+      console.log('Earnings API response:', data)
+      setEarnings(data.earnings || [])
     } catch (error) {
       console.error('Error fetching earnings data:', error)
       setError('Failed to load earnings data. This may be due to rate limiting from the data provider. Please try again in a few moments.')
@@ -277,6 +278,9 @@ export default function EarningsPage() {
             <CardContent>
               <p className="text-gray-600">
                 No earnings reports found for your portfolio companies in the next 45 days or previous 45 days.
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                If you believe this is an error, check the browser console for more details.
               </p>
             </CardContent>
           </Card>

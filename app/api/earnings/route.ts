@@ -1,176 +1,248 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import { getMultipleEarningsData, EarningsInfo } from '@/lib/earnings-data'
-import fs from 'fs/promises'
-import path from 'path'
+import { generatePortfolioData } from '@/lib/portfolioServerData'
+import yahooFinance from 'yahoo-finance2'
 
-interface CachedCompany {
+interface EarningsInfo {
   symbol: string
   name: string
-  instrumentCurrency: string
-  marketCode: string
-  isCurrentHolding: boolean
-  wasExited: boolean
-}
-
-interface EarningsData extends EarningsInfo {
+  nextEarningsDate?: Date | null
+  expectedEPS?: number
+  expectedRevenue?: number
+  previousEarningsDate?: Date | null
+  reportedEPS?: number
+  reportedRevenue?: number
+  previousExpectedEPS?: number
+  previousExpectedRevenue?: number
   isInPortfolio: boolean
   wasInPortfolio: boolean
-  currency?: string
+  currency: string
 }
 
-async function getCachedPortfolioCompanies(): Promise<CachedCompany[]> {
+async function getEarningsForSymbol(symbol: string, name: string): Promise<EarningsInfo | null> {
   try {
-    // Try to read from cached file first
-    const filePath = path.join(process.cwd(), 'public', 'data', 'portfolio-companies.json')
-    const fileContent = await fs.readFile(filePath, 'utf-8')
-    const data = JSON.parse(fileContent)
-    return data.companies || []
-  } catch (error) {
-    logger.error('Error reading cached portfolio companies:', error)
-    
-    // Fallback to generating from portfolio data
-    try {
-      const { generatePortfolioData } = await import('@/lib/portfolioServerData')
-      const { holdings, exitedPositions } = await generatePortfolioData()
-      
-      const companies: CachedCompany[] = []
-      
-      // Add current holdings
-      holdings.forEach(holding => {
-        companies.push({
-          symbol: holding.symbol,
-          name: holding.name,
-          instrumentCurrency: holding.instrumentCurrency,
-          marketCode: holding.marketCode,
-          isCurrentHolding: true,
-          wasExited: false
-        })
-      })
-      
-      // Add exited positions
-      exitedPositions.forEach(position => {
-        const existing = companies.find(c => c.symbol === position.symbol)
-        if (!existing) {
-          companies.push({
-            symbol: position.symbol,
-            name: position.name,
-            instrumentCurrency: position.instrumentCurrency,
-            marketCode: position.marketCode,
-            isCurrentHolding: false,
-            wasExited: true
-          })
-        }
-      })
-      
-      return companies
-    } catch (fallbackError) {
-      logger.error('Error in fallback portfolio generation:', fallbackError)
-      return []
+    // Adjust symbol for Yahoo Finance
+    let yahooSymbol = symbol
+    if (symbol === 'MFT') {
+      yahooSymbol = 'MFT.NZ'
+    } else if (symbol === 'BRK.B') {
+      yahooSymbol = 'BRK-B'
+    } else if (symbol === 'BRK.A') {
+      yahooSymbol = 'BRK-A'
     }
+
+    logger.info(`Fetching earnings for ${symbol} (${yahooSymbol})`)
+
+    // Try to get quote and calendar events
+    const quote = await yahooFinance.quote(yahooSymbol)
+    
+    const result: EarningsInfo = {
+      symbol,
+      name: name || quote.longName || quote.shortName || symbol,
+      isInPortfolio: false,
+      wasInPortfolio: false,
+      currency: 'USD'
+    }
+
+    // Get earnings date from quote
+    if (quote.earningsTimestamp) {
+      result.nextEarningsDate = new Date(quote.earningsTimestamp * 1000)
+    }
+
+    // Try to get more detailed earnings info
+    try {
+      const quoteSummary = await yahooFinance.quoteSummary(yahooSymbol, {
+        modules: ['calendarEvents', 'earnings']
+      })
+
+      if (quoteSummary.calendarEvents?.earnings) {
+        const earnings = quoteSummary.calendarEvents.earnings
+        
+        // Next earnings date
+        if (earnings.earningsDate && earnings.earningsDate.length > 0) {
+          result.nextEarningsDate = new Date(earnings.earningsDate[0] * 1000)
+        }
+        
+        // Expected values
+        if (earnings.earningsAverage) {
+          result.expectedEPS = earnings.earningsAverage
+        }
+        if (earnings.revenueAverage) {
+          result.expectedRevenue = earnings.revenueAverage
+        }
+      }
+
+      // Get historical earnings
+      if (quoteSummary.earnings?.earningsChart?.quarterly) {
+        const quarters = quoteSummary.earnings.earningsChart.quarterly
+        if (quarters.length > 0) {
+          const lastQuarter = quarters[quarters.length - 1]
+          
+          // Estimate previous earnings date (usually 4-6 weeks after quarter end)
+          if (lastQuarter.date) {
+            const quarterEnd = new Date(lastQuarter.date)
+            quarterEnd.setDate(quarterEnd.getDate() + 35)
+            result.previousEarningsDate = quarterEnd
+          }
+          
+          if (lastQuarter.actual) {
+            result.reportedEPS = lastQuarter.actual
+          }
+          if (lastQuarter.estimate) {
+            result.previousExpectedEPS = lastQuarter.estimate
+          }
+        }
+      }
+
+      // Get revenue data
+      if (quoteSummary.earnings?.financialsChart?.quarterly) {
+        const quarters = quoteSummary.earnings.financialsChart.quarterly
+        if (quarters.length > 0) {
+          const lastQuarter = quarters[quarters.length - 1]
+          if (lastQuarter.revenue) {
+            result.reportedRevenue = lastQuarter.revenue
+          }
+        }
+      }
+    } catch (summaryError) {
+      logger.warn(`Could not get detailed earnings for ${symbol}:`, summaryError)
+    }
+
+    return result
+  } catch (error) {
+    logger.error(`Error fetching earnings for ${symbol}:`, error)
+    return null
   }
 }
 
 export async function GET() {
   try {
-    // Get cached portfolio companies
-    const portfolioCompanies = await getCachedPortfolioCompanies()
+    logger.info('Starting earnings data fetch...')
     
-    if (portfolioCompanies.length === 0) {
-      return NextResponse.json({
-        earnings: [],
-        dateRange: {
-          start: new Date().toISOString(),
-          end: new Date().toISOString(),
-        },
-        lastUpdated: new Date().toISOString(),
-        message: 'No portfolio companies found'
+    // Get portfolio data
+    const { holdings, exitedPositions } = await generatePortfolioData()
+    
+    logger.info(`Found ${holdings.length} current holdings and ${exitedPositions.length} exited positions`)
+    
+    // Create a map to track all unique companies
+    const companiesMap = new Map<string, {
+      name: string
+      isCurrentHolding: boolean
+      wasExited: boolean
+      currency: string
+    }>()
+    
+    // Add current holdings
+    holdings.forEach(holding => {
+      companiesMap.set(holding.symbol, {
+        name: holding.name,
+        isCurrentHolding: true,
+        wasExited: false,
+        currency: holding.instrumentCurrency
       })
-    }
+    })
     
-    // Get all unique symbols
-    const allSymbols = portfolioCompanies.map(c => c.symbol)
+    // Add exited positions
+    exitedPositions.forEach(position => {
+      const existing = companiesMap.get(position.symbol)
+      if (existing) {
+        existing.wasExited = true
+      } else {
+        companiesMap.set(position.symbol, {
+          name: position.name,
+          isCurrentHolding: false,
+          wasExited: true,
+          currency: position.instrumentCurrency
+        })
+      }
+    })
     
-    logger.info(`Fetching earnings data for ${allSymbols.length} companies: ${allSymbols.join(', ')}`)
+    const allSymbols = Array.from(companiesMap.keys())
+    logger.info(`Processing ${allSymbols.length} unique symbols: ${allSymbols.join(', ')}`)
     
-    // Fetch real earnings data from Yahoo Finance
-    const earningsMap = await getMultipleEarningsData(allSymbols)
+    // Fetch earnings data for each symbol
+    const earningsPromises = allSymbols.map(async (symbol) => {
+      const company = companiesMap.get(symbol)!
+      const earningsData = await getEarningsForSymbol(symbol, company.name)
+      
+      if (earningsData) {
+        earningsData.isInPortfolio = company.isCurrentHolding
+        earningsData.wasInPortfolio = company.wasExited
+        earningsData.currency = company.currency
+      }
+      
+      return earningsData
+    })
     
-    logger.info(`Received earnings data for ${earningsMap.size} companies`)
+    const allEarningsData = await Promise.all(earningsPromises)
+    const validEarningsData = allEarningsData.filter(data => data !== null) as EarningsInfo[]
     
-    // Get current date
+    logger.info(`Successfully fetched earnings data for ${validEarningsData.length} companies`)
+    
+    // Get date range
     const today = new Date()
     const daysBefore = 45
     const daysAfter = 45
     
-    // Calculate date range
     const startDate = new Date(today)
     startDate.setDate(today.getDate() - daysBefore)
     
     const endDate = new Date(today)
     endDate.setDate(today.getDate() + daysAfter)
     
-    // Filter earnings data for portfolio companies within date range
-    const earningsData: EarningsData[] = []
+    // Filter for companies with earnings in range
+    const earningsInRange = validEarningsData.filter(company => {
+      const hasUpcomingEarnings = company.nextEarningsDate && 
+        company.nextEarningsDate >= today && 
+        company.nextEarningsDate <= endDate
+        
+      const hasRecentEarnings = company.previousEarningsDate && 
+        company.previousEarningsDate >= startDate && 
+        company.previousEarningsDate < today
+        
+      return hasUpcomingEarnings || hasRecentEarnings
+    })
     
-    for (const company of portfolioCompanies) {
-      const earnings = earningsMap.get(company.symbol)
-      if (!earnings) {
-        logger.warn(`No earnings data found for ${company.symbol}`)
-        continue
-      }
-      
-      const nextEarningsDate = earnings.nextEarningsDate ? new Date(earnings.nextEarningsDate) : null
-      const previousEarningsDate = earnings.previousEarningsDate ? new Date(earnings.previousEarningsDate) : null
-      
-      // Check if earnings fall within our date range
-      const hasUpcomingEarnings = nextEarningsDate && nextEarningsDate >= today && nextEarningsDate <= endDate
-      const hasRecentEarnings = previousEarningsDate && previousEarningsDate >= startDate && previousEarningsDate < today
-      
-      // Include companies with any earnings data in the range
-      if (hasUpcomingEarnings || hasRecentEarnings || earnings.nextEarningsDate || earnings.previousEarningsDate) {
-        earningsData.push({
-          ...earnings,
-          isInPortfolio: company.isCurrentHolding,
-          wasInPortfolio: company.wasExited,
-          currency: company.instrumentCurrency,
-        })
-      }
-    }
+    logger.info(`Found ${earningsInRange.length} companies with earnings in date range`)
     
-    logger.info(`Found ${earningsData.length} companies with earnings data in range`)
-    
-    // Sort by next earnings date (upcoming first) then by previous earnings date
-    earningsData.sort((a, b) => {
-      // First, prioritize items with upcoming earnings
+    // Sort by earnings date
+    earningsInRange.sort((a, b) => {
+      // Upcoming earnings first
       if (a.nextEarningsDate && !b.nextEarningsDate) return -1
       if (!a.nextEarningsDate && b.nextEarningsDate) return 1
       
-      // If both have upcoming earnings, sort by date
       if (a.nextEarningsDate && b.nextEarningsDate) {
-        return new Date(a.nextEarningsDate).getTime() - new Date(b.nextEarningsDate).getTime()
+        return a.nextEarningsDate.getTime() - b.nextEarningsDate.getTime()
       }
       
-      // If both have only previous earnings, sort by date (most recent first)
+      // Then recent earnings (most recent first)
       if (a.previousEarningsDate && b.previousEarningsDate) {
-        return new Date(b.previousEarningsDate).getTime() - new Date(a.previousEarningsDate).getTime()
+        return b.previousEarningsDate.getTime() - a.previousEarningsDate.getTime()
       }
       
       return 0
     })
     
+    // Convert dates to ISO strings for JSON response
+    const responseData = earningsInRange.map(company => ({
+      ...company,
+      nextEarningsDate: company.nextEarningsDate?.toISOString() || null,
+      previousEarningsDate: company.previousEarningsDate?.toISOString() || null
+    }))
+    
     return NextResponse.json({
-      earnings: earningsData,
+      earnings: responseData,
       dateRange: {
         start: startDate.toISOString(),
         end: endDate.toISOString(),
       },
-      totalCompanies: portfolioCompanies.length,
-      companiesWithData: earningsData.length,
+      totalCompanies: allSymbols.length,
+      companiesWithData: validEarningsData.length,
+      companiesInRange: earningsInRange.length,
       lastUpdated: new Date().toISOString()
     })
   } catch (error) {
-    logger.error('Error fetching earnings data:', error)
+    logger.error('Error in earnings API:', error)
     return NextResponse.json(
       { 
         error: 'Failed to fetch earnings data',
