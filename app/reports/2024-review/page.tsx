@@ -89,32 +89,6 @@ export default function Review2024Page() {
           })}
         </div>
 
-        {/* Watchlist */}
-        <Card className="border-blue-100 mb-8">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Watchlist</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {watchlist.map((stock) => (
-                <div key={stock.symbol} className="bg-gray-50 rounded px-3 py-2 text-center">
-                  <img 
-                    src={getLogoUrl(stock.symbol)} 
-                    alt={`${stock.symbol} logo`}
-                    className="w-6 h-6 rounded mx-auto mb-2"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                  <div className="font-bold text-gray-900 text-sm">{stock.symbol}</div>
-                  <div className="text-xs text-gray-600">{stock.name}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Text Content */}
         <div className="space-y-8">
           {/* Introduction */}
@@ -814,6 +788,32 @@ export default function Review2024Page() {
                 <p>Heading into 2025, the main goals are to continue regular contributions into the portfolio. I wish to add another 25k into the portfolio and hopefully reach a total portfolio of value 60k. The last 2 years have been excellent, so I expect the coming years to be a bit weaker but that's just a guess. The market could go up another 20% for all I know.</p>
 
                 <p>Hopefully, you enjoyed reading this summary.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Watchlist */}
+          <Card className="border-blue-100 mb-8">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Watchlist</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {watchlist.map((stock) => (
+                  <div key={stock.symbol} className="bg-gray-50 rounded px-3 py-2 text-center">
+                    <img 
+                      src={getLogoUrl(stock.symbol)} 
+                      alt={`${stock.symbol} logo`}
+                      className="w-6 h-6 rounded mx-auto mb-2"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <div className="font-bold text-gray-900 text-sm">{stock.symbol}</div>
+                    <div className="text-xs text-gray-600">{stock.name}</div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
