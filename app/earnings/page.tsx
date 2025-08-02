@@ -19,12 +19,14 @@ interface EarningsData {
   previousExpectedRevenue?: number
   isInPortfolio: boolean
   wasInPortfolio: boolean
+  currency?: string
 }
 
 export default function EarningsPage() {
   const [earnings, setEarnings] = useState<EarningsData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [loadingMessage, setLoadingMessage] = useState('Loading earnings data...')
 
   useEffect(() => {
     fetchEarningsData()
@@ -32,15 +34,17 @@ export default function EarningsPage() {
 
   const fetchEarningsData = async () => {
     try {
+      setLoadingMessage('Fetching portfolio data...')
       const response = await fetch('/api/earnings')
       if (!response.ok) {
         throw new Error('Failed to fetch earnings data')
       }
+      setLoadingMessage('Processing earnings information...')
       const data = await response.json()
       setEarnings(data.earnings)
     } catch (error) {
       console.error('Error fetching earnings data:', error)
-      setError('Failed to load earnings data')
+      setError('Failed to load earnings data. This may be due to rate limiting from the data provider. Please try again in a few moments.')
     } finally {
       setLoading(false)
     }
@@ -67,8 +71,9 @@ export default function EarningsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+        <p className="text-gray-600">{loadingMessage}</p>
       </div>
     )
   }
@@ -140,7 +145,7 @@ export default function EarningsPage() {
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-600">Revenue</span>
                             <span className="text-sm font-medium">
-                              {company.expectedRevenue && formatCurrency(company.expectedRevenue, 0)}
+                              {company.expectedRevenue && formatCurrency(company.expectedRevenue, company.currency || 'USD')}
                             </span>
                           </div>
                         </div>
@@ -232,14 +237,14 @@ export default function EarningsPage() {
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-gray-600">Expected</span>
                               <span className="text-sm">
-                                {company.previousExpectedRevenue && formatCurrency(company.previousExpectedRevenue, 0)}
+                                {company.previousExpectedRevenue && formatCurrency(company.previousExpectedRevenue, company.currency || 'USD')}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-gray-600">Reported</span>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">
-                                  {company.reportedRevenue && formatCurrency(company.reportedRevenue, 0)}
+                                  {company.reportedRevenue && formatCurrency(company.reportedRevenue, company.currency || 'USD')}
                                 </span>
                                 {revenueBeat !== null && (
                                   <Badge 
