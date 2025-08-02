@@ -140,31 +140,29 @@ export default function Review2024Page() {
                 
                 <p>All new capital was deployed on the NYSE and NASDAQ. The reason for this is that the USA still is the best capital market in the world and will likely continue to be so. It has a very wide moat, and the biggest business of the last 100 years originated there. This is because the availability of capital is by far the most abundant. The types of business I wish to invest in are all listed on these exchanges natively or through ADR's. While these businesses are listed on these exchanges their revenues and profits are diversified across the globe.</p>
                 
-                <p>The S&P 500 returned 24.89% on a money-weighted basis this year, while my portfolio (excluding Mainfreight) returned 48.39%. Including Mainfreight in the calculation would likely align the returns more closely with the index. Mainfreight was excluded for two reasons. First, it is a New Zealand company and is better compared to the NZX50. Second, it is not possible to incorporate my Mainfreight holding into my IBKR Money weighted portfolio view at this stage.</p>
-                
-                <p>This is just the first year of my investing, and the returns are more so due to good timing than particularly good stock selection.</p>
+                <p>The S&P 500 returned ~21% on a money-weighted basis this year, while my portfolio returned ~16%.</p>
 
-                <p>A few general thoughts on why I think the portfolio did well. The NZ dollar got significantly weaker against the US dollar. Falling from 0.63 to 0.56 through the year, with most of the losses occurring in the final 3 months. This significantly strengthened the gains in the portfolio by roughly ~ 2000 NZD, this accounted for about 40% of the returns of the portfolio. Without these FX gains, I think the performance would be around 30%. Moreover, I did get a bit lucky with some of the companies recovering quicker than I expected.</p>
+                <p>A few general thoughts on why I think the portfolio was fairly in line with the index. We did have some underperformance and that was largely contributed by holding Mainfreight as the largest holding in my portfolio for the majority of the year. This meant the performanace was largely tied to the performance of Mainfreight which had mediocore stock performance. Albeit the company did well fundamentally. The underperfomance was counteracted slightly by the NZ dollar getting significantly weaker against the US dollar. Falling from 0.63 to 0.56 through the year. Excluding Mainfreight and FX effects the perfomance of the portfolio was likely in the range of ~30%. </p>
 
                 <div className="my-6">
                   <img 
-                    src="/Portfolio_performance_ex_MFT.png" 
-                    alt="Portfolio performance vs SPY"
+                    src="/PortfolioJan2024.jpg" 
+                    alt="Portfolio allocation Jan 2024"
                     className="w-full rounded-lg border"
                   />
                   <p className="text-sm text-gray-600 mt-2 text-center italic">
-                    Figure 1: Money weighted return of My portfolio, 48.39% (Blue) vs SPY 24.89% (Green).
+                    Figure 1: Portfolio allocation at the start of the year.
                   </p>
                 </div>
 
                 <div className="my-6">
                   <img 
-                    src="/Holdings_avg_weight_2024.png" 
-                    alt="Holdings average weight throughout 2024"
+                    src="/PortfolioJan2025.jpg" 
+                    alt="Portfolio allocation Jan 2025"
                     className="w-full rounded-lg border"
                   />
                   <p className="text-sm text-gray-600 mt-2 text-center italic">
-                    Figure 2: A snapshot of my holdings and their performances and average weighting of portfolio throughout the year.
+                    Figure 1: Portfolio allocation at the end of the year.
                   </p>
                 </div>
               </div>
