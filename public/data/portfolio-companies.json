@@ -1,0 +1,104 @@
+{
+  "companies": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "MSFT",
+      "name": "Microsoft Corporation",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "GOOGL",
+      "name": "Alphabet Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "AMZN",
+      "name": "Amazon.com Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": false,
+      "wasExited": true
+    },
+    {
+      "symbol": "NVDA",
+      "name": "NVIDIA Corporation",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "META",
+      "name": "Meta Platforms Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "TSLA",
+      "name": "Tesla Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": false,
+      "wasExited": true
+    },
+    {
+      "symbol": "BRK.B",
+      "name": "Berkshire Hathaway Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "V",
+      "name": "Visa Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "JPM",
+      "name": "JPMorgan Chase & Co.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "WMT",
+      "name": "Walmart Inc.",
+      "instrumentCurrency": "USD",
+      "marketCode": "US",
+      "isCurrentHolding": true,
+      "wasExited": false
+    },
+    {
+      "symbol": "MFT",
+      "name": "Mainfreight Limited",
+      "instrumentCurrency": "NZD",
+      "marketCode": "NZ",
+      "isCurrentHolding": true,
+      "wasExited": false
+    }
+  ],
+  "totalCompanies": 12,
+  "currentHoldings": 10,
+  "exitedPositions": 2,
+  "lastUpdated": "2025-08-02T12:00:58.204Z"
+}

@@ -1,7 +1,17 @@
 import { NextResponse } from 'next/server'
-import { generatePortfolioData } from '@/lib/portfolioServerData'
 import { logger } from '@/lib/logger'
 import { getMultipleEarningsData, EarningsInfo } from '@/lib/earnings-data'
+import fs from 'fs/promises'
+import path from 'path'
+
+interface CachedCompany {
+  symbol: string
+  name: string
+  instrumentCurrency: string
+  marketCode: string
+  isCurrentHolding: boolean
+  wasExited: boolean
+}
 
 interface EarningsData extends EarningsInfo {
   isInPortfolio: boolean
@@ -9,18 +19,84 @@ interface EarningsData extends EarningsInfo {
   currency?: string
 }
 
+async function getCachedPortfolioCompanies(): Promise<CachedCompany[]> {
+  try {
+    // Try to read from cached file first
+    const filePath = path.join(process.cwd(), 'public', 'data', 'portfolio-companies.json')
+    const fileContent = await fs.readFile(filePath, 'utf-8')
+    const data = JSON.parse(fileContent)
+    return data.companies || []
+  } catch (error) {
+    logger.error('Error reading cached portfolio companies:', error)
+    
+    // Fallback to generating from portfolio data
+    try {
+      const { generatePortfolioData } = await import('@/lib/portfolioServerData')
+      const { holdings, exitedPositions } = await generatePortfolioData()
+      
+      const companies: CachedCompany[] = []
+      
+      // Add current holdings
+      holdings.forEach(holding => {
+        companies.push({
+          symbol: holding.symbol,
+          name: holding.name,
+          instrumentCurrency: holding.instrumentCurrency,
+          marketCode: holding.marketCode,
+          isCurrentHolding: true,
+          wasExited: false
+        })
+      })
+      
+      // Add exited positions
+      exitedPositions.forEach(position => {
+        const existing = companies.find(c => c.symbol === position.symbol)
+        if (!existing) {
+          companies.push({
+            symbol: position.symbol,
+            name: position.name,
+            instrumentCurrency: position.instrumentCurrency,
+            marketCode: position.marketCode,
+            isCurrentHolding: false,
+            wasExited: true
+          })
+        }
+      })
+      
+      return companies
+    } catch (fallbackError) {
+      logger.error('Error in fallback portfolio generation:', fallbackError)
+      return []
+    }
+  }
+}
+
 export async function GET() {
   try {
-    // Get current and exited positions
-    const { holdings, exitedPositions } = await generatePortfolioData()
+    // Get cached portfolio companies
+    const portfolioCompanies = await getCachedPortfolioCompanies()
     
-    // Get all unique symbols from current holdings and exited positions
-    const currentSymbols = holdings.map(h => h.symbol)
-    const exitedSymbols = exitedPositions.map(e => e.symbol)
-    const allSymbols = [...new Set([...currentSymbols, ...exitedSymbols])]
+    if (portfolioCompanies.length === 0) {
+      return NextResponse.json({
+        earnings: [],
+        dateRange: {
+          start: new Date().toISOString(),
+          end: new Date().toISOString(),
+        },
+        lastUpdated: new Date().toISOString(),
+        message: 'No portfolio companies found'
+      })
+    }
+    
+    // Get all unique symbols
+    const allSymbols = portfolioCompanies.map(c => c.symbol)
+    
+    logger.info(`Fetching earnings data for ${allSymbols.length} companies: ${allSymbols.join(', ')}`)
     
     // Fetch real earnings data from Yahoo Finance
     const earningsMap = await getMultipleEarningsData(allSymbols)
+    
+    logger.info(`Received earnings data for ${earningsMap.size} companies`)
     
     // Get current date
     const today = new Date()
@@ -37,7 +113,13 @@ export async function GET() {
     // Filter earnings data for portfolio companies within date range
     const earningsData: EarningsData[] = []
     
-    for (const [symbol, earnings] of earningsMap) {
+    for (const company of portfolioCompanies) {
+      const earnings = earningsMap.get(company.symbol)
+      if (!earnings) {
+        logger.warn(`No earnings data found for ${company.symbol}`)
+        continue
+      }
+      
       const nextEarningsDate = earnings.nextEarningsDate ? new Date(earnings.nextEarningsDate) : null
       const previousEarningsDate = earnings.previousEarningsDate ? new Date(earnings.previousEarningsDate) : null
       
@@ -45,18 +127,18 @@ export async function GET() {
       const hasUpcomingEarnings = nextEarningsDate && nextEarningsDate >= today && nextEarningsDate <= endDate
       const hasRecentEarnings = previousEarningsDate && previousEarningsDate >= startDate && previousEarningsDate < today
       
-      if (hasUpcomingEarnings || hasRecentEarnings) {
-        const holding = holdings.find(h => h.symbol === symbol)
-        const exitedPosition = exitedPositions.find(e => e.symbol === symbol)
-        
+      // Include companies with any earnings data in the range
+      if (hasUpcomingEarnings || hasRecentEarnings || earnings.nextEarningsDate || earnings.previousEarningsDate) {
         earningsData.push({
           ...earnings,
-          isInPortfolio: !!holding,
-          wasInPortfolio: !!exitedPosition,
-          currency: holding?.instrumentCurrency || exitedPosition?.instrumentCurrency || 'USD',
+          isInPortfolio: company.isCurrentHolding,
+          wasInPortfolio: company.wasExited,
+          currency: company.instrumentCurrency,
         })
       }
     }
+    
+    logger.info(`Found ${earningsData.length} companies with earnings data in range`)
     
     // Sort by next earnings date (upcoming first) then by previous earnings date
     earningsData.sort((a, b) => {
@@ -83,12 +165,17 @@ export async function GET() {
         start: startDate.toISOString(),
         end: endDate.toISOString(),
       },
+      totalCompanies: portfolioCompanies.length,
+      companiesWithData: earningsData.length,
       lastUpdated: new Date().toISOString()
     })
   } catch (error) {
     logger.error('Error fetching earnings data:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch earnings data' },
+      { 
+        error: 'Failed to fetch earnings data',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
