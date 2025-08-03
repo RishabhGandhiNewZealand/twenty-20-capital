@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { TrendingUp, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { useState } from "react"
 
 export default function Navigation() {
@@ -21,7 +22,13 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-2">
-            <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+            <Image 
+              src="/logo.png" 
+              alt="Rish Invests Logo" 
+              width={32} 
+              height={32}
+              className="h-6 w-6 sm:h-8 sm:w-8"
+            />
             <span className="text-lg sm:text-xl font-bold text-gray-900">Rish Invests</span>
           </Link>
 
