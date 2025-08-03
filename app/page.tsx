@@ -1,32 +1,14 @@
 "use client"
 
-import React, { useEffect, useState, useMemo, useCallback, lazy, Suspense } from "react"
+import React, { useEffect, useState, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
 import { ExitedPosition } from "@/types/portfolio"
+import { PortfolioChart } from "@/components/portfolio-chart"
+import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
-
-// Lazy load heavy chart components
-const PortfolioChart = lazy(() => 
-  import("@/components/portfolio-chart").then(module => ({ default: module.PortfolioChart }))
-)
-const PortfolioHorizontalBarChart = lazy(() => 
-  import("@/components/portfolio-horizontal-bar-chart").then(module => ({ default: module.PortfolioHorizontalBarChart }))
-)
-
-// Loading component for charts
-const ChartLoadingFallback = () => (
-  <Card>
-    <CardContent className="h-[400px] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-2">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-        <p className="text-sm text-gray-500">Loading chart...</p>
-      </div>
-    </CardContent>
-  </Card>
-)
 
 interface CurrentHolding {
   symbol: string
@@ -344,14 +326,10 @@ export default function HomePage() {
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Portfolio Chart with Stats */}
-      <Suspense fallback={<ChartLoadingFallback />}>
-        <PortfolioChart portfolioStats={portfolioStats} />
-      </Suspense>
+      <PortfolioChart portfolioStats={portfolioStats} />
 
       {/* Portfolio Composition Timeline */}
-      <Suspense fallback={<ChartLoadingFallback />}>
-        <PortfolioHorizontalBarChart holdings={holdings} />
-      </Suspense>
+      <PortfolioHorizontalBarChart holdings={holdings} />
 
       {/* Summary Cards */}
       {summary && portfolioMetrics && (

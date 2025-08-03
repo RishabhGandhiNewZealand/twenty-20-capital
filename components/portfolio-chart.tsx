@@ -291,7 +291,7 @@ export const PortfolioChart = React.memo(({ portfolioStats = [] }: PortfolioChar
   }, [formatPercentage])
 
   // Memoized chart data
-  const chartData = useMemo(() => showPercentage ? performanceData : data, [showPercentage, performanceData, data])
+  const chartData = useMemo(() => showPercentage ? (performanceData || []) : (data || []), [showPercentage, performanceData, data])
   
   // Memoized tick formatter
   const dateTickFormatter = useCallback((dateStr: string) => {
