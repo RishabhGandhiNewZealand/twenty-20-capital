@@ -22,7 +22,7 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-2">
             <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-            <span className="text-lg sm:text-xl font-bold text-gray-900">Rish Investing Journey</span>
+            <span className="text-lg sm:text-xl font-bold text-gray-900">Rish Invests</span>
           </Link>
 
           {/* Desktop Navigation */}

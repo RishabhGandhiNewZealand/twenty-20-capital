@@ -1,7 +1,7 @@
 # Horizontal Bar Chart Implementation
 
 ## Overview
-This document describes the portfolio horizontal bar chart visualization used on the main page of the Rish Investing Journey application.
+This document describes the portfolio horizontal bar chart visualization used on the main page of the Rish Invests application.
 
 ## Component Details
 
