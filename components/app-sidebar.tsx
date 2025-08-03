@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <BarChart3 className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Rish invests</span>
+                  <span className="truncate font-semibold">Rish Invests</span>
                   <span className="truncate text-xs">Dashboard</span>
                 </div>
               </Link>
