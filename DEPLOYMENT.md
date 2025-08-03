@@ -84,7 +84,7 @@ The easiest way to deploy is using Vercel's GitHub integration.
 
 1. **Click "Deploy"**
 2. **Wait for the build to complete** (usually 2-3 minutes)
-3. **Your app is now live!** 🎉
+3. **Your app is now live!**
 
 ### Option 2: Deploy via Vercel CLI
 

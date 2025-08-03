@@ -2,7 +2,7 @@
 
 Welcome to the Personal Portfolio Tracker documentation! This guide will help you navigate through all available documentation resources.
 
-## 📚 Documentation Overview
+## Documentation Overview
 
 ### Getting Started
 - **[README.md](./README.md)** - Project overview, features, and quick start guide
@@ -21,7 +21,7 @@ Welcome to the Personal Portfolio Tracker documentation! This guide will help yo
 ### Specialized Documentation
 - **[README-horizontal-bar-chart.md](./README-horizontal-bar-chart.md)** - Portfolio visualization component details
 
-## 🗺️ Documentation Map
+## Documentation Map
 
 ```
 Documentation Structure
@@ -40,7 +40,7 @@ Documentation Structure
     └── MOBILE_OPTIMIZATION_SUMMARY.md
 ```
 
-## 🎯 Quick Links by Role
+## Quick Links by Role
 
 ### For Users
 1. Start with [README.md](./README.md) for installation
@@ -57,7 +57,7 @@ Documentation Structure
 2. Check [CLEANUP_REPORT.md](./CLEANUP_REPORT.md) for code standards
 3. Follow commit conventions in [DEVELOPMENT.md](./DEVELOPMENT.md)
 
-## 📖 Documentation Standards
+## Documentation Standards
 
 ### Writing Style
 - Use clear, concise language
@@ -79,7 +79,7 @@ When making changes:
 - Use code blocks with language hints
 - Include diagrams where helpful
 
-## 🔍 Finding Information
+## Finding Information
 
 ### By Topic
 
@@ -108,7 +108,7 @@ When making changes:
 - Performance tips → [ARCHITECTURE.md](./ARCHITECTURE.md#performance-optimizations)
 - Testing approach → [MOBILE_OPTIMIZATION_SUMMARY.md](./MOBILE_OPTIMIZATION_SUMMARY.md#testing-approach)
 
-## 🚀 Getting Help
+## Getting Help
 
 ### Documentation Issues
 If you find issues with documentation:
@@ -129,7 +129,7 @@ To improve documentation:
 - [React Documentation](https://react.dev)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 
-## 📅 Documentation Maintenance
+## Documentation Maintenance
 
 ### Regular Updates
 - Review documentation quarterly

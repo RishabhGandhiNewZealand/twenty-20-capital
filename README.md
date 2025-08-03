@@ -2,7 +2,7 @@
 
 A modern, feature-rich portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS. Track your investments, analyze companies, and monitor your portfolio performance with real-time data and beautiful visualizations.
 
-## 🚀 Features
+## Features
 
 ### Portfolio Management
 - **Real-time Portfolio Tracking**: Monitor your holdings with live price updates
@@ -25,7 +25,7 @@ A modern, feature-rich portfolio tracking application built with Next.js 15, Typ
 - **Dark Mode Support**: Built-in theme switching with system preference detection
 - **Modern UI**: Clean, intuitive interface built with shadcn/ui components
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Framework**: [Next.js 15](https://nextjs.org/) with App Router
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
@@ -35,13 +35,13 @@ A modern, feature-rich portfolio tracking application built with Next.js 15, Typ
 - **Market Data**: [Yahoo Finance API](https://github.com/gadicc/node-yahoo-finance2)
 - **Deployment**: [Vercel](https://vercel.com/)
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js 18.17 or later
 - npm or pnpm package manager
 - Vercel account (for blob storage)
 
-## 🔧 Installation
+## Installation
 
 1. **Clone the repository**
    ```bash
@@ -82,7 +82,7 @@ A modern, feature-rich portfolio tracking application built with Next.js 15, Typ
 
    Open [http://localhost:3000](http://localhost:3000) to see your portfolio.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── app/                    # Next.js app directory
@@ -108,7 +108,7 @@ A modern, feature-rich portfolio tracking application built with Next.js 15, Typ
 └── styles/               # Global styles
 ```
 
-## 🔐 Environment Variables
+## Environment Variables
 
 ### Required Variables
 
@@ -124,7 +124,7 @@ A modern, feature-rich portfolio tracking application built with Next.js 15, Typ
 3. Copy the read/write token from the Tokens section
 4. Upload your trade data CSV and copy its URL
 
-## 📊 Trade Data Format
+## Trade Data Format
 
 Your trade data CSV must include these columns:
 
@@ -141,7 +141,7 @@ Your trade data CSV must include these columns:
 - **Total (NZD)**: Total value in NZD
 - **Currency**: Transaction currency (e.g., USD)
 
-## 🚀 Deployment
+## Deployment
 
 ### Deploy to Vercel
 
@@ -184,7 +184,7 @@ npm run lint
 npm run cache-compositions
 ```
 
-## 📝 Adding Content
+## Adding Content
 
 ### Company Analyses
 
@@ -218,7 +218,7 @@ app/reports/
 └── page.tsx          # Reports index
 ```
 
-## 🎨 Customization
+## Customization
 
 ### Theme Configuration
 
@@ -243,7 +243,7 @@ export const companyColors = {
 }
 ```
 
-## 🧪 Development Guidelines
+## Development Guidelines
 
 ### Code Style
 
@@ -272,7 +272,7 @@ export function Component({ className, ...props }: ComponentProps) {
 }
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -290,18 +290,18 @@ export function Component({ className, ...props }: ComponentProps) {
    - Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
    - Check for TypeScript errors: `npx tsc --noEmit`
 
-## 📄 License
+## License
 
 This project is private and proprietary.
 
-## 🤝 Contributing
+## Contributing
 
 This is a personal project, but suggestions and feedback are welcome!
 
-## 📞 Support
+## Support
 
 For issues or questions, please open an issue in the GitHub repository.
 
 ---
 
-Built with ❤️ using Next.js and Vercel
+Built with Next.js and Vercel

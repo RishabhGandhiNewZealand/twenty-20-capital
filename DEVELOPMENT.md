@@ -549,4 +549,4 @@ For development questions:
 3. Ask in development chat
 4. Create a new issue with details
 
-Happy coding! 🚀
+Happy coding!
