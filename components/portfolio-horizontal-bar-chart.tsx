@@ -70,10 +70,18 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         const dates = Object.keys(data).sort()
         setAvailableDates(dates)
         
-        // Set initial slider to the latest date
+        // Set initial slider to today's date if current holdings exist, otherwise latest historical date
         if (dates.length > 0) {
-          setSliderValue(dates.length - 1)
-          setDisplayDate(dates[dates.length - 1])
+          // Check if we have current holdings passed as props
+          if (currentHoldings && currentHoldings.length > 0) {
+            // Set to max value to show today's data
+            setSliderValue(dates.length)
+            setDisplayDate(null) // null indicates today
+          } else {
+            // Fall back to latest historical date
+            setSliderValue(dates.length - 1)
+            setDisplayDate(dates[dates.length - 1])
+          }
         }
         
         setLoading(false)
@@ -85,7 +93,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
 
     loadCompositionData()
-  }, [])
+  }, [currentHoldings])
 
   // Handle responsive sizing
   useEffect(() => {
