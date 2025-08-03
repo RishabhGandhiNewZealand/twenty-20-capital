@@ -323,7 +323,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           fontSize={isMobile ? "10" : "11"}
           fontWeight="600"
         >
-          {data.percentage.toFixed(1)}%
+          {!isNaN(data.percentage) ? data.percentage.toFixed(1) : '0.0'}%
         </text>
       </g>
     )
@@ -352,7 +352,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
             </p>
             <p className="text-sm">
               <span className="text-gray-500">Allocation:</span>
-              <span className="font-medium ml-1">{data.percentage.toFixed(1)}%</span>
+              <span className="font-medium ml-1">{!isNaN(data.percentage) ? data.percentage.toFixed(1) : '0.0'}%</span>
             </p>
           </div>
         </div>

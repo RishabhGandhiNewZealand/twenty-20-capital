@@ -57,7 +57,7 @@ const HoldingRow = React.memo(({ holding, getLogoUrl, formatCurrency, formatNumb
   holding: CurrentHolding
   getLogoUrl: (symbol: string) => string
   formatCurrency: (value: number | undefined, currency?: string) => string
-  formatNumber: (value: number, decimals?: number) => string
+  formatNumber: (value: number | undefined, decimals?: number) => string
 }) => {
   return (
     <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -137,7 +137,7 @@ export default function HomePage() {
 
   // Memoized formatters
   const formatCurrency = useCallback((value: number | undefined, currency: string = 'NZD') => {
-    if (value === undefined) return 'N/A'
+    if (value === undefined || value === null || isNaN(value)) return 'N/A'
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
       currency: currency,
@@ -146,7 +146,8 @@ export default function HomePage() {
     }).format(value)
   }, [])
 
-  const formatNumber = useCallback((value: number, decimals: number = 2) => {
+  const formatNumber = useCallback((value: number | undefined, decimals: number = 2) => {
+    if (value === undefined || value === null || isNaN(value)) return 'N/A'
     return new Intl.NumberFormat('en-NZ', {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
@@ -486,7 +487,7 @@ export default function HomePage() {
                         {new Date(position.exitDate).toLocaleDateString('en-NZ')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {position.holdingPeriodYears.toFixed(1)} years
+                        {position.holdingPeriodYears ? `${position.holdingPeriodYears.toFixed(1)} years` : 'N/A'}
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
                         position.totalGainNZD >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -552,7 +553,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-gray-600">Years Since Inception:</dt>
-                    <dd className="font-medium">{portfolioMetrics.yearsSinceInception.toFixed(2)}</dd>
+                    <dd className="font-medium">{portfolioMetrics.yearsSinceInception ? portfolioMetrics.yearsSinceInception.toFixed(2) : 'N/A'}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-gray-600">Number of Holdings:</dt>

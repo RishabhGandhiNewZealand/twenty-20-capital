@@ -225,13 +225,13 @@ export const PortfolioChart = React.memo(({ portfolioStats = [] }: PortfolioChar
               <div className="flex justify-between items-center gap-4">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Portfolio Gain:</span>
                 <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(gain)} ({gainPercent.toFixed(1)}%)
+                  {formatCurrency(gain)} ({!isNaN(gainPercent) ? gainPercent.toFixed(1) : '0.0'}%)
                 </span>
               </div>
               <div className="flex justify-between items-center gap-4">
                 <span className="text-sm text-gray-600 dark:text-gray-400">S&P 500 Gain:</span>
                 <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(sp500Gain)} ({sp500GainPercent.toFixed(1)}%)
+                  {formatCurrency(sp500Gain)} ({!isNaN(sp500GainPercent) ? sp500GainPercent.toFixed(1) : '0.0'}%)
                 </span>
               </div>
             </div>
