@@ -70,10 +70,18 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         const dates = Object.keys(data).sort()
         setAvailableDates(dates)
         
-        // Set initial slider to the latest date
+        // Set initial slider to today's date if current holdings exist, otherwise latest historical date
         if (dates.length > 0) {
-          setSliderValue(dates.length - 1)
-          setDisplayDate(dates[dates.length - 1])
+          // Check if we have current holdings passed as props
+          if (currentHoldings && currentHoldings.length > 0) {
+            // Set to max value to show today's data
+            setSliderValue(dates.length)
+            setDisplayDate(null) // null indicates today
+          } else {
+            // Fall back to latest historical date
+            setSliderValue(dates.length - 1)
+            setDisplayDate(dates[dates.length - 1])
+          }
         }
         
         setLoading(false)
@@ -85,7 +93,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
 
     loadCompositionData()
-  }, [])
+  }, [currentHoldings])
 
   // Handle responsive sizing
   useEffect(() => {
@@ -428,11 +436,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           <div className="flex items-start justify-between">
             <CardTitle className="text-gray-900 text-lg sm:text-xl">
               Portfolio Allocation
-              {displayDate && (
-                <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2 block sm:inline">
-                  as of {formatDate(displayDate)}
-                </span>
-              )}
+              <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2 block sm:inline">
+                as of {displayDate ? formatDate(displayDate) : new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
             </CardTitle>
             <div className="flex items-center gap-1 sm:gap-2">
               <Button

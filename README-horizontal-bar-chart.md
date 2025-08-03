@@ -1,13 +1,13 @@
 # Horizontal Bar Chart Implementation
 
 ## Overview
-This document describes the changes made to replace the portfolio treemap visualization with a horizontal bar chart on the main page of the Rish Investing Journey application.
+This document describes the portfolio horizontal bar chart visualization used on the main page of the Rish Investing Journey application.
 
-## Changes Made
+## Component Details
 
-### 1. New Component Created
+### 1. Component Location
 - **File**: `components/portfolio-horizontal-bar-chart.tsx`
-- **Description**: A new React component that displays portfolio holdings as a horizontal bar chart
+- **Description**: A React component that displays portfolio holdings as a horizontal bar chart
 - **Features**:
   - Displays top 15 holdings sorted by value
   - Shows company logos and ticker symbols on the Y-axis
@@ -17,18 +17,16 @@ This document describes the changes made to replace the portfolio treemap visual
   - Supports playback speed controls (0.5x, 1x, 2x)
   - Fully responsive for mobile and desktop
 
-### 2. Main Page Updates
-- **File**: `app/page.tsx`
-- **Changes**:
-  - Replaced import of `PortfolioTreemap` with `PortfolioHorizontalBarChart`
-  - Updated component usage in the render method
+### 2. Integration
+- **Used in**: `app/page.tsx`
+- **Props**: Accepts current holdings data from the main page
 
-### 3. Company Colors Update
+### 3. Company Colors
 - **File**: `lib/company-colors.ts`
-- **Changes**:
-  - Updated color scheme to use blue-based colors matching the website theme
-  - Added predefined colors for major companies using various shades of blue, indigo, teal, and purple
-  - Modified fallback color generation to stay within the blue spectrum
+- **Details**:
+  - Uses blue-based colors matching the website theme
+  - Predefined colors for major companies using various shades of blue, indigo, teal, and purple
+  - Fallback color generation stays within the blue spectrum
 
 ### 4. Key Features
 
