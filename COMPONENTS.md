@@ -1,430 +1,230 @@
 # Component Documentation
 
-This document provides detailed information about all React components used in the Personal Portfolio Tracker application.
+This document describes the React components used in the Personal Portfolio Tracker application.
 
-## Component Architecture
+## Component Architecture Overview
 
-The application uses a modular component architecture with:
+The application uses a modular component architecture with clear separation of concerns:
 
-- **UI Components**: Reusable components from shadcn/ui
-- **Feature Components**: Business logic components
-- **Layout Components**: Page structure and navigation
+- **Page Components**: Top-level components that represent full pages
+- **Feature Components**: Complex components that implement business logic
+- **UI Components**: Reusable presentational components from shadcn/ui
+- **Layout Components**: Components that provide structure and navigation
 
-## Core Components
+## Core Application Components
 
 ### Portfolio Chart (`components/portfolio-chart.tsx`)
 
-Interactive chart component for displaying portfolio performance over time.
+The main visualization component that displays portfolio performance over time. This component:
 
-**Props:**
+- Renders a line chart comparing portfolio value against S&P 500
+- Handles responsive sizing for mobile and desktop views
+- Displays key statistics in an overlay
+- Supports toggling between different view modes
+- Uses Recharts library for chart rendering
 
-```typescript
-interface PortfolioChartProps {
-  data: PortfolioDataPoint[]
-  height?: number
-  showComparison?: boolean
-}
-
-interface PortfolioDataPoint {
-  date: string
-  portfolioValue: number
-  sp500Value?: number
-  costBasis: number
-}
-```
-
-**Usage:**
-
-```tsx
-<PortfolioChart 
-  data={portfolioHistory} 
-  height={400}
-  showComparison={true}
-/>
-```
-
-**Features:**
-- Line chart with multiple series
-- Responsive design
-- Tooltip with detailed information
-- S&P 500 comparison overlay
-- Customizable colors and styling
-
----
+Key features include automatic data formatting, touch-friendly interactions on mobile, and real-time updates when data changes.
 
 ### Portfolio Horizontal Bar Chart (`components/portfolio-horizontal-bar-chart.tsx`)
 
-Displays portfolio allocation as a horizontal bar chart.
+Visualizes portfolio allocation as a horizontal bar chart. This component:
 
-**Props:**
+- Shows the percentage allocation of each holding
+- Uses company-specific colors for visual distinction
+- Displays gain/loss indicators for each position
+- Adapts layout for mobile screens
+- Provides hover states with detailed information
 
-```typescript
-interface PortfolioHorizontalBarChartProps {
-  holdings: Holding[]
-  totalValue: number
-  showLabels?: boolean
-  height?: number
-}
-
-interface Holding {
-  symbol: string
-  name: string
-  currentValueNZD: number
-  allocation: number
-  gainPercent: number
-}
-```
-
-**Usage:**
-
-```tsx
-<PortfolioHorizontalBarChart
-  holdings={currentHoldings}
-  totalValue={portfolioTotal}
-  showLabels={true}
-/>
-```
-
-**Features:**
-- Company-specific color coding
-- Percentage allocation display
-- Gain/loss indicators
-- Interactive hover states
-- Mobile-responsive design
-
----
+The component automatically calculates percentages based on total portfolio value and sorts holdings by allocation size.
 
 ### App Sidebar (`components/app-sidebar.tsx`)
 
-Main navigation sidebar component.
+The main navigation component that provides:
 
-**Props:**
-
-```typescript
-interface AppSidebarProps {
-  className?: string
-  defaultCollapsed?: boolean
-}
-```
-
-**Usage:**
-
-```tsx
-<AppSidebar className="border-r" />
-```
-
-**Features:**
-- Collapsible navigation
+- Collapsible sidebar for desktop views
+- Mobile-responsive hamburger menu
 - Active route highlighting
 - User profile section
-- Responsive mobile menu
 - Theme toggle integration
 
----
+This component manages navigation state and adapts its behavior based on screen size, providing a consistent navigation experience across devices.
 
 ### Navigation (`components/navigation.tsx`)
 
-Navigation menu component with route management.
+Handles the navigation menu structure and routing logic:
 
-**Props:**
+- Generates menu items from configuration
+- Manages active state based on current route
+- Supports nested navigation structures
+- Integrates with Next.js routing
 
-```typescript
-interface NavigationProps {
-  items: NavItem[]
-  className?: string
-}
+## Page Components
 
-interface NavItem {
-  title: string
-  href: string
-  icon?: React.ComponentType
-  badge?: string | number
-}
-```
+### Home Page (`app/page.tsx`)
 
-**Features:**
-- Dynamic route generation
-- Icon support
-- Badge notifications
-- Keyboard navigation
+The main dashboard that serves as the application entry point:
 
----
+- Fetches and displays portfolio data
+- Renders summary cards with key metrics
+- Shows holdings table with current positions
+- Displays performance charts
+- Lists exited positions
 
-### Theme Provider (`components/theme-provider.tsx`)
+This component orchestrates data fetching and coordinates the display of multiple child components.
 
-Provides theme context for dark/light mode switching.
+### Reports Pages (`app/reports/*/page.tsx`)
 
-**Props:**
+Individual report pages that display:
 
-```typescript
-interface ThemeProviderProps {
-  children: React.ReactNode
-  defaultTheme?: 'light' | 'dark' | 'system'
-  storageKey?: string
-}
-```
+- Quarterly or yearly performance summaries
+- Custom visualizations for the period
+- Markdown content for detailed analysis
+- Period-specific metrics and insights
 
-**Usage:**
+Each report page can have custom layouts and visualizations while maintaining consistent styling.
 
-```tsx
-<ThemeProvider defaultTheme="system" storageKey="portfolio-theme">
-  <App />
-</ThemeProvider>
-```
+### Analyses Pages (`app/analyses/*/page.tsx`)
 
----
+Company-specific analysis pages featuring:
+
+- Detailed company research and notes
+- Custom theming based on company colors
+- Markdown rendering for rich content
+- Integration with portfolio data
 
 ## UI Component Library
 
-The application uses shadcn/ui components. Here are the most commonly used ones:
+The application uses shadcn/ui components as a foundation. Key components include:
 
-### Button
+### Layout Components
+- **Card**: Container component for content sections
+- **Sidebar**: Navigation sidebar with responsive behavior
+- **Sheet**: Slide-out panels for mobile navigation
 
-```tsx
-import { Button } from "@/components/ui/button"
+### Data Display
+- **Table**: Responsive tables with mobile adaptations
+- **Badge**: Status indicators and labels
+- **Skeleton**: Loading state placeholders
 
-<Button variant="default" size="md" onClick={handleClick}>
-  Click me
-</Button>
-```
-
-**Variants:**
-- `default`: Primary button
-- `destructive`: Danger/delete actions
-- `outline`: Secondary button
-- `secondary`: Alternative style
-- `ghost`: Minimal style
-- `link`: Link style
-
-**Sizes:**
-- `sm`: Small
-- `default`: Medium
-- `lg`: Large
-- `icon`: Icon-only button
-
----
-
-### Card
-
-```tsx
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-
-<Card>
-  <CardHeader>
-    <CardTitle>Portfolio Value</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <p>$150,000</p>
-  </CardContent>
-</Card>
-```
-
----
-
-### Dialog
-
-```tsx
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-
-<Dialog>
-  <DialogTrigger asChild>
-    <Button>Open Dialog</Button>
-  </DialogTrigger>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Dialog Title</DialogTitle>
-    </DialogHeader>
-    <p>Dialog content here</p>
-  </DialogContent>
-</Dialog>
-```
-
----
-
-### Toast
-
-```tsx
-import { useToast } from "@/hooks/use-toast"
-
-const { toast } = useToast()
-
-toast({
-  title: "Success",
-  description: "Portfolio updated successfully",
-  variant: "default", // or "destructive"
-})
-```
-
----
+### Interactive Elements
+- **Button**: Consistent button styling with variants
+- **Dialog**: Modal dialogs for user interactions
+- **Toast**: Notification system for user feedback
+- **Select**: Dropdown selections with custom styling
 
 ### Form Components
+- **Input**: Text input fields with consistent styling
+- **Label**: Form labels with proper accessibility
+- **Checkbox**: Boolean input controls
+- **Switch**: Toggle switches for settings
 
-```tsx
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+## Component Patterns
 
-<div>
-  <Label htmlFor="symbol">Stock Symbol</Label>
-  <Input id="symbol" placeholder="AAPL" />
-</div>
+### Data Flow
 
-<Select>
-  <SelectTrigger>
-    <SelectValue placeholder="Select currency" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="usd">USD</SelectItem>
-    <SelectItem value="nzd">NZD</SelectItem>
-  </SelectContent>
-</Select>
-```
+Components follow a unidirectional data flow:
+1. Page components fetch data from API routes
+2. Data is passed down through props
+3. Child components render based on received data
+4. User interactions trigger callbacks up the component tree
 
----
+### State Management
+
+The application uses React's built-in state management:
+- `useState` for local component state
+- `useEffect` for side effects and data fetching
+- Custom hooks for shared logic
+- Server state managed through API calls
+
+### Responsive Design
+
+All components implement responsive design through:
+- Tailwind CSS responsive utilities
+- Conditional rendering based on screen size
+- Mobile-first design approach
+- Touch-friendly interaction targets
+
+### Performance Optimization
+
+Components are optimized for performance through:
+- Lazy loading of heavy components
+- Memoization of expensive calculations
+- Efficient re-render prevention
+- Proper key usage in lists
 
 ## Custom Hooks
 
-### useMobile (`hooks/use-mobile.tsx`)
+### useIsMobile
 
-Detects mobile viewport for responsive behavior.
+Detects mobile viewport for responsive behavior:
+- Returns boolean indicating mobile screen size
+- Updates on window resize
+- Used for conditional rendering and behavior
 
-```tsx
-const isMobile = useMobile()
+### useToast
 
-if (isMobile) {
-  // Mobile-specific logic
-}
-```
+Manages toast notifications:
+- Provides methods to show/dismiss toasts
+- Handles toast queue and timing
+- Integrates with the toast component
 
-### useToast (`hooks/use-toast.ts`)
+## Styling Approach
 
-Toast notification system.
+Components use a consistent styling approach:
 
-```tsx
-const { toast, toasts, dismiss } = useToast()
+- Tailwind CSS for utility-first styling
+- CSS variables for theme customization
+- Consistent spacing and sizing scales
+- Dark mode support through CSS variables
 
-// Show toast
-toast({
-  title: "Success",
-  description: "Action completed",
-})
+### Theme System
 
-// Dismiss specific toast
-dismiss(toastId)
-```
+The application supports light and dark themes:
+- Theme provider wraps the application
+- Components use theme-aware color variables
+- User preference is persisted
+- System preference detection
 
----
+## Component Guidelines
 
-## Component Best Practices
+When working with components:
 
-### 1. Component Structure
+### Understanding Component Responsibility
+- Each component has a single, clear purpose
+- Business logic is separated from presentation
+- Data fetching happens at appropriate levels
+- Side effects are properly managed
 
-```tsx
-// components/example-component.tsx
-import { cn } from "@/lib/utils"
+### Modifying Components
+- Maintain existing prop interfaces
+- Preserve responsive behavior
+- Consider performance implications
+- Update TypeScript types as needed
 
-interface ExampleComponentProps {
-  className?: string
-  children?: React.ReactNode
-  // other props
-}
+### Creating New Components
+- Follow existing naming conventions
+- Implement responsive design from the start
+- Use TypeScript for type safety
+- Consider reusability and composition
 
-export function ExampleComponent({ 
-  className, 
-  children,
-  ...props 
-}: ExampleComponentProps) {
-  return (
-    <div 
-      className={cn(
-        "default-styles",
-        className
-      )} 
-      {...props}
-    >
-      {children}
-    </div>
-  )
-}
-```
+## Component Dependencies
 
-### 2. Styling Guidelines
+Key libraries used by components:
 
-- Use Tailwind CSS classes
-- Use `cn()` utility for conditional classes
-- Keep component-specific styles minimal
-- Use CSS variables for theming
+- **React**: Core component framework
+- **Recharts**: Chart rendering
+- **Tailwind CSS**: Styling
+- **Radix UI**: Accessible component primitives
+- **Lucide React**: Icon library
 
-### 3. Performance Optimization
+## Future Component Considerations
 
-- Use `React.memo` for expensive components
-- Implement proper key props for lists
-- Lazy load heavy components
-- Optimize re-renders with proper dependency arrays
+Areas for component enhancement:
 
-### 4. Accessibility
+- Additional chart types for different visualizations
+- Enhanced mobile interactions
+- More sophisticated loading states
+- Improved error boundaries
+- Advanced filtering and sorting controls
 
-- Use semantic HTML elements
-- Include proper ARIA labels
-- Ensure keyboard navigation
-- Maintain focus management
-
-### 5. Testing
-
-Components should be tested for:
-- Rendering with different props
-- User interactions
-- Edge cases
-- Accessibility compliance
-
----
-
-## Component Categories
-
-### Layout Components
-- `AppSidebar`: Main navigation
-- `Navigation`: Route management
-- `ThemeProvider`: Theme context
-
-### Data Display
-- `PortfolioChart`: Line charts
-- `PortfolioHorizontalBarChart`: Bar charts
-- `Card`: Content containers
-- `Table`: Data tables
-
-### Form Controls
-- `Button`: Interactive buttons
-- `Input`: Text inputs
-- `Select`: Dropdown selections
-- `Checkbox`: Boolean inputs
-- `Switch`: Toggle controls
-
-### Feedback
-- `Toast`: Notifications
-- `Alert`: Inline messages
-- `Progress`: Loading states
-- `Skeleton`: Loading placeholders
-
-### Overlays
-- `Dialog`: Modal dialogs
-- `Sheet`: Slide-out panels
-- `Popover`: Contextual overlays
-- `Tooltip`: Hover information
-
----
-
-## Future Component Plans
-
-- [ ] Portfolio comparison chart
-- [ ] Trade history table
-- [ ] Stock watchlist component
-- [ ] News feed integration
-- [ ] Advanced filtering controls
-- [ ] Export functionality
-- [ ] Real-time price ticker
+The component architecture is designed to be extensible while maintaining consistency and performance across the application.

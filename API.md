@@ -1,306 +1,199 @@
 # API Documentation
 
-This document provides detailed information about all API endpoints available in the Personal Portfolio Tracker application.
+This document describes the API endpoints available in the Personal Portfolio Tracker application.
 
-## Base URL
+## API Architecture
 
-- **Development**: `http://localhost:3000/api`
-- **Production**: `https://your-domain.vercel.app/api`
+The application uses Next.js API routes to provide a backend API that:
 
-## Authentication
+- Processes portfolio data from CSV storage
+- Fetches real-time market data from external sources
+- Implements caching to optimize performance
+- Handles all sensitive operations server-side
 
-Currently, all API endpoints are public and do not require authentication. In production, these endpoints are protected by Vercel's edge network and environment variables.
+All API routes are located in `app/api/` and follow RESTful conventions.
 
-## Endpoints
+## Available Endpoints
 
 ### Portfolio Data
 
 #### GET `/api/portfolio`
 
-Retrieves complete portfolio data including current holdings and exited positions.
+Returns complete portfolio data including current holdings and exited positions. This endpoint:
 
-**Response:**
+- Reads trade data from Vercel Blob storage
+- Calculates current positions by aggregating transactions
+- Fetches current market prices for each holding
+- Computes gains/losses and performance metrics
+- Returns both active holdings and exited positions
 
-```json
-{
-  "holdings": [
-    {
-      "symbol": "AAPL",
-      "name": "Apple Inc.",
-      "shares": 100,
-      "currentPrice": 195.89,
-      "currentValueNZD": 31742.45,
-      "costBasisNZD": 25000.00,
-      "gainNZD": 6742.45,
-      "gainPercent": 26.97,
-      "allocation": 15.5,
-      "currency": "USD"
-    }
-  ],
-  "exitedPositions": [
-    {
-      "symbol": "TSLA",
-      "name": "Tesla Inc.",
-      "entryDate": "2023-01-15",
-      "exitDate": "2024-06-20",
-      "costBasisNZD": 15000.00,
-      "exitValueNZD": 18500.00,
-      "gainNZD": 3500.00,
-      "gainPercent": 23.33
-    }
-  ],
-  "lastUpdated": "2024-01-20T10:30:00.000Z"
-}
-```
+The response includes holdings with current values, cost basis, gains, and allocation percentages, plus a list of previously exited positions with their realized gains.
 
-**Error Responses:**
-
-- `500`: Failed to generate portfolio data
-
----
-
-### Current Portfolio Value
+### Current Portfolio Summary
 
 #### GET `/api/portfolio-current`
 
-Retrieves current portfolio summary including total value, gains, and S&P 500 comparison.
+Provides a real-time summary of the portfolio including:
 
-**Response:**
+- Total portfolio value in NZD
+- Overall gains/losses compared to cost basis
+- S&P 500 benchmark comparison
+- Current exchange rates
+- Detailed holdings information
 
-```json
-{
-  "summary": {
-    "totalValueNZD": 204850.32,
-    "totalCostBasisNZD": 150000.00,
-    "totalGainNZD": 54850.32,
-    "totalGainPercent": 36.57,
-    "sp500Value": 180000.00,
-    "sp500GainNZD": 30000.00,
-    "sp500GainPercent": 20.00,
-    "exchangeRate": 0.62
-  },
-  "holdings": [...],
-  "exitedPositions": [...]
-}
-```
-
-**Error Responses:**
-
-- `500`: Failed to fetch portfolio data
-
----
+This endpoint is optimized for the main dashboard display and includes all calculations needed for the summary cards and charts.
 
 ### Portfolio History
 
 #### GET `/api/portfolio-history`
 
-Retrieves historical portfolio data for charting purposes.
+Returns historical portfolio data for charting purposes. This endpoint:
 
-**Response:**
+- Generates daily portfolio values over time
+- Calculates historical cost basis progression
+- Provides S&P 500 comparison data
+- Includes daily gain/loss calculations
 
-```json
-{
-  "history": [
-    {
-      "date": "2024-01-01",
-      "portfolioValue": 195000.00,
-      "totalCostBasis": 150000.00,
-      "sp500Value": 175000.00,
-      "dailyGain": 1250.00,
-      "dailyGainPercent": 0.64
-    }
-  ]
-}
-```
-
-**Error Responses:**
-
-- `500`: Failed to generate portfolio history
-
----
+The data is structured for direct consumption by the portfolio chart component.
 
 ### Portfolio Composition
 
 #### GET `/api/portfolio-composition`
 
-Retrieves cached portfolio composition data for performance optimization.
+Retrieves pre-calculated portfolio composition data. This endpoint:
 
-**Response:**
+- Returns cached composition data from build time
+- Provides allocation percentages by date
+- Optimizes performance by avoiding runtime calculations
+- Used for historical allocation analysis
 
-```json
-{
-  "compositions": {
-    "2024-01-20": {
-      "holdings": {
-        "AAPL": { "value": 31742.45, "percentage": 15.5 },
-        "GOOGL": { "value": 45230.12, "percentage": 22.1 }
-      },
-      "totalValue": 204850.32
-    }
-  },
-  "lastUpdated": "2024-01-20T10:00:00.000Z"
-}
-```
-
-**Error Responses:**
-
-- `500`: Failed to read portfolio compositions
-
----
-
-### Stock Price
+### Stock Prices
 
 #### GET `/api/stock-price?symbol={symbol}`
 
-Retrieves real-time stock price for a given symbol.
+Fetches real-time stock price for a given symbol. Features:
 
-**Query Parameters:**
+- Integrates with Yahoo Finance API
+- Implements 5-minute caching to reduce API calls
+- Returns comprehensive price data including day's range
+- Handles error cases gracefully
 
-- `symbol` (required): Stock ticker symbol (e.g., AAPL, GOOGL)
+Query parameter `symbol` is required and should be a valid stock ticker.
 
-**Response:**
-
-```json
-{
-  "symbol": "AAPL",
-  "price": 195.89,
-  "currency": "USD",
-  "marketState": "REGULAR",
-  "regularMarketTime": "2024-01-20T16:00:00.000Z",
-  "regularMarketPrice": 195.89,
-  "regularMarketDayHigh": 196.50,
-  "regularMarketDayLow": 194.25,
-  "regularMarketVolume": 45678900,
-  "regularMarketPreviousClose": 194.50,
-  "regularMarketOpen": 195.00,
-  "fiftyTwoWeekHigh": 199.62,
-  "fiftyTwoWeekLow": 164.08
-}
-```
-
-**Error Responses:**
-
-- `400`: Symbol parameter is required
-- `404`: Stock symbol not found
-- `500`: Failed to fetch stock price
-
----
-
-### Exchange Rate
+### Exchange Rates
 
 #### GET `/api/exchange-rate?from={currency}&to={currency}`
 
-Retrieves current exchange rate between two currencies.
+Provides currency exchange rates with:
 
-**Query Parameters:**
+- Default conversion from USD to NZD
+- Support for any currency pair
+- 1-hour caching for rate stability
+- Fallback rates for offline scenarios
 
-- `from` (optional): Source currency code (default: USD)
-- `to` (optional): Target currency code (default: NZD)
+Both query parameters are optional and default to USD→NZD conversion.
 
-**Response:**
+## Data Flow
 
-```json
-{
-  "from": "USD",
-  "to": "NZD",
-  "rate": 1.6129,
-  "timestamp": "2024-01-20T10:30:00.000Z"
-}
-```
+### Request Processing
 
-**Error Responses:**
+1. Client makes request to API endpoint
+2. API route validates request parameters
+3. Data is fetched from appropriate source
+4. Calculations and transformations applied
+5. Response formatted and returned as JSON
 
-- `404`: Exchange rate not found
-- `500`: Failed to fetch exchange rate
+### Data Sources
 
----
+- **Portfolio Data**: Vercel Blob storage (CSV file)
+- **Market Prices**: Yahoo Finance API
+- **Exchange Rates**: Yahoo Finance API
+- **Cached Data**: In-memory storage during runtime
 
-## Rate Limiting
+### Caching Strategy
 
-API endpoints implement caching to reduce external API calls:
+The API implements intelligent caching:
 
-- Stock prices: Cached for 5 minutes
-- Exchange rates: Cached for 1 hour
-- Portfolio data: Generated on-demand from blob storage
+- Stock prices: 5-minute cache
+- Exchange rates: 1-hour cache
+- Portfolio data: On-demand calculation
+- Build-time data: Pre-calculated compositions
 
 ## Error Handling
 
-All endpoints follow a consistent error response format:
+All endpoints follow consistent error handling:
 
-```json
-{
-  "error": "Error message description",
-  "code": "ERROR_CODE",
-  "timestamp": "2024-01-20T10:30:00.000Z"
-}
-```
+- Validation errors return 400 status
+- Not found errors return 404 status
+- Server errors return 500 status
+- All errors include descriptive messages
 
-Common error codes:
+Error responses include an `error` field with a human-readable message.
 
-- `INVALID_PARAMETER`: Missing or invalid request parameters
-- `NOT_FOUND`: Requested resource not found
-- `EXTERNAL_API_ERROR`: External API (Yahoo Finance) error
-- `STORAGE_ERROR`: Vercel Blob storage error
-- `INTERNAL_ERROR`: Unexpected server error
+## Security Considerations
 
-## Data Sources
+The API implements several security measures:
 
-- **Portfolio Data**: Stored in Vercel Blob storage as CSV
-- **Stock Prices**: Real-time data from Yahoo Finance API
-- **Exchange Rates**: Real-time data from Yahoo Finance API
+- All sensitive data processing happens server-side
+- API keys are never exposed to the client
+- Environment variables store credentials
+- Input validation on all endpoints
 
-## Caching Strategy
+## Performance Optimizations
 
-The application implements several caching mechanisms:
+### Caching
 
-1. **Build-time Caching**: Portfolio compositions are pre-calculated during build
-2. **Runtime Caching**: Stock prices and exchange rates are cached in memory
-3. **Client-side Caching**: React Query or SWR can be used for client-side caching
+Multiple caching strategies reduce external API calls:
+- In-memory caching for frequently accessed data
+- Build-time pre-calculation for static data
+- Appropriate cache durations for different data types
 
-## Usage Examples
+### Efficient Data Processing
 
-### Fetch Portfolio Data
+- Batch processing where possible
+- Minimal data transformations
+- Optimized calculations
+- Proper error boundaries
 
-```javascript
-async function getPortfolio() {
-  const response = await fetch('/api/portfolio');
-  if (!response.ok) {
-    throw new Error('Failed to fetch portfolio');
-  }
-  return response.json();
-}
-```
+## Extending the API
 
-### Get Stock Price
+### Adding New Endpoints
 
-```javascript
-async function getStockPrice(symbol) {
-  const response = await fetch(`/api/stock-price?symbol=${symbol}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch stock price');
-  }
-  return response.json();
-}
-```
+To add new API functionality:
 
-### Convert Currency
+1. Create a new route file in `app/api/`
+2. Implement the route handler
+3. Add appropriate error handling
+4. Consider caching requirements
+5. Update TypeScript types
 
-```javascript
-async function convertCurrency(amount, from = 'USD', to = 'NZD') {
-  const response = await fetch(`/api/exchange-rate?from=${from}&to=${to}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch exchange rate');
-  }
-  const { rate } = await response.json();
-  return amount * rate;
-}
-```
+### Modifying Existing Endpoints
+
+When changing existing endpoints:
+
+1. Maintain backward compatibility
+2. Update response types
+3. Consider cache invalidation
+4. Test error scenarios
+5. Update documentation
+
+## Rate Limiting
+
+The API implements practical rate limiting through:
+
+- Caching to reduce external API calls
+- Reasonable cache durations
+- Error handling for rate limit scenarios
+- Fallback data for critical operations
 
 ## Future Enhancements
 
-- [ ] Add authentication and user-specific portfolios
-- [ ] Implement WebSocket support for real-time updates
-- [ ] Add historical price data endpoints
-- [ ] Support for cryptocurrency prices
-- [ ] Batch stock price requests
-- [ ] GraphQL API support
+Potential API improvements include:
+
+- WebSocket support for real-time updates
+- GraphQL endpoint for flexible queries
+- Batch operations for multiple symbols
+- Historical data endpoints
+- Advanced analytics endpoints
+
+The API is designed to be extensible while maintaining simplicity and performance for the current single-user use case.

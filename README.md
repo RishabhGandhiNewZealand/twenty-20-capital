@@ -1,307 +1,125 @@
 # Personal Portfolio Tracker
 
-A modern, feature-rich portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS. Track your investments, analyze companies, and monitor your portfolio performance with real-time data and beautiful visualizations.
+A portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS that provides real-time investment monitoring, performance analytics, and comprehensive reporting capabilities.
 
-## Features
+## Application Overview
 
-### Portfolio Management
-- **Real-time Portfolio Tracking**: Monitor your holdings with live price updates
-- **Performance Analytics**: Track gains/losses, CAGR, and compare against S&P 500
-- **Visual Dashboards**: Interactive charts showing portfolio composition and performance
-- **Multi-currency Support**: Handle investments in different currencies with automatic conversion
+This application serves as a personal investment portfolio tracker with the following core functionalities:
 
-### Company Analysis
-- **Detailed Company Pages**: Store and view in-depth analyses for different companies
-- **Markdown Support**: Write analyses in Markdown with full formatting support
-- **Company-specific Coloring**: Automatic brand color theming for each company
+- Real-time portfolio valuation with live market data integration
+- Multi-currency support with automatic conversion to NZD
+- Performance tracking against S&P 500 benchmark
+- Company-specific analysis pages with markdown support
+- Quarterly and yearly progress reporting
+- Responsive design optimized for both desktop and mobile
 
-### Reporting
-- **Progress Reports**: Create quarterly and yearly investment reports
-- **Performance History**: Track portfolio evolution over time
-- **Export Capabilities**: Generate reports in various formats
+## Architecture
 
-### User Experience
-- **Responsive Design**: Fully optimized for desktop and mobile devices
-- **Dark Mode Support**: Built-in theme switching with system preference detection
-- **Modern UI**: Clean, intuitive interface built with shadcn/ui components
+The application follows Next.js 15's App Router architecture with server-side rendering for optimal performance. Key architectural decisions include:
 
-## Tech Stack
-
-- **Framework**: [Next.js 15](https://nextjs.org/) with App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with [shadcn/ui](https://ui.shadcn.com/)
-- **Charts**: [Recharts](https://recharts.org/)
-- **Data Storage**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob)
-- **Market Data**: [Yahoo Finance API](https://github.com/gadicc/node-yahoo-finance2)
-- **Deployment**: [Vercel](https://vercel.com/)
-
-## Prerequisites
-
-- Node.js 18.17 or later
-- npm or pnpm package manager
-- Vercel account (for blob storage)
-
-## Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd <your-repo-name>
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
-
-3. **Set up environment variables**
-   
-   Create a `.env.local` file in the root directory:
-   ```env
-   # Vercel Blob Storage (required)
-   BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxxx
-   TRADE_DATA_BLOB_URL=https://your-store-id.public.blob.vercel-storage.com/path/to/trade-data.csv
-   ```
-
-4. **Prepare your trade data**
-   
-   Upload a CSV file with your trade data to Vercel Blob storage. The CSV should follow this format:
-   ```csv
-   Code,Market Code,Name,Buy/Sell,Quantity,Price,Exchange Rate,Brokerage,Date,Total (Local),Total (NZD),Currency
-   AAPL,NASDAQ,Apple Inc.,Buy,10,150.00,0.62,5.00,2024-01-15,1505.00,2427.42,USD
-   ```
-
-5. **Run the development server**
-   ```bash
-   npm run dev
-   # or
-   pnpm dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000) to see your portfolio.
+- **Data Storage**: Trade data is stored in CSV format on Vercel Blob storage, allowing easy updates without database complexity
+- **API Integration**: Yahoo Finance API provides real-time stock prices and exchange rates
+- **Caching Strategy**: Build-time caching for portfolio compositions and runtime caching for market data
+- **Component Architecture**: Modular React components using shadcn/ui for consistent UI patterns
 
 ## Project Structure
 
-```
-├── app/                    # Next.js app directory
-│   ├── api/               # API routes
-│   │   ├── portfolio/     # Portfolio data endpoints
-│   │   ├── stock-price/   # Real-time stock prices
-│   │   └── exchange-rate/ # Currency conversion
-│   ├── analyses/          # Company analysis pages
-│   ├── reports/           # Portfolio reports
-│   ├── about/            # About page
-│   └── page.tsx          # Home page
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── portfolio-chart.tsx
-│   └── app-sidebar.tsx
-├── lib/                   # Utility functions
-│   ├── portfolio.ts      # Portfolio calculations
-│   ├── blob-utils.ts     # Vercel Blob utilities
-│   └── constants.ts      # App constants
-├── hooks/                 # Custom React hooks
-├── types/                 # TypeScript type definitions
-├── scripts/              # Build and utility scripts
-└── styles/               # Global styles
-```
+The codebase is organized into logical modules:
 
-## Environment Variables
+- `app/` - Next.js pages and API routes using the App Router pattern
+- `components/` - Reusable React components including charts and UI elements
+- `lib/` - Core business logic, utilities, and data processing functions
+- `hooks/` - Custom React hooks for common functionality
+- `types/` - TypeScript type definitions ensuring type safety throughout
+- `scripts/` - Build-time scripts for data preprocessing
 
-### Required Variables
+## Key Features and Implementation
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token (auto-set by Vercel) | `vercel_blob_rw_xxx...` |
-| `TRADE_DATA_BLOB_URL` | URL to your trade data CSV in Blob storage | `https://xxx.blob.vercel-storage.com/trades.csv` |
+### Portfolio Management
+The main dashboard (`app/page.tsx`) displays current holdings, performance metrics, and portfolio composition. Data flows from CSV storage through server-side processing to client-side visualization.
 
-### Getting Blob Storage Credentials
+### Data Processing
+Trade data is parsed from CSV format (`lib/portfolio.ts`) with support for multiple currencies and transaction types. The system calculates current positions by aggregating all buy/sell transactions.
 
-1. Go to your Vercel Dashboard
-2. Navigate to Storage → Create a Blob Store
-3. Copy the read/write token from the Tokens section
-4. Upload your trade data CSV and copy its URL
+### Real-time Updates
+API routes in `app/api/` handle fetching current market prices and exchange rates, with intelligent caching to minimize external API calls while maintaining data freshness.
 
-## Trade Data Format
+### Visualization
+Portfolio performance is visualized using Recharts with custom components for line charts and horizontal bar charts showing allocation percentages.
 
-Your trade data CSV must include these columns:
+## Development Setup
 
-- **Code**: Stock ticker symbol (e.g., AAPL)
-- **Market Code**: Exchange identifier (e.g., NASDAQ)
-- **Name**: Company name
-- **Buy/Sell**: Transaction type
-- **Quantity**: Number of shares
-- **Price**: Price per share in local currency
-- **Exchange Rate**: Conversion rate to NZD
-- **Brokerage**: Transaction fees
-- **Date**: Transaction date (YYYY-MM-DD)
-- **Total (Local)**: Total value in local currency
-- **Total (NZD)**: Total value in NZD
-- **Currency**: Transaction currency (e.g., USD)
+To work on this application, you'll need:
+
+1. Node.js 18.17 or later
+2. A Vercel account for blob storage
+3. Access to the trade data CSV format specification
+
+Environment variables required:
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage authentication
+- `TRADE_DATA_BLOB_URL` - URL to your trade data CSV file
+
+## Extending the Application
+
+### Adding New Features
+
+The modular architecture makes it straightforward to add new capabilities:
+
+- **New API Endpoints**: Add route handlers in `app/api/`
+- **Additional Charts**: Create components in `components/` following existing patterns
+- **New Report Types**: Add pages in `app/reports/` with corresponding data processing
+- **Enhanced Analytics**: Extend calculations in `lib/financial-calculations.ts`
+
+### Data Model
+
+The application processes trade data with the following structure:
+- Stock transactions (buy/sell) with prices in original currency
+- Automatic currency conversion to NZD
+- Position tracking across multiple exchanges
+- Historical performance calculation
+
+### Customization Points
+
+- Company color mappings in `lib/company-colors.ts`
+- Financial constants in `lib/constants.ts`
+- Chart configurations in component files
+- Theme customization via Tailwind CSS configuration
+
+## Performance Considerations
+
+The application implements several performance optimizations:
+
+- Server-side rendering for initial page loads
+- Pre-calculated portfolio compositions at build time
+- Efficient caching strategies for market data
+- Lazy loading for heavy components
+- Responsive image optimization
 
 ## Deployment
 
-### Deploy to Vercel
+The application is designed for deployment on Vercel with:
 
-1. **Push to GitHub**
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
+- Automatic builds triggered by git pushes
+- Edge function support for API routes
+- Blob storage integration for data persistence
+- Built-in analytics and monitoring
 
-2. **Import to Vercel**
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
-   - Click "New Project"
-   - Import your GitHub repository
-   - Configure environment variables
-   - Deploy
+## Next Steps
 
-3. **Set up Blob Storage**
-   - In Vercel Dashboard, go to Storage
-   - Create a new Blob store
-   - Upload your trade data CSV
-   - Update environment variables with the blob URL
+To continue development:
 
-### Build Commands
+1. Review the existing codebase structure in `ARCHITECTURE.md`
+2. Understand component patterns in `COMPONENTS.md`
+3. Check API documentation in `API.md`
+4. Follow development guidelines in `DEVELOPMENT.md`
 
-```bash
-# Development
-npm run dev
-
-# Production build
-npm run build
-
-# Start production server
-npm run start
-
-# Lint code
-npm run lint
-
-# Cache portfolio compositions (runs automatically on build)
-npm run cache-compositions
-```
-
-## Adding Content
-
-### Company Analyses
-
-1. Create a new folder in `app/analyses/[company-name]/`
-2. Add a `page.mdx` file with your analysis
-3. The analysis will be available at `/analyses/[company-name]`
-
-Example structure:
-```
-app/analyses/
-├── apple/
-│   └── page.mdx
-├── tesla/
-│   └── page.mdx
-└── page.tsx          # Analyses index
-```
-
-### Progress Reports
-
-1. Create a new folder in `app/reports/[report-name]/`
-2. Add a `page.mdx` file with your report
-3. The report will be available at `/reports/[report-name]`
-
-Example structure:
-```
-app/reports/
-├── 2024-review/
-│   └── page.mdx
-├── q1-2025/
-│   └── page.mdx
-└── page.tsx          # Reports index
-```
-
-## Customization
-
-### Theme Configuration
-
-Edit `app/globals.css` to customize the color scheme:
-
-```css
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  /* ... other theme variables */
-}
-```
-
-### Company Colors
-
-Add company-specific colors in `lib/company-colors.ts`:
-
-```typescript
-export const companyColors = {
-  'AAPL': { bg: '#f5f5f7', fg: '#1d1d1f', name: 'Apple' },
-  // Add more companies
-}
-```
-
-## Development Guidelines
-
-### Code Style
-
-- Use TypeScript for all new code
-- Follow the existing component structure
-- Use Tailwind CSS for styling
-- Implement proper error handling
-
-### Component Development
-
-```typescript
-// Example component structure
-import { cn } from "@/lib/utils"
-
-interface ComponentProps {
-  className?: string
-  // other props
-}
-
-export function Component({ className, ...props }: ComponentProps) {
-  return (
-    <div className={cn("default-classes", className)} {...props}>
-      {/* Component content */}
-    </div>
-  )
-}
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Failed to fetch portfolio data"**
-   - Check your `BLOB_READ_WRITE_TOKEN` is correct
-   - Verify the CSV file exists at `TRADE_DATA_BLOB_URL`
-   - Ensure CSV format matches the required structure
-
-2. **"Exchange rate not found"**
-   - The app caches exchange rates; wait a moment and refresh
-   - Check your internet connection for API access
-
-3. **Build errors**
-   - Clear `.next` folder: `rm -rf .next`
-   - Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
-   - Check for TypeScript errors: `npx tsc --noEmit`
-
-## License
-
-This project is private and proprietary.
-
-## Contributing
-
-This is a personal project, but suggestions and feedback are welcome!
-
-## Support
-
-For issues or questions, please open an issue in the GitHub repository.
+The application provides a solid foundation for portfolio tracking with room for enhancement in areas like:
+- Multi-user support
+- Advanced analytics and reporting
+- Mobile app development
+- Real-time WebSocket updates
+- Integration with additional data sources
 
 ---
 
-Built with Next.js and Vercel
+For detailed technical documentation, refer to the other documentation files in this repository.

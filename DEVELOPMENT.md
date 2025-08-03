@@ -1,552 +1,225 @@
 # Development Guide
 
-This guide provides comprehensive information for developers working on the Personal Portfolio Tracker application.
+This guide helps developers understand and extend the Personal Portfolio Tracker application.
 
-## Getting Started
+## Understanding the Application
 
-### Prerequisites
+### Core Concepts
 
-- **Node.js**: Version 18.17 or later
-- **npm** or **pnpm**: Package manager
-- **Git**: Version control
-- **VS Code** (recommended) or your preferred IDE
+The application is built around several key concepts:
 
-### Initial Setup
+1. **Trade Data Management**: All portfolio data originates from a CSV file stored in Vercel Blob storage
+2. **Position Calculation**: The system aggregates buy/sell transactions to determine current holdings
+3. **Real-time Valuation**: Current prices are fetched from Yahoo Finance API
+4. **Performance Tracking**: Gains are calculated against cost basis with S&P 500 comparison
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/portfolio-tracker.git
-   cd portfolio-tracker
-   ```
+### Data Flow
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
+Understanding how data moves through the application:
 
-3. **Set up environment variables:**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Edit `.env.local` with your values:
-   ```env
-   BLOB_READ_WRITE_TOKEN=your_token_here
-   TRADE_DATA_BLOB_URL=your_blob_url_here
-   ```
+1. CSV trade data is stored in Vercel Blob storage
+2. Server-side functions parse and process this data
+3. Current prices are fetched and cached from external APIs
+4. Calculations happen server-side for security and performance
+5. Processed data is sent to the client for visualization
 
-4. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
+### Key Components
 
-5. **Open [http://localhost:3000](http://localhost:3000)**
+**Main Dashboard** (`app/page.tsx`)
+- Displays portfolio summary cards
+- Shows current holdings table
+- Renders performance charts
+- Lists exited positions
+
+**API Layer** (`app/api/`)
+- `/portfolio` - Returns processed portfolio data
+- `/stock-price` - Fetches current stock prices
+- `/exchange-rate` - Handles currency conversion
+- `/portfolio-history` - Provides historical data for charts
+
+**Data Processing** (`lib/`)
+- `portfolio.ts` - CSV parsing and position calculation
+- `financial-calculations.ts` - CAGR and performance metrics
+- `blob-utils.ts` - Vercel Blob storage interface
 
 ## Development Workflow
 
-### Branch Strategy
-
-We follow a simplified Git flow:
-
-```
-main (production)
-  └── feature/your-feature-name
-  └── fix/bug-description
-  └── docs/documentation-update
-```
-
-**Creating a new feature:**
-```bash
-git checkout -b feature/portfolio-export
-# Make changes
-git add .
-git commit -m "feat: add portfolio export functionality"
-git push origin feature/portfolio-export
-```
-
-### Commit Convention
-
-We use conventional commits for clear history:
-
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `style:` Code style changes (formatting, etc.)
-- `refactor:` Code refactoring
-- `test:` Test additions or changes
-- `chore:` Build process or auxiliary tool changes
-
-**Examples:**
-```bash
-git commit -m "feat: add real-time price updates"
-git commit -m "fix: correct portfolio calculation error"
-git commit -m "docs: update API documentation"
-```
-
-### Code Review Process
-
-1. **Create a Pull Request**
-2. **Automated checks run** (linting, type checking)
-3. **Request review** from team members
-4. **Address feedback**
-5. **Merge when approved**
-
-## Project Structure
-
-### Directory Organization
-
-```
-portfolio-tracker/
-├── app/                    # Next.js App Router
-│   ├── api/               # API endpoints
-│   ├── (routes)/          # Page routes
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-│   ├── ui/               # Base UI components
-│   └── features/         # Feature-specific components
-├── lib/                   # Utilities and helpers
-├── hooks/                 # Custom React hooks
-├── types/                 # TypeScript types
-├── public/               # Static assets
-└── styles/               # Global styles
-```
-
-### File Naming Conventions
-
-- **Components**: PascalCase (e.g., `PortfolioChart.tsx`)
-- **Utilities**: camelCase (e.g., `calculateReturns.ts`)
-- **Types**: PascalCase with `.ts` extension
-- **Styles**: kebab-case (e.g., `portfolio-chart.module.css`)
-
-## Development Guidelines
-
-### TypeScript Best Practices
-
-1. **Always use strict types:**
-   ```typescript
-   // ❌ Avoid
-   function calculate(data: any) { }
-   
-   // ✅ Prefer
-   function calculate(data: PortfolioData) { }
-   ```
-
-2. **Define interfaces for props:**
-   ```typescript
-   interface ButtonProps {
-     variant?: 'primary' | 'secondary'
-     onClick?: () => void
-     children: React.ReactNode
-   }
-   ```
-
-3. **Use type inference when possible:**
-   ```typescript
-   // Let TypeScript infer the type
-   const [count, setCount] = useState(0)
-   ```
-
-### React Best Practices
-
-1. **Prefer function components:**
-   ```typescript
-   export function Portfolio({ data }: PortfolioProps) {
-     return <div>{/* content */}</div>
-   }
-   ```
-
-2. **Use hooks effectively:**
-   ```typescript
-   // Custom hook for data fetching
-   function usePortfolioData() {
-     const [data, setData] = useState<PortfolioData>()
-     const [loading, setLoading] = useState(true)
-     
-     useEffect(() => {
-       fetchPortfolioData().then(setData).finally(() => setLoading(false))
-     }, [])
-     
-     return { data, loading }
-   }
-   ```
-
-3. **Memoize expensive operations:**
-   ```typescript
-   const chartData = useMemo(() => 
-     processPortfolioData(rawData), 
-     [rawData]
-   )
-   ```
-
-### Styling Guidelines
-
-1. **Use Tailwind CSS classes:**
-   ```tsx
-   <div className="flex items-center gap-4 p-4 bg-gray-100 rounded-lg">
-   ```
-
-2. **Component-specific styles with CSS Modules:**
-   ```css
-   /* portfolio.module.css */
-   .container {
-     @apply flex flex-col gap-4;
-   }
-   ```
-
-3. **Responsive design:**
-   ```tsx
-   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-   ```
-
-### API Development
-
-1. **Route structure:**
-   ```typescript
-   // app/api/portfolio/route.ts
-   export async function GET(request: Request) {
-     // Handle GET requests
-   }
-   
-   export async function POST(request: Request) {
-     // Handle POST requests
-   }
-   ```
-
-2. **Error handling:**
-   ```typescript
-   try {
-     const data = await fetchData()
-     return NextResponse.json(data)
-   } catch (error) {
-     logger.error('API Error:', error)
-     return NextResponse.json(
-       { error: 'Internal Server Error' },
-       { status: 500 }
-     )
-   }
-   ```
-
-3. **Input validation:**
-   ```typescript
-   const schema = z.object({
-     symbol: z.string().min(1).max(10),
-     quantity: z.number().positive()
-   })
-   
-   const result = schema.safeParse(body)
-   if (!result.success) {
-     return NextResponse.json(
-       { error: result.error },
-       { status: 400 }
-     )
-   }
-   ```
-
-## Testing
-
-### Unit Testing
-
-```typescript
-// lib/calculations.test.ts
-import { calculateCAGR } from './calculations'
-
-describe('calculateCAGR', () => {
-  it('calculates correct CAGR', () => {
-    const result = calculateCAGR(1000, 2000, 5)
-    expect(result).toBeCloseTo(14.87, 2)
-  })
-})
-```
-
-### Component Testing
-
-```typescript
-// components/Portfolio.test.tsx
-import { render, screen } from '@testing-library/react'
-import { Portfolio } from './Portfolio'
-
-test('renders portfolio value', () => {
-  render(<Portfolio value={150000} />)
-  expect(screen.getByText('$150,000')).toBeInTheDocument()
-})
-```
-
-### API Testing
-
-```typescript
-// app/api/portfolio/route.test.ts
-import { GET } from './route'
-
-test('returns portfolio data', async () => {
-  const response = await GET(new Request('http://localhost'))
-  const data = await response.json()
-  
-  expect(response.status).toBe(200)
-  expect(data).toHaveProperty('holdings')
-})
-```
-
-## Local Development Tools
-
-### VS Code Extensions
-
-Recommended extensions for the project:
-
-```json
-{
-  "recommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "bradlc.vscode-tailwindcss",
-    "prisma.prisma",
-    "ms-vscode.vscode-typescript-next"
-  ]
-}
-```
-
-### Debugging
-
-1. **Next.js debugging config:**
-   ```json
-   // .vscode/launch.json
-   {
-     "version": "0.2.0",
-     "configurations": [
-       {
-         "name": "Next.js: debug",
-         "type": "node-terminal",
-         "request": "launch",
-         "command": "npm run dev",
-         "serverReadyAction": {
-           "pattern": "started server on .+, url: (https?://.+)",
-           "uriFormat": "%s",
-           "action": "debugWithChrome"
-         }
-       }
-     ]
-   }
-   ```
-
-2. **Using console logs:**
-   ```typescript
-   import { logger } from '@/lib/logger'
-   
-   logger.info('Portfolio calculated', { value, holdings })
-   ```
-
-### Performance Profiling
-
-1. **Bundle analysis:**
-   ```bash
-   npm run analyze
-   ```
-
-2. **React DevTools Profiler**
-   - Install React DevTools extension
-   - Use Profiler tab to identify performance issues
-
-## Common Tasks
-
-### Adding a New API Endpoint
-
-1. **Create route file:**
-   ```bash
-   mkdir -p app/api/new-endpoint
-   touch app/api/new-endpoint/route.ts
-   ```
-
-2. **Implement handler:**
-   ```typescript
-   import { NextResponse } from 'next/server'
-   
-   export async function GET() {
-     // Implementation
-     return NextResponse.json({ data: 'value' })
-   }
-   ```
-
-3. **Add types:**
-   ```typescript
-   // types/api.ts
-   export interface NewEndpointResponse {
-     data: string
-   }
-   ```
-
-### Creating a New Component
-
-1. **Component file:**
-   ```typescript
-   // components/NewComponent.tsx
-   interface NewComponentProps {
-     title: string
-   }
-   
-   export function NewComponent({ title }: NewComponentProps) {
-     return <div>{title}</div>
-   }
-   ```
-
-2. **Add to page:**
-   ```typescript
-   import { NewComponent } from '@/components/NewComponent'
-   
-   export default function Page() {
-     return <NewComponent title="Hello" />
-   }
-   ```
-
-### Updating Dependencies
-
-1. **Check outdated packages:**
-   ```bash
-   npm outdated
-   ```
-
-2. **Update dependencies:**
-   ```bash
-   # Update all
-   npm update
-   
-   # Update specific
-   npm install package@latest
-   ```
-
-3. **Test after updates:**
-   ```bash
-   npm run build
-   npm run test
-   ```
-
-## Troubleshooting
+### Setting Up Your Environment
+
+1. Clone the repository and install dependencies
+2. Create `.env.local` with required environment variables
+3. Ensure you have access to properly formatted trade data
+4. Run the development server to verify setup
+
+### Understanding the Codebase
+
+Start by exploring these key files:
+- `app/page.tsx` - Main application entry point
+- `lib/portfolio.ts` - Core data processing logic
+- `types/portfolio.ts` - TypeScript interfaces
+- `lib/constants.ts` - Configuration values
+
+### Making Changes
+
+The application follows these patterns:
+
+**Adding New Features**
+1. Identify where the feature fits in the architecture
+2. Create new files following existing naming conventions
+3. Implement server-side logic in API routes or lib functions
+4. Add client-side components for UI
+5. Update types as needed
+
+**Modifying Existing Features**
+1. Trace the data flow from source to display
+2. Identify all files that need updates
+3. Maintain backward compatibility where possible
+4. Update related documentation
+
+### Common Development Tasks
+
+**Adding a New Metric**
+1. Add calculation logic to `lib/financial-calculations.ts`
+2. Update portfolio processing in `lib/portfolio.ts`
+3. Add the metric to API responses
+4. Display in the UI components
+
+**Creating a New Chart**
+1. Create component in `components/`
+2. Use existing chart components as reference
+3. Connect to data from API routes
+4. Add to relevant pages
+
+**Adding a New Report Type**
+1. Create new folder in `app/reports/`
+2. Implement page component
+3. Add data processing if needed
+4. Update navigation
+
+## Architecture Decisions
+
+### Why CSV Storage?
+
+The application uses CSV files in Blob storage instead of a database because:
+- Simple to update manually
+- No database maintenance required
+- Easy to backup and version
+- Sufficient for single-user application
+
+### Caching Strategy
+
+The application implements multiple caching layers:
+- Build-time: Portfolio compositions pre-calculated
+- Runtime: API responses cached in memory
+- Client-side: Browser caching for static assets
+
+### Server-Side Processing
+
+All sensitive calculations happen server-side:
+- Protects trade data from client exposure
+- Enables secure API key usage
+- Improves performance with caching
+- Allows for future multi-user support
+
+## Testing Your Changes
+
+### Manual Testing
+
+1. Verify data displays correctly
+2. Check responsive design on mobile
+3. Test error states with invalid data
+4. Ensure performance remains acceptable
+
+### Key Test Scenarios
+
+- Empty portfolio state
+- Single currency portfolios
+- Multi-currency with conversions
+- Historical data edge cases
+- API failure handling
+
+## Performance Considerations
+
+### Optimization Points
+
+- Minimize API calls with intelligent caching
+- Pre-calculate data at build time where possible
+- Use React.memo for expensive components
+- Implement proper loading states
+
+### Monitoring Performance
+
+- Check build times remain reasonable
+- Monitor API response times
+- Verify client-side bundle sizes
+- Test on slower connections
+
+## Debugging Tips
 
 ### Common Issues
 
-#### TypeScript Errors
+**Data Not Updating**
+- Check cache expiration in constants
+- Verify Blob storage connection
+- Ensure CSV format is correct
 
-**Problem**: Type errors in IDE but not in build
-**Solution**: Restart TypeScript server in VS Code (Cmd+Shift+P → "Restart TS Server")
+**Calculation Errors**
+- Trace through portfolio.ts processing
+- Verify exchange rate conversions
+- Check date parsing logic
 
-#### Module Not Found
+**UI Issues**
+- Inspect component props
+- Check responsive breakpoints
+- Verify data structure matches expectations
 
-**Problem**: Cannot find module errors
-**Solution**: 
-```bash
-rm -rf node_modules .next
-npm install
-npm run dev
-```
+### Useful Debugging Tools
 
-#### Environment Variables
+- Browser DevTools for client-side debugging
+- Vercel Functions logs for API issues
+- TypeScript compiler for type errors
+- Network tab for API call inspection
 
-**Problem**: Environment variables not loading
-**Solution**: 
-- Ensure `.env.local` exists
-- Restart dev server after changes
-- Check variable names match exactly
+## Contributing Guidelines
 
-### Debug Mode
+### Code Standards
 
-Enable verbose logging:
+- Maintain TypeScript strict mode
+- Follow existing file organization
+- Use meaningful variable names
+- Add comments for complex logic
 
-```typescript
-// lib/debug.ts
-export const DEBUG = process.env.NODE_ENV === 'development'
+### Before Submitting Changes
 
-export function debugLog(...args: any[]) {
-  if (DEBUG) {
-    console.log('[DEBUG]', ...args)
-  }
-}
-```
+1. Test all affected features
+2. Update relevant documentation
+3. Ensure no TypeScript errors
+4. Check responsive design
+5. Verify performance impact
 
-## Performance Optimization
+### Pull Request Process
 
-### Code Splitting
+1. Create feature branch from main
+2. Make focused, logical commits
+3. Write clear PR description
+4. Link related issues
+5. Respond to review feedback
 
-```typescript
-import dynamic from 'next/dynamic'
+## Next Steps
 
-const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
-  loading: () => <Skeleton />,
-  ssr: false // Disable SSR if not needed
-})
-```
+After familiarizing yourself with the codebase:
 
-### Image Optimization
+1. Pick a small feature or bug to start
+2. Study similar existing implementations
+3. Ask questions if architecture is unclear
+4. Contribute improvements to documentation
+5. Share ideas for new features
 
-```typescript
-import Image from 'next/image'
-
-<Image
-  src="/logo.png"
-  alt="Logo"
-  width={200}
-  height={50}
-  priority // For above-the-fold images
-/>
-```
-
-### Data Fetching
-
-```typescript
-// Parallel data fetching
-const [portfolio, prices] = await Promise.all([
-  fetchPortfolio(),
-  fetchPrices()
-])
-```
-
-## Contributing
-
-### Before Submitting PR
-
-- [ ] Run `npm run lint` and fix issues
-- [ ] Run `npm run build` successfully
-- [ ] Add/update tests if needed
-- [ ] Update documentation if needed
-- [ ] Test on mobile viewport
-- [ ] Check bundle size impact
-
-### Code Quality Checklist
-
-- [ ] No `any` types without justification
-- [ ] Proper error handling
-- [ ] Loading states implemented
-- [ ] Responsive design tested
-- [ ] Accessibility considered
-- [ ] Performance optimized
-
-## Resources
-
-### Documentation
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [React Documentation](https://react.dev)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
-- [Tailwind CSS](https://tailwindcss.com/docs)
-
-### Learning Resources
-
-- [Next.js Learn Course](https://nextjs.org/learn)
-- [React Patterns](https://reactpatterns.com)
-- [TypeScript Deep Dive](https://basarat.gitbook.io/typescript)
-
-### Tools
-
-- [Bundle Analyzer](https://www.npmjs.com/package/@next/bundle-analyzer)
-- [React DevTools](https://react.dev/learn/react-developer-tools)
-- [Lighthouse](https://developers.google.com/web/tools/lighthouse)
-
-## Support
-
-For development questions:
-
-1. Check existing documentation
-2. Search closed issues on GitHub
-3. Ask in development chat
-4. Create a new issue with details
+The application is designed to be extended. Key areas for enhancement include:
+- Advanced analytics and insights
+- Additional chart types
+- Export functionality
+- Performance optimizations
+- Mobile app development
 
 Happy coding!
