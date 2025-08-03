@@ -437,7 +437,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
             <CardTitle className="text-gray-900 text-lg sm:text-xl">
               Portfolio Allocation
               <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2 block sm:inline">
-                {displayDate ? `as of ${formatDate(displayDate)}` : 'Today'}
+                as of {displayDate ? formatDate(displayDate) : new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             </CardTitle>
             <div className="flex items-center gap-1 sm:gap-2">
