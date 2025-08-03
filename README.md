@@ -1,78 +1,125 @@
-# Personal Portfolio Website
+# Personal Portfolio Tracker
 
-This is a simple Next.js-based personal website to track your portfolio, company analyses, progress reports, and more.
+A portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS that provides real-time investment monitoring, performance analytics, and comprehensive reporting capabilities.
 
-## Features
+## Application Overview
 
-- **Main Page:** Shows your portfolio value (with a placeholder for a graph).
-- **Analyses:** Store and view markdown files for different company analyses.
-- **Reports:** Store and view markdown files for quarterly and yearly progress reports.
-- **About:** Simple about page.
+This application serves as a personal investment portfolio tracker with the following core functionalities:
 
-## Trade Data Storage
+- Real-time portfolio valuation with live market data integration
+- Multi-currency support with automatic conversion to NZD
+- Performance tracking against S&P 500 benchmark
+- Company-specific analysis pages with markdown support
+- Quarterly and yearly progress reporting
+- Responsive design optimized for both desktop and mobile
 
-The portfolio trade data is stored in Vercel Blob storage and accessed securely using the Vercel Blob SDK:
-- Uses authenticated access with `BLOB_READ_WRITE_TOKEN`
-- The blob URL is configured via `TRADE_DATA_BLOB_URL` environment variable
-- All data fetching happens server-side using the SDK
+## Architecture
 
-### Required Environment Variables
+The application follows Next.js 15's App Router architecture with server-side rendering for optimal performance. Key architectural decisions include:
 
-The application requires two environment variables:
+- **Data Storage**: Trade data is stored in CSV format on Vercel Blob storage, allowing easy updates without database complexity
+- **API Integration**: Yahoo Finance API provides real-time stock prices and exchange rates
+- **Caching Strategy**: Build-time caching for portfolio compositions and runtime caching for market data
+- **Component Architecture**: Modular React components using shadcn/ui for consistent UI patterns
 
-1. **`BLOB_READ_WRITE_TOKEN`** - Automatically set by Vercel when you connect a Blob store
-2. **`TRADE_DATA_BLOB_URL`** - The full URL to your trade data CSV file
+## Project Structure
 
-### Vercel Setup
+The codebase is organized into logical modules:
 
-In your Vercel deployment, both environment variables should be available:
-- `BLOB_READ_WRITE_TOKEN` is automatically created when you connect the Blob store
-- `TRADE_DATA_BLOB_URL` should be set to your blob file URL
+- `app/` - Next.js pages and API routes using the App Router pattern
+- `components/` - Reusable React components including charts and UI elements
+- `lib/` - Core business logic, utilities, and data processing functions
+- `hooks/` - Custom React hooks for common functionality
+- `types/` - TypeScript type definitions ensuring type safety throughout
+- `scripts/` - Build-time scripts for data preprocessing
 
-### Local Development Setup
+## Key Features and Implementation
 
-For local development, create a `.env.local` file:
-```env
-# Get from Vercel Dashboard → Storage → Your Blob Store → Tokens
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxxx
+### Portfolio Management
+The main dashboard (`app/page.tsx`) displays current holdings, performance metrics, and portfolio composition. Data flows from CSV storage through server-side processing to client-side visualization.
 
-# Your trade data blob URL
-TRADE_DATA_BLOB_URL=https://your-store-id.public.blob.vercel-storage.com/path/to/your/trade-data.csv
-```
+### Data Processing
+Trade data is parsed from CSV format (`lib/portfolio.ts`) with support for multiple currencies and transaction types. The system calculates current positions by aggregating all buy/sell transactions.
 
-### Security Features
+### Real-time Updates
+API routes in `app/api/` handle fetching current market prices and exchange rates, with intelligent caching to minimize external API calls while maintaining data freshness.
 
-- ✅ **Authenticated access**: Uses Vercel's blob tokens for secure access
-- ✅ **Server-side only**: All blob operations happen in API routes
-- ✅ **No client exposure**: Environment variables are never sent to the client
-- ✅ **SDK handles auth**: Authentication is handled automatically by the SDK
+### Visualization
+Portfolio performance is visualized using Recharts with custom components for line charts and horizontal bar charts showing allocation percentages.
 
-### Updating Trade Data
+## Development Setup
 
-1. Upload a new CSV file to your Vercel Blob storage
-2. Update the `TRADE_DATA_BLOB_URL` environment variable if the URL changes
-3. The changes take effect immediately
+To work on this application, you'll need:
 
-## Adding Content
+1. Node.js 18.17 or later
+2. A Vercel account for blob storage
+3. Access to the trade data CSV format specification
 
-### Add a New Company Analysis
-1. Go to `app/analyses/`.
-2. Add a new markdown file, e.g. `tesla.md`.
-3. The file will be accessible at `/analyses/tesla`.
+Environment variables required:
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage authentication
+- `TRADE_DATA_BLOB_URL` - URL to your trade data CSV file
 
-### Add a New Progress Report
-1. Go to `app/reports/`.
-2. Add a new markdown file, e.g. `q2-2024.md` or `2024-yearly.md`.
-3. The file will be accessible at `/reports/q2-2024` or `/reports/2024-yearly`.
+## Extending the Application
+
+### Adding New Features
+
+The modular architecture makes it straightforward to add new capabilities:
+
+- **New API Endpoints**: Add route handlers in `app/api/`
+- **Additional Charts**: Create components in `components/` following existing patterns
+- **New Report Types**: Add pages in `app/reports/` with corresponding data processing
+- **Enhanced Analytics**: Extend calculations in `lib/financial-calculations.ts`
+
+### Data Model
+
+The application processes trade data with the following structure:
+- Stock transactions (buy/sell) with prices in original currency
+- Automatic currency conversion to NZD
+- Position tracking across multiple exchanges
+- Historical performance calculation
+
+### Customization Points
+
+- Company color mappings in `lib/company-colors.ts`
+- Financial constants in `lib/constants.ts`
+- Chart configurations in component files
+- Theme customization via Tailwind CSS configuration
+
+## Performance Considerations
+
+The application implements several performance optimizations:
+
+- Server-side rendering for initial page loads
+- Pre-calculated portfolio compositions at build time
+- Efficient caching strategies for market data
+- Lazy loading for heavy components
+- Responsive image optimization
 
 ## Deployment
 
-This project is ready to deploy on [Vercel](https://vercel.com/).
+The application is designed for deployment on Vercel with:
 
-## Customization
-- You can edit the navigation and main page in `app/page.tsx`.
-- To add more sections, create new folders and pages in the `app/` directory.
+- Automatic builds triggered by git pushes
+- Edge function support for API routes
+- Blob storage integration for data persistence
+- Built-in analytics and monitoring
+
+## Next Steps
+
+To continue development:
+
+1. Review the existing codebase structure in `ARCHITECTURE.md`
+2. Understand component patterns in `COMPONENTS.md`
+3. Check API documentation in `API.md`
+4. Follow development guidelines in `DEVELOPMENT.md`
+
+The application provides a solid foundation for portfolio tracking with room for enhancement in areas like:
+- Multi-user support
+- Advanced analytics and reporting
+- Mobile app development
+- Real-time WebSocket updates
+- Integration with additional data sources
 
 ---
 
-**Enjoy your personal portfolio website!**
+For detailed technical documentation, refer to the other documentation files in this repository.
