@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
     
     const configId = configMatch[1]
-    const cacheKey = getNewsCacheKey(company, startDate, endDate)
+    const cacheKey = getNewsCacheKey(company)
     
     // Prepare cache value
     const cacheValue = {

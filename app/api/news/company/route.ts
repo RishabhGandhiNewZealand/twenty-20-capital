@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getCachedNewsData, prepareCacheData, isEdgeConfigAvailable } from '@/lib/edge-config'
+import { getCachedNewsData, prepareCacheData, isEdgeConfigAvailable, getNewsCacheKey } from '@/lib/edge-config'
+import { get } from '@vercel/edge-config'
 
 // Analyze news for a single company
 async function analyzeCompanyNews(
@@ -220,14 +221,30 @@ export async function GET(request: Request) {
     
     // Check cache first (unless force refresh is requested)
     if (!forceRefresh && isEdgeConfigAvailable()) {
-      const cachedData = await getCachedNewsData(company, startDateStr, endDateStr)
+      const cachedData = await getCachedNewsData(company)
       if (cachedData) {
         logger.info(`Returning cached data for ${company}`)
-        return NextResponse.json({
-          ...cachedData,
-          cached: true,
-          cache_timestamp: new Date().toISOString()
-        })
+        
+        // Get the cached date range from Edge Config
+        const cacheKey = getNewsCacheKey(company)
+        try {
+          const cachedWithMeta = await get(cacheKey)
+          const dateRange = cachedWithMeta?.dateRange
+          
+          return NextResponse.json({
+            ...cachedData,
+            cached: true,
+            cache_timestamp: new Date().toISOString(),
+            cached_date_range: dateRange
+          })
+        } catch {
+          // If we can't get the metadata, just return the cached data
+          return NextResponse.json({
+            ...cachedData,
+            cached: true,
+            cache_timestamp: new Date().toISOString()
+          })
+        }
       }
     }
     

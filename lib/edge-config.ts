@@ -12,23 +12,23 @@ interface CachedNewsData {
 
 /**
  * Generate a cache key for a company's news data
+ * Only uses company name to ensure one cache entry per company
  */
-export function getNewsCacheKey(companyName: string, startDate: string, endDate: string): string {
+export function getNewsCacheKey(companyName: string): string {
   // Normalize company name to avoid cache misses due to casing/spacing
   const normalizedCompany = companyName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
-  return `news_${normalizedCompany}_${startDate}_${endDate}`
+  return `news_${normalizedCompany}`
 }
 
 /**
  * Get cached news data for a company
+ * Returns cached data regardless of date range (date range is stored in the data)
  */
 export async function getCachedNewsData(
-  companyName: string, 
-  startDate: string, 
-  endDate: string
+  companyName: string
 ): Promise<any | null> {
   try {
-    const cacheKey = getNewsCacheKey(companyName, startDate, endDate)
+    const cacheKey = getNewsCacheKey(companyName)
     const cached = await get<CachedNewsData>(cacheKey)
     
     if (!cached) {
@@ -36,13 +36,7 @@ export async function getCachedNewsData(
       return null
     }
     
-    // Check if the cached data is for the same date range
-    if (cached.dateRange.start !== startDate || cached.dateRange.end !== endDate) {
-      logger.info(`Cache date range mismatch for ${companyName}`)
-      return null
-    }
-    
-    logger.info(`Cache hit for ${companyName} (cached at ${cached.timestamp})`)
+    logger.info(`Cache hit for ${companyName} (cached at ${cached.timestamp}, date range: ${cached.dateRange.start} to ${cached.dateRange.end})`)
     return cached.data
   } catch (error) {
     logger.error(`Error reading from Edge Config for ${companyName}:`, error)
@@ -61,7 +55,7 @@ export function prepareCacheData(
   endDate: string,
   data: any
 ): { key: string; value: CachedNewsData } {
-  const cacheKey = getNewsCacheKey(companyName, startDate, endDate)
+  const cacheKey = getNewsCacheKey(companyName)
   const cacheValue: CachedNewsData = {
     data,
     timestamp: new Date().toISOString(),
@@ -71,7 +65,7 @@ export function prepareCacheData(
     }
   }
   
-  logger.info(`Prepared cache data for ${companyName} with key: ${cacheKey}`)
+  logger.info(`Prepared cache data for ${companyName} with key: ${cacheKey} (date range: ${startDate} to ${endDate})`)
   
   return { key: cacheKey, value: cacheValue }
 }

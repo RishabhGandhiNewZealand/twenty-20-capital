@@ -21,6 +21,10 @@ interface CompanyNews {
   error?: string
   cached?: boolean
   cache_timestamp?: string
+  cached_date_range?: {
+    start: string
+    end: string
+  }
 }
 
 interface CompanyStatus {
@@ -339,14 +343,28 @@ export default function NewsPage() {
                       <>
                         {`${companyStatus.data.summary_points?.length || 0} key developments • ${companyStatus.data.references?.length || 0} sources`}
                         {companyStatus.data.cached && (
-                          <span className="text-purple-600 ml-2">• From cache</span>
+                          <span className="text-purple-600 ml-2">
+                            • From cache
+                            {companyStatus.data.cached_date_range && (
+                              <span className="text-xs">
+                                {' '}({companyStatus.data.cached_date_range.start} to {companyStatus.data.cached_date_range.end})
+                              </span>
+                            )}
+                          </span>
                         )}
                       </>
                     ) : (
                       <>
                         No significant developments in the analysis period
                         {companyStatus.data.cached && (
-                          <span className="text-purple-600 ml-2">• From cache</span>
+                          <span className="text-purple-600 ml-2">
+                            • From cache
+                            {companyStatus.data.cached_date_range && (
+                              <span className="text-xs">
+                                {' '}({companyStatus.data.cached_date_range.start} to {companyStatus.data.cached_date_range.end})
+                              </span>
+                            )}
+                          </span>
                         )}
                       </>
                     )}
