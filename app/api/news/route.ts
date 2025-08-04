@@ -268,8 +268,8 @@ Return this JSON structure:
   }
 }
 
-// Extend the timeout for this route
-export const maxDuration = 600 // 10 minutes timeout
+// Extend the timeout for this route (max 300s on Hobby plan)
+export const maxDuration = 300 // 5 minutes timeout
 
 export async function GET() {
   try {
