@@ -160,50 +160,74 @@ export async function GET() {
     // Get current date
     const currentDate = new Date().toISOString().split('T')[0]
     
-    // Calculate date range for the prompt
+    // Calculate date range for the prompt - 30 days
     const endDate = new Date()
     const startDate = new Date()
-    startDate.setDate(endDate.getDate() - 14)
+    startDate.setDate(endDate.getDate() - 30)
     const startDateStr = startDate.toISOString().split('T')[0]
     const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Yesterday
 
     // System instruction - defines the AI's role and behavior
     const systemInstruction = `You are a specialized Business Intelligence analyst with access to real-time web search.
-Your role is to find and analyze recent business news for companies.
-You must:
-1. Use Google Search to find real, current news articles
-2. Only report factual information from reputable sources
-3. Provide accurate URLs that link to actual articles
-4. Focus on significant business events only
-5. Return responses in valid JSON format only`
+Your role is to provide comprehensive news analysis for companies by:
+1. Finding direct company news AND industry/market events that could impact them
+2. Synthesizing multiple sources into coherent summaries
+3. Providing accurate source URLs for all information
+4. Analyzing both company-specific and broader market implications
+5. Returning responses in valid JSON format only`
 
     // User prompt - the specific task
-    const prompt = `Search for business news for these companies from the last 14 days (${startDateStr} to ${endDateStr}):
+    const prompt = `Analyze business news for these companies from the last 30 days (${startDateStr} to ${endDateStr}):
 ${portfolioCompanies.join(', ')}
 
-For each company, find news about:
-- Financial results (earnings, revenue, guidance)
-- Mergers, acquisitions, partnerships
-- Product launches or major updates
-- Leadership changes (CEO, CFO, etc.)
-- Regulatory or legal developments
-- Strategic business decisions
+For EACH company:
+1. Search for direct company news about:
+   - Financial results, earnings, revenue, guidance
+   - Mergers, acquisitions, partnerships, investments
+   - Product launches, innovations, strategic initiatives
+   - Leadership changes, organizational restructuring
+   - Regulatory issues, legal developments, compliance matters
+   - Market share changes, competitive positioning
 
-Use reputable sources like Reuters, Bloomberg, WSJ, Financial Times, CNBC, Forbes, official company websites.
+2. ALSO search for indirect/industry news that could impact the company:
+   - Industry trends and disruptions
+   - Competitor activities and market dynamics
+   - Regulatory changes affecting their sector
+   - Economic factors impacting their markets
+   - Technology shifts in their industry
+   - Supply chain or geopolitical events affecting their business
 
-Return ONLY this JSON structure:
+3. Synthesize all findings into comprehensive bullet points that:
+   - Combine related information from multiple sources
+   - Highlight the most significant developments
+   - Explain potential impacts on the company
+   - Provide context for understanding implications
+
+Use reputable sources: Reuters, Bloomberg, WSJ, Financial Times, CNBC, Forbes, official company websites, industry publications.
+
+Return this JSON structure:
 {
   "report_generated_date": "${currentDate}",
+  "analysis_period": {
+    "start_date": "${startDateStr}",
+    "end_date": "${endDateStr}"
+  },
   "company_news": [
     {
       "company_name": "Company Name",
       "status": "news_found" or "no_significant_news_found",
-      "news_items": [
+      "summary_points": [
+        "• Comprehensive bullet point summarizing a key development or trend",
+        "• Another significant finding with context and implications",
+        "• Industry development that could impact the company"
+      ],
+      "references": [
         {
-          "summary": "1-2 sentence factual summary",
+          "title": "Article headline or description",
           "source_name": "Publication name",
           "url": "Direct URL to article",
-          "publication_date": "YYYY-MM-DD"
+          "publication_date": "YYYY-MM-DD",
+          "relevance": "direct" or "indirect"
         }
       ]
     }
@@ -218,6 +242,7 @@ Return ONLY this JSON structure:
       logger.info('Calling Gemini API with Google Search grounding...')
       logger.info('Using model:', model.model || 'unknown')
       logger.info('Prompt length:', prompt.length)
+      logger.info('Analysis period: 30 days')
       
       // Generate content with system instruction
       result = await model.generateContent({
@@ -289,17 +314,16 @@ Return ONLY this JSON structure:
       // Log detailed debugging information
       logger.info('News data summary:')
       newsData.company_news.forEach((company: any) => {
-        logger.info(`- ${company.company_name}: ${company.status} (${company.news_items.length} items)`)
-        if (company.news_items.length > 0) {
-          logger.info(`  First item: ${company.news_items[0].source_name} - ${company.news_items[0].publication_date}`)
-        }
+        const summaryCount = company.summary_points?.length || 0
+        const referenceCount = company.references?.length || 0
+        logger.info(`- ${company.company_name}: ${company.status} (${summaryCount} summaries, ${referenceCount} references)`)
       })
       
-      // Count total news items
-      const totalNewsItems = newsData.company_news.reduce((sum: number, company: any) => 
-        sum + company.news_items.length, 0
+      // Count total references
+      const totalReferences = newsData.company_news.reduce((sum: number, company: any) => 
+        sum + (company.references?.length || 0), 0
       )
-      logger.info(`Total news items found: ${totalNewsItems}`)
+      logger.info(`Total references found: ${totalReferences}`)
 
       // Cache the response for 1 hour
       return NextResponse.json(newsData, {

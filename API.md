@@ -101,9 +101,13 @@ Fetches AI-powered news analysis for portfolio companies using Google's Gemini A
 
 - Analyzes news for both current and historical portfolio companies
 - Uses Google Search grounding for real-time, accurate results
-- Searches for news from the past 14 days
+- Searches for news from the past 30 days (extended analysis period)
+- Includes both direct company news and indirect industry/market impacts
+- Synthesizes multiple sources into comprehensive bullet-point summaries
+- Provides separate references section with all sources used
+- Distinguishes between direct and indirect news relevance
 - Prioritizes reputable financial news sources
-- Returns structured JSON with summaries and source links
+- Returns structured JSON with analysis summaries and source links
 - Caches responses for 1 hour to minimize API calls
 - Separates system instructions from user prompts for better AI guidance
 
@@ -111,10 +115,14 @@ Fetches AI-powered news analysis for portfolio companies using Google's Gemini A
 - `GEMINI_API_KEY`: Your Google Gemini API key (get from https://makersuite.google.com/app/apikey)
 
 **Response includes:**
-- Report generation date
-- Company-specific news items with summaries
-- Source names and direct article links
-- Publication dates for each news item
+- Report generation date and analysis period (30 days)
+- Company-specific analysis with:
+  - Synthesized bullet-point summaries combining multiple sources
+  - Comprehensive coverage including indirect market impacts
+- References section with:
+  - Article titles and direct URLs
+  - Source names and publication dates
+  - Relevance indicators (direct vs indirect impact)
 
 ## Data Flow
 

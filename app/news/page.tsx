@@ -2,24 +2,30 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, RefreshCw } from "lucide-react"
+import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, RefreshCw, TrendingUp, Link2 } from "lucide-react"
 import { format } from "date-fns"
 
-interface NewsItem {
-  summary: string
+interface Reference {
+  title: string
   source_name: string
   url: string
   publication_date: string
+  relevance: "direct" | "indirect"
 }
 
 interface CompanyNews {
   company_name: string
   status: "news_found" | "no_significant_news_found"
-  news_items: NewsItem[]
+  summary_points: string[]
+  references: Reference[]
 }
 
 interface NewsResponse {
   report_generated_date: string
+  analysis_period: {
+    start_date: string
+    end_date: string
+  }
   company_news: CompanyNews[]
 }
 
@@ -68,8 +74,8 @@ export default function NewsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-lg text-gray-600">Retrieving latest news...</p>
-          <p className="text-sm text-gray-500">Analyzing portfolio companies with AI</p>
+          <p className="text-lg text-gray-600">Analyzing market news and trends...</p>
+          <p className="text-sm text-gray-500">Gathering comprehensive insights for your portfolio</p>
         </div>
       </div>
     )
@@ -110,17 +116,18 @@ export default function NewsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio News</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio News Analysis</h1>
         <p className="text-gray-600">
-          AI-powered news analysis for portfolio companies
+          Comprehensive market intelligence for your portfolio companies
         </p>
         <p className="text-sm text-gray-500 mt-1">
-          Only verified news from top-tier financial sources (Reuters, Bloomberg, WSJ, etc.)
+          Including industry trends and market events that may impact your investments
         </p>
         {newsData && (
-          <p className="text-sm text-gray-500 mt-2">
-            Report generated: {format(new Date(newsData.report_generated_date), "MMMM d, yyyy")}
-          </p>
+          <div className="mt-3 text-sm text-gray-500">
+            <p>Report generated: {format(new Date(newsData.report_generated_date), "MMMM d, yyyy")}</p>
+            <p>Analysis period: {format(new Date(newsData.analysis_period.start_date), "MMM d")} - {format(new Date(newsData.analysis_period.end_date), "MMM d, yyyy")}</p>
+          </div>
         )}
       </div>
 
@@ -133,15 +140,14 @@ export default function NewsPage() {
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
             >
               <RefreshCw className="h-4 w-4" />
-              Refresh News
+              Refresh Analysis
             </button>
           </CardContent>
         </Card>
       ) : (
         <>
           <div className="mb-4 text-sm text-gray-600">
-            Showing news for {newsData.company_news.length} companies 
-            ({companiesWithNews.length} with recent news)
+            Analyzing {newsData.company_news.length} companies • {companiesWithNews.length} with significant developments
           </div>
           
           <div className="space-y-6">
@@ -154,39 +160,76 @@ export default function NewsPage() {
                   </CardTitle>
                   <CardDescription>
                     {company.status === "news_found"
-                      ? `${company.news_items.length} verified news ${company.news_items.length === 1 ? "item" : "items"} found`
-                      : "No significant news found in the past 14 days"}
+                      ? `${company.summary_points?.length || 0} key developments • ${company.references?.length || 0} sources`
+                      : "No significant developments in the analysis period"}
                   </CardDescription>
                 </CardHeader>
                 
-                {company.status === "news_found" && company.news_items.length > 0 && (
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      {company.news_items.map((news, index) => (
-                        <div
-                          key={index}
-                          className="border-l-4 border-blue-200 pl-4 py-2 hover:border-blue-400 transition-colors"
-                        >
-                          <p className="text-gray-800 mb-2">{news.summary}</p>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {format(new Date(news.publication_date), "MMM d, yyyy")}
-                            </span>
-                            <span className="font-medium">{news.source_name}</span>
-                            <a
-                              href={news.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
-                            >
-                              Read more
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
+                {company.status === "news_found" && (
+                  <CardContent className="pt-6 space-y-6">
+                    {/* Summary Points Section */}
+                    {company.summary_points && company.summary_points.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          Key Developments & Analysis
+                        </h3>
+                        <div className="space-y-2">
+                          {company.summary_points.map((point, index) => (
+                            <p key={index} className="text-gray-800 leading-relaxed">
+                              {point}
+                            </p>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
+                    
+                    {/* References Section */}
+                    {company.references && company.references.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <Link2 className="h-4 w-4" />
+                          Sources & References
+                        </h3>
+                        <div className="space-y-2">
+                          {company.references.map((ref, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start gap-2 text-sm"
+                            >
+                              <span className="text-gray-400 mt-0.5">
+                                {ref.relevance === "indirect" ? "○" : "●"}
+                              </span>
+                              <div className="flex-1">
+                                <a
+                                  href={ref.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
+                                >
+                                  {ref.title}
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                                <div className="flex items-center gap-3 text-gray-500 text-xs mt-0.5">
+                                  <span>{ref.source_name}</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {format(new Date(ref.publication_date), "MMM d, yyyy")}
+                                  </span>
+                                  {ref.relevance === "indirect" && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-amber-600">Industry/Market Impact</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 )}
               </Card>
@@ -199,7 +242,7 @@ export default function NewsPage() {
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <RefreshCw className="h-4 w-4" />
-              Refresh News
+              Refresh Analysis
             </button>
           </div>
         </>
