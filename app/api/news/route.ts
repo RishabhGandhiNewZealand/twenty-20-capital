@@ -1,22 +1,76 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generatePortfolioData } from '@/lib/portfolioServerData'
+import { parseCSVData } from '@/lib/portfolio'
+import { downloadTradeDataFromBlob } from '@/lib/blob-utils'
 
-// Portfolio companies list - both current and past
-const PORTFOLIO_COMPANIES = [
-  "Microsoft",
-  "Tesla", 
-  "Fonterra Co-operative Group",
-  "Fletcher Building",
-  "Meta Platforms",
-  "Salesforce",
-  "Alphabet",
-  "Amazon",
-  "UnitedHealth Group",
-  "Mainfreight",
-  "Berkshire Hathaway",
-  "Apple"
-]
+// Fetch unique company names from portfolio data
+async function getPortfolioCompanies(): Promise<string[]> {
+  try {
+    const companies = new Set<string>()
+    
+    // Get portfolio data directly
+    const { holdings, exitedPositions } = await generatePortfolioData()
+    
+    // Add current holdings
+    holdings.forEach(holding => {
+      if (holding.name) {
+        companies.add(holding.name)
+      }
+    })
+    
+    // Add exited positions
+    exitedPositions.forEach(position => {
+      if (position.name) {
+        companies.add(position.name)
+      }
+    })
+    
+    // Also get raw trade data to ensure we capture all historical companies
+    try {
+      const csvContent = await downloadTradeDataFromBlob()
+      const trades = parseCSVData(csvContent)
+      trades.forEach(trade => {
+        if (trade.name) {
+          companies.add(trade.name)
+        }
+      })
+    } catch (error) {
+      logger.warn('Could not fetch raw trade data for complete company list:', error)
+    }
+    
+    const companyList = Array.from(companies)
+    logger.info('Found portfolio companies:', companyList)
+    
+    return companyList.length > 0 ? companyList : [
+      // Fallback list if no companies found
+      "Microsoft",
+      "Tesla", 
+      "Fonterra Co-operative Group",
+      "Fletcher Building",
+      "Meta Platforms",
+      "Salesforce",
+      "Alphabet",
+      "Amazon",
+      "Mainfreight"
+    ]
+  } catch (error) {
+    logger.error('Error fetching portfolio companies:', error)
+    // Return a fallback list if data fetch fails
+    return [
+      "Microsoft",
+      "Tesla", 
+      "Fonterra Co-operative Group",
+      "Fletcher Building",
+      "Meta Platforms",
+      "Salesforce",
+      "Alphabet",
+      "Amazon",
+      "Mainfreight"
+    ]
+  }
+}
 
 export async function GET() {
   try {
@@ -30,9 +84,13 @@ export async function GET() {
       )
     }
 
-    // Initialize Gemini
+    // Get portfolio companies dynamically
+    const portfolioCompanies = await getPortfolioCompanies()
+    logger.info(`Fetching news for ${portfolioCompanies.length} companies`)
+
+    // Initialize Gemini with 2.0 Flash model
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
 
     // Get current date
     const currentDate = new Date().toISOString().split('T')[0]
@@ -46,7 +104,7 @@ INPUT DATA:
 
 Current Date: ${currentDate}
 
-Company List: ${JSON.stringify(PORTFOLIO_COMPANIES)}
+Company List: ${JSON.stringify(portfolioCompanies)}
 
 INSTRUCTIONS:
 
@@ -101,19 +159,42 @@ An array containing 2-3 of the most important news item objects for the company.
 If status is "no_significant_news_found", this MUST be an empty array [].`
 
     // Call Gemini API
+    logger.info('Calling Gemini API with model: gemini-2.0-flash-exp')
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
+    
+    logger.info('Gemini API response received, length:', text.length)
 
     // Parse the JSON response
     try {
       // Clean the response - remove any markdown formatting if present
-      const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      let cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      
+      // Additional cleaning - sometimes the model adds extra text before or after JSON
+      const jsonStart = cleanedText.indexOf('{')
+      const jsonEnd = cleanedText.lastIndexOf('}')
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1)
+      }
+      
       const newsData = JSON.parse(cleanedText)
 
       // Validate the response structure
       if (!newsData.report_generated_date || !Array.isArray(newsData.company_news)) {
         throw new Error('Invalid response structure from Gemini')
+      }
+
+      logger.info(`Successfully parsed news data for ${newsData.company_news.length} companies`)
+      
+      // Log a sample of the data for debugging
+      if (newsData.company_news.length > 0) {
+        const sampleCompany = newsData.company_news[0]
+        logger.info('Sample company news:', {
+          company: sampleCompany.company_name,
+          status: sampleCompany.status,
+          newsCount: sampleCompany.news_items.length
+        })
       }
 
       // Cache the response for 1 hour
@@ -124,7 +205,8 @@ If status is "no_significant_news_found", this MUST be an empty array [].`
       })
     } catch (parseError) {
       logger.error('Error parsing Gemini response:', parseError)
-      logger.error('Raw response:', text)
+      logger.error('Raw response preview:', text.substring(0, 500))
+      logger.error('Raw response end:', text.substring(Math.max(0, text.length - 500)))
       return NextResponse.json(
         { error: 'Failed to parse news data from AI service' },
         { status: 500 }

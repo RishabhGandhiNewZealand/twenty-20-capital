@@ -97,7 +97,7 @@ Both query parameters are optional and default to USD→NZD conversion.
 
 #### GET `/api/news`
 
-Fetches AI-powered news analysis for portfolio companies using Google's Gemini API. This endpoint:
+Fetches AI-powered news analysis for portfolio companies using Google's Gemini 2.0 Flash API. This endpoint:
 
 - Analyzes news for both current and historical portfolio companies
 - Searches for news from the past 14 days
