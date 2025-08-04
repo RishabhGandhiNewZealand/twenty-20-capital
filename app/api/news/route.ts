@@ -269,7 +269,7 @@ Return this JSON structure:
 }
 
 // Extend the timeout for this route
-export const maxDuration = 60 // 60 seconds timeout
+export const maxDuration = 600 // 10 minutes timeout
 
 export async function GET() {
   try {
