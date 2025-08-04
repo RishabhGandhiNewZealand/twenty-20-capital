@@ -13,7 +13,9 @@ export const metadata: Metadata = {
   generator: 'v0.dev',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo-favicon.png',
+    shortcut: '/logo-favicon.png',
+    apple: '/logo-favicon.png',
   },
 }
 
