@@ -18,6 +18,7 @@ interface CompanyNews {
   status: "news_found" | "no_significant_news_found"
   summary_points: string[]
   references: Reference[]
+  error?: string
 }
 
 interface NewsResponse {
@@ -148,6 +149,11 @@ export default function NewsPage() {
         <>
           <div className="mb-4 text-sm text-gray-600">
             Analyzing {newsData.company_news.length} companies • {companiesWithNews.length} with significant developments
+            {newsData.company_news.some(c => c.error) && (
+              <span className="text-amber-600 ml-2">
+                • Some companies had analysis errors
+              </span>
+            )}
           </div>
           
           <div className="space-y-6">
@@ -159,9 +165,13 @@ export default function NewsPage() {
                     {company.company_name}
                   </CardTitle>
                   <CardDescription>
-                    {company.status === "news_found"
-                      ? `${company.summary_points?.length || 0} key developments • ${company.references?.length || 0} sources`
-                      : "No significant developments in the analysis period"}
+                    {company.error ? (
+                      <span className="text-amber-600">Analysis error - please try refreshing</span>
+                    ) : company.status === "news_found" ? (
+                      `${company.summary_points?.length || 0} key developments • ${company.references?.length || 0} sources`
+                    ) : (
+                      "No significant developments in the analysis period"
+                    )}
                   </CardDescription>
                 </CardHeader>
                 
