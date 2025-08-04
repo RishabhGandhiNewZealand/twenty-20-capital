@@ -52,6 +52,16 @@ export async function POST(request: Request) {
     
     // Get Vercel API token
     const vercelToken = process.env.VERCEL_API_TOKEN
+    
+    // Debug logging
+    logger.info('Environment check:', {
+      hasEdgeConfig: !!edgeConfigId,
+      hasVercelToken: !!vercelToken,
+      tokenLength: vercelToken ? vercelToken.length : 0,
+      tokenPrefix: vercelToken ? vercelToken.substring(0, 10) + '...' : 'none',
+      nodeEnv: process.env.NODE_ENV
+    })
+    
     if (!vercelToken) {
       logger.info('VERCEL_API_TOKEN not set, cache update skipped')
       logger.info(`Would have cached: ${cacheKey}`, {
@@ -67,16 +77,31 @@ export async function POST(request: Request) {
       })
     }
     
+    // Get team ID if available (needed for team projects)
+    const teamId = process.env.VERCEL_TEAM_ID || process.env.TEAM_ID_VERCEL
+    
     // Update Edge Config via Vercel API
     const vercelApiUrl = `https://api.vercel.com/v1/edge-config/${configId}/items`
     
     try {
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${vercelToken}`,
+        'Content-Type': 'application/json',
+      }
+      
+      // Add team ID if available
+      if (teamId) {
+        headers['x-vercel-team-id'] = teamId
+      }
+      
+      logger.info(`Attempting to update Edge Config: ${configId}`, {
+        cacheKey,
+        hasTeamId: !!teamId
+      })
+      
       const response = await fetch(vercelApiUrl, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${vercelToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           items: [
             {
@@ -88,13 +113,19 @@ export async function POST(request: Request) {
         })
       })
       
+      const responseText = await response.text()
+      
       if (!response.ok) {
-        const error = await response.text()
-        logger.error('Failed to update Edge Config:', error)
+        logger.error('Failed to update Edge Config:', {
+          status: response.status,
+          statusText: response.statusText,
+          response: responseText
+        })
         return NextResponse.json({ 
           success: false, 
           message: 'Failed to update cache',
-          error 
+          error: responseText,
+          status: response.status
         })
       }
       

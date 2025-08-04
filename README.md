@@ -78,7 +78,20 @@ EDGE_CONFIG=your_edge_config_connection_string
 # Required only if you want automatic cache updates
 # Get it from: https://vercel.com/account/tokens
 VERCEL_API_TOKEN=your_vercel_api_token
+
+# Vercel Team ID (required if using VERCEL_API_TOKEN with a team project)
+# Find it in your team settings: https://vercel.com/teams/[team-slug]/settings
+VERCEL_TEAM_ID=team_xxxxxxxxxxxxx
 ```
+
+### Troubleshooting Cache Updates
+
+If you see "Vercel API token not configured" but have set `VERCEL_API_TOKEN`:
+
+1. **Check the test endpoint**: Visit `/api/news/test-env` to verify environment variables are accessible
+2. **For team projects**: Make sure to also set `VERCEL_TEAM_ID` 
+3. **Token permissions**: Ensure your token has "Edge Config" permissions
+4. **Deployment**: Environment variables need to be set in Vercel project settings for production
 
 ## Extending the Application
 
