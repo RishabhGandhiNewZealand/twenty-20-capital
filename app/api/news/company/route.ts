@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { newsCache } from '@/lib/news-cache'
 
 // Analyze news for a single company
 async function analyzeCompanyNews(
@@ -208,6 +209,24 @@ export async function GET(request: Request) {
       )
     }
     
+    // Calculate date range
+    const currentDate = new Date().toISOString().split('T')[0]
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(endDate.getDate() - 30)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    // Initialize cache
+    await newsCache.initialize()
+    
+    // Check cache first
+    const cachedResult = await newsCache.get(company, startDateStr, endDateStr)
+    if (cachedResult) {
+      logger.info(`Returning cached result for ${company}`)
+      return NextResponse.json(cachedResult)
+    }
+    
     // Check if Gemini API key is configured
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
@@ -245,16 +264,11 @@ export async function GET(request: Request) {
       })
     }
 
-    // Calculate date range
-    const currentDate = new Date().toISOString().split('T')[0]
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(endDate.getDate() - 30)
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
     // Analyze the company
     const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
+    
+    // Cache the result
+    await newsCache.set(company, startDateStr, endDateStr, result)
     
     return NextResponse.json(result)
 
