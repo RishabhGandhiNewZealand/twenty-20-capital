@@ -152,58 +152,69 @@ export async function GET() {
     const startDateStr = startDate.toISOString().split('T')[0]
     const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Yesterday
 
-    // Construct the prompt with the new stricter version
-    const prompt = `Role: A specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
-Your response MUST be a single, valid JSON object. Do not include any explanatory text, Markdown formatting, or any content outside of the final JSON structure. ABSOLUTELY NO HALLUCINATED INFORMATION OR URLs ARE PERMITTED. EVERY PIECE OF DATA MUST BE DIRECTLY VERIFIABLE AND ACCURATE.
+    // Construct the prompt - balanced between strict verification and practical results
+    const prompt = `Role: You are a specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
+
+Your response MUST be a single, valid JSON object. Do not include any explanatory text, Markdown formatting, or any content outside of the final JSON structure.
+
 INPUT DATA:
 Current Date: ${currentDate}
 Company List: ${portfolioCompanies.join(',')}
+
 INSTRUCTIONS:
 
-For each company in the Company List, perform a targeted internet search for significant news.
-Recency: STRICTLY AND UNCONDITIONALLY limit your search to news published EXACTLY within the 14-day period preceding the Current Date provided (i.e., from ${startDateStr} to ${endDateStr} inclusive). News published outside this precise window, even by one day, MUST BE EXPLICITLY AND IMMEDIATELY EXCLUDED.
-Source Reliability: ONLY AND EXCLUSIVELY retrieve news from DEMONSTRABLY VERIFIED, TOP-TIER, HIGHLY REPUTABLE financial news outlets (e.g., Reuters.com, Bloomberg.com, WSJ.com, APNews.com, FT.com, NZHerald.co.nz) and OFFICIAL, DIRECT, VERIFIABLE company press releases found only on their investor relations or official newsroom sections of their primary corporate websites. Any source not explicitly listed or undeniably meeting these stringent criteria (e.g., blogs, forums, aggregated news sites, non-official social media, unverified press release services) MUST BE DISREGARDED IMMEDIATELY.
-Content Focus: Identify and analyze ALL high-quality, genuinely relevant, and factually accurate news pertaining to the following categories: financial performance (e.g., published earnings reports, confirmed revenue forecasts, dividend changes), significant M&A activities (e.g., publicly announced acquisitions, confirmed mergers, divestitures), major product launches (e.g., official announcements of new products/services, not rumors or leaks), C-suite leadership changes (e.g., confirmed CEO, CFO, COO appointments or departures), and material regulatory or legal events (e.g., official antitrust investigations, confirmed major lawsuits, enacted policy changes directly impacting company operations). The analysis must include every pertinent article that passes ALL verification checks.
-Verification Protocol (Non-Negotiable):
+1. For each company in the Company List, search for significant news from the past 14 days (${startDateStr} to ${endDateStr}).
 
-Date Verification: For every potential news item, EXACTLY match the publication date found on the article to the allowed date range (${startDateStr} to ${endDateStr}). Discrepancies, no matter how small, result in exclusion.
+2. Source Requirements: Only include news from reputable financial news outlets such as:
+   - Reuters, Bloomberg, Wall Street Journal, Financial Times
+   - Associated Press, CNBC, Forbes, Fortune
+   - MarketWatch, Business Insider, The Economist
+   - Official company press releases and investor relations pages
+   - Major national newspapers' business sections (NYT, Guardian, etc.)
+   - For NZ companies: NZ Herald, Stuff.co.nz, NBR
 
-Source Verification: Confirm the domain and publisher name DIRECTLY against the list of approved reputable sources.
+3. Content Focus: Include news about:
+   - Financial performance (earnings, revenue, guidance)
+   - M&A activities (acquisitions, mergers, partnerships)
+   - Major product/service launches or updates
+   - Leadership changes (C-suite appointments/departures)
+   - Regulatory or legal developments
+   - Strategic business decisions
 
-URL Validation & Accessibility: CRITICALLY, FOR EVERY SINGLE URL, PERFORM A DIRECT ACCESS ATTEMPT TO ENSURE IT IS LIVE, ACCESSIBLE, AND LEADS IMMEDIATELY TO THE SPECIFIC REPORTED ARTICLE. If the URL is broken, leads to a different article, or is inaccessible, the news item MUST BE EXCLUDED.
+4. Quality Standards:
+   - Only include news with clear, specific dates within the 14-day window
+   - Ensure URLs are from the actual source (not aggregators)
+   - Summaries must be factual and based on article content
+   - No speculation, rumors, or unconfirmed reports
 
-Content Accuracy Check: Read the article to ensure the summary you generate is a direct, factual, and concise representation of the article's content, with no inference, speculation, or added information.
-NO NEWS ITEM IS TO BE INCLUDED UNLESS IT HAS PASSED ALL FOUR VERIFICATION STEPS WITH 100% CONFIDENCE.
-Output Generation: Populate the JSON object strictly according to the schema defined below.
+5. Output ALL relevant news items that meet these criteria (no artificial limit).
+
 REQUIRED JSON OUTPUT SCHEMA:
 {
-"report_generated_date": "YYYY-MM-DD",
-"company_news": [
-{
-"company_name": "String",
-"status": "String ('news_found' or 'no_significant_news_found')",
-"news_items": [
-{
-"summary": "String (A 1-2 sentence, factual, and direct summary of the news event, derived ONLY from the article content.)",
-"source_name": "String (The exact name of the publication as it appears on the article.)",
-"url": "String (The verified, direct, and accessible URL to the article.)",
-"publication_date": "String (Format as YYYY-MM-DD, exactly as verified on the article.)"
+  "report_generated_date": "YYYY-MM-DD",
+  "company_news": [
+    {
+      "company_name": "String",
+      "status": "String ('news_found' or 'no_significant_news_found')",
+      "news_items": [
+        {
+          "summary": "String (1-2 sentence factual summary)",
+          "source_name": "String (publication name)",
+          "url": "String (direct URL to article)",
+          "publication_date": "String (YYYY-MM-DD format)"
+        }
+      ]
+    }
+  ]
 }
-]
-}
-]
-}
-SCHEMA LOGIC:
 
-report_generated_date: The Current Date provided in the input.
-company_news: An array of objects, where each object represents a company from the input list.
-company_name: The name of the company being reported on.
-status:
-Set to "news_found" if you find 1 or more relevant articles that have passed EVERY SINGLE verification step within the STRICT timeframe and from VERIFIED sources.
-Set to "no_significant_news_found" if no relevant articles are found that meet ALL stringent criteria and pass ALL verification steps.
-news_items:
-An array containing ALL important news item objects for the company that have passed ALL verification steps and meet the quality and relevance criteria. This array can contain any number of items (0 or more).
-If status is "no_significant_news_found", this MUST be an empty array [].`
+IMPORTANT NOTES:
+- Set status to "news_found" if at least one relevant article is found
+- Set status to "no_significant_news_found" if no relevant articles exist
+- The news_items array should be empty [] when status is "no_significant_news_found"
+- Include the actual publication date from the article
+- Ensure all URLs are real and point to actual articles
+- Do not invent or hallucinate any information`
 
     // Call Gemini API
     let result: any
@@ -276,15 +287,20 @@ If status is "no_significant_news_found", this MUST be an empty array [].`
 
       logger.info(`Successfully parsed news data for ${newsData.company_news.length} companies`)
       
-      // Log a sample of the data for debugging
-      if (newsData.company_news.length > 0) {
-        const sampleCompany = newsData.company_news[0]
-        logger.info('Sample company news:', {
-          company: sampleCompany.company_name,
-          status: sampleCompany.status,
-          newsCount: sampleCompany.news_items.length
-        })
-      }
+      // Log detailed debugging information
+      logger.info('News data summary:')
+      newsData.company_news.forEach((company: any) => {
+        logger.info(`- ${company.company_name}: ${company.status} (${company.news_items.length} items)`)
+        if (company.news_items.length > 0) {
+          logger.info(`  First item: ${company.news_items[0].source_name} - ${company.news_items[0].publication_date}`)
+        }
+      })
+      
+      // Count total news items
+      const totalNewsItems = newsData.company_news.reduce((sum: number, company: any) => 
+        sum + company.news_items.length, 0
+      )
+      logger.info(`Total news items found: ${totalNewsItems}`)
 
       // Cache the response for 1 hour
       return NextResponse.json(newsData, {
