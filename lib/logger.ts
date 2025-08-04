@@ -3,9 +3,8 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 
 export const logger = {
   error: (message: string, error?: unknown) => {
-    if (isDevelopment) {
-      console.error(`[ERROR] ${message}`, error)
-    }
+    // Always log errors regardless of environment
+    console.error(`[ERROR] ${message}`, error)
     // In production, you might want to send errors to a monitoring service
   },
   

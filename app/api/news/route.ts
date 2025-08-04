@@ -84,19 +84,54 @@ export async function GET() {
       )
     }
 
-    // Get portfolio companies dynamically
-    const portfolioCompanies = await getPortfolioCompanies()
-    logger.info(`Fetching news for ${portfolioCompanies.length} companies`)
+    logger.info('GEMINI_API_KEY is configured, length:', apiKey.length)
 
-    // Initialize Gemini with 2.5 Pro Preview model
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro-preview-06-05" })
+    // Get portfolio companies dynamically
+    let portfolioCompanies: string[]
+    try {
+      portfolioCompanies = await getPortfolioCompanies()
+      logger.info(`Successfully fetched ${portfolioCompanies.length} companies`)
+    } catch (error) {
+      logger.error('Error in getPortfolioCompanies:', error)
+      // Use fallback list
+      portfolioCompanies = [
+        "Microsoft",
+        "Tesla", 
+        "Fonterra Co-operative Group",
+        "Fletcher Building"
+      ]
+    }
+
+    // Initialize Gemini with 1.5 Flash model (more stable and widely available)
+    let genAI: GoogleGenerativeAI
+    let model: any
+    
+    try {
+      genAI = new GoogleGenerativeAI(apiKey)
+      // Using gemini-1.5-flash as it's more stable and widely available
+      model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+      logger.info('Gemini API initialized successfully with gemini-1.5-flash')
+    } catch (error) {
+      logger.error('Error initializing Gemini API:', error)
+      // Try with pro model as fallback
+      try {
+        genAI = new GoogleGenerativeAI(apiKey)
+        model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" })
+        logger.info('Falling back to gemini-1.5-pro model')
+      } catch (fallbackError) {
+        logger.error('Error with fallback model:', fallbackError)
+        return NextResponse.json(
+          { error: 'Failed to initialize AI service. Please check your API key.' },
+          { status: 500 }
+        )
+      }
+    }
 
     // Get current date
     const currentDate = new Date().toISOString().split('T')[0]
 
     // Construct the prompt
-    const prompt = `Role: You are the Gemini 2.5 Pro model, configured to act as a specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
+    const prompt = `Role: You are an AI model configured to act as a specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
 
 Your response MUST be a single, valid JSON object. Do not include any explanatory text, Markdown formatting, or any content outside of the final JSON structure.
 
@@ -160,12 +195,37 @@ An array containing up to 3 of the most important news item objects for the comp
 If status is "no_significant_news_found", this MUST be an empty array [].`
 
     // Call Gemini API
-    logger.info('Calling Gemini API with model: gemini-2.5-pro-preview-06-05')
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const text = response.text()
+    let result: any
+    let text: string
     
-    logger.info('Gemini API response received, length:', text.length)
+    try {
+      logger.info('Calling Gemini API...')
+      result = await model.generateContent(prompt)
+      const response = await result.response
+      text = response.text()
+      logger.info('Gemini API response received, length:', text.length)
+    } catch (apiError: any) {
+      logger.error('Error calling Gemini API:', apiError)
+      logger.error('Error details:', apiError.message)
+      
+      // Check for specific error types
+      if (apiError.message?.includes('API key')) {
+        return NextResponse.json(
+          { error: 'Invalid API key. Please check your GEMINI_API_KEY.' },
+          { status: 500 }
+        )
+      } else if (apiError.message?.includes('model')) {
+        return NextResponse.json(
+          { error: 'Model not available. The Gemini model may not be accessible with your API key.' },
+          { status: 500 }
+        )
+      } else {
+        return NextResponse.json(
+          { error: `AI service error: ${apiError.message || 'Unknown error'}` },
+          { status: 500 }
+        )
+      }
+    }
 
     // Parse the JSON response
     try {
@@ -204,19 +264,20 @@ If status is "no_significant_news_found", this MUST be an empty array [].`
           'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
         },
       })
-    } catch (parseError) {
+    } catch (parseError: any) {
       logger.error('Error parsing Gemini response:', parseError)
-      logger.error('Raw response preview:', text.substring(0, 500))
-      logger.error('Raw response end:', text.substring(Math.max(0, text.length - 500)))
+      logger.error('Raw response preview:', text?.substring(0, 500) || 'No response text')
+      logger.error('Raw response end:', text?.substring(Math.max(0, text.length - 500)) || 'No response text')
       return NextResponse.json(
         { error: 'Failed to parse news data from AI service' },
         { status: 500 }
       )
     }
-  } catch (error) {
-    logger.error('Error fetching news from Gemini:', error)
+  } catch (error: any) {
+    logger.error('Unexpected error in news API:', error)
+    logger.error('Error stack:', error.stack)
     return NextResponse.json(
-      { error: 'Failed to fetch news data' },
+      { error: `Failed to fetch news data: ${error.message || 'Unknown error'}` },
       { status: 500 }
     )
   }
