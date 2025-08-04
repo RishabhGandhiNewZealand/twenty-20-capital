@@ -111,11 +111,10 @@ Returns the list of portfolio companies and analysis date range.
 ```
 
 #### GET /api/news/company
-Analyzes news for a single company. Uses Edge Config cache if available.
+Analyzes news for a single company.
 
 **Query Parameters:**
 - `company` (required): Company name to analyze
-- `refresh` (optional): Set to "true" to skip cache and force fresh analysis
 
 **Response:**
 ```json
@@ -131,45 +130,9 @@ Analyzes news for a single company. Uses Edge Config cache if available.
       "publication_date": "YYYY-MM-DD",
       "relevance": "direct" | "indirect"
     }
-  ],
-  "cached": true | false,
-  "cache_timestamp": "ISO 8601 timestamp", // Only if cached
-  "cached_date_range": { // Only if cached, shows the date range of the cached analysis
-    "start": "YYYY-MM-DD",
-    "end": "YYYY-MM-DD"
-  }
+  ]
 }
 ```
-
-**Note:** Cache is stored per company (not per date range) to minimize Edge Config storage usage. The cached date range is included in the response for transparency.
-
-#### POST /api/news/cache
-Updates the Edge Config cache with news analysis results.
-
-**Request Body:**
-```json
-{
-  "company": "Company Name",
-  "startDate": "YYYY-MM-DD",
-  "endDate": "YYYY-MM-DD",
-  "data": { /* Company news data */ }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true | false,
-  "cacheKey": "news_company_name", // Simplified key without date range
-  "cached": true | false,
-  "message": "Status message"
-}
-```
-
-**Note:** 
-- Requires `VERCEL_API_TOKEN` environment variable for automatic cache updates
-- Only one cache entry is stored per company to minimize Edge Config storage
-- The date range is stored within the cache data but not in the cache key
 
 #### GET /api/news (Deprecated)
 The original bulk news analysis endpoint. This endpoint is deprecated due to timeout issues with large portfolios. Use the individual company endpoints above instead.
@@ -297,5 +260,3 @@ The API is designed to be extensible while maintaining simplicity and performanc
 
 - `BLOB_READ_WRITE_TOKEN`: Vercel Blob storage token
 - `GEMINI_API_KEY`: Google Gemini API key for news analysis
-- `EDGE_CONFIG`: Vercel Edge Config connection string for caching
-- `VERCEL_API_TOKEN`: Vercel API token for updating Edge Config (optional)
