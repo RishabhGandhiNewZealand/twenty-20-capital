@@ -140,6 +140,24 @@ export class NewsCache {
       return
     }
     
+    // Double-check validation before saving
+    const isValid = data && 
+                   data.status === 'news_found' && 
+                   !data.error &&
+                   data.summary_points && 
+                   data.summary_points.length > 0 &&
+                   data.references &&
+                   data.references.length > 0
+    
+    if (!isValid) {
+      logger.warn(`Refusing to cache invalid data for ${company}:`)
+      logger.warn(`  Status: ${data?.status}`)
+      logger.warn(`  Error: ${data?.error || 'none'}`)
+      logger.warn(`  Summaries: ${data?.summary_points?.length || 0}`)
+      logger.warn(`  References: ${data?.references?.length || 0}`)
+      return
+    }
+    
     const sql = getDb()
     const cacheKey = this.generateCacheKey(company, startDate, endDate)
     // Set expires_at to a far future date (100 years from now) to effectively store forever

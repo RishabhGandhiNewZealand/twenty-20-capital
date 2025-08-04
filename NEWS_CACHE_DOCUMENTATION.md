@@ -81,6 +81,12 @@ application.news_cache
    - Triggers cleanup of expired entries
    - Shows cache effectiveness metrics
 
+3. **POST /api/news/cache-cleanup**
+   - Manually clean up invalid cache entries
+   - Removes entries with `no_significant_news_found` status
+   - Removes entries with errors
+   - Removes entries with empty data
+
 ### Caching Logic
 
 The caching decision is made using the following logic:
@@ -96,6 +102,8 @@ const shouldCache = result &&
 ```
 
 This ensures that only high-quality, complete responses are cached.
+
+**Double Validation**: The cache service also performs its own validation before storing data, providing an extra layer of protection against invalid entries.
 
 ## Configuration
 
