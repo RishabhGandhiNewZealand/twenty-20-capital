@@ -162,17 +162,58 @@ Return this JSON structure:
     
     // Parse the response
     let cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    
+    // Remove any BOM or zero-width characters
+    cleanedText = cleanedText.replace(/^\uFEFF/, '').replace(/\u200B/g, '')
+    
+    // Find JSON boundaries
     const jsonStart = cleanedText.indexOf('{')
     const jsonEnd = cleanedText.lastIndexOf('}')
     if (jsonStart !== -1 && jsonEnd !== -1) {
       cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1)
     }
     
-    const companyData = JSON.parse(cleanedText)
-    
-    logger.info(`${company}: ${companyData.status} (${companyData.summary_points?.length || 0} summaries, ${companyData.references?.length || 0} references)`)
-    
-    return companyData
+    // Try to fix common JSON issues
+    try {
+      // First attempt - parse as is
+      const companyData = JSON.parse(cleanedText)
+      
+      // Validate and clean the data
+      if (companyData.references && Array.isArray(companyData.references)) {
+        companyData.references = companyData.references.map((ref: any) => ({
+          title: ref.title || 'Untitled',
+          source_name: ref.source_name || 'Unknown Source',
+          url: ref.url || '#',
+          publication_date: ref.publication_date || currentDate,
+          relevance: ref.relevance || 'direct'
+        }))
+      }
+      
+      logger.info(`${company}: ${companyData.status} (${companyData.summary_points?.length || 0} summaries, ${companyData.references?.length || 0} references)`)
+      
+      return companyData
+    } catch (parseError: any) {
+      // Try to extract what we can from the response
+      logger.error(`JSON parse error for ${company}:`, parseError.message)
+      
+      // Attempt to fix common issues
+      try {
+        // Remove trailing commas
+        let fixedText = cleanedText.replace(/,(\s*[}\]])/g, '$1')
+        
+        // Escape unescaped quotes in strings
+        fixedText = fixedText.replace(/"([^"]*)":/g, (match, p1) => {
+          return `"${p1.replace(/"/g, '\\"')}":`;
+        })
+        
+        const companyData = JSON.parse(fixedText)
+        logger.info(`${company}: Fixed JSON and parsed successfully`)
+        return companyData
+      } catch (secondError) {
+        logger.error(`Failed to fix JSON for ${company}`)
+        throw parseError
+      }
+    }
   } catch (error: any) {
     logger.error(`Error analyzing ${company}:`, error.message)
     // Return a default structure for this company

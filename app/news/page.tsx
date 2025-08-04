@@ -126,8 +126,29 @@ export default function NewsPage() {
         </p>
         {newsData && (
           <div className="mt-3 text-sm text-gray-500">
-            <p>Report generated: {format(new Date(newsData.report_generated_date), "MMMM d, yyyy")}</p>
-            <p>Analysis period: {format(new Date(newsData.analysis_period.start_date), "MMM d")} - {format(new Date(newsData.analysis_period.end_date), "MMM d, yyyy")}</p>
+                          <p>Report generated: {(() => {
+                try {
+                  const date = new Date(newsData.report_generated_date)
+                  if (isNaN(date.getTime())) {
+                    return newsData.report_generated_date
+                  }
+                  return format(date, "MMMM d, yyyy")
+                } catch {
+                  return newsData.report_generated_date
+                }
+              })()}</p>
+            <p>Analysis period: {(() => {
+              try {
+                const start = new Date(newsData.analysis_period.start_date)
+                const end = new Date(newsData.analysis_period.end_date)
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                  return `${newsData.analysis_period.start_date} - ${newsData.analysis_period.end_date}`
+                }
+                return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`
+              } catch {
+                return `${newsData.analysis_period.start_date} - ${newsData.analysis_period.end_date}`
+              }
+            })()}</p>
           </div>
         )}
       </div>
@@ -178,7 +199,7 @@ export default function NewsPage() {
                 {company.status === "news_found" && (
                   <CardContent className="pt-6 space-y-6">
                     {/* Summary Points Section */}
-                    {company.summary_points && company.summary_points.length > 0 && (
+                    {Array.isArray(company.summary_points) && company.summary_points.length > 0 && (
                       <div>
                         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                           <TrendingUp className="h-4 w-4" />
@@ -195,7 +216,7 @@ export default function NewsPage() {
                     )}
                     
                     {/* References Section */}
-                    {company.references && company.references.length > 0 && (
+                    {Array.isArray(company.references) && company.references.length > 0 && (
                       <div className="border-t pt-4">
                         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                           <Link2 className="h-4 w-4" />
@@ -225,7 +246,17 @@ export default function NewsPage() {
                                   <span>•</span>
                                   <span className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3" />
-                                    {format(new Date(ref.publication_date), "MMM d, yyyy")}
+                                    {(() => {
+                                      try {
+                                        const date = new Date(ref.publication_date)
+                                        if (isNaN(date.getTime())) {
+                                          return ref.publication_date || 'Date unavailable'
+                                        }
+                                        return format(date, "MMM d, yyyy")
+                                      } catch {
+                                        return ref.publication_date || 'Date unavailable'
+                                      }
+                                    })()}
                                   </span>
                                   {ref.relevance === "indirect" && (
                                     <>
