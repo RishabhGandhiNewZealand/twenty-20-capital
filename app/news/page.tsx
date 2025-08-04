@@ -114,6 +114,9 @@ export default function NewsPage() {
         <p className="text-gray-600">
           AI-powered news analysis for portfolio companies
         </p>
+        <p className="text-sm text-gray-500 mt-1">
+          Only verified news from top-tier financial sources (Reuters, Bloomberg, WSJ, etc.)
+        </p>
         {newsData && (
           <p className="text-sm text-gray-500 mt-2">
             Report generated: {format(new Date(newsData.report_generated_date), "MMMM d, yyyy")}
@@ -151,7 +154,7 @@ export default function NewsPage() {
                   </CardTitle>
                   <CardDescription>
                     {company.status === "news_found"
-                      ? `${company.news_items.length} recent news ${company.news_items.length === 1 ? "item" : "items"} found (showing up to 3)`
+                      ? `${company.news_items.length} verified news ${company.news_items.length === 1 ? "item" : "items"} found`
                       : "No significant news found in the past 14 days"}
                   </CardDescription>
                 </CardHeader>

@@ -152,20 +152,28 @@ export async function GET() {
     const startDateStr = startDate.toISOString().split('T')[0]
     const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Yesterday
 
-    // Construct the prompt
-    const prompt = `Role: A specialised Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
-Your response MUST be a single, valid JSON object. Do not include any explanatory text, Markdown formatting, or any content outside of the final JSON structure.
+    // Construct the prompt with the new stricter version
+    const prompt = `Role: A specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
+Your response MUST be a single, valid JSON object. Do not include any explanatory text, Markdown formatting, or any content outside of the final JSON structure. ABSOLUTELY NO HALLUCINATED INFORMATION OR URLs ARE PERMITTED. EVERY PIECE OF DATA MUST BE DIRECTLY VERIFIABLE AND ACCURATE.
 INPUT DATA:
 Current Date: ${currentDate}
-Company List: ${JSON.stringify(portfolioCompanies)}
+Company List: ${portfolioCompanies.join(',')}
 INSTRUCTIONS:
 
 For each company in the Company List, perform a targeted internet search for significant news.
-Recency: STRICTLY limit your search to news published EXACTLY within the 14-day period preceding the Current Date provided (i.e., from ${startDateStr} to ${endDateStr} inclusive). News published outside this precise window, even by one day, MUST be excluded.
-Source Reliability: ONLY retrieve news from VERIFIED, HIGHLY REPUTABLE financial news outlets (e.g., Reuters, Bloomberg, The Wall Street Journal, Associated Press, Financial Times, NZ Herald) and OFFICIAL, VERIFIABLE company press releases directly from their investor relations websites. Any source not meeting these stringent criteria MUST be disregarded.
-Content Focus: Identify news related to financial performance (e.g., earnings reports, revenue forecasts), M&A activities (e.g., acquisitions, mergers, divestitures), major product launches, C-suite leadership changes (e.g., CEO, CFO, COO appointments or departures), and significant regulatory or legal events (e.g., antitrust investigations, major lawsuits, policy changes impacting operations).
-Article Limit: For each company, identify and summarize up to 3 of the MOST SIGNIFICANT news items that RIGOROUSLY meet all specified criteria.
-Verification: Before including any news item, IMMEDIATELY verify its publication date against the strict recency criteria and its source against the strict reliability criteria. ADDITIONALLY, CONFIRM THAT THE PROVIDED URL DIRECTLY LINKS TO THE REPORTED ARTICLE AND IS ACCESSIBLE. Only news items passing ALL checks are to be considered.
+Recency: STRICTLY AND UNCONDITIONALLY limit your search to news published EXACTLY within the 14-day period preceding the Current Date provided (i.e., from ${startDateStr} to ${endDateStr} inclusive). News published outside this precise window, even by one day, MUST BE EXPLICITLY AND IMMEDIATELY EXCLUDED.
+Source Reliability: ONLY AND EXCLUSIVELY retrieve news from DEMONSTRABLY VERIFIED, TOP-TIER, HIGHLY REPUTABLE financial news outlets (e.g., Reuters.com, Bloomberg.com, WSJ.com, APNews.com, FT.com, NZHerald.co.nz) and OFFICIAL, DIRECT, VERIFIABLE company press releases found only on their investor relations or official newsroom sections of their primary corporate websites. Any source not explicitly listed or undeniably meeting these stringent criteria (e.g., blogs, forums, aggregated news sites, non-official social media, unverified press release services) MUST BE DISREGARDED IMMEDIATELY.
+Content Focus: Identify and analyze ALL high-quality, genuinely relevant, and factually accurate news pertaining to the following categories: financial performance (e.g., published earnings reports, confirmed revenue forecasts, dividend changes), significant M&A activities (e.g., publicly announced acquisitions, confirmed mergers, divestitures), major product launches (e.g., official announcements of new products/services, not rumors or leaks), C-suite leadership changes (e.g., confirmed CEO, CFO, COO appointments or departures), and material regulatory or legal events (e.g., official antitrust investigations, confirmed major lawsuits, enacted policy changes directly impacting company operations). The analysis must include every pertinent article that passes ALL verification checks.
+Verification Protocol (Non-Negotiable):
+
+Date Verification: For every potential news item, EXACTLY match the publication date found on the article to the allowed date range (${startDateStr} to ${endDateStr}). Discrepancies, no matter how small, result in exclusion.
+
+Source Verification: Confirm the domain and publisher name DIRECTLY against the list of approved reputable sources.
+
+URL Validation & Accessibility: CRITICALLY, FOR EVERY SINGLE URL, PERFORM A DIRECT ACCESS ATTEMPT TO ENSURE IT IS LIVE, ACCESSIBLE, AND LEADS IMMEDIATELY TO THE SPECIFIC REPORTED ARTICLE. If the URL is broken, leads to a different article, or is inaccessible, the news item MUST BE EXCLUDED.
+
+Content Accuracy Check: Read the article to ensure the summary you generate is a direct, factual, and concise representation of the article's content, with no inference, speculation, or added information.
+NO NEWS ITEM IS TO BE INCLUDED UNLESS IT HAS PASSED ALL FOUR VERIFICATION STEPS WITH 100% CONFIDENCE.
 Output Generation: Populate the JSON object strictly according to the schema defined below.
 REQUIRED JSON OUTPUT SCHEMA:
 {
@@ -176,10 +184,10 @@ REQUIRED JSON OUTPUT SCHEMA:
 "status": "String ('news_found' or 'no_significant_news_found')",
 "news_items": [
 {
-"summary": "String (A 1-2 sentence summary of the news event.)",
-"source_name": "String (The name of the publication.)",
-"url": "String (A direct URL to the article.)",
-"publication_date": "String (Format as YYYY-MM-DD.)"
+"summary": "String (A 1-2 sentence, factual, and direct summary of the news event, derived ONLY from the article content.)",
+"source_name": "String (The exact name of the publication as it appears on the article.)",
+"url": "String (The verified, direct, and accessible URL to the article.)",
+"publication_date": "String (Format as YYYY-MM-DD, exactly as verified on the article.)"
 }
 ]
 }
@@ -191,10 +199,10 @@ report_generated_date: The Current Date provided in the input.
 company_news: An array of objects, where each object represents a company from the input list.
 company_name: The name of the company being reported on.
 status:
-Set to "news_found" if you find 1 or more relevant articles within the STRICT timeframe and from VERIFIED sources.
-Set to "no_significant_news_found" if no relevant articles are found that meet ALL criteria.
+Set to "news_found" if you find 1 or more relevant articles that have passed EVERY SINGLE verification step within the STRICT timeframe and from VERIFIED sources.
+Set to "no_significant_news_found" if no relevant articles are found that meet ALL stringent criteria and pass ALL verification steps.
 news_items:
-An array containing up to 3 of the most important news item objects for the company. The array can contain 0, 1, 2, or 3 items.
+An array containing ALL important news item objects for the company that have passed ALL verification steps and meet the quality and relevance criteria. This array can contain any number of items (0 or more).
 If status is "no_significant_news_found", this MUST be an empty array [].`
 
     // Call Gemini API
