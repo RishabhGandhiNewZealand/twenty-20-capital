@@ -102,28 +102,43 @@ export async function GET() {
       ]
     }
 
-    // Initialize Gemini with 2.5 Pro model
+    // Initialize Gemini with 2.5 Flash model
     let genAI: GoogleGenerativeAI
     let model: any
     
     try {
       genAI = new GoogleGenerativeAI(apiKey)
-      // Using gemini-2.5-pro as requested
-      model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
-      logger.info('Gemini API initialized successfully with gemini-2.5-pro')
-    } catch (error) {
-      logger.error('Error initializing Gemini API:', error)
+      // Using gemini-2.5-flash as requested
+      model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+      logger.info('Gemini API initialized successfully with gemini-2.5-flash')
+    } catch (error: any) {
+      logger.error('Error initializing Gemini API with gemini-2.5-flash:', error)
+      logger.error('Error name:', error.name)
+      logger.error('Error message:', error.message)
+      logger.error('Error stack:', error.stack)
+      
       // Try with 1.5 flash model as fallback
       try {
         genAI = new GoogleGenerativeAI(apiKey)
         model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
         logger.info('Falling back to gemini-1.5-flash model')
-      } catch (fallbackError) {
-        logger.error('Error with fallback model:', fallbackError)
-        return NextResponse.json(
-          { error: 'Failed to initialize AI service. Please check your API key.' },
-          { status: 500 }
-        )
+      } catch (fallbackError: any) {
+        logger.error('Error with fallback model gemini-1.5-flash:', fallbackError)
+        logger.error('Fallback error name:', fallbackError.name)
+        logger.error('Fallback error message:', fallbackError.message)
+        
+        // Try one more fallback with gemini-pro
+        try {
+          genAI = new GoogleGenerativeAI(apiKey)
+          model = genAI.getGenerativeModel({ model: "gemini-pro" })
+          logger.info('Falling back to gemini-pro model')
+        } catch (finalError: any) {
+          logger.error('Error with final fallback model gemini-pro:', finalError)
+          return NextResponse.json(
+            { error: 'Failed to initialize AI service. No compatible model found. Please check your API key permissions.' },
+            { status: 500 }
+          )
+        }
       }
     }
 
@@ -200,31 +215,48 @@ If status is "no_significant_news_found", this MUST be an empty array [].`
     
     try {
       logger.info('Calling Gemini API...')
+      logger.info('Using model:', model.model || 'unknown')
+      logger.info('Prompt length:', prompt.length)
+      
       result = await model.generateContent(prompt)
       const response = await result.response
       text = response.text()
       logger.info('Gemini API response received, length:', text.length)
     } catch (apiError: any) {
       logger.error('Error calling Gemini API:', apiError)
-      logger.error('Error details:', apiError.message)
+      logger.error('Error name:', apiError.name)
+      logger.error('Error message:', apiError.message)
+      logger.error('Error stack:', apiError.stack)
+      logger.error('Full error object:', JSON.stringify(apiError, null, 2))
       
-      // Check for specific error types
-      if (apiError.message?.includes('API key')) {
-        return NextResponse.json(
-          { error: 'Invalid API key. Please check your GEMINI_API_KEY.' },
-          { status: 500 }
-        )
-      } else if (apiError.message?.includes('model')) {
-        return NextResponse.json(
-          { error: 'Model not available. The Gemini model may not be accessible with your API key.' },
-          { status: 500 }
-        )
-      } else {
-        return NextResponse.json(
-          { error: `AI service error: ${apiError.message || 'Unknown error'}` },
-          { status: 500 }
-        )
-      }
+              // Check for specific error types
+        if (apiError.message?.includes('API key') || apiError.message?.includes('API_KEY')) {
+          return NextResponse.json(
+            { 
+              error: 'Invalid API key. Please check your GEMINI_API_KEY.',
+              details: apiError.message 
+            },
+            { status: 500 }
+          )
+        } else if (apiError.message?.includes('model') || apiError.message?.includes('Model')) {
+          return NextResponse.json(
+            { 
+              error: 'Model not available. The Gemini model may not be accessible with your API key.',
+              details: apiError.message,
+              modelUsed: model.model || 'unknown'
+            },
+            { status: 500 }
+          )
+        } else {
+          return NextResponse.json(
+            { 
+              error: `AI service error: ${apiError.message || 'Unknown error'}`,
+              details: apiError.message,
+              errorType: apiError.name
+            },
+            { status: 500 }
+          )
+        }
     }
 
     // Parse the JSON response

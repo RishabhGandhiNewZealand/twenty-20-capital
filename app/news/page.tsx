@@ -45,6 +45,8 @@ export default function NewsPage() {
       if (!response.ok) {
         const errorData = await response.json()
         console.error("Error response:", errorData)
+        console.error("Error details:", errorData.details)
+        console.error("Model used:", errorData.modelUsed)
         throw new Error(errorData.error || "Failed to fetch news")
       }
       
