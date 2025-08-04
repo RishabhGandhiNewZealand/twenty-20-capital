@@ -77,6 +77,7 @@ export default function NewsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           <p className="text-lg text-gray-600">Analyzing market news and trends...</p>
           <p className="text-sm text-gray-500">Gathering comprehensive insights for your portfolio</p>
+          <p className="text-xs text-gray-400 mt-2">This may take a minute as we analyze each company individually</p>
         </div>
       </div>
     )

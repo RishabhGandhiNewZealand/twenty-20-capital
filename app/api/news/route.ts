@@ -152,10 +152,36 @@ Return this JSON structure:
   try {
     logger.info(`Analyzing news for ${company}...`)
     
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      systemInstruction: systemInstruction,
-    })
+    let result
+    let retries = 0
+    const maxRetries = 3
+    
+    while (retries < maxRetries) {
+      try {
+        result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          systemInstruction: systemInstruction,
+        })
+        break // Success, exit retry loop
+      } catch (apiError: any) {
+        if (apiError.message?.includes('429') || apiError.message?.includes('quota')) {
+          retries++
+          if (retries < maxRetries) {
+            const waitTime = Math.min(Math.pow(2, retries) * 1000, 10000) // Exponential backoff, max 10s
+            logger.warn(`Rate limit hit for ${company}, waiting ${waitTime}ms before retry ${retries}/${maxRetries}`)
+            await new Promise(resolve => setTimeout(resolve, waitTime))
+          } else {
+            throw apiError
+          }
+        } else {
+          throw apiError
+        }
+      }
+    }
+    
+    if (!result) {
+      throw new Error('Failed to get response after retries')
+    }
     
     const response = await result.response
     const text = response.text()
@@ -201,16 +227,31 @@ Return this JSON structure:
         // Remove trailing commas
         let fixedText = cleanedText.replace(/,(\s*[}\]])/g, '$1')
         
-        // Escape unescaped quotes in strings
-        fixedText = fixedText.replace(/"([^"]*)":/g, (match, p1) => {
-          return `"${p1.replace(/"/g, '\\"')}":`;
+        // Fix unescaped quotes in JSON values
+        // This regex looks for patterns like "value": "text with "quotes" inside"
+        fixedText = fixedText.replace(/":\s*"([^"]*(?:"[^"]*)*[^"]*)"/g, (match, value) => {
+          // Escape internal quotes
+          const escapedValue = value.replace(/(?<!\\)"/g, '\\"')
+          return `": "${escapedValue}"`
         })
         
+        // Remove any control characters
+        fixedText = fixedText.replace(/[\x00-\x1F\x7F]/g, ' ')
+        
+        // Try parsing the fixed JSON
         const companyData = JSON.parse(fixedText)
         logger.info(`${company}: Fixed JSON and parsed successfully`)
+        
+        // Ensure required fields exist
+        companyData.company_name = companyData.company_name || company
+        companyData.status = companyData.status || "no_significant_news_found"
+        companyData.summary_points = companyData.summary_points || []
+        companyData.references = companyData.references || []
+        
         return companyData
       } catch (secondError) {
-        logger.error(`Failed to fix JSON for ${company}`)
+        logger.error(`Failed to fix JSON for ${company}:`, secondError.message)
+        logger.error(`Problematic JSON preview:`, cleanedText.substring(0, 200))
         throw parseError
       }
     }
@@ -298,13 +339,33 @@ export async function GET() {
 
     logger.info(`Analysis period: ${startDateStr} to ${endDateStr}`)
 
-    // Analyze each company in parallel
-    const companyPromises = portfolioCompanies.map(company => 
-      analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
-    )
-
-    // Wait for all analyses to complete
-    const companyResults = await Promise.all(companyPromises)
+    // Analyze each company sequentially to avoid rate limits
+    const companyResults = []
+    
+    for (let i = 0; i < portfolioCompanies.length; i++) {
+      const company = portfolioCompanies[i]
+      logger.info(`Processing ${i + 1}/${portfolioCompanies.length}: ${company}`)
+      
+      try {
+        const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
+        companyResults.push(result)
+        
+        // Add a small delay between requests to avoid rate limits (except for last company)
+        if (i < portfolioCompanies.length - 1) {
+          logger.info('Waiting 1 second before next request...')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      } catch (error: any) {
+        logger.error(`Failed to analyze ${company}:`, error.message)
+        companyResults.push({
+          company_name: company,
+          status: "no_significant_news_found",
+          summary_points: [],
+          references: [],
+          error: error.message
+        })
+      }
+    }
 
     // Aggregate results
     const newsData = {
@@ -319,9 +380,10 @@ export async function GET() {
     // Log summary
     const totalCompanies = companyResults.length
     const companiesWithNews = companyResults.filter(c => c.status === "news_found").length
+    const companiesWithErrors = companyResults.filter(c => c.error).length
     const totalReferences = companyResults.reduce((sum, c) => sum + (c.references?.length || 0), 0)
     
-    logger.info(`Analysis complete: ${totalCompanies} companies, ${companiesWithNews} with news, ${totalReferences} total references`)
+    logger.info(`Analysis complete: ${totalCompanies} companies, ${companiesWithNews} with news, ${companiesWithErrors} with errors, ${totalReferences} total references`)
 
     // Cache the response
     return NextResponse.json(newsData, {
