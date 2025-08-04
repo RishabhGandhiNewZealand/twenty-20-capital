@@ -167,7 +167,7 @@ Return this JSON structure:
         if (apiError.message?.includes('429') || apiError.message?.includes('quota')) {
           retries++
           if (retries < maxRetries) {
-            const waitTime = Math.min(Math.pow(2, retries) * 1000, 10000) // Exponential backoff, max 10s
+            const waitTime = Math.min(Math.pow(2, retries) * 500, 5000) // Exponential backoff: 1s, 2s, max 5s
             logger.warn(`Rate limit hit for ${company}, waiting ${waitTime}ms before retry ${retries}/${maxRetries}`)
             await new Promise(resolve => setTimeout(resolve, waitTime))
           } else {
@@ -215,7 +215,7 @@ Return this JSON structure:
         }))
       }
       
-      logger.info(`${company}: ${companyData.status} (${companyData.summary_points?.length || 0} summaries, ${companyData.references?.length || 0} references)`)
+      logger.info(`✓ ${company}: ${companyData.status} (${companyData.summary_points?.length || 0} summaries, ${companyData.references?.length || 0} references)`)
       
       return companyData
     } catch (parseError: any) {
@@ -268,6 +268,9 @@ Return this JSON structure:
   }
 }
 
+// Extend the timeout for this route
+export const maxDuration = 60 // 60 seconds timeout
+
 export async function GET() {
   try {
     // Check if Gemini API key is configured
@@ -297,7 +300,7 @@ export async function GET() {
     try {
       genAI = new GoogleGenerativeAI(apiKey)
       model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         generationConfig: {
           temperature: 0.1,
           topK: 40,
@@ -307,7 +310,7 @@ export async function GET() {
           googleSearch: {}
         }]
       })
-      logger.info('Gemini API initialized with gemini-2.5-flash and Google Search')
+      logger.info('Gemini API initialized with gemini-2.5-flash-lite and Google Search')
     } catch (error: any) {
       logger.error('Error initializing Gemini:', error)
       
@@ -350,10 +353,15 @@ export async function GET() {
         const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
         companyResults.push(result)
         
+        // Log progress
+        const successCount = companyResults.filter(c => c.status === "news_found").length
+        const errorCount = companyResults.filter(c => c.error).length
+        logger.info(`Progress: ${i + 1}/${portfolioCompanies.length} completed. ${successCount} with news, ${errorCount} with errors`)
+        
         // Add a small delay between requests to avoid rate limits (except for last company)
         if (i < portfolioCompanies.length - 1) {
-          logger.info('Waiting 1 second before next request...')
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          logger.info('Waiting 500ms before next request...')
+          await new Promise(resolve => setTimeout(resolve, 500)) // Reduced to 500ms for faster processing
         }
       } catch (error: any) {
         logger.error(`Failed to analyze ${company}:`, error.message)
@@ -364,6 +372,11 @@ export async function GET() {
           references: [],
           error: error.message
         })
+        
+        // Log progress even on error
+        const successCount = companyResults.filter(c => c.status === "news_found").length
+        const errorCount = companyResults.filter(c => c.error).length
+        logger.info(`Progress: ${i + 1}/${portfolioCompanies.length} completed. ${successCount} with news, ${errorCount} with errors`)
       }
     }
 

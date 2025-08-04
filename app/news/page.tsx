@@ -50,11 +50,22 @@ export default function NewsPage() {
       console.log("Response status:", response.status)
       
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error("Error response:", errorData)
-        console.error("Error details:", errorData.details)
-        console.error("Model used:", errorData.modelUsed)
-        throw new Error(errorData.error || "Failed to fetch news")
+        let errorMessage = "Failed to fetch news"
+        try {
+          const errorData = await response.json()
+          console.error("Error response:", errorData)
+          console.error("Error details:", errorData.details)
+          console.error("Model used:", errorData.modelUsed)
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // If response is not JSON (like a 504 timeout), use status text
+          if (response.status === 504) {
+            errorMessage = "Request timed out. The analysis is taking longer than expected. Please try again with fewer companies or try again later."
+          } else {
+            errorMessage = `Server error: ${response.status} ${response.statusText}`
+          }
+        }
+        throw new Error(errorMessage)
       }
       
       const data = await response.json()
