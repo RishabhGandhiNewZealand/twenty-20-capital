@@ -95,21 +95,75 @@ Both query parameters are optional and default to USD→NZD conversion.
 
 ### News Analysis
 
-#### GET `/api/news`
+#### GET /api/news/companies
+Returns the list of portfolio companies and analysis date range.
 
-Fetches AI-powered news analysis for portfolio companies using Google's Gemini API with Google Search grounding for real-time results. This endpoint:
+**Response:**
+```json
+{
+  "companies": ["Company A", "Company B", ...],
+  "analysis_period": {
+    "start_date": "YYYY-MM-DD",
+    "end_date": "YYYY-MM-DD"
+  },
+  "report_generated_date": "YYYY-MM-DD"
+}
+```
 
-- Analyzes news for both current and historical portfolio companies
-- Uses Google Search grounding for real-time, accurate results
-- Searches for news from the past 30 days (extended analysis period)
-- Includes both direct company news and indirect industry/market impacts
-- Synthesizes multiple sources into comprehensive bullet-point summaries
-- Provides separate references section with all sources used
-- Distinguishes between direct and indirect news relevance
-- Prioritizes reputable financial news sources
-- Returns structured JSON with analysis summaries and source links
-- Caches responses for 1 hour to minimize API calls
-- Separates system instructions from user prompts for better AI guidance
+#### GET /api/news/company
+Analyzes news for a single company. Uses Edge Config cache if available.
+
+**Query Parameters:**
+- `company` (required): Company name to analyze
+- `refresh` (optional): Set to "true" to skip cache and force fresh analysis
+
+**Response:**
+```json
+{
+  "company_name": "Company Name",
+  "status": "news_found" | "no_significant_news_found",
+  "summary_points": ["Summary 1", "Summary 2", ...],
+  "references": [
+    {
+      "title": "Article Title",
+      "source_name": "Publication",
+      "url": "https://...",
+      "publication_date": "YYYY-MM-DD",
+      "relevance": "direct" | "indirect"
+    }
+  ],
+  "cached": true | false,
+  "cache_timestamp": "ISO 8601 timestamp" // Only if cached
+}
+```
+
+#### POST /api/news/cache
+Updates the Edge Config cache with news analysis results.
+
+**Request Body:**
+```json
+{
+  "company": "Company Name",
+  "startDate": "YYYY-MM-DD",
+  "endDate": "YYYY-MM-DD",
+  "data": { /* Company news data */ }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true | false,
+  "cacheKey": "news_company_name_startdate_enddate",
+  "cached": true | false,
+  "message": "Status message"
+}
+```
+
+**Note:** Requires `VERCEL_API_TOKEN` environment variable for automatic cache updates.
+
+#### GET /api/news (Deprecated)
+The original bulk news analysis endpoint. This endpoint is deprecated due to timeout issues with large portfolios. Use the individual company endpoints above instead.
 
 **Environment Variable Required:**
 - `GEMINI_API_KEY`: Your Google Gemini API key (get from https://makersuite.google.com/app/apikey)
@@ -229,3 +283,10 @@ Potential API improvements include:
 - Advanced analytics endpoints
 
 The API is designed to be extensible while maintaining simplicity and performance for the current single-user use case.
+
+### Environment Variables
+
+- `BLOB_READ_WRITE_TOKEN`: Vercel Blob storage token
+- `GEMINI_API_KEY`: Google Gemini API key for news analysis
+- `EDGE_CONFIG`: Vercel Edge Config connection string for caching
+- `VERCEL_API_TOKEN`: Vercel API token for updating Edge Config (optional)

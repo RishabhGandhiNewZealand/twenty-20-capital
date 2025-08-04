@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, RefreshCw, TrendingUp, Link2, CheckCircle2, Clock } from "lucide-react"
+import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, RefreshCw, TrendingUp, Link2, CheckCircle2, Clock, Database } from "lucide-react"
 import { format } from "date-fns"
 
 interface Reference {
@@ -19,6 +19,8 @@ interface CompanyNews {
   summary_points: string[]
   references: Reference[]
   error?: string
+  cached?: boolean
+  cache_timestamp?: string
 }
 
 interface CompanyStatus {
@@ -43,6 +45,7 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [forceRefresh, setForceRefresh] = useState(false)
 
   // Fetch the list of companies
   const fetchCompanies = useCallback(async () => {
@@ -74,12 +77,47 @@ export default function NewsPage() {
   }, [])
 
   // Fetch news for a single company
-  const fetchCompanyNews = async (company: string): Promise<CompanyNews> => {
-    const response = await fetch(`/api/news/company?company=${encodeURIComponent(company)}`)
+  const fetchCompanyNews = async (company: string, refresh: boolean = false): Promise<CompanyNews> => {
+    const url = new URL(`/api/news/company`, window.location.origin)
+    url.searchParams.append('company', company)
+    if (refresh) {
+      url.searchParams.append('refresh', 'true')
+    }
+    
+    const response = await fetch(url.toString())
     if (!response.ok) {
       throw new Error(`Failed to fetch news for ${company}`)
     }
     return response.json()
+  }
+
+  // Cache the news data
+  const cacheNewsData = async (company: string, data: CompanyNews) => {
+    if (!companiesData || data.error || data.cached) return
+    
+    try {
+      const response = await fetch('/api/news/cache', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company,
+          startDate: companiesData.analysis_period.start_date,
+          endDate: companiesData.analysis_period.end_date,
+          data
+        })
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        console.log(`Cached data for ${company}`)
+      } else {
+        console.log(`Cache update skipped for ${company}:`, result.message)
+      }
+    } catch (error) {
+      console.error(`Failed to cache data for ${company}:`, error)
+    }
   }
 
   // Analyze all companies one by one
@@ -98,7 +136,7 @@ export default function NewsPage() {
       
       try {
         // Fetch news for this company
-        const newsData = await fetchCompanyNews(company)
+        const newsData = await fetchCompanyNews(company, forceRefresh)
         
         // Update with results
         setCompanyStatuses(prev => prev.map((c, idx) => 
@@ -108,6 +146,11 @@ export default function NewsPage() {
             data: newsData
           } : c
         ))
+        
+        // Cache the data if it's not already cached
+        if (!newsData.cached && !newsData.error) {
+          await cacheNewsData(company, newsData)
+        }
         
         // Small delay to avoid rate limits
         if (i < companiesData.companies.length - 1) {
@@ -129,7 +172,8 @@ export default function NewsPage() {
     }
     
     setIsAnalyzing(false)
-  }, [companiesData])
+    setForceRefresh(false)
+  }, [companiesData, forceRefresh])
 
   // Initial load
   useEffect(() => {
@@ -149,6 +193,14 @@ export default function NewsPage() {
 
   // Refresh all
   const refreshAll = () => {
+    fetchCompanies().then(() => {
+      // fetchCompanies will reset statuses, which will trigger analyzeAllCompanies
+    })
+  }
+
+  // Refresh all with force refresh
+  const refreshAllForced = () => {
+    setForceRefresh(true)
     fetchCompanies().then(() => {
       // fetchCompanies will reset statuses, which will trigger analyzeAllCompanies
     })
@@ -195,6 +247,7 @@ export default function NewsPage() {
   const errorCount = companyStatuses.filter(c => c.status === 'error').length
   const totalCount = companyStatuses.length
   const newsFoundCount = companyStatuses.filter(c => c.data?.status === 'news_found').length
+  const cachedCount = companyStatuses.filter(c => c.data?.cached === true).length
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -232,7 +285,7 @@ export default function NewsPage() {
               Analyzing companies... ({completedCount + errorCount}/{totalCount})
             </span>
             <span className="text-sm text-gray-500">
-              {newsFoundCount} with news • {errorCount} errors
+              {newsFoundCount} with news • {cachedCount} cached • {errorCount} errors
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -255,6 +308,9 @@ export default function NewsPage() {
                   {companyStatus.name}
                 </div>
                 <div className="flex items-center gap-2">
+                  {companyStatus.data?.cached && (
+                    <Database className="h-4 w-4 text-purple-600" title="Cached result" />
+                  )}
                   {companyStatus.status === 'pending' && (
                     <Clock className="h-4 w-4 text-gray-400" />
                   )}
@@ -276,13 +332,25 @@ export default function NewsPage() {
                   <span className="text-red-600">Analysis failed: {companyStatus.error}</span>
                 )}
                 {companyStatus.status === 'completed' && companyStatus.data && (
-                  companyStatus.data.error ? (
-                    <span className="text-amber-600">Analysis error - please try refreshing</span>
-                  ) : companyStatus.data.status === "news_found" ? (
-                    `${companyStatus.data.summary_points?.length || 0} key developments • ${companyStatus.data.references?.length || 0} sources`
-                  ) : (
-                    "No significant developments in the analysis period"
-                  )
+                  <>
+                    {companyStatus.data.error ? (
+                      <span className="text-amber-600">Analysis error - please try refreshing</span>
+                    ) : companyStatus.data.status === "news_found" ? (
+                      <>
+                        {`${companyStatus.data.summary_points?.length || 0} key developments • ${companyStatus.data.references?.length || 0} sources`}
+                        {companyStatus.data.cached && (
+                          <span className="text-purple-600 ml-2">• From cache</span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        No significant developments in the analysis period
+                        {companyStatus.data.cached && (
+                          <span className="text-purple-600 ml-2">• From cache</span>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
               </CardDescription>
             </CardHeader>
@@ -368,15 +436,22 @@ export default function NewsPage() {
         ))}
       </div>
 
-      {/* Refresh Button */}
+      {/* Refresh Buttons */}
       {!isAnalyzing && companyStatuses.length > 0 && (
-        <div className="mt-8 text-center">
+        <div className="mt-8 flex justify-center gap-4">
           <button
             onClick={refreshAll}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
             Refresh All
+          </button>
+          <button
+            onClick={refreshAllForced}
+            className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Force Refresh (Skip Cache)
           </button>
         </div>
       )}

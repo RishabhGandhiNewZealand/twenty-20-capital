@@ -60,6 +60,26 @@ Environment variables required:
 - `TRADE_DATA_BLOB_URL` - URL to your trade data CSV file
 - `GEMINI_API_KEY` - Google Gemini API key for AI-powered news analysis (optional, only needed for News feature)
 
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```
+# Blob storage URL for trade data CSV (required)
+BLOB_READ_WRITE_TOKEN=your_blob_token_here
+
+# Google Gemini API key for AI-powered news analysis (required for news feature)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Vercel Edge Config for caching news data (optional but recommended)
+EDGE_CONFIG=your_edge_config_connection_string
+
+# Vercel API token for updating Edge Config cache (optional)
+# Required only if you want automatic cache updates
+# Get it from: https://vercel.com/account/tokens
+VERCEL_API_TOKEN=your_vercel_api_token
+```
+
 ## Extending the Application
 
 ### Adding New Features

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getCachedNewsData, prepareCacheData, isEdgeConfigAvailable } from '@/lib/edge-config'
 
 // Analyze news for a single company
 async function analyzeCompanyNews(
@@ -200,12 +201,34 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const company = searchParams.get('company')
+    const forceRefresh = searchParams.get('refresh') === 'true'
     
     if (!company) {
       return NextResponse.json(
         { error: 'Company parameter is required' },
         { status: 400 }
       )
+    }
+    
+    // Calculate date range
+    const currentDate = new Date().toISOString().split('T')[0]
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(endDate.getDate() - 30)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    // Check cache first (unless force refresh is requested)
+    if (!forceRefresh && isEdgeConfigAvailable()) {
+      const cachedData = await getCachedNewsData(company, startDateStr, endDateStr)
+      if (cachedData) {
+        logger.info(`Returning cached data for ${company}`)
+        return NextResponse.json({
+          ...cachedData,
+          cached: true,
+          cache_timestamp: new Date().toISOString()
+        })
+      }
     }
     
     // Check if Gemini API key is configured
@@ -245,18 +268,24 @@ export async function GET(request: Request) {
       })
     }
 
-    // Calculate date range
-    const currentDate = new Date().toISOString().split('T')[0]
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(endDate.getDate() - 30)
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
     // Analyze the company
     const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
     
-    return NextResponse.json(result)
+    // Prepare cache data (for logging/debugging - actual Edge Config update needs to be done via API)
+    if (isEdgeConfigAvailable() && result && !result.error) {
+      const cacheData = prepareCacheData(company, startDateStr, endDateStr, result)
+      logger.info(`Cache data prepared for ${company}:`, {
+        key: cacheData.key,
+        status: result.status,
+        summaryCount: result.summary_points?.length || 0,
+        referenceCount: result.references?.length || 0
+      })
+    }
+    
+    return NextResponse.json({
+      ...result,
+      cached: false
+    })
 
   } catch (error: any) {
     logger.error('Error in single company analysis:', error)
