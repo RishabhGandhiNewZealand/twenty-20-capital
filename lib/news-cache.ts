@@ -47,14 +47,37 @@ export class NewsCache {
       return
     }
     
-    if (this.initialized) return
+    if (this.initialized) {
+      logger.info('News cache already initialized')
+      return
+    }
     
     try {
-      await createNewsCache()
+      logger.info('Initializing news cache...')
+      
+      // Try to create the cache table (will skip if exists)
+      try {
+        await createNewsCache()
+        logger.info('News cache table created/verified')
+      } catch (error: any) {
+        // If it's just a "already exists" error, that's fine
+        if (error.code !== '42P07' && error.code !== '42710') {
+          throw error
+        }
+        logger.info('News cache table already exists')
+      }
+      
       this.initialized = true
-      logger.info('News cache initialized')
+      logger.info('News cache initialized successfully')
+      
+      // Test the connection
+      const sql = getDb()
+      const test = await sql`SELECT COUNT(*) as count FROM application.news_cache`
+      logger.info(`News cache table contains ${test[0].count} entries`)
     } catch (error) {
       logger.error('Failed to initialize news cache:', error)
+      this.initialized = false // Ensure we can retry
+      throw error // Re-throw to make initialization failures visible
     }
   }
   
@@ -63,26 +86,31 @@ export class NewsCache {
   }
   
   async get(company: string, startDate: string, endDate: string): Promise<CachedNewsData | null> {
-    if (!isDatabaseConfigured() || !this.initialized) return null
+    if (!isDatabaseConfigured() || !this.initialized) {
+      logger.warn('Cache not configured or initialized')
+      return null
+    }
     
     const sql = getDb()
     const cacheKey = this.generateCacheKey(company, startDate, endDate)
     
     try {
-      // Look for cached entry that's not expired
+      logger.info(`Looking for cache entry with key: ${cacheKey}`)
+      
+      // Look for cached entry (no expiration check - data stored forever)
       const results = await sql<CacheEntry[]>`
         SELECT * FROM application.news_cache 
         WHERE cache_key = ${cacheKey} 
-        AND expires_at > CURRENT_TIMESTAMP
         LIMIT 1
       `
       
       if (results.length === 0) {
-        logger.info(`Cache miss for ${company}`)
+        logger.info(`Cache miss for ${company} (key: ${cacheKey})`)
         return null
       }
       
       const entry = results[0]
+      logger.info(`Found cache entry for ${company}, created at: ${entry.created_at}`)
       
       // Update access statistics
       await sql`
@@ -96,7 +124,7 @@ export class NewsCache {
       return entry.response_data
       
     } catch (error) {
-      logger.error('Error retrieving from cache:', error)
+      logger.error(`Error retrieving from cache for ${company}:`, error)
       return null
     }
   }
@@ -105,19 +133,25 @@ export class NewsCache {
     company: string, 
     startDate: string, 
     endDate: string, 
-    data: CachedNewsData,
-    ttlHours: number = 24
+    data: CachedNewsData
   ): Promise<void> {
-    if (!isDatabaseConfigured() || !this.initialized) return
+    if (!isDatabaseConfigured() || !this.initialized) {
+      logger.warn('Cache not configured or initialized, cannot save data')
+      return
+    }
     
     const sql = getDb()
     const cacheKey = this.generateCacheKey(company, startDate, endDate)
+    // Set expires_at to a far future date (100 years from now) to effectively store forever
     const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + ttlHours)
+    expiresAt.setFullYear(expiresAt.getFullYear() + 100)
     
     try {
+      logger.info(`Saving cache for ${company} with key: ${cacheKey}`)
+      logger.info(`Data to cache: ${JSON.stringify(data).substring(0, 200)}...`)
+      
       // Upsert the cache entry
-      await sql`
+      const result = await sql`
         INSERT INTO application.news_cache (
           company_name, 
           cache_key, 
@@ -139,12 +173,21 @@ export class NewsCache {
           expires_at = EXCLUDED.expires_at,
           request_count = application.news_cache.request_count + 1,
           updated_at = CURRENT_TIMESTAMP
+        RETURNING id, created_at, updated_at
       `
       
-      logger.info(`Cached news data for ${company}`)
+      if (result && result.length > 0) {
+        logger.info(`Successfully cached news data for ${company} (ID: ${result[0].id})`)
+        logger.info(`Cache entry created/updated at: ${result[0].updated_at || result[0].created_at}`)
+      } else {
+        logger.warn(`Cache insert/update returned no results for ${company}`)
+      }
       
     } catch (error) {
-      logger.error('Error saving to cache:', error)
+      logger.error(`Error saving to cache for ${company}:`, error)
+      logger.error(`Cache key: ${cacheKey}`)
+      logger.error(`Data size: ${JSON.stringify(data).length} bytes`)
+      throw error // Re-throw to make errors visible
     }
   }
   

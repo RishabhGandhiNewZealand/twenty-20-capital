@@ -57,7 +57,11 @@ export async function createNewsCache() {
       $$ language 'plpgsql'
     `
     
-    // Create trigger to automatically update updated_at
+    // Create trigger to automatically update updated_at (if it doesn't exist)
+    await sql`
+      DROP TRIGGER IF EXISTS update_news_cache_updated_at ON application.news_cache
+    `
+    
     await sql`
       CREATE TRIGGER update_news_cache_updated_at 
       BEFORE UPDATE ON application.news_cache

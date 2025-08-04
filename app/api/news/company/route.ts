@@ -267,8 +267,15 @@ export async function GET(request: Request) {
     // Analyze the company
     const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
     
-    // Cache the result
-    await newsCache.set(company, startDateStr, endDateStr, result)
+    // Cache the result immediately after getting it
+    try {
+      logger.info(`Attempting to cache result for ${company}`)
+      await newsCache.set(company, startDateStr, endDateStr, result)
+      logger.info(`Successfully cached result for ${company}`)
+    } catch (cacheError: any) {
+      logger.error(`Failed to cache result for ${company}:`, cacheError)
+      // Continue even if caching fails - don't break the user experience
+    }
     
     return NextResponse.json(result)
 

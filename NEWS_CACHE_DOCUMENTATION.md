@@ -37,7 +37,7 @@ application.news_cache
 ### 1. Automatic Caching
 
 - All Gemini API responses are automatically cached
-- Default TTL: 24 hours (configurable)
+- Data is stored forever (expires_at set to 100 years in the future)
 - Cache key format: `{company_name}_{start_date}_{end_date}`
 
 ### 2. Cache Hit/Miss Tracking
@@ -84,8 +84,8 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ### Cache Settings
 
-- Default TTL: 24 hours
-- Can be customized per request in `newsCache.set()`
+- Data is stored permanently (no expiration)
+- expires_at is set to 100 years in the future to effectively store forever
 
 ## Usage Examples
 
@@ -114,8 +114,8 @@ await newsCache.initialize()
 // Get from cache
 const cached = await newsCache.get(company, startDate, endDate)
 
-// Set in cache (with 12-hour TTL)
-await newsCache.set(company, startDate, endDate, data, 12)
+// Set in cache (stored forever)
+await newsCache.set(company, startDate, endDate, data)
 
 // Invalidate company cache
 await newsCache.invalidate(company)

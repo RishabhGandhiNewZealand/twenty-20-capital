@@ -63,7 +63,7 @@ async function testCacheOperations() {
     
     // Test cache set
     console.log('\n📝 Testing cache set...')
-    await newsCache.set(testCompany, startDate, endDate, testData, 1) // 1 hour TTL
+    await newsCache.set(testCompany, startDate, endDate, testData) // Data stored forever
     console.log('   ✅ Data cached successfully')
     
     // Test cache hit

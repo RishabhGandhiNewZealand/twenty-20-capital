@@ -11,8 +11,9 @@ export function getDb() {
       throw new Error('DATABASE_URL environment variable is not set')
     }
     
+    logger.info('Initializing database connection...')
     sql = neon(databaseUrl)
-    logger.info('Database connection initialized')
+    logger.info('Database connection initialized successfully')
   }
   
   return sql
