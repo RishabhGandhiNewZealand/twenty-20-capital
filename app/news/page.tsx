@@ -149,7 +149,7 @@ export default function NewsPage() {
                   </CardTitle>
                   <CardDescription>
                     {company.status === "news_found"
-                      ? `${company.news_items.length} recent news ${company.news_items.length === 1 ? "item" : "items"} found`
+                      ? `${company.news_items.length} recent news ${company.news_items.length === 1 ? "item" : "items"} found (showing up to 3)`
                       : "No significant news found in the past 14 days"}
                   </CardDescription>
                 </CardHeader>

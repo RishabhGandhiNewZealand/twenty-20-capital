@@ -88,38 +88,35 @@ export async function GET() {
     const portfolioCompanies = await getPortfolioCompanies()
     logger.info(`Fetching news for ${portfolioCompanies.length} companies`)
 
-    // Initialize Gemini with 2.0 Flash model
+    // Initialize Gemini with 2.5 Pro Preview model
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro-preview-06-05" })
 
     // Get current date
     const currentDate = new Date().toISOString().split('T')[0]
 
-    // Construct the prompt
-    const prompt = `You are an AI model that functions as a specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
+    // Construct the prompt with the new format
+    const prompt = `**Role:** You are the Gemini 2.5 Pro model, configured to act as a specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
 
-Your response MUST be a single, valid JSON object. Do not include any explanatory text, Markdown formatting (\`\`\`json), or any content outside of the final JSON structure.
+Your response **MUST** be a single, valid JSON object. Do not include any explanatory text, Markdown formatting (e.g., \` \`\`\`json \`), or any content outside of the final JSON structure.
 
-INPUT DATA:
+**INPUT DATA:**
 
-Current Date: ${currentDate}
+  * **Current Date:** \`${currentDate}\`
+  * **Company List:** \`${JSON.stringify(portfolioCompanies)}\`
 
-Company List: ${JSON.stringify(portfolioCompanies)}
+**INSTRUCTIONS:**
 
-INSTRUCTIONS:
+1.  For each company in the \`Company List\`, perform a targeted internet search for significant news.
+2.  **Recency:** Limit your search to news published within **14 days** prior to the \`Current Date\` provided.
+3.  **Source Reliability:** Prioritize reputable financial news outlets (e.g., Reuters, Bloomberg, The Wall Street Journal, Associated Press, NZ Herald) and official company press releases from their investor relations websites.
+4.  **Content Focus:** Identify news related to financial performance, M&A, major product launches, C-suite leadership changes, and significant regulatory or legal events.
+5.  **Article Limit:** For each company, identify and summarize **up to 3** of the most significant news items that meet the criteria.
+6.  **Output Generation:** Populate the JSON object strictly according to the schema defined below.
 
-For each company in the Company List, perform a targeted internet search for significant news.
+**REQUIRED JSON OUTPUT SCHEMA:**
 
-Recency: Limit your search to news published within 14 days prior to the Current Date provided.
-
-Source Reliability: Prioritize reputable financial news outlets (e.g., Reuters, Bloomberg, Associated Press) and official company press releases from their investor relations websites.
-
-Content Focus: Extract news related to financial performance, M&A, major product launches, C-suite leadership changes, and significant regulatory or legal events.
-
-Output Generation: Populate the JSON object according to the schema defined below.
-
-REQUIRED JSON OUTPUT SCHEMA:
-
+\`\`\`json
 {
   "report_generated_date": "YYYY-MM-DD",
   "company_news": [
@@ -137,29 +134,22 @@ REQUIRED JSON OUTPUT SCHEMA:
     }
   ]
 }
+\`\`\`
 
-SCHEMA LOGIC:
+**SCHEMA LOGIC:**
 
-report_generated_date: The Current Date provided in the input.
-
-company_news: An array of objects, where each object represents a company from the input list.
-
-company_name: The name of the company being reported on.
-
-status:
-
-Set to "news_found" if you find 1 or more relevant articles within the timeframe.
-
-Set to "no_significant_news_found" if no relevant articles are found.
-
-news_items:
-
-An array containing 2-3 of the most important news item objects for the company.
-
-If status is "no_significant_news_found", this MUST be an empty array [].`
+  * \`report_generated_date\`: The \`Current Date\` provided in the input.
+  * \`company_news\`: An array of objects, where each object represents a company from the input list.
+  * \`company_name\`: The name of the company being reported on.
+  * \`status\`:
+      * Set to \`"news_found"\` if you find 1 or more relevant articles within the timeframe.
+      * Set to \`"no_significant_news_found"\` if no relevant articles are found.
+  * \`news_items\`:
+      * An array containing **up to 3** of the most important news item objects for the company. The array can contain 0, 1, 2, or 3 items.
+      * If \`status\` is \`"no_significant_news_found"\`, this **MUST** be an empty array \`[]\`.`
 
     // Call Gemini API
-    logger.info('Calling Gemini API with model: gemini-2.0-flash-exp')
+    logger.info('Calling Gemini API with model: gemini-2.5-pro-preview-06-05')
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
