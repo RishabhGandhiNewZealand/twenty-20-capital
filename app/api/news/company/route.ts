@@ -267,14 +267,33 @@ export async function GET(request: Request) {
     // Analyze the company
     const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
     
-    // Cache the result immediately after getting it
-    try {
-      logger.info(`Attempting to cache result for ${company}`)
-      await newsCache.set(company, startDateStr, endDateStr, result)
-      logger.info(`Successfully cached result for ${company}`)
-    } catch (cacheError: any) {
-      logger.error(`Failed to cache result for ${company}:`, cacheError)
-      // Continue even if caching fails - don't break the user experience
+    // Only cache successful results with news found
+    const shouldCache = result && 
+                       result.status === 'news_found' && 
+                       !result.error &&
+                       result.summary_points && 
+                       result.summary_points.length > 0 &&
+                       result.references &&
+                       result.references.length > 0
+    
+    if (shouldCache) {
+      try {
+        logger.info(`Attempting to cache result for ${company} (status: ${result.status}, summaries: ${result.summary_points.length}, refs: ${result.references.length})`)
+        await newsCache.set(company, startDateStr, endDateStr, result)
+        logger.info(`Successfully cached result for ${company}`)
+      } catch (cacheError: any) {
+        logger.error(`Failed to cache result for ${company}:`, cacheError)
+        // Continue even if caching fails - don't break the user experience
+      }
+    } else {
+      const reasons = []
+      if (!result) reasons.push('no result')
+      if (result?.status !== 'news_found') reasons.push(`status: ${result?.status}`)
+      if (result?.error) reasons.push('has error')
+      if (!result?.summary_points?.length) reasons.push('no summaries')
+      if (!result?.references?.length) reasons.push('no references')
+      
+      logger.info(`Skipping cache for ${company} - Reasons: ${reasons.join(', ')}`)
     }
     
     return NextResponse.json(result)

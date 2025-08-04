@@ -34,11 +34,21 @@ application.news_cache
 
 ## Features
 
-### 1. Automatic Caching
+### 1. Selective Automatic Caching
 
-- All Gemini API responses are automatically cached
+- Only successful Gemini API responses with actual news are cached
+- Caching criteria:
+  - Status must be `news_found`
+  - No error field present
+  - Must have at least one summary point
+  - Must have at least one reference
 - Data is stored forever (expires_at set to 100 years in the future)
 - Cache key format: `{company_name}_{start_date}_{end_date}`
+
+**Not Cached:**
+- Responses with `no_significant_news_found` status
+- Responses with errors
+- Responses with empty summary points or references
 
 ### 2. Cache Hit/Miss Tracking
 
@@ -62,13 +72,30 @@ application.news_cache
 
 1. **GET /api/news/company?company={name}**
    - Checks cache before calling Gemini API
-   - Caches successful responses automatically
+   - Only caches successful responses with actual news content
    - Returns cached data when available
+   - Logs detailed reasons when caching is skipped
 
 2. **GET /api/news/cache-stats**
    - Returns cache statistics
    - Triggers cleanup of expired entries
    - Shows cache effectiveness metrics
+
+### Caching Logic
+
+The caching decision is made using the following logic:
+
+```typescript
+const shouldCache = result && 
+                   result.status === 'news_found' && 
+                   !result.error &&
+                   result.summary_points && 
+                   result.summary_points.length > 0 &&
+                   result.references &&
+                   result.references.length > 0
+```
+
+This ensures that only high-quality, complete responses are cached.
 
 ## Configuration
 
