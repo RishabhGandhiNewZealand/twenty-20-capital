@@ -97,13 +97,15 @@ Both query parameters are optional and default to USD→NZD conversion.
 
 #### GET `/api/news`
 
-Fetches AI-powered news analysis for portfolio companies using Google's Gemini API. This endpoint:
+Fetches AI-powered news analysis for portfolio companies using Google's Gemini API with Google Search grounding for real-time results. This endpoint:
 
 - Analyzes news for both current and historical portfolio companies
+- Uses Google Search grounding for real-time, accurate results
 - Searches for news from the past 14 days
 - Prioritizes reputable financial news sources
 - Returns structured JSON with summaries and source links
 - Caches responses for 1 hour to minimize API calls
+- Separates system instructions from user prompts for better AI guidance
 
 **Environment Variable Required:**
 - `GEMINI_API_KEY`: Your Google Gemini API key (get from https://makersuite.google.com/app/apikey)
