@@ -144,33 +144,30 @@ export async function GET() {
 
     // Get current date
     const currentDate = new Date().toISOString().split('T')[0]
+    
+    // Calculate date range for the prompt
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(endDate.getDate() - 14)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Yesterday
 
     // Construct the prompt
-    const prompt = `Role: You are an AI model configured to act as a specialized Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
-
+    const prompt = `Role: A specialised Business Intelligence service. Your task is to process a list of companies and return a structured news analysis.
 Your response MUST be a single, valid JSON object. Do not include any explanatory text, Markdown formatting, or any content outside of the final JSON structure.
-
 INPUT DATA:
-
 Current Date: ${currentDate}
 Company List: ${JSON.stringify(portfolioCompanies)}
-
 INSTRUCTIONS:
 
 For each company in the Company List, perform a targeted internet search for significant news.
-
-Recency: Limit your search to news published within 14 days prior to the Current Date provided.
-
-Source Reliability: Prioritize reputable financial news outlets (e.g., Reuters, Bloomberg, The Wall Street Journal, Associated Press, NZ Herald) and official company press releases from their investor relations websites.
-
-Content Focus: Identify news related to financial performance, M&A, major product launches, C-suite leadership changes, and significant regulatory or legal events.
-
-Article Limit: For each company, identify and summarize up to 3 of the most significant news items that meet the criteria.
-
+Recency: STRICTLY limit your search to news published EXACTLY within the 14-day period preceding the Current Date provided (i.e., from ${startDateStr} to ${endDateStr} inclusive). News published outside this precise window, even by one day, MUST be excluded.
+Source Reliability: ONLY retrieve news from VERIFIED, HIGHLY REPUTABLE financial news outlets (e.g., Reuters, Bloomberg, The Wall Street Journal, Associated Press, Financial Times, NZ Herald) and OFFICIAL, VERIFIABLE company press releases directly from their investor relations websites. Any source not meeting these stringent criteria MUST be disregarded.
+Content Focus: Identify news related to financial performance (e.g., earnings reports, revenue forecasts), M&A activities (e.g., acquisitions, mergers, divestitures), major product launches, C-suite leadership changes (e.g., CEO, CFO, COO appointments or departures), and significant regulatory or legal events (e.g., antitrust investigations, major lawsuits, policy changes impacting operations).
+Article Limit: For each company, identify and summarize up to 3 of the MOST SIGNIFICANT news items that RIGOROUSLY meet all specified criteria.
+Verification: Before including any news item, IMMEDIATELY verify its publication date against the strict recency criteria and its source against the strict reliability criteria. ADDITIONALLY, CONFIRM THAT THE PROVIDED URL DIRECTLY LINKS TO THE REPORTED ARTICLE AND IS ACCESSIBLE. Only news items passing ALL checks are to be considered.
 Output Generation: Populate the JSON object strictly according to the schema defined below.
-
 REQUIRED JSON OUTPUT SCHEMA:
-
 {
 "report_generated_date": "YYYY-MM-DD",
 "company_news": [
@@ -188,25 +185,16 @@ REQUIRED JSON OUTPUT SCHEMA:
 }
 ]
 }
-
 SCHEMA LOGIC:
 
 report_generated_date: The Current Date provided in the input.
-
 company_news: An array of objects, where each object represents a company from the input list.
-
 company_name: The name of the company being reported on.
-
 status:
-
-Set to "news_found" if you find 1 or more relevant articles within the timeframe.
-
-Set to "no_significant_news_found" if no relevant articles are found.
-
+Set to "news_found" if you find 1 or more relevant articles within the STRICT timeframe and from VERIFIED sources.
+Set to "no_significant_news_found" if no relevant articles are found that meet ALL criteria.
 news_items:
-
 An array containing up to 3 of the most important news item objects for the company. The array can contain 0, 1, 2, or 3 items.
-
 If status is "no_significant_news_found", this MUST be an empty array [].`
 
     // Call Gemini API
