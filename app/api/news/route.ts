@@ -102,22 +102,22 @@ export async function GET() {
       ]
     }
 
-    // Initialize Gemini with 1.5 Flash model (more stable and widely available)
+    // Initialize Gemini with 2.5 Pro model
     let genAI: GoogleGenerativeAI
     let model: any
     
     try {
       genAI = new GoogleGenerativeAI(apiKey)
-      // Using gemini-1.5-flash as it's more stable and widely available
-      model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-      logger.info('Gemini API initialized successfully with gemini-1.5-flash')
+      // Using gemini-2.5-pro as requested
+      model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
+      logger.info('Gemini API initialized successfully with gemini-2.5-pro')
     } catch (error) {
       logger.error('Error initializing Gemini API:', error)
-      // Try with pro model as fallback
+      // Try with 1.5 flash model as fallback
       try {
         genAI = new GoogleGenerativeAI(apiKey)
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" })
-        logger.info('Falling back to gemini-1.5-pro model')
+        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+        logger.info('Falling back to gemini-1.5-flash model')
       } catch (fallbackError) {
         logger.error('Error with fallback model:', fallbackError)
         return NextResponse.json(
