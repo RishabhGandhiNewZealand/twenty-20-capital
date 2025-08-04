@@ -58,6 +58,7 @@ To work on this application, you'll need:
 Environment variables required:
 - `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage authentication
 - `TRADE_DATA_BLOB_URL` - URL to your trade data CSV file
+- `GEMINI_API_KEY` - Google Gemini API key for AI-powered news analysis (optional, only needed for News feature)
 
 ## Extending the Application
 

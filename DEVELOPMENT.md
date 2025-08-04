@@ -36,6 +36,7 @@ Understanding how data moves through the application:
 - `/stock-price` - Fetches current stock prices
 - `/exchange-rate` - Handles currency conversion
 - `/portfolio-history` - Provides historical data for charts
+- `/news` - Fetches AI-powered news analysis using Gemini API
 
 **Data Processing** (`lib/`)
 - `portfolio.ts` - CSV parsing and position calculation

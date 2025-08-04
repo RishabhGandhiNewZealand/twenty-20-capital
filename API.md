@@ -93,6 +93,27 @@ Provides currency exchange rates with:
 
 Both query parameters are optional and default to USD→NZD conversion.
 
+### News Analysis
+
+#### GET `/api/news`
+
+Fetches AI-powered news analysis for portfolio companies using Google's Gemini API. This endpoint:
+
+- Analyzes news for both current and historical portfolio companies
+- Searches for news from the past 14 days
+- Prioritizes reputable financial news sources
+- Returns structured JSON with summaries and source links
+- Caches responses for 1 hour to minimize API calls
+
+**Environment Variable Required:**
+- `GEMINI_API_KEY`: Your Google Gemini API key (get from https://makersuite.google.com/app/apikey)
+
+**Response includes:**
+- Report generation date
+- Company-specific news items with summaries
+- Source names and direct article links
+- Publication dates for each news item
+
 ## Data Flow
 
 ### Request Processing
@@ -108,6 +129,7 @@ Both query parameters are optional and default to USD→NZD conversion.
 - **Portfolio Data**: Vercel Blob storage (CSV file)
 - **Market Prices**: Yahoo Finance API
 - **Exchange Rates**: Yahoo Finance API
+- **News Analysis**: Google Gemini API
 - **Cached Data**: In-memory storage during runtime
 
 ### Caching Strategy
