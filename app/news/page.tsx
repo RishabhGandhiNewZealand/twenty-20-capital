@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, RefreshCw, TrendingUp, Link2, CheckCircle2, Clock } from "lucide-react"
+import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, TrendingUp, Link2, CheckCircle2, Clock } from "lucide-react"
 import { format } from "date-fns"
 
 interface Reference {
@@ -147,12 +147,7 @@ export default function NewsPage() {
     }
   }, [companiesData, companyStatuses, isAnalyzing, analyzeAllCompanies])
 
-  // Refresh all
-  const refreshAll = () => {
-    fetchCompanies().then(() => {
-      // fetchCompanies will reset statuses, which will trigger analyzeAllCompanies
-    })
-  }
+
 
   if (loading) {
     return (
@@ -176,14 +171,7 @@ export default function NewsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-red-700 mb-2">{error}</p>
-            <button
-              onClick={refreshAll}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Try Again
-            </button>
+            <p className="text-red-700">{error}</p>
           </CardContent>
         </Card>
       </div>
@@ -368,18 +356,7 @@ export default function NewsPage() {
         ))}
       </div>
 
-      {/* Refresh Button */}
-      {!isAnalyzing && companyStatuses.length > 0 && (
-        <div className="mt-8 text-center">
-          <button
-            onClick={refreshAll}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh All
-          </button>
-        </div>
-      )}
+
     </div>
   )
 }
