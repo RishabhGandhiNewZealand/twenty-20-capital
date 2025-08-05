@@ -12,85 +12,64 @@ async function analyzeCompanyNews(
   currentDate: string
 ): Promise<any> {
   // System instruction with all the detailed requirements
-  const systemInstruction = `You are a specialized Business Intelligence analyst with access to real-time web search.
+  const systemInstruction = `You are a Business Intelligence analyst with web search access, analyzing company news and market developments.
 
-Your task is to provide comprehensive news analysis for a single company by:
-1. Finding direct company news AND industry/market events that could impact them
-2. Synthesizing multiple sources into coherent summaries
-3. Providing accurate source URLs for all information
-4. Analyzing both company-specific and broader market implications
+TASK: Search for and synthesize news about the specified company within the given date range (typically last 30 days).
 
-IMPORTANT: Major companies ALWAYS have significant developments over a 30-day period. If direct company news seems limited, expand your search to:
-- Industry trends and competitor activities that affect market positioning
-- Broader economic factors impacting their sector
-- Regulatory changes or proposals in their industry
-- Technology shifts or disruptions in their market
-- Supply chain developments affecting their operations
-- Consumer behavior changes in their target markets
-- ESG/sustainability developments in their industry
+SEARCH STRATEGY:
+1. Start with direct company news (earnings, products, leadership, partnerships, etc.)
+2. If direct news is limited, expand to relevant industry/market developments:
+   - Competitor activities and market dynamics
+   - Regulatory changes affecting their sector
+   - Economic trends impacting their industry
+   - Technology shifts in their market
+   - Supply chain or geopolitical events affecting operations
 
-SEARCH REQUIREMENTS:
-- Time period: STRICTLY within the provided date range (30 days)
-- Direct news categories:
-  * Financial results, earnings, revenue, guidance, analyst ratings
-  * Mergers, acquisitions, partnerships, investments, divestitures
-  * Product launches, innovations, strategic initiatives, R&D developments
-  * Leadership changes, organizational restructuring, key hires/departures
-  * Regulatory issues, legal developments, compliance matters, lawsuits
-  * Market share changes, competitive positioning, customer wins/losses
-  * Stock performance, insider trading, shareholder activities
+SOURCES TO PRIORITIZE:
+- Major outlets: Reuters, Bloomberg, WSJ, Financial Times, CNBC, Forbes
+- Industry publications relevant to the company's sector
+- Company press releases and investor relations
 
-- Indirect/industry news categories:
-  * Industry trends, disruptions, and technological shifts
-  * Competitor activities, market entries/exits, competitive dynamics
-  * Regulatory changes or proposals affecting their sector
-  * Economic factors, inflation, interest rates impacting their markets
-  * Supply chain disruptions, commodity prices, geopolitical events
-  * Consumer behavior changes, demographic shifts
-  * Environmental/ESG factors affecting their industry
+OUTPUT FORMAT:
+- Provide 3-7 bullet points summarizing key developments
+- Each point should explain the significance and potential impact
+- Include source references with accurate titles and URLs
+- Return valid JSON matching the exact schema provided
 
-SOURCE REQUIREMENTS:
-- Prioritize: Reuters, Bloomberg, WSJ, Financial Times, CNBC, Forbes, Fortune
-- Also use: MarketWatch, Business Insider, The Economist, official company websites
-- Industry publications and trade journals specific to the company's sector
-- For NZ companies: NZ Herald, Stuff.co.nz, NBR
-
-OUTPUT REQUIREMENTS:
-- ALWAYS find and report 3-7 comprehensive bullet points (major companies always have news)
-- Each bullet should combine related information from multiple sources
-- Explain the significance and potential impact
-- Include both opportunities and risks
-- Provide context for understanding implications
-- List ALL sources used with accurate titles and URLs
-- Mark sources as "direct" (mentions company) or "indirect" (industry/market impact)
-- NEVER return "no_significant_news_found" for established companies - broaden search if needed
-
-Return ONLY valid JSON in the exact schema provided.`
+For major established companies, you should typically find relevant developments within a 30-day window by searching broadly across company-specific and industry news.`
 
   // Simple prompt for the specific company
   const prompt = `Analyze business news for ${company} from ${startDate} to ${endDate}.
 
 Current date: ${currentDate}
 
-IMPORTANT: Major companies always have significant developments. Find at least 3-7 key points by searching broadly including industry trends, market conditions, and competitive landscape if direct news is limited.
+Search thoroughly for both direct company news and relevant industry developments that could impact ${company}.
 
-Return this JSON structure:
+IMPORTANT: Before returning "no_significant_news_found", ensure you've searched for:
+- Direct company news (earnings, products, partnerships, leadership changes)
+- Industry trends and competitor activities
+- Market conditions affecting their sector
+- Regulatory or economic developments impacting their business
+
+Return JSON with this structure:
 {
   "company_name": "${company}",
-  "status": "news_found",
+  "status": "news_found" or "no_significant_news_found",
   "summary_points": [
-    "• Comprehensive bullet point with context and implications"
+    "• Bullet point describing development with context and implications"
   ],
   "references": [
     {
       "title": "Article headline",
-      "source_name": "Publication",
-      "url": "Direct URL",
+      "source_name": "Publication name",
+      "url": "Direct URL to article",
       "publication_date": "YYYY-MM-DD",
       "relevance": "direct" or "indirect"
     }
   ]
-}`
+}
+
+Note: For established companies, significant developments typically occur within any 30-day period when searching across company news, industry trends, and market conditions.`
 
   try {
     logger.info(`Analyzing news for ${company}...`)
@@ -174,6 +153,13 @@ Return this JSON structure:
       
       logger.info(`✓ ${company}: ${companyData.status} (${companyData.summary_points?.length || 0} summaries, ${companyData.references?.length || 0} references)`)
       
+      // Validate the response - if status is news_found but no actual content, fix it
+      if (companyData.status === 'news_found' && 
+          (!companyData.summary_points || companyData.summary_points.length === 0)) {
+        console.warn(`[${company}] Status is 'news_found' but no summary points provided. Correcting status.`)
+        companyData.status = 'no_significant_news_found'
+      }
+      
       return companyData
     } catch (parseError: any) {
       // Try to extract what we can from the response
@@ -214,9 +200,16 @@ Return this JSON structure:
         
         // Ensure required fields exist
         companyData.company_name = companyData.company_name || company
-        companyData.status = companyData.status || "news_found"
+        companyData.status = companyData.status || "no_significant_news_found"
         companyData.summary_points = companyData.summary_points || []
         companyData.references = companyData.references || []
+        
+        // Validate the response - if status is news_found but no actual content, fix it
+        if (companyData.status === 'news_found' && 
+            (!companyData.summary_points || companyData.summary_points.length === 0)) {
+          console.warn(`[${company}] Fixed JSON has 'news_found' but no summary points. Correcting status.`)
+          companyData.status = 'no_significant_news_found'
+        }
         
         return companyData
       } catch (secondError: any) {
@@ -237,23 +230,12 @@ Return this JSON structure:
       errorStack: error.stack
     })
     
-    // Return a default structure with generic news for this company
+    // Return a default structure when analysis fails
     return {
       company_name: company,
-      status: "news_found",
-      summary_points: [
-        `• Unable to retrieve specific news details at this time. Please check ${company}'s investor relations page or financial news sources for the latest updates.`,
-        `• For comprehensive coverage of ${company}, consider reviewing recent SEC filings, earnings reports, and industry analysis from major financial publications.`
-      ],
-      references: [
-        {
-          title: `${company} Investor Relations`,
-          source_name: "Company Website",
-          url: "#",
-          publication_date: currentDate,
-          relevance: "direct"
-        }
-      ],
+      status: "no_significant_news_found",
+      summary_points: [],
+      references: [],
       error: error.message
     }
   }
