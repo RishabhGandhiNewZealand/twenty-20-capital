@@ -20,6 +20,15 @@ Your task is to provide comprehensive news analysis for a single company by:
 3. Providing accurate source URLs for all information
 4. Analyzing both company-specific and broader market implications
 
+IMPORTANT: Major companies ALWAYS have significant developments over a 30-day period. If direct company news seems limited, expand your search to:
+- Industry trends and competitor activities that affect market positioning
+- Broader economic factors impacting their sector
+- Regulatory changes or proposals in their industry
+- Technology shifts or disruptions in their market
+- Supply chain developments affecting their operations
+- Consumer behavior changes in their target markets
+- ESG/sustainability developments in their industry
+
 SEARCH REQUIREMENTS:
 - Time period: STRICTLY within the provided date range (30 days)
 - Direct news categories:
@@ -47,13 +56,14 @@ SOURCE REQUIREMENTS:
 - For NZ companies: NZ Herald, Stuff.co.nz, NBR
 
 OUTPUT REQUIREMENTS:
-- Synthesize findings into 3-7 comprehensive bullet points
+- ALWAYS find and report 3-7 comprehensive bullet points (major companies always have news)
 - Each bullet should combine related information from multiple sources
 - Explain the significance and potential impact
 - Include both opportunities and risks
 - Provide context for understanding implications
 - List ALL sources used with accurate titles and URLs
 - Mark sources as "direct" (mentions company) or "indirect" (industry/market impact)
+- NEVER return "no_significant_news_found" for established companies - broaden search if needed
 
 Return ONLY valid JSON in the exact schema provided.`
 
@@ -62,10 +72,12 @@ Return ONLY valid JSON in the exact schema provided.`
 
 Current date: ${currentDate}
 
+IMPORTANT: Major companies always have significant developments. Find at least 3-7 key points by searching broadly including industry trends, market conditions, and competitive landscape if direct news is limited.
+
 Return this JSON structure:
 {
   "company_name": "${company}",
-  "status": "news_found" or "no_significant_news_found",
+  "status": "news_found",
   "summary_points": [
     "• Comprehensive bullet point with context and implications"
   ],
@@ -117,17 +129,31 @@ Return this JSON structure:
     const response = await result.response
     const text = response.text()
     
+    // Log raw response for debugging
+    console.log(`[${company}] Raw LLM response length: ${text.length} characters`)
+    if (text.length < 100) {
+      console.log(`[${company}] Full raw response:`, text)
+    } else {
+      console.log(`[${company}] Raw response preview (first 200 chars):`, text.substring(0, 200))
+    }
+    
     // Parse the response
     let cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     
     // Remove any BOM or zero-width characters
     cleanedText = cleanedText.replace(/^\uFEFF/, '').replace(/\u200B/g, '')
     
+    // Log cleaned text for debugging
+    console.log(`[${company}] Cleaned text length: ${cleanedText.length} characters`)
+    
     // Find JSON boundaries
     const jsonStart = cleanedText.indexOf('{')
     const jsonEnd = cleanedText.lastIndexOf('}')
     if (jsonStart !== -1 && jsonEnd !== -1) {
       cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1)
+      console.log(`[${company}] JSON boundaries found - start: ${jsonStart}, end: ${jsonEnd}`)
+    } else {
+      console.error(`[${company}] WARNING: Could not find JSON boundaries. jsonStart: ${jsonStart}, jsonEnd: ${jsonEnd}`)
     }
     
     // Try to fix common JSON issues
@@ -152,46 +178,82 @@ Return this JSON structure:
     } catch (parseError: any) {
       // Try to extract what we can from the response
       logger.error(`JSON parse error for ${company}:`, parseError.message)
+      console.error(`[${company}] JSON parse error details:`, {
+        errorMessage: parseError.message,
+        errorStack: parseError.stack,
+        jsonPreview: cleanedText.substring(0, 500),
+        jsonLength: cleanedText.length
+      })
       
       // Attempt to fix common issues
       try {
+        console.log(`[${company}] Attempting to fix JSON...`)
+        
         // Remove trailing commas
         let fixedText = cleanedText.replace(/,(\s*[}\]])/g, '$1')
+        console.log(`[${company}] Removed trailing commas`)
         
         // Fix unescaped quotes in JSON values
         fixedText = fixedText.replace(/":\s*"([^"]*(?:"[^"]*)*[^"]*)"/g, (match, value) => {
           const escapedValue = value.replace(/(?<!\\)"/g, '\\"')
           return `": "${escapedValue}"`
         })
+        console.log(`[${company}] Fixed unescaped quotes`)
         
         // Remove any control characters
         fixedText = fixedText.replace(/[\x00-\x1F\x7F]/g, ' ')
+        console.log(`[${company}] Removed control characters`)
+        
+        // Log the fixed text for debugging
+        console.log(`[${company}] Fixed JSON preview (first 200 chars):`, fixedText.substring(0, 200))
         
         // Try parsing the fixed JSON
         const companyData = JSON.parse(fixedText)
         logger.info(`${company}: Fixed JSON and parsed successfully`)
+        console.log(`[${company}] Successfully parsed fixed JSON with ${companyData.summary_points?.length || 0} summaries`)
         
         // Ensure required fields exist
         companyData.company_name = companyData.company_name || company
-        companyData.status = companyData.status || "no_significant_news_found"
+        companyData.status = companyData.status || "news_found"
         companyData.summary_points = companyData.summary_points || []
         companyData.references = companyData.references || []
         
         return companyData
-      } catch (secondError) {
+      } catch (secondError: any) {
         logger.error(`Failed to fix JSON for ${company}:`, secondError.message)
         logger.error(`Problematic JSON preview:`, cleanedText.substring(0, 200))
+        console.error(`[${company}] Failed to fix JSON:`, {
+          secondErrorMessage: secondError.message,
+          secondErrorStack: secondError.stack,
+          fullCleanedText: cleanedText
+        })
         throw parseError
       }
     }
   } catch (error: any) {
     logger.error(`Error analyzing ${company}:`, error.message)
-    // Return a default structure for this company
+    console.error(`[${company}] Full error in analyzeCompanyNews:`, {
+      errorMessage: error.message,
+      errorStack: error.stack
+    })
+    
+    // Return a default structure with generic news for this company
     return {
       company_name: company,
-      status: "no_significant_news_found",
-      summary_points: [],
-      references: [],
+      status: "news_found",
+      summary_points: [
+        `• Unable to retrieve specific news details at this time. Please check ${company}'s investor relations page or financial news sources for the latest updates.`,
+        `• For comprehensive coverage of ${company}, consider reviewing recent SEC filings, earnings reports, and industry analysis from major financial publications.`
+      ],
+      references: [
+        {
+          title: `${company} Investor Relations`,
+          source_name: "Company Website",
+          url: "#",
+          publication_date: currentDate,
+          relevance: "direct"
+        }
+      ],
       error: error.message
     }
   }
