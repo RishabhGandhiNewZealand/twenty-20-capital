@@ -20,8 +20,14 @@ Your task is to provide comprehensive news analysis for a single company by:
 3. Providing accurate source URLs for all information
 4. Analyzing both company-specific and broader market implications
 
+IMPORTANT RULES:
+- It is better to return news of minor significance than to report 'no_significant_news_found'
+- If no direct company news is found, provide relevant industry news that could impact the company
+- Always search broadly across company-specific news, competitor activities, and industry trends
+- For public companies, use stock ticker symbols when searching financial news sources for more accurate results
+
 SEARCH REQUIREMENTS:
-- Time period: STRICTLY within the provided date range (30 days)
+- Time period: Primarily focus on the provided date range (30 days)
 - Direct news categories:
   * Financial results, earnings, revenue, guidance, analyst ratings
   * Mergers, acquisitions, partnerships, investments, divestitures
@@ -31,7 +37,7 @@ SEARCH REQUIREMENTS:
   * Market share changes, competitive positioning, customer wins/losses
   * Stock performance, insider trading, shareholder activities
 
-- Indirect/industry news categories:
+- Indirect/industry news categories (use as fallback if direct news is limited):
   * Industry trends, disruptions, and technological shifts
   * Competitor activities, market entries/exits, competitive dynamics
   * Regulatory changes or proposals affecting their sector
@@ -55,16 +61,10 @@ OUTPUT REQUIREMENTS:
 - List ALL sources used with accurate titles and URLs
 - Mark sources as "direct" (mentions company) or "indirect" (industry/market impact)
 
-Return ONLY valid JSON in the exact schema provided.`
-
-  // Simple prompt for the specific company
-  const prompt = `Analyze business news for ${company} from ${startDate} to ${endDate}.
-
-Current date: ${currentDate}
-
-Return this JSON structure:
+JSON OUTPUT SCHEMA:
+You must return ONLY valid JSON in this exact format:
 {
-  "company_name": "${company}",
+  "company_name": "Company Name",
   "status": "news_found" or "no_significant_news_found",
   "summary_points": [
     "• Comprehensive bullet point with context and implications"
@@ -78,7 +78,17 @@ Return this JSON structure:
       "relevance": "direct" or "indirect"
     }
   ]
-}`
+}
+
+Remember: Always prefer returning minor news or relevant industry developments over reporting no news found.`
+
+  // Simple prompt for the specific company
+  const prompt = `Company: ${company}
+Start Date: ${startDate}
+End Date: ${endDate}
+Current Date: ${currentDate}
+
+Note: If the company name includes a stock ticker in parentheses, use it to ensure you're analyzing the correct company.`
 
   try {
     logger.info(`Analyzing news for ${company}...`)
