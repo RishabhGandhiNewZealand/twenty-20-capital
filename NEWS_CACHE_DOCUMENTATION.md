@@ -50,18 +50,26 @@ application.news_cache
 - Responses with errors
 - Responses with empty summary points or references
 
-### 2. Cache Hit/Miss Tracking
+### 2. Date-Based Cache Freshness
+
+- Cache entries are only returned if the end_date is within 7 days of the current date
+- Stale entries (older than 7 days) are ignored and new data is fetched
+- When multiple entries exist for a company, the most recent one is returned
+- This ensures news data is always relatively current
+
+### 3. Cache Hit/Miss Tracking
 
 - Request count incremented on each cache hit
 - Last accessed timestamp updated automatically
 - Statistics available via API endpoint
 
-### 3. Automatic Cleanup
+### 4. Automatic Cleanup
 
 - Expired entries are cleaned up when accessing cache stats
-- Configurable expiration times per cache entry
+- Manual cleanup available via API endpoint
+- Stale entries remain in database but are not used
 
-### 4. Database Connection Pooling
+### 5. Database Connection Pooling
 
 - Uses Neon's serverless driver for optimal performance
 - Connection reuse across requests
@@ -71,10 +79,11 @@ application.news_cache
 ### Modified Endpoints
 
 1. **GET /api/news/company?company={name}**
-   - Checks cache before calling Gemini API
+   - Checks cache for fresh entries (end_date within 7 days)
+   - Ignores stale cache entries automatically
    - Only caches successful responses with actual news content
-   - Returns cached data when available
-   - Logs detailed reasons when caching is skipped
+   - Returns cached data when available and fresh
+   - Logs detailed reasons when caching is skipped or cache is stale
 
 2. **GET /api/news/cache-stats**
    - Returns cache statistics
@@ -146,7 +155,7 @@ import { newsCache } from '@/lib/news-cache'
 // Initialize cache
 await newsCache.initialize()
 
-// Get from cache
+// Get from cache (only returns if end_date is within 7 days)
 const cached = await newsCache.get(company, startDate, endDate)
 
 // Set in cache (stored forever)
@@ -159,12 +168,26 @@ await newsCache.invalidate(company)
 const stats = await newsCache.getStats()
 ```
 
+## Cache Freshness Logic
+
+The cache implements a 7-day freshness window based on the `end_date` of the news data:
+
+1. **Fresh Data** (end_date within 7 days): Cache entry is returned
+2. **Stale Data** (end_date > 7 days old): Cache entry is ignored, new data fetched
+3. **Multiple Entries**: Most recent entry (by end_date) is returned if fresh
+
+This ensures that:
+- Recent news is reused efficiently
+- Old news doesn't persist indefinitely
+- Users always get relatively current information
+
 ## Performance Benefits
 
-1. **Reduced API Calls**: Eliminates redundant Gemini API calls
+1. **Reduced API Calls**: Eliminates redundant Gemini API calls for recent queries
 2. **Faster Response Times**: Database lookups are much faster than API calls
 3. **Cost Savings**: Reduces Gemini API usage and associated costs
 4. **Better Reliability**: Cached responses available even if Gemini API is down
+5. **Automatic Freshness**: 7-day window ensures data stays current
 
 ## Monitoring
 

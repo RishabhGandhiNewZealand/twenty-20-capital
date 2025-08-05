@@ -92,25 +92,34 @@ export class NewsCache {
     }
     
     const sql = getDb()
-    const cacheKey = this.generateCacheKey(company, startDate, endDate)
     
     try {
-      logger.info(`Looking for cache entry with key: ${cacheKey}`)
+      logger.info(`Looking for fresh cache entry for ${company}`)
       
-      // Look for cached entry (no expiration check - data stored forever)
+      // Look for a recent cache entry for this company where the end_date is within 7 days of now
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      
       const results = await sql<CacheEntry[]>`
         SELECT * FROM application.news_cache 
-        WHERE cache_key = ${cacheKey} 
+        WHERE company_name = ${company}
+        AND end_date >= ${sevenDaysAgo.toISOString().split('T')[0]}
+        ORDER BY end_date DESC, created_at DESC
         LIMIT 1
       `
       
       if (results.length === 0) {
-        logger.info(`Cache miss for ${company} (key: ${cacheKey})`)
+        logger.info(`No fresh cache found for ${company} (within 7 days)`)
         return null
       }
       
       const entry = results[0]
-      logger.info(`Found cache entry for ${company}, created at: ${entry.created_at}`)
+      const daysSinceEnd = Math.floor((new Date().getTime() - new Date(entry.end_date).getTime()) / (1000 * 60 * 60 * 24))
+      
+      logger.info(`Found cache entry for ${company}:`)
+      logger.info(`  - Date range: ${entry.start_date} to ${entry.end_date}`)
+      logger.info(`  - Days since end date: ${daysSinceEnd}`)
+      logger.info(`  - Created: ${entry.created_at}`)
       
       // Update access statistics
       await sql`

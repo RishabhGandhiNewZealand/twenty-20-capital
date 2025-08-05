@@ -220,10 +220,10 @@ export async function GET(request: Request) {
     // Initialize cache
     await newsCache.initialize()
     
-    // Check cache first
+    // Check cache first - the cache service will only return fresh data (end date within 7 days)
     const cachedResult = await newsCache.get(company, startDateStr, endDateStr)
     if (cachedResult) {
-      logger.info(`Returning cached result for ${company}`)
+      logger.info(`Returning fresh cached result for ${company}`)
       return NextResponse.json(cachedResult)
     }
     
