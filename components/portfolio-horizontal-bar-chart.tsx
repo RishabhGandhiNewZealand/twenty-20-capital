@@ -271,7 +271,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   // Debug logging
   useEffect(() => {
     if (chartData.length > 0) {
-      console.log('Chart data:', chartData);
+
     }
   }, [chartData.length]) // Only depend on length to avoid infinite loops
 
