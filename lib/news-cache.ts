@@ -96,20 +96,20 @@ export class NewsCache {
     try {
       logger.info(`Looking for fresh cache entry for ${company}`)
       
-      // Look for a recent cache entry for this company where the end_date is within 7 days of now
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      // Look for a recent cache entry for this company where the end_date is within 30 days of now
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       
       const results = await sql<CacheEntry[]>`
         SELECT * FROM application.news_cache 
         WHERE company_name = ${company}
-        AND end_date >= ${sevenDaysAgo.toISOString().split('T')[0]}
+        AND end_date >= ${thirtyDaysAgo.toISOString().split('T')[0]}
         ORDER BY end_date DESC, created_at DESC
         LIMIT 1
       `
       
       if (results.length === 0) {
-        logger.info(`No fresh cache found for ${company} (within 7 days)`)
+        logger.info(`No fresh cache found for ${company} (within 30 days)`)
         return null
       }
       

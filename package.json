@@ -8,7 +8,8 @@
     "lint": "next lint",
     "start": "next start",
     "cache-compositions": "tsx scripts/cache-portfolio-compositions.ts",
-    "generate-favicon": "node scripts/generate-favicon.js"
+    "generate-favicon": "node scripts/generate-favicon.js",
+    "populate-news-cache": "tsx scripts/populate-news-cache.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
