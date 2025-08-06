@@ -55,6 +55,7 @@ SOURCE REQUIREMENTS:
 OUTPUT REQUIREMENTS:
 - Synthesize findings into 3-7 comprehensive bullet points
 - Each bullet should combine related information from multiple sources
+- Include reference numbers in square brackets [1], [2], etc. when citing specific information
 - Explain the significance and potential impact
 - Include both opportunities and risks
 - Provide context for understanding implications
@@ -67,7 +68,7 @@ You must return ONLY valid JSON in this exact format:
   "company_name": "Company Name",
   "status": "news_found" or "no_significant_news_found",
   "summary_points": [
-    "• Comprehensive bullet point with context and implications"
+    "• Comprehensive bullet point with context and implications [1][3]"
   ],
   "references": [
     {
@@ -79,6 +80,8 @@ You must return ONLY valid JSON in this exact format:
     }
   ]
 }
+
+Note: Reference numbers in summary_points correspond to the index (starting from 1) of items in the references array.
 
 Remember: Always prefer returning minor news or relevant industry developments over reporting no news found.`
 
