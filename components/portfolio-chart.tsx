@@ -58,7 +58,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         if (!response.ok) {
           throw new Error('Failed to fetch portfolio history')
         }
-        const result = await response.json()
+        const result: { history: PortfolioHistoryData[] } = await response.json()
         
         if (!result.history || result.history.length === 0) {
           setError('No portfolio history data available')
@@ -66,7 +66,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         }
         
         // Format data for the chart - keep original format for value view
-        const formattedData = result.history
+        const formattedData: PortfolioHistoryData[] = result.history
         
         // Calculate percentage performance data
         const performanceData = calculatePerformanceData(formattedData)
@@ -122,7 +122,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     if (data.length <= maxPoints) return data
     
     const step = Math.ceil(data.length / maxPoints)
-    const sampled = []
+    const sampled: T[] = []
     
     for (let i = 0; i < data.length; i += step) {
       sampled.push(data[i])

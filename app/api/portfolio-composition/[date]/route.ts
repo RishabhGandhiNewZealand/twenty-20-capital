@@ -19,10 +19,10 @@ const compositionCache = new Map<string, HoldingAtDate[]>()
 
 export async function GET(
   request: Request,
-  { params }: { params: { date: string } }
+  { params }: { params: Promise<{ date: string }> }
 ) {
   try {
-    const targetDate = params.date
+    const { date: targetDate } = await params
     
     // Check cache first
     if (compositionCache.has(targetDate)) {

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { parseCSVData } from '@/lib/portfolio'
-import { calculateDailyReturns } from '@/lib/portfolioCalculations'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { CACHE_TTL, FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'

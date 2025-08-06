@@ -229,7 +229,7 @@ Return this JSON structure:
         
         // Fix unescaped quotes in JSON values
         // This regex looks for patterns like "value": "text with "quotes" inside"
-        fixedText = fixedText.replace(/":\s*"([^"]*(?:"[^"]*)*[^"]*)"/g, (match, value) => {
+        fixedText = fixedText.replace(/":\s*"([^"]*(?:"[^"]*)*[^"]*)"/g, (match: string, value: string) => {
           // Escape internal quotes
           const escapedValue = value.replace(/(?<!\\)"/g, '\\"')
           return `": "${escapedValue}"`
@@ -250,7 +250,7 @@ Return this JSON structure:
         
         return companyData
       } catch (secondError) {
-        logger.error(`Failed to fix JSON for ${company}:`, secondError.message)
+        logger.error(`Failed to fix JSON for ${company}:`, (secondError as Error).message)
         logger.error(`Problematic JSON preview:`, cleanedText.substring(0, 200))
         throw parseError
       }
@@ -307,7 +307,7 @@ export async function GET() {
           topP: 0.95,
         },
         tools: [{
-          googleSearch: {}
+          googleSearchRetrieval: {}
         }]
       })
       logger.info('Gemini API initialized with gemini-2.5-flash-lite and Google Search')
@@ -320,7 +320,7 @@ export async function GET() {
         model = genAI.getGenerativeModel({ 
           model: "gemini-1.5-flash",
           tools: [{
-            googleSearch: {}
+            googleSearchRetrieval: {}
           }]
         })
         logger.info('Using fallback model: gemini-1.5-flash')

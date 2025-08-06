@@ -20,10 +20,10 @@ export async function POST() {
       RETURNING id, company_name
     `
     
-    // Delete entries with errors
+    // Delete entries with error status
     const errorDeleted = await sql`
       DELETE FROM application.news_cache
-      WHERE response_data->>'error' IS NOT NULL
+      WHERE response_data->>'status' = 'error'
       RETURNING id, company_name
     `
     
@@ -38,7 +38,10 @@ export async function POST() {
       RETURNING id, company_name
     `
     
-    const totalDeleted = noNewsDeleted.length + errorDeleted.length + emptyDeleted.length
+    const noNewsCount = Array.isArray(noNewsDeleted) ? noNewsDeleted.length : 0
+    const errorCount = Array.isArray(errorDeleted) ? errorDeleted.length : 0
+    const emptyCount = Array.isArray(emptyDeleted) ? emptyDeleted.length : 0
+    const totalDeleted = noNewsCount + errorCount + emptyCount
     
     logger.info(`Cache cleanup completed: ${totalDeleted} invalid entries removed`)
     
@@ -46,14 +49,9 @@ export async function POST() {
       success: true,
       cleaned: {
         total: totalDeleted,
-        noNews: noNewsDeleted.length,
-        errors: errorDeleted.length,
-        emptyData: emptyDeleted.length
-      },
-      details: {
-        noNewsCompanies: noNewsDeleted.map(e => e.company_name),
-        errorCompanies: errorDeleted.map(e => e.company_name),
-        emptyDataCompanies: emptyDeleted.map(e => e.company_name)
+        noNews: noNewsCount,
+        errors: errorCount,
+        empty: emptyCount
       }
     })
     

@@ -288,20 +288,21 @@ export async function GET(request: Request) {
           // Not setting topK or topP as per recommendation
         },
         tools: [{
-          googleSearch: {}
+          googleSearchRetrieval: {}
         }]
       })
     } catch (error: any) {
       // Fallback model
+      logger.warn(`Primary model failed, using fallback: ${error.message}`)
       genAI = new GoogleGenerativeAI(apiKey)
-      model = genAI.getGenerativeModel({ 
+      model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash-lite",
         generationConfig: {
           temperature: 0.3,
           // Not setting topK or topP as per recommendation
         },
         tools: [{
-          googleSearch: {}
+          googleSearchRetrieval: {}
         }]
       })
     }

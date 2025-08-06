@@ -119,8 +119,9 @@ async function cachePortfolioCompositions() {
         const dateStr = currentDate.toISOString().split('T')[0]
         
         if (priceMap.has(dateStr)) {
-          lastPrice = priceMap.get(dateStr)!
-          filledMap.set(dateStr, lastPrice)
+          const price = priceMap.get(dateStr)!
+          lastPrice = price
+          filledMap.set(dateStr, price)
         } else if (lastPrice !== null) {
           filledMap.set(dateStr, lastPrice)
         }

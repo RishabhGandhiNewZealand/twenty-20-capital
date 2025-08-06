@@ -88,8 +88,9 @@ export async function cleanupExpiredCache() {
       RETURNING id
     `
     
-    logger.info(`Cleaned up ${result.length} expired cache entries`)
-    return result.length
+    const deletedCount = Array.isArray(result) ? result.length : 0
+    logger.info(`Cleaned up ${deletedCount} expired cache entries`)
+    return deletedCount
     
   } catch (error) {
     logger.error('Error cleaning up expired cache:', error)

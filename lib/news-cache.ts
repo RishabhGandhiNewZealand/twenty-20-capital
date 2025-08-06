@@ -73,7 +73,8 @@ export class NewsCache {
       // Test the connection
       const sql = getDb()
       const test = await sql`SELECT COUNT(*) as count FROM application.news_cache`
-      logger.info(`News cache table contains ${test[0].count} entries`)
+      const count = Array.isArray(test) && test.length > 0 ? (test[0] as any).count : 0
+      logger.info(`News cache table contains ${count} entries`)
     } catch (error) {
       logger.error('Failed to initialize news cache:', error)
       this.initialized = false // Ensure we can retry
@@ -100,7 +101,7 @@ export class NewsCache {
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
       
-      const results = await sql<CacheEntry[]>`
+      const results = await sql`
         SELECT * FROM application.news_cache 
         WHERE company_name = ${company}
         AND end_date >= ${sevenDaysAgo.toISOString().split('T')[0]}
@@ -108,12 +109,12 @@ export class NewsCache {
         LIMIT 1
       `
       
-      if (results.length === 0) {
+      if (!Array.isArray(results) || results.length === 0) {
         logger.info(`No fresh cache found for ${company} (within 7 days)`)
         return null
       }
       
-      const entry = results[0]
+      const entry = results[0] as CacheEntry
       const daysSinceEnd = Math.floor((new Date().getTime() - new Date(entry.end_date).getTime()) / (1000 * 60 * 60 * 24))
       
       logger.info(`Found cache entry for ${company}:`)
@@ -203,9 +204,9 @@ export class NewsCache {
         RETURNING id, created_at, updated_at
       `
       
-      if (result && result.length > 0) {
-        logger.info(`Successfully cached news data for ${company} (ID: ${result[0].id})`)
-        logger.info(`Cache entry created/updated at: ${result[0].updated_at || result[0].created_at}`)
+      if (Array.isArray(result) && result.length > 0) {
+        logger.info(`Successfully cached news data for ${company} (ID: ${(result[0] as any).id})`)
+        logger.info(`Cache entry created/updated at: ${(result[0] as any).updated_at || (result[0] as any).created_at}`)
       } else {
         logger.warn(`Cache insert/update returned no results for ${company}`)
       }
@@ -230,7 +231,8 @@ export class NewsCache {
         RETURNING id
       `
       
-      logger.info(`Invalidated ${result.length} cache entries for ${company}`)
+      const deletedCount = Array.isArray(result) ? result.length : 0
+      logger.info(`Invalidated ${deletedCount} cache entries for ${company}`)
       
     } catch (error) {
       logger.error('Error invalidating cache:', error)
@@ -259,12 +261,17 @@ export class NewsCache {
         FROM application.news_cache
       `
       
+      if (!Array.isArray(stats) || stats.length === 0) {
+        return null
+      }
+      
+      const stat = stats[0] as any
       return {
-        totalEntries: parseInt(stats[0].total_entries),
-        activeEntries: parseInt(stats[0].active_entries),
-        expiredEntries: parseInt(stats[0].expired_entries),
-        totalRequests: parseInt(stats[0].total_requests || '0'),
-        avgRequestsPerEntry: parseFloat(stats[0].avg_requests_per_entry || '0')
+        totalEntries: parseInt(stat.total_entries),
+        activeEntries: parseInt(stat.active_entries),
+        expiredEntries: parseInt(stat.expired_entries),
+        totalRequests: parseInt(stat.total_requests || '0'),
+        avgRequestsPerEntry: parseFloat(stat.avg_requests_per_entry || '0')
       }
       
     } catch (error) {
