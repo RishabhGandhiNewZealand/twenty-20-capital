@@ -13,14 +13,8 @@ const nextConfig = {
   },
   // Enable React strict mode for better development experience
   reactStrictMode: true,
-  // Enable SWC minification for better performance
-  swcMinify: true,
   // Optimize production builds
   productionBrowserSourceMaps: false,
-  // Enable experimental features for better performance
-  experimental: {
-    optimizeCss: true,
-  },
 }
 
 export default nextConfig
