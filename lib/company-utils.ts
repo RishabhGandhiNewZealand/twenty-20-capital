@@ -13,7 +13,11 @@ const COMPANY_DOMAINS: Record<string, string> = {
   'UNH': 'unitedhealthgroup.com',
   'ANET': 'arista.com',
   'CP': 'cpr.ca',
-  'MSCI': 'msci.com'
+  'MSCI': 'msci.com',
+  'MSFT': 'microsoft.com',
+  'TSLA': 'tesla.com',
+  'FCG': 'fonterra.com',
+  'FBU': 'fletcherbuilding.com'
 }
 
 export function getCompanyDomain(symbol: string): string {

@@ -14,6 +14,7 @@ export default function Navigation() {
     { href: "/", label: "Portfolio" },
     { href: "/reports", label: "Reports" },
     { href: "/analyses", label: "Analyses" },
+    { href: "/news", label: "News" },
     { href: "/about", label: "About" },
   ]
 
