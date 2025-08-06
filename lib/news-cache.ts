@@ -146,6 +146,7 @@ export class NewsCache {
   ): Promise<void> {
     if (!isDatabaseConfigured() || !this.initialized) {
       logger.warn('Cache not configured or initialized, cannot save data')
+      logger.warn(`isDatabaseConfigured: ${isDatabaseConfigured()}, initialized: ${this.initialized}`)
       return
     }
     
@@ -175,7 +176,8 @@ export class NewsCache {
     
     try {
       logger.info(`Saving cache for ${company} with key: ${cacheKey}`)
-      logger.info(`Data to cache: ${JSON.stringify(data).substring(0, 200)}...`)
+      logger.info(`Date range: ${startDate} to ${endDate}`)
+      logger.info(`Data preview: status=${data.status}, summaries=${data.summary_points.length}, refs=${data.references.length}`)
       
       // Upsert the cache entry
       const result = await sql`

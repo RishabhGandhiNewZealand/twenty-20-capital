@@ -32,7 +32,7 @@ The news page now operates in a **read-only cache mode**:
 - Returns empty result if no cache exists
 
 ### 4. Cron Job
-**File**: `/api/cron/populate-news-cache.ts`
+**Route**: `/app/api/cron/populate-news-cache/route.ts`
 - Runs daily at midnight UTC
 - Triggers cache population automatically
 - Configured in `vercel.json`
@@ -53,7 +53,7 @@ DATABASE_URL=your_postgres_connection_string
 
 # Optional (but recommended)
 CACHE_POPULATE_SECRET=your_secret_token
-CRON_SECRET=your_cron_secret
+CRON_SECRET=your_cron_secret  # Required for Vercel cron jobs
 ```
 
 ### Vercel Configuration
@@ -71,13 +71,15 @@ The `vercel.json` file configures a daily cron job:
 }
 ```
 
+**Important**: Set `CRON_SECRET` in Vercel environment variables. Vercel will include this as a bearer token when calling the cron endpoint.
+
 ## Deployment Process
 
 ### Automatic (Recommended)
 
 1. Deploy to Vercel
 2. The daily cron job will populate cache at midnight UTC
-3. For immediate population, use Vercel deployment hooks
+3. For immediate population, use manual trigger or deployment hooks
 
 ### Manual Trigger
 
@@ -107,6 +109,33 @@ npm run populate-news-cache
 curl -X POST http://localhost:3000/api/news/populate-cache \
   -H "Authorization: Bearer default-secret"
 ```
+
+## Diagnostic Endpoints
+
+### 1. Full System Diagnostics
+```bash
+curl https://your-app.vercel.app/api/news/diagnostics
+```
+
+Returns comprehensive information about:
+- Environment configuration
+- Cache status and statistics
+- Portfolio companies
+- Recommendations for fixes
+
+### 2. Test Gemini API
+```bash
+curl https://your-app.vercel.app/api/news/test-gemini
+```
+
+Tests if Gemini API is properly configured and working.
+
+### 3. Check Cache Status
+```bash
+curl https://your-app.vercel.app/api/news/populate-cache
+```
+
+Returns current cache statistics without triggering population.
 
 ## Vercel Deployment Hooks
 
@@ -163,18 +192,68 @@ Response includes:
 
 ## Troubleshooting
 
-### Cache not populating
-1. Check `GEMINI_API_KEY` is set in Vercel environment
-2. Check `DATABASE_URL` is configured
-3. Verify `CACHE_POPULATE_SECRET` matches between client and server
-4. Check Vercel function logs for errors
+### Nothing is being cached
 
-### Rate limits
+1. **Run diagnostics first**:
+   ```bash
+   curl https://your-app.vercel.app/api/news/diagnostics
+   ```
+
+2. **Check Gemini API**:
+   ```bash
+   curl https://your-app.vercel.app/api/news/test-gemini
+   ```
+
+3. **Verify environment variables in Vercel**:
+   - `GEMINI_API_KEY` - Must be set
+   - `DATABASE_URL` - Must be set
+   - `CACHE_POPULATE_SECRET` - Should match what you use in requests
+   - `CRON_SECRET` - Required for cron jobs to work
+
+4. **Check logs in Vercel dashboard**:
+   - Go to Functions tab
+   - Look for `api/news/populate-cache` logs
+   - Check for specific error messages
+
+### Common Issues
+
+#### Cron job not running
+- Ensure `CRON_SECRET` is set in Vercel environment
+- Check cron job logs in Vercel Functions tab
+- Verify cron job path matches exactly: `/api/cron/populate-news-cache`
+
+#### Cache not populating
+1. Check if database is accessible
+2. Verify Gemini API key is valid
+3. Look for rate limit errors in logs
+4. Check if companies are being found correctly
+
+#### Empty news page
+- This is expected if cache hasn't been populated yet
+- Manually trigger population:
+  ```bash
+  curl -X POST https://your-app.vercel.app/api/news/populate-cache \
+    -H "Authorization: Bearer your-secret"
+  ```
+
+### Debug Steps
+
+1. **Test individual company**:
+   - Temporarily modify the populate script to test one company
+   - Check logs for specific errors
+
+2. **Check cache table directly**:
+   - Connect to your PostgreSQL database
+   - Query: `SELECT * FROM application.news_cache ORDER BY created_at DESC LIMIT 10;`
+
+3. **Force refresh**:
+   ```bash
+   curl -X POST "https://your-app.vercel.app/api/news/populate-cache?force=true" \
+     -H "Authorization: Bearer your-secret"
+   ```
+
+### Rate Limits
 - The system includes exponential backoff for rate limits
 - Max 3 retries with delays: 1s, 2s, 5s
 - Sequential processing prevents hitting limits
-
-### Empty news page
-- This is expected if cache hasn't been populated yet
-- Trigger manual population or wait for cron job
-- Check cache status endpoint for diagnostics
+- If still hitting limits, increase delay between companies

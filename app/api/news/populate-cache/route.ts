@@ -373,6 +373,15 @@ export async function POST(request: Request) {
         // Analyze the company
         const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
         
+        // Log the result for debugging
+        logger.info(`Analysis result for ${company}:`, {
+          status: result.status,
+          hasError: !!result.error,
+          summaryCount: result.summary_points?.length || 0,
+          referenceCount: result.references?.length || 0,
+          error: result.error
+        })
+        
         // Only cache successful results with news found
         const shouldCache = result && 
                            result.status === 'news_found' && 
@@ -387,7 +396,13 @@ export async function POST(request: Request) {
           logger.info(`Successfully cached news for ${company}`)
           successCount++
         } else {
-          logger.warn(`Skipping cache for ${company} - no significant news found`)
+          const reasons = []
+          if (!result) reasons.push('no result')
+          if (result?.status !== 'news_found') reasons.push(`status: ${result?.status}`)
+          if (result?.error) reasons.push('has error')
+          if (!result?.summary_points?.length) reasons.push('no summaries')
+          if (!result?.references?.length) reasons.push('no references')
+          logger.warn(`Skipping cache for ${company} - Reasons: ${reasons.join(', ')}`)
         }
         
         // Add delay between companies to avoid rate limits
