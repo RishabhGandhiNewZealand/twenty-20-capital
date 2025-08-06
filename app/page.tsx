@@ -81,8 +81,14 @@ export default function HomePage() {
         // Fetch all data in parallel for better performance
         const [currentResponse, portfolioResponse, historyResponse] = await Promise.all([
           fetch('/api/portfolio-current'),
-          fetch('/api/portfolio').catch(() => null), // Handle potential failure gracefully
-          fetch('/api/portfolio-history').catch(() => null)
+          fetch('/api/portfolio').catch((error) => {
+            console.error('Failed to fetch portfolio data:', error)
+            return null
+          }),
+          fetch('/api/portfolio-history').catch((error) => {
+            console.error('Failed to fetch portfolio history:', error)
+            return null
+          })
         ])
 
         // Handle current portfolio data (required)
