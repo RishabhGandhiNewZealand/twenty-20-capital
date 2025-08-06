@@ -292,11 +292,10 @@ export async function GET(request: Request) {
     try {
       genAI = new GoogleGenerativeAI(apiKey)
       model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash",
         generationConfig: {
-          temperature: 0.1,
-          topK: 40,
-          topP: 0.95,
+          temperature: 0.3,
+          // Not setting topK or topP as per recommendation
         },
         tools: [{
           googleSearch: {}
@@ -306,7 +305,11 @@ export async function GET(request: Request) {
       // Fallback model
       genAI = new GoogleGenerativeAI(apiKey)
       model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash-lite",
+        generationConfig: {
+          temperature: 0.3,
+          // Not setting topK or topP as per recommendation
+        },
         tools: [{
           googleSearch: {}
         }]
