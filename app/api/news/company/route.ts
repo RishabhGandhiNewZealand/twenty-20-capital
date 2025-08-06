@@ -55,6 +55,7 @@ SOURCE REQUIREMENTS:
 OUTPUT REQUIREMENTS:
 - Synthesize findings into 3-7 comprehensive bullet points
 - Each bullet should combine related information from multiple sources
+- When citing information, mention the source name naturally within the text (e.g., "according to Reuters", "Bloomberg reported", "per WSJ")
 - Explain the significance and potential impact
 - Include both opportunities and risks
 - Provide context for understanding implications

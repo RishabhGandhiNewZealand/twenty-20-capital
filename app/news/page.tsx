@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, TrendingUp, Link2, CheckCircle2, Clock } from "lucide-react"
+import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, TrendingUp, Link2, CheckCircle2, Clock, FileText } from "lucide-react"
 import { format } from "date-fns"
+import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 interface Reference {
   title: string
@@ -293,7 +302,76 @@ export default function NewsPage() {
                     <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                   )}
                   {companyStatus.status === 'completed' && (
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      {companyStatus.data?.status === "news_found" && 
+                       companyStatus.data?.references && 
+                       companyStatus.data.references.length > 0 && (
+                        <Sheet>
+                          <SheetTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2">
+                              <FileText className="h-4 w-4 mr-1" />
+                              {companyStatus.data.references.length} Sources
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent className="w-[400px] sm:w-[540px]">
+                            <SheetHeader>
+                              <SheetTitle>Sources & References</SheetTitle>
+                              <SheetDescription>
+                                {companyStatus.name} - {companyStatus.data.references.length} sources
+                              </SheetDescription>
+                            </SheetHeader>
+                            <div className="mt-6 space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+                              {companyStatus.data.references.map((ref, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-start gap-3 pb-3 border-b last:border-0"
+                                >
+                                  <span className="text-gray-400 mt-1 text-sm">
+                                    {ref.relevance === "indirect" ? "○" : "●"}
+                                  </span>
+                                  <div className="flex-1">
+                                    <a
+                                      href={ref.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1 font-medium"
+                                    >
+                                      {ref.title}
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                    <div className="flex items-center gap-3 text-gray-500 text-sm mt-1">
+                                      <span>{ref.source_name}</span>
+                                      <span>•</span>
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {(() => {
+                                          try {
+                                            const date = new Date(ref.publication_date)
+                                            if (isNaN(date.getTime())) {
+                                              return ref.publication_date || 'Date unavailable'
+                                            }
+                                            return format(date, "MMM d, yyyy")
+                                          } catch {
+                                            return ref.publication_date || 'Date unavailable'
+                                          }
+                                        })()}
+                                      </span>
+                                      {ref.relevance === "indirect" && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="text-amber-600 text-xs">Industry/Market Impact</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </SheetContent>
+                        </Sheet>
+                      )}
+                    </>
                   )}
                   {companyStatus.status === 'error' && (
                     <AlertCircle className="h-4 w-4 text-red-600" />
@@ -319,7 +397,7 @@ export default function NewsPage() {
             </CardHeader>
             
             {companyStatus.status === 'completed' && companyStatus.data?.status === "news_found" && (
-              <CardContent className="pt-6 space-y-6">
+              <CardContent className="pt-6">
                 {/* Summary Points Section */}
                 {Array.isArray(companyStatus.data.summary_points) && companyStatus.data.summary_points.length > 0 && (
                   <div>
@@ -328,68 +406,46 @@ export default function NewsPage() {
                       Key Developments & Analysis
                     </h3>
                     <div className="space-y-2">
-                      {companyStatus.data.summary_points.map((point, index) => (
-                        <p key={index} className="text-gray-800 leading-relaxed">
-                          {point}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* References Section */}
-                {Array.isArray(companyStatus.data.references) && companyStatus.data.references.length > 0 && (
-                  <div className="border-t pt-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <Link2 className="h-4 w-4" />
-                      Sources & References
-                    </h3>
-                    <div className="space-y-2">
-                      {companyStatus.data.references.map((ref, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start gap-2 text-sm"
-                        >
-                          <span className="text-gray-400 mt-0.5">
-                            {ref.relevance === "indirect" ? "○" : "●"}
-                          </span>
-                          <div className="flex-1">
-                            <a
-                              href={ref.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
-                            >
-                              {ref.title}
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                            <div className="flex items-center gap-3 text-gray-500 text-xs mt-0.5">
-                              <span>{ref.source_name}</span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {(() => {
-                                  try {
-                                    const date = new Date(ref.publication_date)
-                                    if (isNaN(date.getTime())) {
-                                      return ref.publication_date || 'Date unavailable'
-                                    }
-                                    return format(date, "MMM d, yyyy")
-                                  } catch {
-                                    return ref.publication_date || 'Date unavailable'
-                                  }
-                                })()}
-                              </span>
-                              {ref.relevance === "indirect" && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-amber-600">Industry/Market Impact</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                      {companyStatus.data.summary_points.map((point, index) => {
+                        // Function to convert references in text to hyperlinks
+                        const renderPointWithLinks = (text: string) => {
+                          // Look for patterns like "according to [source]" or "reported by [source]" or "[source] reported"
+                          const sourcePatterns = [
+                            /according to ([\w\s&'.,-]+?)(?:\s*\(|,|\.|$)/gi,
+                            /reported by ([\w\s&'.,-]+?)(?:\s*\(|,|\.|$)/gi,
+                            /([\w\s&'.,-]+?) (?:reported|announced|revealed|stated|said)(?:\s|,|\.|$)/gi,
+                            /\(([\w\s&'.,-]+?)\)/g, // Sources in parentheses
+                          ]
+                          
+                          let processedText = text
+                          const references = companyStatus.data?.references || []
+                          
+                          // Try to match sources mentioned in the text with actual references
+                          references.forEach(ref => {
+                            const sourceName = ref.source_name
+                            const sourceVariations = [
+                              sourceName,
+                              sourceName.replace(/\./g, ''), // Remove dots
+                              sourceName.split(' ')[0], // First word only (e.g., "Reuters" from "Reuters News")
+                            ]
+                            
+                            sourceVariations.forEach(variation => {
+                              const regex = new RegExp(`\\b${variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
+                              processedText = processedText.replace(regex, (match) => {
+                                return `<a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline decoration-dotted underline-offset-2">${match}</a>`
+                              })
+                            })
+                          })
+                          
+                          return <span dangerouslySetInnerHTML={{ __html: processedText }} />
+                        }
+                        
+                        return (
+                          <p key={index} className="text-gray-800 leading-relaxed">
+                            {renderPointWithLinks(point)}
+                          </p>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
