@@ -1,12 +1,34 @@
 /**
  * Performance optimization utilities
+ * 
+ * This module provides utility functions to optimize performance in React applications
+ * by implementing memoization, debouncing, and throttling patterns.
  */
 
 /**
  * Simple memoization function for expensive calculations
- * @param fn Function to memoize
- * @param getKey Function to generate cache key from arguments
- * @returns Memoized function
+ * 
+ * Memoization is an optimization technique that stores the results of expensive function calls
+ * and returns the cached result when the same inputs occur again.
+ * 
+ * @param fn - The function to memoize
+ * @param getKey - Optional function to generate cache key from arguments (defaults to JSON.stringify)
+ * @returns A memoized version of the function
+ * 
+ * @example
+ * // Memoize an expensive calculation
+ * const expensiveCalc = (n: number) => {
+ *   console.log('Computing...')
+ *   return n * n
+ * }
+ * 
+ * const memoizedCalc = memoize(expensiveCalc)
+ * memoizedCalc(5) // logs: Computing... returns: 25
+ * memoizedCalc(5) // returns: 25 (from cache, no log)
+ * 
+ * @remarks
+ * - Cache size is limited to 100 entries to prevent memory leaks
+ * - Uses LRU (Least Recently Used) eviction when cache is full
  */
 export function memoize<TArgs extends any[], TResult>(
   fn: (...args: TArgs) => TResult,
