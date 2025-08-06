@@ -66,13 +66,24 @@ export default function NewsPage() {
   // Toggle company expansion
   const toggleCompany = (companyName: string) => {
     setExpandedCompanies(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(companyName)) {
-        newSet.delete(companyName)
+      const newSet = new Set<string>()
+      // If clicking on an already expanded company, collapse it
+      if (prev.has(companyName)) {
+        return newSet // Return empty set
       } else {
+        // Otherwise, expand only this company
         newSet.add(companyName)
+        // Auto-scroll to the expanded card after a short delay
+        setTimeout(() => {
+          const element = document.getElementById(`company-card-${companyName}`)
+          if (element) {
+            const yOffset = -80 // Offset for fixed header
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
+            window.scrollTo({ top: y, behavior: 'smooth' })
+          }
+        }, 100)
+        return newSet
       }
-      return newSet
     })
   }
 
@@ -302,7 +313,7 @@ export default function NewsPage() {
       )}
 
       {/* Company Tiles Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-8">
         {companyStatuses.map((companyStatus) => {
           const symbol = extractSymbol(companyStatus.name)
           const companyNameOnly = companyStatus.name.replace(/\s*\([^)]*\)$/, '')
@@ -314,8 +325,8 @@ export default function NewsPage() {
               key={companyStatus.name}
               onClick={() => toggleCompany(companyStatus.name)}
               className={cn(
-                "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
-                "flex flex-col items-center justify-center min-h-[120px]",
+                "relative p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+                "flex flex-col items-center justify-center min-h-[96px]",
                 isExpanded && "ring-2 ring-blue-500 border-blue-500",
                 !isExpanded && hasNews && "border-green-200 bg-green-50 hover:border-green-300",
                 !isExpanded && companyStatus.status === 'completed' && !hasNews && "border-gray-200 bg-gray-50 hover:border-gray-300",
@@ -326,12 +337,12 @@ export default function NewsPage() {
             >
               {/* Company Logo */}
               {symbol && (
-                <div className="relative w-12 h-12 bg-white rounded-lg shadow-sm overflow-hidden mb-2">
+                <div className="relative w-10 h-10 bg-white rounded-lg shadow-sm overflow-hidden mb-1">
                   <Image
                     src={getLogoUrl(symbol)}
                     alt={`${symbol} logo`}
-                    width={48}
-                    height={48}
+                    width={40}
+                    height={40}
                     className="object-contain p-1"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
@@ -339,50 +350,50 @@ export default function NewsPage() {
                     }}
                   />
                   <div className="hidden absolute inset-0 flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-gray-400" />
+                    <Building2 className="h-5 w-5 text-gray-400" />
                   </div>
                 </div>
               )}
-              {!symbol && <Building2 className="h-8 w-8 text-gray-400 mb-2" />}
+              {!symbol && <Building2 className="h-6 w-6 text-gray-400 mb-1" />}
               
               {/* Company Name */}
               <div className="text-center">
-                <div className="font-medium text-sm">{companyNameOnly}</div>
+                <div className="font-medium text-xs leading-tight">{companyNameOnly}</div>
                 {symbol && <div className="text-xs text-gray-500">{symbol}</div>}
               </div>
               
               {/* Status Indicator */}
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-1 right-1">
                 {companyStatus.status === 'pending' && (
-                  <Clock className="h-4 w-4 text-gray-400" />
+                  <Clock className="h-3 w-3 text-gray-400" />
                 )}
                 {companyStatus.status === 'loading' && (
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
                 )}
                 {companyStatus.status === 'completed' && hasNews && (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <CheckCircle2 className="h-3 w-3 text-green-600" />
                 )}
                 {companyStatus.status === 'completed' && !hasNews && (
-                  <div className="h-4 w-4 rounded-full border-2 border-gray-400" />
+                  <div className="h-3 w-3 rounded-full border-2 border-gray-400" />
                 )}
                 {companyStatus.status === 'error' && (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertCircle className="h-3 w-3 text-red-600" />
                 )}
               </div>
               
               {/* Expand/Collapse Indicator */}
-              <div className="absolute bottom-2 right-2">
+              <div className="absolute bottom-1 right-1">
                 {isExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-gray-400" />
+                  <ChevronUp className="h-3 w-3 text-gray-400" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-3 w-3 text-gray-400" />
                 )}
               </div>
               
               {/* News Count Badge */}
               {hasNews && companyStatus.data && (
-                <div className="absolute bottom-2 left-2 text-xs text-gray-600">
-                  {companyStatus.data.summary_points?.length || 0} news
+                <div className="absolute bottom-1 left-1 text-xs text-gray-600">
+                  {companyStatus.data.summary_points?.length || 0}
                 </div>
               )}
             </button>
@@ -397,7 +408,11 @@ export default function NewsPage() {
           const companyNameOnly = companyStatus.name.replace(/\s*\([^)]*\)$/, '')
           
           return (
-            <Card key={companyStatus.name} className="overflow-hidden animate-in slide-in-from-top-2 duration-300">
+            <Card 
+              key={companyStatus.name} 
+              id={`company-card-${companyStatus.name}`}
+              className="overflow-hidden animate-in slide-in-from-top-2 duration-300"
+            >
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-3 text-lg">
