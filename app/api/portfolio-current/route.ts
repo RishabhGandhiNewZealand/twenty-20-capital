@@ -234,6 +234,10 @@ export async function GET() {
         exchangeRate: currentExchangeRate
       },
       lastUpdated: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      }
     })
   } catch (error) {
     logger.error('Error calculating current portfolio:', error)

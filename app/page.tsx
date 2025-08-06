@@ -2,14 +2,16 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, lazy, Suspense } from "react"
 import { ExitedPosition } from "@/types/portfolio"
-import { PortfolioChart } from "@/components/portfolio-chart"
-import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
 import { formatNumber, formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
+
+// Lazy load heavy chart components for better initial page load
+const PortfolioChart = lazy(() => import("@/components/portfolio-chart").then(mod => ({ default: mod.PortfolioChart })))
+const PortfolioHorizontalBarChart = lazy(() => import("@/components/portfolio-horizontal-bar-chart").then(mod => ({ default: mod.PortfolioHorizontalBarChart })))
 
 interface CurrentHolding {
   symbol: string
@@ -78,8 +80,14 @@ export default function HomePage() {
   useEffect(() => {
     const fetchPortfolioData = async () => {
       try {
-        // Fetch current portfolio data from the new endpoint
-        const currentResponse = await fetch('/api/portfolio-current')
+        // Fetch all data in parallel for better performance
+        const [currentResponse, portfolioResponse, historyResponse] = await Promise.all([
+          fetch('/api/portfolio-current'),
+          fetch('/api/portfolio').catch(() => null), // Handle potential failure gracefully
+          fetch('/api/portfolio-history').catch(() => null)
+        ])
+
+        // Handle current portfolio data (required)
         if (!currentResponse.ok) {
           throw new Error('Failed to load portfolio data')
         }
@@ -88,16 +96,14 @@ export default function HomePage() {
         setHoldings(currentData.holdings)
         setSummary(currentData.summary)
 
-        // Fetch exited positions from the old endpoint
-        const portfolioResponse = await fetch('/api/portfolio')
-        if (portfolioResponse.ok) {
+        // Handle exited positions (optional)
+        if (portfolioResponse && portfolioResponse.ok) {
           const portfolioData = await portfolioResponse.json()
           setExitedPositions(portfolioData.exitedPositions)
         }
 
-        // Fetch portfolio history to get the latest accurate values
-        const historyResponse = await fetch('/api/portfolio-history')
-        if (historyResponse.ok) {
+        // Handle portfolio history for accurate values (optional but preferred)
+        if (historyResponse && historyResponse.ok) {
           const historyData = await historyResponse.json()
           if (historyData.history && historyData.history.length > 0) {
             const latestHistory = historyData.history[historyData.history.length - 1]
@@ -164,9 +170,17 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         {/* Portfolio Performance Chart with integrated stats */}
         <div className="mb-6 sm:mb-8">
-          <PortfolioChart 
-            portfolioStats={portfolioStats} 
-          />
+          <Suspense fallback={
+            <Card>
+              <CardContent className="flex items-center justify-center h-96">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </CardContent>
+            </Card>
+          }>
+            <PortfolioChart 
+              portfolioStats={portfolioStats} 
+            />
+          </Suspense>
         </div>
 
 
@@ -174,9 +188,17 @@ export default function HomePage() {
         {/* Portfolio Horizontal Bar Chart */}
         {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioHorizontalBarChart 
-              holdings={holdings} 
-            />
+            <Suspense fallback={
+              <Card>
+                <CardContent className="flex items-center justify-center h-96">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                </CardContent>
+              </Card>
+            }>
+              <PortfolioHorizontalBarChart 
+                holdings={holdings} 
+              />
+            </Suspense>
           </div>
         )}
 
