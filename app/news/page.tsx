@@ -75,11 +75,49 @@ export default function NewsPage() {
 
   // Fetch news for a single company
   const fetchCompanyNews = async (company: string): Promise<CompanyNews> => {
+    console.log(`[Frontend] Fetching news for ${company}...`)
+    
     const response = await fetch(`/api/news/company?company=${encodeURIComponent(company)}`)
+    
+    console.log(`[Frontend] Response status for ${company}:`, response.status, response.statusText)
+    
     if (!response.ok) {
+      console.error(`[Frontend] Failed to fetch news for ${company}:`, {
+        status: response.status,
+        statusText: response.statusText
+      })
       throw new Error(`Failed to fetch news for ${company}`)
     }
-    return response.json()
+    
+    // Log response headers for debugging
+    const contentType = response.headers.get('content-type')
+    console.log(`[Frontend] Response content-type for ${company}:`, contentType)
+    
+    try {
+      const data = await response.json()
+      console.log(`[Frontend] Successfully parsed JSON for ${company}:`, {
+        status: data.status,
+        summaryCount: data.summary_points?.length || 0,
+        referenceCount: data.references?.length || 0,
+        hasError: !!data.error
+      })
+      return data
+    } catch (jsonError: any) {
+      console.error(`[Frontend] JSON parsing error for ${company}:`, {
+        error: jsonError.message,
+        responseHeaders: Object.fromEntries(response.headers.entries())
+      })
+      
+      // Try to get the raw text for debugging
+      try {
+        const text = await response.text()
+        console.error(`[Frontend] Raw response text for ${company} (first 500 chars):`, text.substring(0, 500))
+      } catch (textError) {
+        console.error(`[Frontend] Could not read response text:`, textError)
+      }
+      
+      throw jsonError
+    }
   }
 
   // Analyze all companies one by one
@@ -116,6 +154,11 @@ export default function NewsPage() {
         
       } catch (error) {
         console.error(`Error analyzing ${company}:`, error)
+        console.error(`[Frontend] Full error details for ${company}:`, {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+          errorType: error?.constructor?.name
+        })
         
         // Update with error
         setCompanyStatuses(prev => prev.map((c, idx) => 
