@@ -327,8 +327,8 @@ export default function NewsPage() {
                                   key={index}
                                   className="flex items-start gap-3 pb-3 border-b last:border-0"
                                 >
-                                  <span className="text-gray-400 mt-1 text-sm">
-                                    {ref.relevance === "indirect" ? "○" : "●"}
+                                  <span className="text-gray-500 font-medium text-sm mt-1 min-w-[24px]">
+                                    [{index + 1}]
                                   </span>
                                   <div className="flex-1">
                                     <a
@@ -360,7 +360,13 @@ export default function NewsPage() {
                                       {ref.relevance === "indirect" && (
                                         <>
                                           <span>•</span>
-                                          <span className="text-amber-600 text-xs">Industry/Market Impact</span>
+                                          <span className="text-amber-600 text-xs font-medium">Indirect</span>
+                                        </>
+                                      )}
+                                      {ref.relevance === "direct" && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="text-green-600 text-xs font-medium">Direct</span>
                                         </>
                                       )}
                                     </div>
@@ -406,46 +412,11 @@ export default function NewsPage() {
                       Key Developments & Analysis
                     </h3>
                     <div className="space-y-2">
-                      {companyStatus.data.summary_points.map((point, index) => {
-                        // Function to convert references in text to hyperlinks
-                        const renderPointWithLinks = (text: string) => {
-                          // Look for patterns like "according to [source]" or "reported by [source]" or "[source] reported"
-                          const sourcePatterns = [
-                            /according to ([\w\s&'.,-]+?)(?:\s*\(|,|\.|$)/gi,
-                            /reported by ([\w\s&'.,-]+?)(?:\s*\(|,|\.|$)/gi,
-                            /([\w\s&'.,-]+?) (?:reported|announced|revealed|stated|said)(?:\s|,|\.|$)/gi,
-                            /\(([\w\s&'.,-]+?)\)/g, // Sources in parentheses
-                          ]
-                          
-                          let processedText = text
-                          const references = companyStatus.data?.references || []
-                          
-                          // Try to match sources mentioned in the text with actual references
-                          references.forEach(ref => {
-                            const sourceName = ref.source_name
-                            const sourceVariations = [
-                              sourceName,
-                              sourceName.replace(/\./g, ''), // Remove dots
-                              sourceName.split(' ')[0], // First word only (e.g., "Reuters" from "Reuters News")
-                            ]
-                            
-                            sourceVariations.forEach(variation => {
-                              const regex = new RegExp(`\\b${variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
-                              processedText = processedText.replace(regex, (match) => {
-                                return `<a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline decoration-dotted underline-offset-2">${match}</a>`
-                              })
-                            })
-                          })
-                          
-                          return <span dangerouslySetInnerHTML={{ __html: processedText }} />
-                        }
-                        
-                        return (
-                          <p key={index} className="text-gray-800 leading-relaxed">
-                            {renderPointWithLinks(point)}
-                          </p>
-                        )
-                      })}
+                      {companyStatus.data.summary_points.map((point, index) => (
+                        <p key={index} className="text-gray-800 leading-relaxed">
+                          {point}
+                        </p>
+                      ))}
                     </div>
                   </div>
                 )}
