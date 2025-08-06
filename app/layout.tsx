@@ -11,12 +11,17 @@ export const metadata: Metadata = {
   title: "Rish Invests",
   description: "Track your personal investing journey and portfolio performance",
   generator: 'v0.dev',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
   icons: {
     icon: '/logo-favicon.png',
     shortcut: '/logo-favicon.png',
     apple: '/logo-favicon.png',
   },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 }
 
 export default function RootLayout({
