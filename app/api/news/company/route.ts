@@ -127,124 +127,111 @@ Note: If the company name includes a stock ticker in parentheses, use it to ensu
       throw new Error('Failed to get response after retries')
     }
     
+    // Process the response
     const response = await result.response
     const text = response.text()
     
-    // Log raw response for debugging
-    console.log(`[${company}] Raw LLM response length: ${text.length} characters`)
-    if (text.length < 100) {
-      console.log(`[${company}] Full raw response:`, text)
-    } else {
-      console.log(`[${company}] Raw response preview (first 200 chars):`, text.substring(0, 200))
-    }
+    logger.info(`[${company}] Raw LLM response length: ${text.length} characters`)
     
-    // Parse the response
-    let cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    // Clean the response text
+    let cleanedText = text
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/gi, '')
+      .trim()
     
-    // Remove any BOM or zero-width characters
-    cleanedText = cleanedText.replace(/^\uFEFF/, '').replace(/\u200B/g, '')
-    
-    // Log cleaned text for debugging
-    console.log(`[${company}] Cleaned text length: ${cleanedText.length} characters`)
+    logger.info(`[${company}] Cleaned text length: ${cleanedText.length} characters`)
     
     // Find JSON boundaries
     const jsonStart = cleanedText.indexOf('{')
     const jsonEnd = cleanedText.lastIndexOf('}')
-    if (jsonStart !== -1 && jsonEnd !== -1) {
+    
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      logger.info(`[${company}] JSON boundaries found - start: ${jsonStart}, end: ${jsonEnd}`)
       cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1)
-      console.log(`[${company}] JSON boundaries found - start: ${jsonStart}, end: ${jsonEnd}`)
     } else {
-      console.error(`[${company}] WARNING: Could not find JSON boundaries. jsonStart: ${jsonStart}, jsonEnd: ${jsonEnd}`)
+      logger.error(`[${company}] WARNING: Could not find JSON boundaries. jsonStart: ${jsonStart}, jsonEnd: ${jsonEnd}`)
     }
     
-    // Try to fix common JSON issues
+    // Try to parse the JSON
+    let companyData: any
     try {
-      // First attempt - parse as is
-      const companyData = JSON.parse(cleanedText)
+      companyData = JSON.parse(cleanedText)
       
-      // Validate and clean the data
-      if (companyData.references && Array.isArray(companyData.references)) {
-        companyData.references = companyData.references.map((ref: any) => ({
-          title: ref.title || 'Untitled',
-          source_name: ref.source_name || 'Unknown Source',
-          url: ref.url || '#',
-          publication_date: ref.publication_date || currentDate,
-          relevance: ref.relevance || 'direct'
-        }))
+      // Ensure company_name is set
+      if (!companyData.company_name) {
+        companyData.company_name = company
       }
       
-      logger.info(`✓ ${company}: ${companyData.status} (${companyData.summary_points?.length || 0} summaries, ${companyData.references?.length || 0} references)`)
+      // Ensure arrays exist
+      companyData.summary_points = companyData.summary_points || []
+      companyData.references = companyData.references || []
       
-      return companyData
+      logger.info(`[${company}] Successfully parsed JSON with ${companyData.summary_points.length} summaries and ${companyData.references.length} references`)
     } catch (parseError: any) {
-      // Try to extract what we can from the response
-      logger.error(`JSON parse error for ${company}:`, parseError.message)
-      console.error(`[${company}] JSON parse error details:`, {
-        errorMessage: parseError.message,
-        errorStack: parseError.stack,
-        jsonPreview: cleanedText.substring(0, 500),
-        jsonLength: cleanedText.length
+      logger.error(`[${company}] JSON parse error details:`, {
+        error: parseError.message,
+        cleanedTextLength: cleanedText.length,
+        firstChars: cleanedText.substring(0, 100),
+        lastChars: cleanedText.substring(cleanedText.length - 100)
       })
       
-      // Attempt to fix common issues
+      // Try to fix common JSON issues
+      logger.info(`[${company}] Attempting to fix JSON...`)
+      let fixedText = cleanedText
+      
+      // Remove trailing commas
+      fixedText = fixedText.replace(/,(\s*[}\]])/g, '$1')
+      logger.info(`[${company}] Removed trailing commas`)
+      
+      // Fix unescaped quotes in strings
+      fixedText = fixedText.replace(/"([^"]*)"([^:,}\]]*)"([^"]*)":/g, '"$1\\"$2\\"$3":')
+      fixedText = fixedText.replace(/:\s*"([^"]*)"([^",}\]]*)"([^"]*)"([,}\]])/g, ': "$1\\"$2\\"$3"$4')
+      logger.info(`[${company}] Fixed unescaped quotes`)
+      
+      // Remove any control characters
+      fixedText = fixedText.replace(/[\x00-\x1F\x7F]/g, '')
+      logger.info(`[${company}] Removed control characters`)
+      
+      logger.info(`[${company}] Fixed JSON preview (first 200 chars):`, fixedText.substring(0, 200))
+      
       try {
-        console.log(`[${company}] Attempting to fix JSON...`)
-        
-        // Remove trailing commas
-        let fixedText = cleanedText.replace(/,(\s*[}\]])/g, '$1')
-        console.log(`[${company}] Removed trailing commas`)
-        
-        // Fix unescaped quotes in JSON values
-        fixedText = fixedText.replace(/":\s*"([^"]*(?:"[^"]*)*[^"]*)"/g, (match, value) => {
-          const escapedValue = value.replace(/(?<!\\)"/g, '\\"')
-          return `": "${escapedValue}"`
-        })
-        console.log(`[${company}] Fixed unescaped quotes`)
-        
-        // Remove any control characters
-        fixedText = fixedText.replace(/[\x00-\x1F\x7F]/g, ' ')
-        console.log(`[${company}] Removed control characters`)
-        
-        // Log the fixed text for debugging
-        console.log(`[${company}] Fixed JSON preview (first 200 chars):`, fixedText.substring(0, 200))
-        
-        // Try parsing the fixed JSON
-        const companyData = JSON.parse(fixedText)
-        logger.info(`${company}: Fixed JSON and parsed successfully`)
-        console.log(`[${company}] Successfully parsed fixed JSON with ${companyData.summary_points?.length || 0} summaries`)
-        
-        // Ensure required fields exist
+        companyData = JSON.parse(fixedText)
         companyData.company_name = companyData.company_name || company
-        companyData.status = companyData.status || "no_significant_news_found"
         companyData.summary_points = companyData.summary_points || []
         companyData.references = companyData.references || []
+        logger.info(`[${company}] Successfully parsed fixed JSON with ${companyData.summary_points?.length || 0} summaries`)
+      } catch (secondParseError: any) {
+        // If we still can't parse it, return a no news found response
+        companyData = {
+          company_name: company,
+          status: 'no_significant_news_found',
+          summary_points: [],
+          references: [],
+          error: `Failed to parse AI response: ${secondParseError.message}`
+        }
         
-        return companyData
-      } catch (secondError: any) {
-        logger.error(`Failed to fix JSON for ${company}:`, secondError.message)
-        logger.error(`Problematic JSON preview:`, cleanedText.substring(0, 200))
-        console.error(`[${company}] Failed to fix JSON:`, {
-          secondErrorMessage: secondError.message,
-          secondErrorStack: secondError.stack,
-          fullCleanedText: cleanedText
+        logger.error(`[${company}] Failed to fix JSON:`, {
+          error: secondParseError.message,
+          fixedTextPreview: fixedText.substring(0, 500)
         })
-        throw parseError
       }
     }
+    
+    return companyData
+    
   } catch (error: any) {
-    logger.error(`Error analyzing ${company}:`, error.message)
-    console.error(`[${company}] Full error in analyzeCompanyNews:`, {
-      errorMessage: error.message,
-      errorStack: error.stack
+    logger.error(`[${company}] Full error in analyzeCompanyNews:`, {
+      error: error.message,
+      stack: error.stack,
+      errorType: error.constructor?.name
     })
     
-    // Return a default structure when analysis fails
     return {
       company_name: company,
-      status: "no_significant_news_found",
+      status: 'no_significant_news_found',
       summary_points: [],
       references: [],
-      error: error.message
+      error: error.message || 'Failed to analyze news'
     }
   }
 }

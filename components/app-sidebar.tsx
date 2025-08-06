@@ -58,13 +58,6 @@ const items = [
   },
 ]
 
-// Sample user data
-const user = {
-  name: "John Doe",
-  email: "john@example.com",
-  avatar: "/placeholder.svg?height=32&width=32",
-}
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
