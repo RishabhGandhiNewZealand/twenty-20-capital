@@ -7,22 +7,22 @@ import { downloadTradeDataFromBlob } from '@/lib/blob-utils'
 // Fetch unique company names from portfolio data
 async function getPortfolioCompanies(): Promise<string[]> {
   try {
-    const companies = new Set<string>()
+    const companies = new Map<string, string>() // Map of company name to symbol
     
     // Get portfolio data directly
     const { holdings, exitedPositions } = await generatePortfolioData()
     
     // Add current holdings
     holdings.forEach(holding => {
-      if (holding.name) {
-        companies.add(holding.name)
+      if (holding.name && holding.symbol) {
+        companies.set(holding.name, holding.symbol)
       }
     })
     
     // Add exited positions
     exitedPositions.forEach(position => {
-      if (position.name) {
-        companies.add(position.name)
+      if (position.name && position.symbol) {
+        companies.set(position.name, position.symbol)
       }
     })
     
@@ -31,42 +31,43 @@ async function getPortfolioCompanies(): Promise<string[]> {
       const csvContent = await downloadTradeDataFromBlob()
       const trades = parseCSVData(csvContent)
       trades.forEach(trade => {
-        if (trade.name) {
-          companies.add(trade.name)
+        if (trade.name && trade.code) {
+          companies.set(trade.name, trade.code)
         }
       })
     } catch (error) {
       logger.warn('Could not fetch raw trade data for complete company list:', error)
     }
     
-    const companyList = Array.from(companies)
+    // Convert to array with symbols in parentheses
+    const companyList = Array.from(companies.entries()).map(([name, symbol]) => `${name} (${symbol})`)
     logger.info('Found portfolio companies:', companyList)
     
     return companyList.length > 0 ? companyList : [
       // Fallback list if no companies found
-      "Microsoft",
-      "Tesla", 
-      "Fonterra Co-operative Group",
-      "Fletcher Building",
-      "Meta Platforms",
-      "Salesforce",
-      "Alphabet",
-      "Amazon",
-      "Mainfreight"
+      "Microsoft (MSFT)",
+      "Tesla (TSLA)", 
+      "Fonterra Co-operative Group (FCG)",
+      "Fletcher Building (FBU)",
+      "Meta Platforms (META)",
+      "Salesforce (CRM)",
+      "Alphabet (GOOGL)",
+      "Amazon (AMZN)",
+      "Mainfreight (MFT)"
     ]
   } catch (error) {
     logger.error('Error fetching portfolio companies:', error)
     // Return a fallback list if data fetch fails
     return [
-      "Microsoft",
-      "Tesla", 
-      "Fonterra Co-operative Group",
-      "Fletcher Building",
-      "Meta Platforms",
-      "Salesforce",
-      "Alphabet",
-      "Amazon",
-      "Mainfreight"
+      "Microsoft (MSFT)",
+      "Tesla (TSLA)", 
+      "Fonterra Co-operative Group (FCG)",
+      "Fletcher Building (FBU)",
+      "Meta Platforms (META)",
+      "Salesforce (CRM)",
+      "Alphabet (GOOGL)",
+      "Amazon (AMZN)",
+      "Mainfreight (MFT)"
     ]
   }
 }
