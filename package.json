@@ -34,7 +34,7 @@
     "pg-pool": "^3.10.1",
     "react": "^19",
     "react-dom": "^19",
-    "recharts": "^3.1.2",
+    "recharts": "^2.15.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "yahoo-finance2": "^2.13.3"

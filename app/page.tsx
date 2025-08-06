@@ -2,16 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
-import { useEffect, useState, lazy, Suspense } from "react"
+import { useEffect, useState } from "react"
 import { ExitedPosition } from "@/types/portfolio"
+import { PortfolioChart } from "@/components/portfolio-chart"
+import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
 import { formatNumber, formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
-
-// Lazy load heavy chart components for better initial page load
-const PortfolioChart = lazy(() => import("@/components/portfolio-chart").then(mod => ({ default: mod.PortfolioChart })))
-const PortfolioHorizontalBarChart = lazy(() => import("@/components/portfolio-horizontal-bar-chart").then(mod => ({ default: mod.PortfolioHorizontalBarChart })))
 
 interface CurrentHolding {
   symbol: string
@@ -170,17 +168,9 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         {/* Portfolio Performance Chart with integrated stats */}
         <div className="mb-6 sm:mb-8">
-          <Suspense fallback={
-            <Card>
-              <CardContent className="flex items-center justify-center h-96">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              </CardContent>
-            </Card>
-          }>
-            <PortfolioChart 
-              portfolioStats={portfolioStats} 
-            />
-          </Suspense>
+          <PortfolioChart 
+            portfolioStats={portfolioStats} 
+          />
         </div>
 
 
@@ -188,17 +178,9 @@ export default function HomePage() {
         {/* Portfolio Horizontal Bar Chart */}
         {!loading && (
           <div className="mb-6 sm:mb-8">
-            <Suspense fallback={
-              <Card>
-                <CardContent className="flex items-center justify-center h-96">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                </CardContent>
-              </Card>
-            }>
-              <PortfolioHorizontalBarChart 
-                holdings={holdings} 
-              />
-            </Suspense>
+            <PortfolioHorizontalBarChart 
+              holdings={holdings} 
+            />
           </div>
         )}
 
