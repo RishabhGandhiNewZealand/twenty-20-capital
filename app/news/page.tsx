@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, TrendingUp, Link2, CheckCircle2, Clock, FileText } from "lucide-react"
+import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, TrendingUp, Link2, CheckCircle2, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sheet"
 import { getLogoUrl } from "@/lib/company-utils"
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 
 interface Reference {
   title: string
@@ -54,11 +55,25 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set())
 
   // Helper function to extract symbol from company name
   const extractSymbol = (companyName: string): string | null => {
     const match = companyName.match(/\(([^)]+)\)$/)
     return match ? match[1] : null
+  }
+
+  // Toggle company expansion
+  const toggleCompany = (companyName: string) => {
+    setExpandedCompanies(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(companyName)) {
+        newSet.delete(companyName)
+      } else {
+        newSet.add(companyName)
+      }
+      return newSet
+    })
   }
 
   // Fetch the list of companies
@@ -286,14 +301,103 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Company Cards */}
-      <div className="space-y-6">
+      {/* Company Tiles Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
         {companyStatuses.map((companyStatus) => {
+          const symbol = extractSymbol(companyStatus.name)
+          const companyNameOnly = companyStatus.name.replace(/\s*\([^)]*\)$/, '')
+          const isExpanded = expandedCompanies.has(companyStatus.name)
+          const hasNews = companyStatus.status === 'completed' && companyStatus.data?.status === "news_found"
+          
+          return (
+            <button
+              key={companyStatus.name}
+              onClick={() => toggleCompany(companyStatus.name)}
+              className={cn(
+                "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+                "flex flex-col items-center justify-center min-h-[120px]",
+                isExpanded && "ring-2 ring-blue-500 border-blue-500",
+                !isExpanded && hasNews && "border-green-200 bg-green-50 hover:border-green-300",
+                !isExpanded && companyStatus.status === 'completed' && !hasNews && "border-gray-200 bg-gray-50 hover:border-gray-300",
+                !isExpanded && companyStatus.status === 'loading' && "border-blue-200 bg-blue-50",
+                !isExpanded && companyStatus.status === 'error' && "border-red-200 bg-red-50",
+                !isExpanded && companyStatus.status === 'pending' && "border-gray-200 bg-gray-50"
+              )}
+            >
+              {/* Company Logo */}
+              {symbol && (
+                <div className="relative w-12 h-12 bg-white rounded-lg shadow-sm overflow-hidden mb-2">
+                  <Image
+                    src={getLogoUrl(symbol)}
+                    alt={`${symbol} logo`}
+                    width={48}
+                    height={48}
+                    className="object-contain p-1"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                    }}
+                  />
+                  <div className="hidden absolute inset-0 flex items-center justify-center">
+                    <Building2 className="h-6 w-6 text-gray-400" />
+                  </div>
+                </div>
+              )}
+              {!symbol && <Building2 className="h-8 w-8 text-gray-400 mb-2" />}
+              
+              {/* Company Name */}
+              <div className="text-center">
+                <div className="font-medium text-sm">{companyNameOnly}</div>
+                {symbol && <div className="text-xs text-gray-500">{symbol}</div>}
+              </div>
+              
+              {/* Status Indicator */}
+              <div className="absolute top-2 right-2">
+                {companyStatus.status === 'pending' && (
+                  <Clock className="h-4 w-4 text-gray-400" />
+                )}
+                {companyStatus.status === 'loading' && (
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                )}
+                {companyStatus.status === 'completed' && hasNews && (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                )}
+                {companyStatus.status === 'completed' && !hasNews && (
+                  <div className="h-4 w-4 rounded-full border-2 border-gray-400" />
+                )}
+                {companyStatus.status === 'error' && (
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                )}
+              </div>
+              
+              {/* Expand/Collapse Indicator */}
+              <div className="absolute bottom-2 right-2">
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                )}
+              </div>
+              
+              {/* News Count Badge */}
+              {hasNews && companyStatus.data && (
+                <div className="absolute bottom-2 left-2 text-xs text-gray-600">
+                  {companyStatus.data.summary_points?.length || 0} news
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Expanded Company Cards */}
+      <div className="space-y-6">
+        {companyStatuses.filter(cs => expandedCompanies.has(cs.name)).map((companyStatus) => {
           const symbol = extractSymbol(companyStatus.name)
           const companyNameOnly = companyStatus.name.replace(/\s*\([^)]*\)$/, '')
           
           return (
-            <Card key={companyStatus.name} className="overflow-hidden">
+            <Card key={companyStatus.name} className="overflow-hidden animate-in slide-in-from-top-2 duration-300">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-3 text-lg">
@@ -321,93 +425,90 @@ export default function NewsPage() {
                     {symbol && <span className="text-sm text-gray-500">({symbol})</span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    {companyStatus.status === 'pending' && (
-                      <Clock className="h-4 w-4 text-gray-400" />
-                    )}
-                    {companyStatus.status === 'loading' && (
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                    )}
-                    {companyStatus.status === 'completed' && (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        {companyStatus.data?.status === "news_found" && 
-                         companyStatus.data?.references && 
-                         companyStatus.data.references.length > 0 && (
-                          <Sheet>
-                            <SheetTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 px-2">
-                                <FileText className="h-4 w-4 mr-1" />
-                                {companyStatus.data.references.length} Sources
-                              </Button>
-                            </SheetTrigger>
-                            <SheetContent className="w-[400px] sm:w-[540px]">
-                              <SheetHeader>
-                                <SheetTitle>Sources & References</SheetTitle>
-                                <SheetDescription>
-                                  {companyNameOnly} - {companyStatus.data.references.length} sources
-                                </SheetDescription>
-                              </SheetHeader>
-                              <div className="mt-6 space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
-                                {companyStatus.data.references.map((ref, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex items-start gap-3 pb-3 border-b last:border-0"
+                    {companyStatus.status === 'completed' && companyStatus.data?.status === "news_found" && 
+                     companyStatus.data?.references && 
+                     companyStatus.data.references.length > 0 && (
+                      <Sheet>
+                        <SheetTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 px-2">
+                            <FileText className="h-4 w-4 mr-1" />
+                            {companyStatus.data.references.length} Sources
+                          </Button>
+                        </SheetTrigger>
+                        <SheetContent className="w-[400px] sm:w-[540px]">
+                          <SheetHeader>
+                            <SheetTitle>Sources & References</SheetTitle>
+                            <SheetDescription>
+                              {companyNameOnly} - {companyStatus.data.references.length} sources
+                            </SheetDescription>
+                          </SheetHeader>
+                          <div className="mt-6 space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+                            {companyStatus.data.references.map((ref, index) => (
+                              <div
+                                key={index}
+                                className="flex items-start gap-3 pb-3 border-b last:border-0"
+                              >
+                                <span className="text-gray-500 font-medium text-sm mt-1 min-w-[24px]">
+                                  [{index + 1}]
+                                </span>
+                                <div className="flex-1">
+                                  <a
+                                    href={ref.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1 font-medium"
                                   >
-                                    <span className="text-gray-500 font-medium text-sm mt-1 min-w-[24px]">
-                                      [{index + 1}]
+                                    {ref.title}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                  <div className="flex items-center gap-3 text-gray-500 text-sm mt-1">
+                                    <span>{ref.source_name}</span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      {(() => {
+                                        try {
+                                          const date = new Date(ref.publication_date)
+                                          if (isNaN(date.getTime())) {
+                                            return ref.publication_date || 'Date unavailable'
+                                          }
+                                          return format(date, "MMM d, yyyy")
+                                        } catch {
+                                          return ref.publication_date || 'Date unavailable'
+                                        }
+                                      })()}
                                     </span>
-                                    <div className="flex-1">
-                                      <a
-                                        href={ref.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1 font-medium"
-                                      >
-                                        {ref.title}
-                                        <ExternalLink className="h-3 w-3" />
-                                      </a>
-                                      <div className="flex items-center gap-3 text-gray-500 text-sm mt-1">
-                                        <span>{ref.source_name}</span>
+                                    {ref.relevance === "indirect" && (
+                                      <>
                                         <span>•</span>
-                                        <span className="flex items-center gap-1">
-                                          <Calendar className="h-3 w-3" />
-                                          {(() => {
-                                            try {
-                                              const date = new Date(ref.publication_date)
-                                              if (isNaN(date.getTime())) {
-                                                return ref.publication_date || 'Date unavailable'
-                                              }
-                                              return format(date, "MMM d, yyyy")
-                                            } catch {
-                                              return ref.publication_date || 'Date unavailable'
-                                            }
-                                          })()}
-                                        </span>
-                                        {ref.relevance === "indirect" && (
-                                          <>
-                                            <span>•</span>
-                                            <span className="text-amber-600 text-xs font-medium">Indirect</span>
-                                          </>
-                                        )}
-                                        {ref.relevance === "direct" && (
-                                          <>
-                                            <span>•</span>
-                                            <span className="text-green-600 text-xs font-medium">Direct</span>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
+                                        <span className="text-amber-600 text-xs font-medium">Indirect</span>
+                                      </>
+                                    )}
+                                    {ref.relevance === "direct" && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="text-green-600 text-xs font-medium">Direct</span>
+                                      </>
+                                    )}
                                   </div>
-                                ))}
+                                </div>
                               </div>
-                            </SheetContent>
-                          </Sheet>
-                        )}
-                      </>
+                            ))}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
                     )}
-                    {companyStatus.status === 'error' && (
-                      <AlertCircle className="h-4 w-4 text-red-600" />
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleCompany(companyStatus.name)
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardTitle>
                 <CardDescription>
@@ -446,8 +547,6 @@ export default function NewsPage() {
           )
         })}
       </div>
-
-
     </div>
   )
 }
