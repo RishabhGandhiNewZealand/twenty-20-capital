@@ -40,24 +40,51 @@ The following indexes are created for optimal query performance:
 
 ## Caching Implementation
 
-### Cache Layer
+### Cache Layers
 
-The caching is implemented using Next.js's `unstable_cache` function, which provides:
-- Automatic caching of database query results
-- Cache invalidation support
-- Configurable revalidation periods
+The application implements multiple levels of caching:
+
+1. **Trade Data Cache** - Raw trade data from database
+2. **Portfolio Compositions Cache** - Historical portfolio compositions with real prices
+3. **Portfolio History Cache** - Daily portfolio performance data
+4. **API Response Cache** - HTTP cache headers for client-side caching
 
 ### Cache Configuration
 
 ```typescript
 const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
-const CACHE_TAG = 'trade-data'
 ```
 
 ### Cached Functions
 
 1. **getCachedTradeData()** - Fetches all trade data with caching
 2. **getCachedTradeDataBySymbol(symbol)** - Fetches trade data for a specific symbol with caching
+3. **getCachedPortfolioCompositions()** - Calculates and caches portfolio compositions with historical prices
+4. **getCachedPortfolioHistory()** - Calculates and caches daily portfolio performance
+
+## Data Flow
+
+### Portfolio Compositions (Horizontal Bar Chart)
+
+1. **First Request**:
+   - Fetch cached trade data from database
+   - Fetch historical prices from Yahoo Finance for all tickers
+   - Fetch historical exchange rates
+   - Calculate daily portfolio compositions
+   - Cache results for 1 hour
+   - Return data
+
+2. **Subsequent Requests** (within 1 hour):
+   - Return cached compositions immediately
+   - No database or Yahoo Finance queries
+
+### Calculation Process
+
+The portfolio compositions are calculated with:
+- Actual historical stock prices from Yahoo Finance
+- Historical USD/NZD exchange rates
+- Daily portfolio holdings based on trade history
+- Proper handling of buys, sells, and reinvestments
 
 ## Usage
 
@@ -83,56 +110,25 @@ export async function GET() {
 }
 ```
 
-## Cache Behavior
+## API Endpoints with Caching
 
-### First Request
-1. User makes request to the application
-2. Cache miss - query executes against Neon database
-3. Results are cached for 1 hour
-4. Data returned to user
+All major data endpoints now use caching:
 
-### Subsequent Requests (within 1 hour)
-1. User makes request to the application
-2. Cache hit - data served from cache
-3. No database query executed
-4. Faster response time
-
-### Cache Invalidation
-- Cache automatically expires after 1 hour
-- Manual invalidation available via `invalidateTradeDataCache()`
-- Cache tags allow targeted invalidation
+- `/api/portfolio-current` - Current portfolio holdings
+- `/api/portfolio-history` - Historical portfolio performance
+- `/api/portfolio-compositions` - Daily portfolio compositions (for horizontal bar chart)
+- `/api/portfolio-composition/[date]` - Portfolio composition on specific date
+- `/api/news/companies` - List of portfolio companies
+- `/api/news` - News analysis for portfolio companies
+- `/api/trade-data/cache-status` - Cache status monitoring
 
 ## Performance Benefits
 
 1. **Reduced Database Load** - Queries execute only once per hour per unique request
-2. **Faster Response Times** - Cached data serves instantly without database roundtrip
-3. **Cost Optimization** - Fewer database queries reduce Neon usage costs
-4. **Scalability** - Can handle more concurrent users with cached responses
-
-## Migration from Blob Storage
-
-The application has been migrated from Vercel Blob storage to Neon database:
-
-### Before (Blob Storage)
-- Data fetched from blob URL on every request
-- CSV parsing required on each request
-- No built-in caching mechanism
-- Network latency for blob downloads
-
-### After (Database + Cache)
-- Data fetched from database with automatic caching
-- Structured data format (no CSV parsing)
-- Built-in caching with configurable TTL
-- Optimized queries with indexes
-
-## API Endpoints Updated
-
-The following API endpoints now use cached database queries:
-- `/api/portfolio-current` - Current portfolio holdings
-- `/api/portfolio-history` - Historical portfolio performance
-- `/api/portfolio-composition/[date]` - Portfolio composition on specific date
-- `/api/news/companies` - List of portfolio companies
-- `/api/news` - News analysis for portfolio companies
+2. **Reduced External API Calls** - Yahoo Finance queries are cached
+3. **Faster Response Times** - Cached data serves instantly
+4. **Cost Optimization** - Fewer database queries and API calls
+5. **Scalability** - Can handle more concurrent users
 
 ## Monitoring
 
@@ -166,21 +162,31 @@ Response:
 1. **Create Database Table**
    ```bash
    npm run setup:trade-data-table
-   # or
-   tsx scripts/setup-trade-data-table.ts
    ```
 
 2. **Import Trade Data**
    - Use your existing data migration script to import data from CSV to the database
    - Ensure all trades are properly imported with correct data types
 
-3. **Verify Setup**
+3. **Populate Cache (Optional)**
+   ```bash
+   # Start the development server first
+   npm run dev
+   
+   # In another terminal, populate the cache
+   npm run populate-cache
+   ```
+
+4. **Verify Setup**
    - Check cache status endpoint: `/api/trade-data/cache-status`
    - Test portfolio endpoints to ensure data loads correctly
 
-## Environment Variables
+## Cache Invalidation
 
-No new environment variables required. The application uses the existing `DATABASE_URL` for Neon connection.
+- Caches automatically expire after 1 hour
+- Manual invalidation available via `invalidateTradeDataCache()`
+- Cache tags allow targeted invalidation
+- When trade data is updated, caches should be invalidated
 
 ## Troubleshooting
 
@@ -194,6 +200,11 @@ No new environment variables required. The application uses the existing `DATABA
 2. Check cache status endpoint
 3. Verify `unstable_cache` is imported correctly
 
+### Slow Initial Load
+1. First request after cache expiry will be slower (fetching from Yahoo Finance)
+2. Consider running `npm run populate-cache` to pre-warm the cache
+3. Monitor Yahoo Finance API rate limits
+
 ### Performance Issues
 1. Check database indexes are created
 2. Monitor query performance in Neon dashboard
@@ -201,7 +212,8 @@ No new environment variables required. The application uses the existing `DATABA
 
 ## Future Enhancements
 
-1. **Incremental Updates** - Support for adding new trades without full reimport
-2. **Cache Warming** - Pre-populate cache on application startup
+1. **Incremental Updates** - Support for adding new trades without full cache invalidation
+2. **Cache Warming** - Automatic cache population on application startup
 3. **Cache Metrics** - Track cache hit/miss rates
 4. **Configurable TTL** - Allow cache duration configuration via environment variable
+5. **Partial Date Range Caching** - Cache compositions for recent dates more frequently
