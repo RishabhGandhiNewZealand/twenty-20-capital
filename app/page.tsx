@@ -241,7 +241,7 @@ export default function HomePage() {
                                 alt={holding.symbol}
                                 className="h-8 w-8 rounded-full mr-3"
                                 onError={(e) => {
-                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=3b82f6&color=fff`
+                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=0a1a16&color=f5f5f5`
                                 }}
                               />
                               <div>
@@ -328,7 +328,7 @@ export default function HomePage() {
                             alt={holding.symbol}
                             className="h-10 w-10 rounded-full mr-3"
                             onError={(e) => {
-                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=3b82f6&color=fff`
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=0a1a16&color=f5f5f5`
                             }}
                           />
                           <div>
@@ -488,7 +488,7 @@ export default function HomePage() {
                               alt={`${position.symbol} logo`}
                               className="w-8 h-8 rounded-full mr-3"
                               onError={(e) => {
-                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=3b82f6&color=fff`
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5`
                               }}
                             />
                             <div>
@@ -558,7 +558,7 @@ export default function HomePage() {
                           alt={`${position.symbol} logo`}
                           className="w-8 h-8 rounded-full mr-2"
                           onError={(e) => {
-                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=3b82f6&color=fff`
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5`
                           }}
                         />
                         <div>

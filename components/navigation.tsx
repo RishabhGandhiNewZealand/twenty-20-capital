@@ -5,6 +5,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { useState } from "react"
+import ThemeToggle from "@/components/theme-toggle"
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -18,8 +19,15 @@ export default function Navigation() {
     { href: "/about", label: "About" },
   ]
 
+  const itemClass = (href: string) =>
+    `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      pathname === href
+        ? "text-blue-600 bg-blue-50"
+        : "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+    }`
+
   return (
-    <nav className="bg-white border-b border-blue-100 sticky top-0 z-50">
+    <nav className="bg-[hsl(var(--sidebar-background))] border-b border-[hsl(var(--sidebar-border))] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-2">
@@ -30,24 +38,19 @@ export default function Navigation() {
               height={32}
               className="h-6 w-6 sm:h-8 sm:w-8"
             />
-            <span className="text-lg sm:text-xl font-bold text-gray-900">Rish Invests</span>
+            <span className="text-lg sm:text-xl font-bold text-[hsl(var(--sidebar-foreground))]">Rish Invests</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === item.href
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <div className="hidden md:flex items-center space-x-4">
+            <div className="flex space-x-2">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} className={itemClass(item.href)}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            <ThemeToggle />
           </div>
 
           {/* Mobile Menu Button */}
@@ -72,15 +75,14 @@ export default function Navigation() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block px-4 py-2 text-base font-medium transition-colors ${
-                    pathname === item.href
-                      ? "text-blue-600 bg-blue-50"
-                      : "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
-                  }`}
+                  className={itemClass(item.href)}
                 >
                   {item.label}
                 </Link>
               ))}
+              <div className="px-4 pt-2">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         )}

@@ -48,6 +48,7 @@ body {
 
 @layer base {
   :root {
+    /* Light mode (original) */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -83,38 +84,39 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* Dark mode (new palette) */
+    --background: 222 40% 8%;
+    --foreground: 0 0% 69%;
+    --card: 215 15% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 215 15% 12%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 165 100% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 35% 6%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 215 12% 16%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 165 100% 32%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 10% 18%;
+    --input: 215 10% 18%;
+    --ring: 165 100% 32%;
+    --chart-1: 165 100% 32%;
+    --chart-2: 0 0% 69%;
+    --chart-3: 0 0% 40%;
+    --chart-4: 0 0% 55%;
+    --chart-5: 0 84% 60%;
+    --sidebar-background: 222 45% 6%;
+    --sidebar-foreground: 0 0% 69%;
+    --sidebar-primary: 165 100% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 222 35% 6%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 215 10% 18%;
+    --sidebar-ring: 165 100% 32%;
   }
 }
 
@@ -125,4 +127,41 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Utility overrides only in dark mode */
+@layer utilities {
+  .dark .text-gray-900 { color: #f5f5f5; }
+  .dark .text-gray-800 { color: #e5e5e5; }
+  .dark .text-gray-700 { color: #d4d4d4; }
+  .dark .text-gray-600 { color: #b1b1b1; }
+  .dark .text-gray-500 { color: #a3a3a3; }
+  .dark .text-gray-400 { color: #8a8a8a; }
+
+  .dark .bg-white { background-color: hsl(var(--card)) !important; }
+  .dark .bg-gray-50 { background-color: hsl(var(--background)) !important; }
+  .dark .bg-blue-50 { background-color: hsl(var(--secondary)) !important; }
+  .dark .bg-blue-100 { background-color: hsl(var(--secondary)) !important; }
+  .dark .bg-blue-200 { background-color: hsl(var(--secondary)) !important; }
+  .dark .bg-green-50 { background-color: #0a1a16 !important; }
+  .dark .bg-red-50 { background-color: #1a0a0a !important; }
+
+  .dark .border-gray-100, .dark .divide-gray-100 { border-color: #1a1f24 !important; }
+  .dark .border-gray-200, .dark .divide-gray-200 { border-color: #222830 !important; }
+  .dark .border-blue-100 { border-color: #222830 !important; }
+  .dark .border-blue-200 { border-color: #2a313a !important; }
+  .dark .border-blue-500 { border-color: #00a37a !important; }
+
+  .dark .text-blue-600 { color: #00a37a !important; }
+  .dark .text-blue-700 { color: #00a37a !important; }
+  .dark .hover\:text-blue-600:hover { color: #00a37a !important; }
+  .dark .hover\:text-blue-800:hover { color: #008367 !important; }
+  .dark .text-green-600 { color: #00a37a !important; }
+
+  .dark .ring-blue-500 { --tw-ring-color: #00a37a !important; }
+
+  .dark .hover\:bg-blue-50:hover { background-color: hsl(var(--secondary)) !important; }
+
+  .dark .from-blue-50 { --tw-gradient-from: hsl(var(--secondary)) var(--tw-gradient-from-position); --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .dark .to-indigo-50 { --tw-gradient-to: hsl(var(--secondary)) var(--tw-gradient-to-position); }
 }
