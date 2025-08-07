@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
-import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
-import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
 interface HoldingAtDate {
   symbol: string
@@ -17,24 +16,22 @@ interface CompositionData {
   [date: string]: HoldingAtDate[]
 }
 
-// Cache the compositions data for performance
-let cachedCompositions: CompositionData | null = null
-let cacheTimestamp: number = 0
-const CACHE_DURATION = 3600000 // 1 hour in milliseconds
+// Cache configuration
+const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
+const CACHE_TAG = 'portfolio-compositions'
 
-export async function GET() {
+/**
+ * Calculate portfolio compositions for historical dates
+ * This is the raw calculation function that will be cached
+ */
+async function calculatePortfolioCompositions(): Promise<CompositionData> {
   try {
-    // Check if we have valid cached data
-    if (cachedCompositions && Date.now() - cacheTimestamp < CACHE_DURATION) {
-      return NextResponse.json(cachedCompositions)
-    }
-
     // Fetch cached trade data from database
     const trades = await getCachedTradeData()
     
     if (!trades || trades.length === 0) {
-      logger.warn('No trade data found in database')
-      return NextResponse.json({})
+      logger.warn('No trade data found for portfolio compositions')
+      return {}
     }
     
     // Sort trades by date
@@ -44,13 +41,10 @@ export async function GET() {
     const startDate = new Date(trades[0].date)
     const endDate = new Date()
     
-    logger.info(`Processing compositions from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    logger.info(`Calculating portfolio compositions from ${startDate.toISOString()} to ${endDate.toISOString()}`)
     
-    // Get unique tickers
-    const tickers = [...new Set(trades.map(t => t.code))]
-    
-    // For performance, we'll only calculate compositions for specific dates
-    // (e.g., end of each month and the current date)
+    // For performance, calculate compositions for specific dates
+    // (end of each month and the current date)
     const compositionDates: Date[] = []
     const currentDate = new Date(startDate)
     
@@ -104,13 +98,14 @@ export async function GET() {
         }
       }
       
-      // For simplicity, we'll use a placeholder value calculation
-      // In a real implementation, you'd fetch historical prices
+      // For now, use a simplified value calculation
+      // In production, you would fetch historical prices
       const holdingsArray: HoldingAtDate[] = []
       let totalValue = 0
       
       holdings.forEach(holding => {
         // Simplified: use shares * 100 as placeholder value
+        // TODO: Integrate with historical price data
         const value = holding.shares * 100
         totalValue += value
         
@@ -137,14 +132,42 @@ export async function GET() {
       }
     }
     
-    // Cache the result
-    cachedCompositions = compositions
-    cacheTimestamp = Date.now()
-    
-    return NextResponse.json(compositions)
+    logger.info(`Calculated compositions for ${Object.keys(compositions).length} dates`)
+    return compositions
     
   } catch (error) {
     logger.error('Error calculating portfolio compositions:', error)
+    throw error
+  }
+}
+
+/**
+ * Cached version of calculatePortfolioCompositions
+ * This function will cache the results for the specified duration
+ */
+const getCachedPortfolioCompositions = unstable_cache(
+  calculatePortfolioCompositions,
+  [CACHE_TAG],
+  {
+    revalidate: CACHE_REVALIDATE_SECONDS,
+    tags: [CACHE_TAG]
+  }
+)
+
+export async function GET() {
+  try {
+    // Fetch cached portfolio compositions
+    const compositions = await getCachedPortfolioCompositions()
+    
+    // Set cache headers for client-side caching
+    return NextResponse.json(compositions, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      }
+    })
+    
+  } catch (error) {
+    logger.error('Error in portfolio compositions endpoint:', error)
     return NextResponse.json(
       { error: 'Failed to calculate portfolio compositions' },
       { status: 500 }
