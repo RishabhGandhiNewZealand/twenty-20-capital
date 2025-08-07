@@ -122,8 +122,11 @@ NEWS_DB_CACHE_MAX_AGE: 30 days // News older than 1 month is refreshed
 
 3. **Cache Freshness Policy**:
    - Database cache entries must be less than 1 month old
-   - Entries older than 1 month are considered stale
-   - Stale entries trigger a fresh Gemini API call
+   - Cache lookup is flexible with date ranges:
+     - Finds any cache entry for the company created < 1 month ago
+     - Must have end_date within last 45 days
+     - Doesn't require exact date range match
+   - Prevents unnecessary API calls when dates shift slightly
    - Ensures news data is reasonably current while minimizing API costs
 
 4. **Performance Optimization**:

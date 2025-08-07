@@ -46,33 +46,17 @@ async function checkCacheFreshness(
   newsCache: NewsCache
 ): Promise<{ hasFreshCache: boolean; cachedData: CachedNewsData | null }> {
   try {
+    // NewsCache.get() already checks if cache is less than 1 month old
     const cached = await newsCache.get(company, startDate, endDate)
     if (cached) {
-      // Get the cache entry details to check age
-      const sql = (await import('./db')).getDb()
-      const cacheEntries = await sql`
-        SELECT created_at FROM application.news_cache 
-        WHERE company_name = ${company}
-        AND start_date = ${startDate}
-        AND end_date = ${endDate}
-        ORDER BY created_at DESC
-        LIMIT 1
-      `
-      
-      if (cacheEntries.length > 0) {
-        const cacheAge = cacheEntries[0].created_at
-        if (isCacheFresh(cacheAge)) {
-          logger.info(`Cache for ${company} is fresh (created: ${cacheAge.toISOString()})`)
-          return { hasFreshCache: true, cachedData: cached }
-        } else {
-          logger.info(`Cache for ${company} is stale (created: ${cacheAge.toISOString()})`)
-        }
-      }
+      logger.info(`Found fresh cached news for ${company}`)
+      return { hasFreshCache: true, cachedData: cached }
     }
   } catch (error) {
     logger.warn(`Failed to check cache for ${company}:`, error)
   }
   
+  logger.info(`No fresh cache found for ${company}`)
   return { hasFreshCache: false, cachedData: null }
 }
 

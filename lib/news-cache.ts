@@ -96,17 +96,21 @@ export class NewsCache {
     try {
       logger.info(`Looking for cache entry for ${company}`)
       
-      // Look for cache entries for this company and date range
-      // We'll accept cache entries that are less than 1 month old
+      // Look for cache entries for this company that are:
+      // 1. Less than 1 month old
+      // 2. Cover a recent period (end_date within last 45 days)
+      // This allows us to reuse cache even if date ranges don't match exactly
       const oneMonthAgo = new Date()
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+      
+      const fortyFiveDaysAgo = new Date()
+      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
       
       const results = await sql<CacheEntry[]>`
         SELECT * FROM application.news_cache 
         WHERE company_name = ${company}
-        AND start_date = ${startDate}
-        AND end_date = ${endDate}
         AND created_at > ${oneMonthAgo}
+        AND end_date >= ${fortyFiveDaysAgo.toISOString().split('T')[0]}
         ORDER BY created_at DESC
         LIMIT 1
       `
@@ -120,7 +124,8 @@ export class NewsCache {
       const ageInDays = Math.floor((new Date().getTime() - new Date(entry.created_at).getTime()) / (1000 * 60 * 60 * 24))
       
       logger.info(`Found cache entry for ${company}:`)
-      logger.info(`  - Date range: ${entry.start_date} to ${entry.end_date}`)
+      logger.info(`  - Original date range: ${entry.start_date} to ${entry.end_date}`)
+      logger.info(`  - Requested date range: ${startDate} to ${endDate}`)
       logger.info(`  - Age: ${ageInDays} days old`)
       logger.info(`  - Created: ${entry.created_at}`)
       
