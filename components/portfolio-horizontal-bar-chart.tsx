@@ -301,8 +301,6 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
   }, [chartData.length]) // Only depend on length to avoid infinite loops
 
-
-
   // Custom bar shape to include value text inside
   const CustomBar = (props: any) => {
     const { x, y, width, height, fill, value, index } = props
@@ -324,7 +322,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           <text 
             x={x + (isMobile ? 5 : 10)} 
             y={y + height / 2} 
-            fill="white" 
+            fill="#f5f5f5" 
             textAnchor="start" 
             dominantBaseline="middle"
             fontSize={isMobile ? "10" : "11"}
@@ -336,7 +334,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         <text 
           x={x + width + 5} 
           y={y + height / 2} 
-          fill="#4b5563" 
+          fill="#b1b1b1" 
           textAnchor="start" 
           dominantBaseline="middle"
           fontSize={isMobile ? "10" : "11"}
@@ -348,15 +346,13 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     )
   }
 
-
-
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       const holding = displayHoldings.find(h => h.symbol === data.symbol)
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-          <p className="font-semibold text-gray-900">{data.symbol}</p>
+        <div className="bg-[hsl(var(--card))] p-3 rounded-lg shadow-lg border border-[hsl(var(--border))]">
+          <p className="font-semibold text-[hsl(var(--card-foreground))]">{data.symbol}</p>
           <p className="text-sm text-gray-600 mb-2">{holding?.name}</p>
           <div className="space-y-1">
             <p className="text-sm">
@@ -404,7 +400,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           textAnchor="start" 
           fontSize={10}
           fontWeight={600}
-          fill="#374151"
+          fill="#b1b1b1"
         >
           {payload.value}
         </text>
@@ -549,7 +545,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 <XAxis 
                   type="number" 
                   tickFormatter={formatTickValue}
-                  tick={{ fontSize: 10, fill: '#6b7280' }}
+                  tick={{ fontSize: 10, fill: '#b1b1b1' }}
                   domain={[0, 'dataMax']}
                 />
                 <YAxis 

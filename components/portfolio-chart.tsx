@@ -159,8 +159,8 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
       const sp500GainPercent = costBasis > 0 ? ((sp500Gain / costBasis) * 100) : 0
 
       return (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+        <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
+          <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
             {new Date(label).toLocaleDateString('en-NZ', { 
               year: 'numeric', 
               month: 'short',
@@ -169,27 +169,27 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
           </p>
           <div className="space-y-1">
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-blue-600 dark:text-blue-400">Portfolio Value:</span>
+              <span className="text-sm text-blue-600">Portfolio Value:</span>
               <span className="text-sm font-medium">{formatCurrency(portfolioValue)}</span>
             </div>
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600 dark:text-green-400">S&P 500 Value:</span>
+              <span className="text-sm text-green-600">S&P 500 Value:</span>
               <span className="text-sm font-medium">{formatCurrency(sp500Value)}</span>
             </div>
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-red-600 dark:text-red-400">Cost Basis:</span>
+              <span className="text-sm text-red-600">Cost Basis:</span>
               <span className="text-sm font-medium">{formatCurrency(costBasis)}</span>
             </div>
-            <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
               <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Portfolio Gain:</span>
-                <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className="text-sm text-gray-600">Portfolio Gain:</span>
+                <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(gain)} ({gainPercent.toFixed(1)}%)
                 </span>
               </div>
               <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">S&P 500 Gain:</span>
-                <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className="text-sm text-gray-600">S&P 500 Gain:</span>
+                <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(sp500Gain)} ({sp500GainPercent.toFixed(1)}%)
                 </span>
               </div>
@@ -214,8 +214,8 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
       const outperformance = portfolioPerformance - sp500Performance
 
       return (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+        <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
+          <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
             {new Date(label).toLocaleDateString('en-NZ', { 
               year: 'numeric', 
               month: 'short',
@@ -224,21 +224,21 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
           </p>
           <div className="space-y-1">
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-blue-600 dark:text-blue-400">Portfolio:</span>
-              <span className={`text-sm font-medium ${portfolioPerformance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              <span className="text-sm text-blue-600">Portfolio:</span>
+              <span className={`text-sm font-medium ${portfolioPerformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatPercentage(portfolioPerformance)}
               </span>
             </div>
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600 dark:text-green-400">S&P 500:</span>
-              <span className={`text-sm font-medium ${sp500Performance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              <span className="text-sm text-green-600">S&P 500:</span>
+              <span className={`text-sm font-medium ${sp500Performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatPercentage(sp500Performance)}
               </span>
             </div>
-            <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
               <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Outperformance:</span>
-                <span className={`text-sm font-medium ${outperformance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className="text-sm text-gray-600">Outperformance:</span>
+                <span className={`text-sm font-medium ${outperformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatPercentage(outperformance)}
                 </span>
               </div>
@@ -271,7 +271,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return (
       <Card className="border-blue-100">
         <CardContent className="h-[450px] flex items-center justify-center">
-          <div className="text-red-600 dark:text-red-400">
+          <div className="text-red-600">
             Error loading portfolio history: {error}
           </div>
         </CardContent>
@@ -283,7 +283,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return (
       <Card className="border-blue-100">
         <CardContent className="h-[450px] flex items-center justify-center">
-          <div className="text-gray-500 dark:text-gray-400">
+          <div className="text-gray-500">
             No portfolio history data available
           </div>
         </CardContent>
@@ -365,7 +365,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 <Line 
                   type="monotone" 
                   dataKey="portfolioPerformance" 
-                  stroke="#3b82f6"
+                  stroke="#00b100"
                   strokeWidth={2}
                   name="Portfolio Performance"
                   dot={false}
@@ -374,7 +374,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 <Line 
                   type="monotone" 
                   dataKey="sp500Performance" 
-                  stroke="#10b981"
+                  stroke="#b1b1b1"
                   strokeWidth={2}
                   name="S&P 500 Performance"
                   dot={false}
@@ -384,7 +384,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 <Line 
                   type="monotone" 
                   dataKey={() => 0} 
-                  stroke="#6b7280"
+                  stroke="#4b4b4b"
                   strokeWidth={1}
                   strokeDasharray="3 3"
                   name="Break Even"
@@ -424,7 +424,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 <Line 
                   type="monotone" 
                   dataKey="portfolioValue" 
-                  stroke="#3b82f6"
+                  stroke="#00b100"
                   strokeWidth={2}
                   name="Portfolio Value"
                   dot={false}
@@ -433,7 +433,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 <Line 
                   type="monotone" 
                   dataKey="sp500Value" 
-                  stroke="#10b981"
+                  stroke="#b1b1b1"
                   strokeWidth={2}
                   name="S&P 500 Value"
                   dot={false}
