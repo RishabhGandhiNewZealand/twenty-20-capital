@@ -38,19 +38,21 @@ export async function GET() {
           end_date: endDateStr
         },
         report_generated_date: currentDate,
-        totalHoldings: fallbackCompanies.length
+        totalCompanies: fallbackCompanies.length,
+        currentHoldings: 0,
+        historicalHoldings: fallbackCompanies.length
       })
     }
 
-    // Calculate current holdings and get unique companies
-    const companies = new Map<string, string>() // Map of company name to symbol
+    // Track all companies and current holdings
+    const allCompanies = new Map<string, string>() // Map of company name to symbol
     const holdingsBySymbol = new Map<string, number>()
     
     // Process all trades to get unique companies and current holdings
     for (const trade of trades) {
       // Track all companies that have been traded
       if (trade.name && trade.code) {
-        companies.set(trade.name, trade.code)
+        allCompanies.set(trade.name, trade.code)
       }
       
       // Calculate current holdings
@@ -63,23 +65,29 @@ export async function GET() {
       }
     }
     
-    // Filter to only include companies with current holdings
-    const currentCompanies = new Map<string, string>()
-    holdingsBySymbol.forEach((shares, symbol) => {
+    // Separate current and historical companies
+    const currentCompanies = new Set<string>()
+    const historicalCompanies = new Set<string>()
+    
+    // Categorize companies
+    allCompanies.forEach((symbol, name) => {
+      const shares = holdingsBySymbol.get(symbol) || 0
+      const companyWithSymbol = `${name} (${symbol})`
+      
       if (shares > MIN_SHARE_THRESHOLD) {
-        // Find the company name for this symbol
-        for (const [name, code] of companies.entries()) {
-          if (code === symbol) {
-            currentCompanies.set(name, code)
-            break
-          }
-        }
+        currentCompanies.add(companyWithSymbol)
+      } else {
+        historicalCompanies.add(companyWithSymbol)
       }
     })
     
-    // Convert to array with symbols in parentheses
-    const companyList = Array.from(currentCompanies.entries()).map(([name, symbol]) => `${name} (${symbol})`)
-    logger.info(`Found ${companyList.length} companies with current holdings`)
+    // Combine all companies (current first, then historical)
+    const allCompaniesList = [
+      ...Array.from(currentCompanies).sort(),
+      ...Array.from(historicalCompanies).sort()
+    ]
+    
+    logger.info(`Found ${currentCompanies.size} current holdings and ${historicalCompanies.size} historical holdings`)
     
     // Get date range for the analysis
     const currentDate = new Date().toISOString().split('T')[0]
@@ -90,7 +98,7 @@ export async function GET() {
     const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     
     return NextResponse.json({
-      companies: companyList.length > 0 ? companyList : [
+      companies: allCompaniesList.length > 0 ? allCompaniesList : [
         // Fallback list if no companies found
         "Microsoft (MSFT)",
         "Tesla (TSLA)", 
@@ -107,7 +115,14 @@ export async function GET() {
         end_date: endDateStr
       },
       report_generated_date: currentDate,
-      totalHoldings: companyList.length
+      totalCompanies: allCompaniesList.length,
+      currentHoldings: currentCompanies.size,
+      historicalHoldings: historicalCompanies.size,
+      // Additional metadata for the UI
+      companiesByCategory: {
+        current: Array.from(currentCompanies).sort(),
+        historical: Array.from(historicalCompanies).sort()
+      }
     })
   } catch (error: any) {
     logger.error('Error getting companies:', error)
