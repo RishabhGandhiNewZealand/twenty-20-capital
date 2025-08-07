@@ -19,7 +19,7 @@ interface CompositionData {
 }
 
 // Cache configuration
-const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
+const CACHE_REVALIDATE_SECONDS = 1200 // 20 minutes for Yahoo Finance data
 const CACHE_TAG = 'portfolio-compositions'
 
 /**
@@ -255,7 +255,7 @@ export async function GET() {
     // Set cache headers for client-side caching
     return NextResponse.json(compositions, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
       }
     })
     

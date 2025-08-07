@@ -250,7 +250,7 @@ export async function GET() {
       lastUpdated: new Date().toISOString()
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
       }
     })
   } catch (error) {

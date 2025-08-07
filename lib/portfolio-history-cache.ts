@@ -13,7 +13,7 @@ interface DailyPortfolioData {
 }
 
 // Cache configuration
-const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
+const CACHE_REVALIDATE_SECONDS = 1200 // 20 minutes for Yahoo Finance data
 const CACHE_TAG = 'portfolio-history'
 
 // Get historical prices for a stock

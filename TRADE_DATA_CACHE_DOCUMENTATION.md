@@ -42,25 +42,42 @@ The following indexes are created for optimal query performance:
 
 ### Cache Layers
 
-The application implements multiple levels of caching:
+The application implements multiple levels of caching with different durations:
 
-1. **Trade Data Cache** - Raw trade data from database
-2. **Portfolio Compositions Cache** - Historical portfolio compositions with real prices
-3. **Portfolio History Cache** - Daily portfolio performance data
+1. **Trade Data Cache** - Raw trade data from database (1 hour)
+2. **Portfolio Compositions Cache** - Historical portfolio compositions with real prices (20 minutes)
+3. **Portfolio History Cache** - Daily portfolio performance data (20 minutes)
 4. **API Response Cache** - HTTP cache headers for client-side caching
 
 ### Cache Configuration
 
 ```typescript
-const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
+// Database queries (no external API calls)
+TRADE_DATA: 3600 // 1 hour
+
+// Yahoo Finance API dependent data
+PORTFOLIO_CURRENT: 1200 // 20 minutes
+PORTFOLIO_HISTORY: 1200 // 20 minutes
+PORTFOLIO_COMPOSITIONS: 1200 // 20 minutes
+STOCK_PRICES: 1200 // 20 minutes
+EXCHANGE_RATES: 1200 // 20 minutes
+
+// Other API data
+NEWS_ANALYSIS: 3600 // 1 hour (Gemini API calls are expensive)
 ```
+
+### Cache Duration Rationale
+
+- **Database-only queries (1 hour)**: Trade data changes infrequently, so longer cache duration is appropriate
+- **Yahoo Finance data (20 minutes)**: Stock prices change during market hours, so more frequent updates are needed
+- **News analysis (1 hour)**: Gemini API calls are expensive and news doesn't change rapidly
 
 ### Cached Functions
 
-1. **getCachedTradeData()** - Fetches all trade data with caching
-2. **getCachedTradeDataBySymbol(symbol)** - Fetches trade data for a specific symbol with caching
-3. **getCachedPortfolioCompositions()** - Calculates and caches portfolio compositions with historical prices
-4. **getCachedPortfolioHistory()** - Calculates and caches daily portfolio performance
+1. **getCachedTradeData()** - Fetches all trade data with 1-hour caching
+2. **getCachedTradeDataBySymbol(symbol)** - Fetches trade data for a specific symbol with 1-hour caching
+3. **getCachedPortfolioCompositions()** - Calculates and caches portfolio compositions with 20-minute caching
+4. **getCachedPortfolioHistory()** - Calculates and caches daily portfolio performance with 20-minute caching
 
 ## Data Flow
 
@@ -71,10 +88,10 @@ const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
    - Fetch historical prices from Yahoo Finance for all tickers
    - Fetch historical exchange rates
    - Calculate daily portfolio compositions
-   - Cache results for 1 hour
+   - Cache results for 20 minutes
    - Return data
 
-2. **Subsequent Requests** (within 1 hour):
+2. **Subsequent Requests** (within 20 minutes):
    - Return cached compositions immediately
    - No database or Yahoo Finance queries
 
@@ -112,20 +129,22 @@ export async function GET() {
 
 ## API Endpoints with Caching
 
-All major data endpoints now use caching:
+All major data endpoints use caching with appropriate durations:
 
-- `/api/portfolio-current` - Current portfolio holdings
-- `/api/portfolio-history` - Historical portfolio performance
-- `/api/portfolio-compositions` - Daily portfolio compositions (for horizontal bar chart)
-- `/api/portfolio-composition/[date]` - Portfolio composition on specific date
-- `/api/news/companies` - List of portfolio companies
-- `/api/news` - News analysis for portfolio companies
-- `/api/trade-data/cache-status` - Cache status monitoring
+| Endpoint | Cache Duration | Reason |
+|----------|----------------|---------|
+| `/api/portfolio-current` | 20 minutes | Uses live Yahoo Finance prices |
+| `/api/portfolio-history` | 20 minutes | Uses historical Yahoo Finance data |
+| `/api/portfolio-compositions` | 20 minutes | Uses historical Yahoo Finance data |
+| `/api/portfolio-composition/[date]` | 20 minutes | Uses historical prices |
+| `/api/news/companies` | 1 hour | Based on trade data only |
+| `/api/news` | 1 hour | Expensive Gemini API calls |
+| `/api/trade-data/cache-status` | No cache | Status monitoring |
 
 ## Performance Benefits
 
-1. **Reduced Database Load** - Queries execute only once per hour per unique request
-2. **Reduced External API Calls** - Yahoo Finance queries are cached
+1. **Reduced Database Load** - Queries execute only once per hour for trade data
+2. **Reduced External API Calls** - Yahoo Finance queries cached for 20 minutes
 3. **Faster Response Times** - Cached data serves instantly
 4. **Cost Optimization** - Fewer database queries and API calls
 5. **Scalability** - Can handle more concurrent users
@@ -183,10 +202,11 @@ Response:
 
 ## Cache Invalidation
 
-- Caches automatically expire after 1 hour
-- Manual invalidation available via `invalidateTradeDataCache()`
-- Cache tags allow targeted invalidation
-- When trade data is updated, caches should be invalidated
+- Caches automatically expire based on their configured duration
+- Trade data cache: 1 hour
+- Yahoo Finance dependent caches: 20 minutes
+- Manual invalidation available via cache tags
+- When trade data is updated, all caches should be invalidated
 
 ## Troubleshooting
 
@@ -217,3 +237,4 @@ Response:
 3. **Cache Metrics** - Track cache hit/miss rates
 4. **Configurable TTL** - Allow cache duration configuration via environment variable
 5. **Partial Date Range Caching** - Cache compositions for recent dates more frequently
+6. **Market Hours Awareness** - Shorter cache during market hours, longer after hours
