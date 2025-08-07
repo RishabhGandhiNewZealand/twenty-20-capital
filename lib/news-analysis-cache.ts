@@ -37,27 +37,17 @@ function isCacheFresh(cacheCreatedAt: Date): boolean {
 }
 
 /**
- * Analyze news for a single company using Gemini API
- * This function will check the database cache first
+ * Check if a company has fresh cached data
  */
-async function analyzeCompanyNewsWithCache(
+async function checkCacheFreshness(
   company: string,
-  model: any,
   startDate: string,
   endDate: string,
-  currentDate: string
-): Promise<CachedNewsData> {
-  const newsCache = NewsCache.getInstance()
-  
-  // Try to get from database cache first
+  newsCache: NewsCache
+): Promise<{ hasFreshCache: boolean; cachedData: CachedNewsData | null }> {
   try {
     const cached = await newsCache.get(company, startDate, endDate)
     if (cached) {
-      // Check if the cache is fresh (less than 1 month old)
-      // The NewsCache.get() method returns entries, we need to check the created date
-      // For now, we'll check if we have cached data and trust the NewsCache logic
-      logger.info(`Found cached news for ${company}`)
-      
       // Get the cache entry details to check age
       const sql = (await import('./db')).getDb()
       const cacheEntries = await sql`
@@ -73,14 +63,35 @@ async function analyzeCompanyNewsWithCache(
         const cacheAge = cacheEntries[0].created_at
         if (isCacheFresh(cacheAge)) {
           logger.info(`Cache for ${company} is fresh (created: ${cacheAge.toISOString()})`)
-          return cached
+          return { hasFreshCache: true, cachedData: cached }
         } else {
-          logger.info(`Cache for ${company} is stale (created: ${cacheAge.toISOString()}), will refresh`)
+          logger.info(`Cache for ${company} is stale (created: ${cacheAge.toISOString()})`)
         }
       }
     }
   } catch (error) {
     logger.warn(`Failed to check cache for ${company}:`, error)
+  }
+  
+  return { hasFreshCache: false, cachedData: null }
+}
+
+/**
+ * Analyze news for a single company using Gemini API
+ * This function will check the database cache first
+ */
+async function analyzeCompanyNewsWithCache(
+  company: string,
+  model: any,
+  startDate: string,
+  endDate: string,
+  currentDate: string,
+  newsCache: NewsCache,
+  cachedData?: CachedNewsData | null
+): Promise<CachedNewsData> {
+  // If we already have fresh cached data, return it
+  if (cachedData) {
+    return cachedData
   }
 
   // If not in cache or cache is stale (>1 month old), analyze with Gemini
@@ -290,12 +301,30 @@ async function analyzeAllCompaniesNews(
     logger.info('Using fallback model: gemini-1.5-flash')
   }
 
-  // Analyze each company
-  const companyResults: CachedNewsData[] = []
+  // First, check cache status for all companies in parallel
+  logger.info('Checking cache status for all companies...')
+  const cacheChecks = await Promise.all(
+    companies.map(company => 
+      checkCacheFreshness(company, startDate, endDate, newsCache)
+        .then(result => ({ company, ...result }))
+    )
+  )
+
+  // Separate companies into cached and non-cached
+  const cachedCompanies = cacheChecks.filter(check => check.hasFreshCache)
+  const nonCachedCompanies = cacheChecks.filter(check => !check.hasFreshCache)
+
+  logger.info(`Cache status: ${cachedCompanies.length} cached, ${nonCachedCompanies.length} need refresh`)
+
+  // Process cached companies in parallel (fast)
+  const cachedResults: CachedNewsData[] = cachedCompanies.map(({ cachedData }) => cachedData!)
+
+  // Process non-cached companies sequentially (to avoid rate limits)
+  const nonCachedResults: CachedNewsData[] = []
   
-  for (let i = 0; i < companies.length; i++) {
-    const company = companies[i]
-    logger.info(`Processing ${i + 1}/${companies.length}: ${company}`)
+  for (let i = 0; i < nonCachedCompanies.length; i++) {
+    const { company } = nonCachedCompanies[i]
+    logger.info(`Processing ${i + 1}/${nonCachedCompanies.length} non-cached companies: ${company}`)
     
     try {
       const result = await analyzeCompanyNewsWithCache(
@@ -303,22 +332,19 @@ async function analyzeAllCompaniesNews(
         model,
         startDate,
         endDate,
-        currentDate
+        currentDate,
+        newsCache,
+        null // No cached data
       )
-      companyResults.push(result)
+      nonCachedResults.push(result)
       
-      // Log progress
-      const successCount = companyResults.filter(c => c.status === "news_found").length
-      const errorCount = companyResults.filter(c => c.error).length
-      logger.info(`Progress: ${i + 1}/${companies.length} completed. ${successCount} with news, ${errorCount} with errors`)
-      
-      // Add delay between requests to avoid rate limits
-      if (i < companies.length - 1) {
+      // Add delay between Gemini API requests to avoid rate limits
+      if (i < nonCachedCompanies.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 500))
       }
     } catch (error: any) {
       logger.error(`Failed to analyze ${company}:`, error.message)
-      companyResults.push({
+      nonCachedResults.push({
         company_name: company,
         status: "no_significant_news_found",
         summary_points: [],
@@ -328,13 +354,29 @@ async function analyzeAllCompaniesNews(
     }
   }
 
+  // Combine all results, maintaining original company order
+  const allResults = companies.map(company => {
+    const cachedResult = cachedResults.find(r => r.company_name === company)
+    if (cachedResult) return cachedResult
+    
+    const nonCachedResult = nonCachedResults.find(r => r.company_name === company)
+    return nonCachedResult || {
+      company_name: company,
+      status: "no_significant_news_found" as const,
+      summary_points: [],
+      references: [],
+      error: "Failed to process"
+    }
+  })
+
   // Log summary
-  const totalCompanies = companyResults.length
-  const companiesWithNews = companyResults.filter(c => c.status === "news_found").length
-  const companiesWithErrors = companyResults.filter(c => c.error).length
-  const totalReferences = companyResults.reduce((sum, c) => sum + (c.references?.length || 0), 0)
+  const totalCompanies = allResults.length
+  const companiesWithNews = allResults.filter(c => c.status === "news_found").length
+  const companiesWithErrors = allResults.filter(c => c.error).length
+  const totalReferences = allResults.reduce((sum, c) => sum + (c.references?.length || 0), 0)
   
   logger.info(`Analysis complete: ${totalCompanies} companies, ${companiesWithNews} with news, ${companiesWithErrors} with errors, ${totalReferences} total references`)
+  logger.info(`Performance: ${cachedCompanies.length} served from cache (parallel), ${nonCachedCompanies.length} fetched from API (sequential)`)
 
   return {
     report_generated_date: currentDate,
@@ -342,7 +384,7 @@ async function analyzeAllCompaniesNews(
       start_date: startDate,
       end_date: endDate
     },
-    company_news: companyResults
+    company_news: allResults
   }
 }
 

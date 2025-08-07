@@ -106,11 +106,13 @@ NEWS_DB_CACHE_MAX_AGE: 30 days // News older than 1 month is refreshed
 
 1. **First Request**:
    - Fetch cached trade data to get company list
-   - For each company:
-     - Check database cache for existing news
-     - If cached and less than 1 month old: use cached data
-     - If not cached or older than 1 month: query Gemini API
-     - Store/update result in database cache
+   - **Check all companies' cache status in parallel** (fast)
+   - Separate companies into:
+     - Cached (< 1 month old): Process in parallel
+     - Non-cached or stale: Process sequentially
+   - For non-cached companies:
+     - Query Gemini API with 500ms delay between calls
+     - Store result in database cache
    - Cache entire response in memory for 1 hour
    - Return data
 
@@ -123,6 +125,11 @@ NEWS_DB_CACHE_MAX_AGE: 30 days // News older than 1 month is refreshed
    - Entries older than 1 month are considered stale
    - Stale entries trigger a fresh Gemini API call
    - Ensures news data is reasonably current while minimizing API costs
+
+4. **Performance Optimization**:
+   - **Parallel Processing**: Cached companies processed simultaneously
+   - **Sequential API Calls**: Only for companies needing updates
+   - **Significant Speed Improvement**: When most companies are cached
 
 ### Calculation Process
 
