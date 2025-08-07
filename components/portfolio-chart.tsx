@@ -365,7 +365,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 <Line 
                   type="monotone" 
                   dataKey="portfolioPerformance" 
-                  stroke="#00b100"
+                  stroke="#00a37a"
                   strokeWidth={2}
                   name="Portfolio Performance"
                   dot={false}
@@ -424,7 +424,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 <Line 
                   type="monotone" 
                   dataKey="portfolioValue" 
-                  stroke="#00b100"
+                  stroke="#00a37a"
                   strokeWidth={2}
                   name="Portfolio Value"
                   dot={false}
