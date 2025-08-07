@@ -9,6 +9,7 @@ import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-b
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
+import { formatNumber, formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
 
 interface CurrentHolding {
   symbol: string
@@ -34,39 +35,63 @@ interface PortfolioSummary {
   exchangeRate: number
 }
 
-export default function HomePage() {
-  const [holdings, setHoldings] = useState<CurrentHolding[]>([])
-  const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
-  const [summary, setSummary] = useState<PortfolioSummary | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [portfolioStats, setPortfolioStats] = useState([
+// Helper function to create portfolio stats array
+function createPortfolioStats(
+  portfolioValue: string,
+  portfolioCAGR: number,
+  sp500CAGR: number,
+  subtitle: string = "Current portfolio value"
+) {
+  return [
     {
       title: "Portfolio Value (NZD)",
-      value: "Loading...",
-      subtitle: "Calculating current value",
+      value: portfolioValue,
+      subtitle: subtitle,
       icon: DollarSign,
     },
     {
       title: "Portfolio Yearly CAGR", 
-      value: "Loading...",
+      value: formatPercentage(portfolioCAGR),
       description: "Total Value Returns since inception",
       icon: TrendingUp,
     },
     {
       title: "S&P 500 Yearly CAGR",
-      value: "Loading...",
+      value: formatPercentage(sp500CAGR),
       description: "S&P 500 Total Value Returns since inception",
       icon: ChartLine,
     },
-  ])
+  ]
+}
+
+export default function HomePage() {
+  const [holdings, setHoldings] = useState<CurrentHolding[]>([])
+  const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [portfolioStats, setPortfolioStats] = useState(
+    createPortfolioStats("Loading...", 0, 0, "Calculating current value")
+  )
 
 
 
   useEffect(() => {
     const fetchPortfolioData = async () => {
       try {
-        // Fetch current portfolio data from the new endpoint
-        const currentResponse = await fetch('/api/portfolio-current')
+        // Fetch all data in parallel for better performance
+        const [currentResponse, portfolioResponse, historyResponse] = await Promise.all([
+          fetch('/api/portfolio-current'),
+          fetch('/api/portfolio').catch((error) => {
+            console.error('Failed to fetch portfolio data:', error)
+            return null
+          }),
+          fetch('/api/portfolio-history').catch((error) => {
+            console.error('Failed to fetch portfolio history:', error)
+            return null
+          })
+        ])
+
+        // Handle current portfolio data (required)
         if (!currentResponse.ok) {
           throw new Error('Failed to load portfolio data')
         }
@@ -75,16 +100,14 @@ export default function HomePage() {
         setHoldings(currentData.holdings)
         setSummary(currentData.summary)
 
-        // Fetch exited positions from the old endpoint
-        const portfolioResponse = await fetch('/api/portfolio')
-        if (portfolioResponse.ok) {
+        // Handle exited positions (optional)
+        if (portfolioResponse && portfolioResponse.ok) {
           const portfolioData = await portfolioResponse.json()
           setExitedPositions(portfolioData.exitedPositions)
         }
 
-        // Fetch portfolio history to get the latest accurate values
-        const historyResponse = await fetch('/api/portfolio-history')
-        if (historyResponse.ok) {
+        // Handle portfolio history for accurate values (optional but preferred)
+        if (historyResponse && historyResponse.ok) {
           const historyData = await historyResponse.json()
           if (historyData.history && historyData.history.length > 0) {
             const latestHistory = historyData.history[historyData.history.length - 1]
@@ -110,26 +133,7 @@ export default function HomePage() {
             const portfolioCAGR = calculateCAGRFromGainPercent(updatedSummary.totalGainPercent, yearsSinceInception)
             const sp500CAGR = calculateCAGRFromGainPercent(updatedSummary.sp500GainPercent, yearsSinceInception)
 
-            setPortfolioStats([
-              {
-                title: "Portfolio Value (NZD)",
-                value: formattedValue,
-                subtitle: "Current portfolio value",
-                icon: DollarSign,
-              },
-              {
-                title: "Portfolio Yearly CAGR", 
-                value: formatPercentage(portfolioCAGR),
-                description: "Total Value Returns since inception",
-                icon: TrendingUp,
-              },
-              {
-                title: "S&P 500 Yearly CAGR",
-                value: formatPercentage(sp500CAGR),
-                description: "S&P 500 Total Value Returns since inception",
-                icon: ChartLine,
-              },
-            ])
+            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR))
           }
         } else {
           // Fallback to using data from portfolio-current if history fails
@@ -142,26 +146,7 @@ export default function HomePage() {
           const portfolioCAGR = calculateCAGRFromGainPercent(totalGainPercent, yearsSinceInception)
           const sp500CAGR = calculateCAGRFromGainPercent(sp500GainPercent, yearsSinceInception)
 
-          setPortfolioStats([
-            {
-              title: "Portfolio Value (NZD)",
-              value: formattedValue,
-              subtitle: "Current portfolio value",
-              icon: DollarSign,
-            },
-                          {
-                title: "Portfolio Yearly CAGR", 
-                value: formatPercentage(portfolioCAGR),
-                description: "Total Value Returns since inception",
-                icon: TrendingUp,
-              },
-              {
-                title: "S&P 500 Yearly CAGR",
-                value: formatPercentage(sp500CAGR),
-                description: "S&P 500 Total Value Returns since inception",
-                icon: ChartLine,
-              },
-          ])
+          setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR))
         }
 
       } catch (error) {
@@ -182,30 +167,7 @@ export default function HomePage() {
     fetchPortfolioData()
   }, [])
 
-  const formatCurrency = (value: number | undefined, currency: string = 'NZD') => {
-    if (value === undefined) return 'N/A'
-    return new Intl.NumberFormat('en-NZ', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value)
-  }
 
-  const formatNumber = (value: number, decimals: number = 2) => {
-    return new Intl.NumberFormat('en-NZ', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(value)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-NZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -292,14 +254,15 @@ export default function HomePage() {
                             {formatNumber(holding.shares, 2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {holding.currency === 'NZD' 
-                              ? `NZ$${holding.currentPrice.toFixed(2)}`
-                              : formatCurrency(holding.currentPrice, holding.currency)}
+                            {formatCurrencyWithDecimals(holding.currentPrice, holding.currency)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {holding.currency === 'NZD' 
-                              ? `NZ$${(holding.costBasisNZD / holding.shares).toFixed(2)}`
-                              : formatCurrency(holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), holding.currency)}
+                            {formatCurrencyWithDecimals(
+                              holding.currency === 'NZD' 
+                                ? holding.costBasisNZD / holding.shares
+                                : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), 
+                              holding.currency
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatCurrency(holding.currentValueNZD)}
@@ -399,17 +362,18 @@ export default function HomePage() {
                         <div>
                           <div className="text-gray-500">Current Price</div>
                           <div className="font-medium">
-                            {holding.currency === 'NZD' 
-                              ? `NZ$${holding.currentPrice.toFixed(2)}`
-                              : formatCurrency(holding.currentPrice, holding.currency)}
+                            {formatCurrencyWithDecimals(holding.currentPrice, holding.currency)}
                           </div>
                         </div>
                         <div>
                           <div className="text-gray-500">Cost Basis (Per Share)</div>
                           <div className="font-medium text-gray-600">
-                            {holding.currency === 'NZD' 
-                              ? `NZ$${(holding.costBasisNZD / holding.shares).toFixed(2)}`
-                              : formatCurrency(holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), holding.currency)}
+                            {formatCurrencyWithDecimals(
+                              holding.currency === 'NZD' 
+                                ? holding.costBasisNZD / holding.shares
+                                : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), 
+                              holding.currency
+                            )}
                           </div>
                         </div>
                         <div>

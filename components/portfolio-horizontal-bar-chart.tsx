@@ -9,6 +9,8 @@ import { getLogoUrl } from "@/lib/company-utils"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
+import { formatCurrency } from "@/lib/financial-calculations"
+import { formatDate } from "@/lib/format-utils"
 
 interface ChartData {
   name: string
@@ -275,14 +277,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
   }, [chartData.length]) // Only depend on length to avoid infinite loops
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-NZ', {
-      style: 'currency',
-      currency: 'NZD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value)
-  }
+
 
   // Custom bar shape to include value text inside
   const CustomBar = (props: any) => {
@@ -329,13 +324,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     )
   }
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-NZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
+
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {

@@ -18,7 +18,13 @@ interface CurrentHolding {
   currency: string
 }
 
-// Get current price for a stock
+/**
+ * Fetches the current market price for a given stock ticker
+ * 
+ * @param ticker - Stock ticker symbol (e.g., 'AAPL', 'GOOGL')
+ * @returns Current market price in the stock's native currency
+ * @throws Will return 0 if the price cannot be fetched
+ */
 async function getCurrentPrice(ticker: string): Promise<number> {
   try {
     let yfinanceTicker = ticker
@@ -234,6 +240,10 @@ export async function GET() {
         exchangeRate: currentExchangeRate
       },
       lastUpdated: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      }
     })
   } catch (error) {
     logger.error('Error calculating current portfolio:', error)

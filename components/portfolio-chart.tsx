@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Loader2, TrendingUp, DollarSign } from "lucide-react"
+import { formatCurrency, formatPercentage as formatPercentageBase } from "@/lib/financial-calculations"
 import {
   LineChart,
   Line,
@@ -136,19 +137,9 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return sampled
   }
 
-  // Format currency for tooltips
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-NZ', {
-      style: 'currency',
-      currency: 'NZD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value)
-  }
-
-  // Format percentage for tooltips
+  // Format percentage for tooltips (adapting from base function)
   const formatPercentage = (value: number) => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+    return formatPercentageBase(value / 100, 2)
   }
 
   // Custom tooltip for value view

@@ -1,9 +1,18 @@
 /**
  * Calculate Compound Annual Growth Rate (CAGR)
- * @param initialValue Starting value
- * @param finalValue Ending value
- * @param years Number of years
- * @returns CAGR as a decimal (e.g., 0.15 for 15%)
+ * 
+ * CAGR represents the mean annual growth rate of an investment over a specified period of time.
+ * It assumes the investment compounds over time.
+ * 
+ * @param initialValue - Starting value of the investment (must be positive)
+ * @param finalValue - Ending value of the investment
+ * @param years - Number of years over which the growth occurred (must be positive)
+ * @returns CAGR as a decimal (e.g., 0.15 for 15% annual growth)
+ * 
+ * @example
+ * // Calculate CAGR for an investment that grew from $1000 to $2000 over 5 years
+ * const cagr = calculateCAGR(1000, 2000, 5)
+ * console.log(cagr) // 0.1487 (14.87% annual growth)
  */
 export function calculateCAGR(initialValue: number, finalValue: number, years: number): number {
   if (initialValue <= 0 || years <= 0) return 0
@@ -44,7 +53,7 @@ export function formatCurrency(value: number, currency: string = 'NZD', locale: 
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value)
 }
