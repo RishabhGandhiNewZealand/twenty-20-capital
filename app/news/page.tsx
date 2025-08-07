@@ -124,58 +124,12 @@ export default function NewsPage() {
       setCompanyStatuses(statuses)
       
       // Auto-start analysis immediately after companies are loaded
-      if (!isAnalyzingRef.current) {
+      if (!isAnalyzingRef.current && data.companies.length > 0) {
         isAnalyzingRef.current = true
         setIsAnalyzing(true)
         
-        // Update all statuses to loading
-        setCompanyStatuses(data.companies.map((company: string) => ({
-          name: company,
-          status: 'loading'
-        })))
-        
-        try {
-          // Fetch all news at once from the cached endpoint
-          const newsResponse = await fetch("/api/news")
-          
-          if (!newsResponse.ok) {
-            throw new Error("Failed to fetch news data")
-          }
-          
-          const newsData: NewsResponse = await newsResponse.json()
-          
-          // Update all company statuses with the results
-          setCompanyStatuses(data.companies.map((company: string) => {
-            const newsItem = newsData.company_news.find(
-              news => news.company_name === company
-            )
-            
-            if (newsItem) {
-              return {
-                name: company,
-                status: 'completed' as const,
-                data: newsItem
-              }
-            } else {
-              return {
-                name: company,
-                status: 'error' as const,
-                error: 'No data received'
-              }
-            }
-          }))
-          
-        } catch (analysisError) {
-          // Update all statuses to error
-          setCompanyStatuses(data.companies.map((company: string) => ({ 
-            name: company,
-            status: 'error' as const,
-            error: analysisError instanceof Error ? analysisError.message : 'Failed to analyze news'
-          })))
-        } finally {
-          setIsAnalyzing(false)
-          isAnalyzingRef.current = false
-        }
+        // Start analyzing companies
+        analyzeCompanies(data.companies)
       }
       
     } catch (err) {
@@ -184,6 +138,155 @@ export default function NewsPage() {
       setLoading(false)
     }
   }, [])
+
+  // Analyze companies - check first company, then decide parallel vs sequential
+  const analyzeCompanies = async (companies: string[]) => {
+    if (companies.length === 0) {
+      setIsAnalyzing(false)
+      isAnalyzingRef.current = false
+      return
+    }
+
+    try {
+      // First, check if we have cache for the first company
+      const firstCompany = companies[0]
+      
+      // Update first company to loading
+      setCompanyStatuses(prev => prev.map(c => 
+        c.name === firstCompany ? { ...c, status: 'loading' } : c
+      ))
+
+      // Check cache status by attempting to fetch with a special header
+      const cacheCheckResponse = await fetch(
+        `/api/news/company?company=${encodeURIComponent(firstCompany)}&checkCache=true`
+      )
+      
+      const hasCacheForFirst = cacheCheckResponse.headers.get('X-Cache-Status') === 'HIT'
+      
+      if (!cacheCheckResponse.ok) {
+        throw new Error(`Failed to check cache for ${firstCompany}`)
+      }
+
+      const firstCompanyData = await cacheCheckResponse.json()
+      
+      // Update first company with results
+      setCompanyStatuses(prev => prev.map(c => 
+        c.name === firstCompany 
+          ? { 
+              ...c, 
+              status: 'completed',
+              data: firstCompanyData
+            } 
+          : c
+      ))
+
+      // Now process remaining companies based on cache status
+      const remainingCompanies = companies.slice(1)
+      
+      if (hasCacheForFirst && remainingCompanies.length > 0) {
+        // Cache detected - load all remaining companies in parallel
+        
+        // Update all remaining to loading
+        setCompanyStatuses(prev => prev.map(c => 
+          remainingCompanies.includes(c.name) ? { ...c, status: 'loading' } : c
+        ))
+
+        // Fetch all remaining companies in parallel
+        const parallelPromises = remainingCompanies.map(async (company) => {
+          try {
+            const response = await fetch(`/api/news/company?company=${encodeURIComponent(company)}`)
+            if (!response.ok) {
+              throw new Error(`Failed to fetch news for ${company}`)
+            }
+            const data = await response.json()
+            return { company, data, error: null }
+          } catch (error) {
+            return { 
+              company, 
+              data: null, 
+              error: error instanceof Error ? error.message : 'Failed to fetch news' 
+            }
+          }
+        })
+
+        const results = await Promise.all(parallelPromises)
+        
+        // Update all results at once
+        setCompanyStatuses(prev => prev.map(c => {
+          const result = results.find(r => r.company === c.name)
+          if (result) {
+            if (result.data) {
+              return { ...c, status: 'completed', data: result.data }
+            } else {
+              return { ...c, status: 'error', error: result.error || 'Failed to fetch news' }
+            }
+          }
+          return c
+        }))
+        
+      } else if (remainingCompanies.length > 0) {
+        // No cache - process remaining companies sequentially
+        
+        for (const company of remainingCompanies) {
+          // Update to loading
+          setCompanyStatuses(prev => prev.map(c => 
+            c.name === company ? { ...c, status: 'loading' } : c
+          ))
+          
+          try {
+            const response = await fetch(`/api/news/company?company=${encodeURIComponent(company)}`)
+            
+            if (!response.ok) {
+              throw new Error(`Failed to fetch news for ${company}`)
+            }
+            
+            const data = await response.json()
+            
+            // Update with results
+            setCompanyStatuses(prev => prev.map(c => 
+              c.name === company 
+                ? { 
+                    ...c, 
+                    status: 'completed',
+                    data: data
+                  } 
+                : c
+            ))
+            
+            // Small delay between sequential requests
+            await new Promise(resolve => setTimeout(resolve, 500))
+            
+          } catch (error) {
+            // Update with error
+            setCompanyStatuses(prev => prev.map(c => 
+              c.name === company 
+                ? { 
+                    ...c, 
+                    status: 'error',
+                    error: error instanceof Error ? error.message : 'Failed to fetch news'
+                  } 
+                : c
+            ))
+          }
+        }
+      }
+      
+    } catch (error) {
+      // Update all pending companies to error
+      setCompanyStatuses(prev => prev.map(c => 
+        c.status === 'pending' || c.status === 'loading'
+          ? { 
+              ...c, 
+              status: 'error',
+              error: error instanceof Error ? error.message : 'Failed to analyze news'
+            } 
+          : c
+      ))
+    } finally {
+      setIsAnalyzing(false)
+      isAnalyzingRef.current = false
+    }
+  }
 
   // Initial load
   useEffect(() => {
