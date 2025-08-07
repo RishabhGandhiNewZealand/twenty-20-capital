@@ -258,6 +258,12 @@ Response:
 1. Ensure Next.js is running in production mode for full caching
 2. Check cache status endpoint
 3. Verify `unstable_cache` is imported correctly
+4. Check logs for "UNSTABLE CACHE HIT" vs "UNSTABLE CACHE MISS"
+
+### News Page Loading Slowly
+1. Ensure the news page is using `/api/news` endpoint (not `/api/news/company`)
+2. Check for "UNSTABLE CACHE HIT" in logs on second visit
+3. Verify cache key is stable (doesn't include changing dates)
 
 ### Slow Initial Load
 1. First request after cache expiry will be slower (fetching from Yahoo Finance)

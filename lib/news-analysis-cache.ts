@@ -373,14 +373,74 @@ async function analyzeAllCompaniesNews(
 }
 
 /**
+ * Wrapper function that creates a stable cache key
+ * We exclude currentDate and apiKey from the cache key since they change frequently
+ * but don't affect the actual news content we want to cache
+ */
+async function analyzeNewsWithStableKey(
+  companiesKey: string,
+  startDate: string,
+  endDate: string
+): Promise<NewsAnalysisResult> {
+  logger.info('=== UNSTABLE CACHE MISS - Executing news analysis ===')
+  logger.info(`Cache key: companies=${companiesKey.split('|||').length}, dates=${startDate} to ${endDate}`)
+  
+  // Get current values that aren't part of the cache key
+  const currentDate = new Date().toISOString().split('T')[0]
+  const apiKey = process.env.GEMINI_API_KEY!
+  const companies = companiesKey.split('|||') // Use a delimiter that won't appear in company names
+  
+  const startTime = Date.now()
+  const result = await analyzeAllCompaniesNews(companies, startDate, endDate, currentDate, apiKey)
+  const duration = Date.now() - startTime
+  
+  logger.info(`=== News analysis completed in ${duration}ms ===`)
+  
+  return result
+}
+
+/**
  * Cached version of analyzeAllCompaniesNews
  * This caches the entire news analysis result in memory
  */
-export const getCachedNewsAnalysis = unstable_cache(
-  analyzeAllCompaniesNews,
+const getCachedNewsAnalysisInternal = unstable_cache(
+  analyzeNewsWithStableKey,
   [CACHE_TAGS.NEWS],
   {
     revalidate: CACHE_DURATIONS.NEWS_ANALYSIS,
     tags: [CACHE_TAGS.NEWS]
   }
 )
+
+/**
+ * Public interface that maintains the original function signature
+ */
+export async function getCachedNewsAnalysis(
+  companies: string[],
+  startDate: string,
+  endDate: string,
+  currentDate: string,
+  apiKey: string
+): Promise<NewsAnalysisResult> {
+  logger.info('=== getCachedNewsAnalysis called ===')
+  logger.info(`Parameters: ${companies.length} companies, dates: ${startDate} to ${endDate}, current: ${currentDate}`)
+  
+  // Create a stable companies key
+  const companiesKey = companies.join('|||')
+  
+  const cacheStartTime = Date.now()
+  
+  // Call the cached function with stable parameters
+  const result = await getCachedNewsAnalysisInternal(companiesKey, startDate, endDate)
+  
+  const cacheDuration = Date.now() - cacheStartTime
+  
+  // If it was very fast (< 100ms), it was likely a cache hit
+  if (cacheDuration < 100) {
+    logger.info(`=== UNSTABLE CACHE HIT - Returned in ${cacheDuration}ms ===`)
+  } else {
+    logger.info(`=== Cache operation completed in ${cacheDuration}ms ===`)
+  }
+  
+  return result
+}

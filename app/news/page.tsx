@@ -49,6 +49,15 @@ interface CompaniesResponse {
   report_generated_date: string
 }
 
+interface NewsResponse {
+  report_generated_date: string
+  analysis_period: {
+    start_date: string
+    end_date: string
+  }
+  company_news: CompanyNews[]
+}
+
 export default function NewsPage() {
   const [companiesData, setCompaniesData] = useState<CompaniesResponse | null>(null)
   const [companyStatuses, setCompanyStatuses] = useState<CompanyStatus[]>([])
@@ -87,15 +96,20 @@ export default function NewsPage() {
     })
   }
 
-  // Fetch the list of companies
+  // Fetch companies list
+  useEffect(() => {
+    fetchCompanies()
+  }, [])
+
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       
       const response = await fetch("/api/news/companies")
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch companies")
+        throw new Error("Failed to load companies")
       }
       
       const data = await response.json()
@@ -115,96 +129,56 @@ export default function NewsPage() {
     }
   }, [])
 
-  // Fetch news for a single company
-  const fetchCompanyNews = async (company: string): Promise<CompanyNews> => {
-    try {
-      const response = await fetch(`/api/news/company?company=${encodeURIComponent(company)}`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch news for ${company}`)
-      }
-      
-      const contentType = response.headers.get('content-type')
-      
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json()
-        return data
-      } else {
-        // Try to parse as text and then as JSON
-        try {
-          const text = await response.text()
-          const data = JSON.parse(text)
-          return data
-        } catch (parseError) {
-          throw parseError
-        }
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        return {
-          company_name: company,
-          status: 'no_significant_news_found',
-          summary_points: [],
-          references: [],
-          error: 'Request was cancelled'
-        }
-      }
-      
-      return {
-        company_name: company,
-        status: 'no_significant_news_found',
-        summary_points: [],
-        references: [],
-        error: error.message || 'Failed to analyze company news'
-      }
-    }
-  }
-
-  // Analyze all companies one by one
+  // Fetch all news at once from the cached endpoint
   const analyzeAllCompanies = useCallback(async () => {
     if (!companiesData) return
     
     setIsAnalyzing(true)
     
-    for (let i = 0; i < companiesData.companies.length; i++) {
-      const company = companiesData.companies[i]
+    try {
+      // Update all statuses to loading
+      setCompanyStatuses(prev => prev.map(c => ({ ...c, status: 'loading' })))
       
-      // Update status to loading
-      setCompanyStatuses(prev => prev.map((c, idx) => 
-        idx === i ? { ...c, status: 'loading' } : c
-      ))
+      // Fetch all news at once from the cached endpoint
+      const response = await fetch("/api/news")
       
-      try {
-        // Fetch news for this company
-        const newsData = await fetchCompanyNews(company)
-        
-        // Update with results
-        setCompanyStatuses(prev => prev.map((c, idx) => 
-          idx === i ? { 
-            ...c, 
-            status: 'completed',
-            data: newsData
-          } : c
-        ))
-        
-        // Small delay to avoid rate limits
-        if (i < companiesData.companies.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
-        
-      } catch (error) {
-        // Update with error
-        setCompanyStatuses(prev => prev.map((c, idx) => 
-          idx === i ? { 
-            ...c, 
-            status: 'error',
-            error: error instanceof Error ? error.message : 'Analysis failed'
-          } : c
-        ))
+      if (!response.ok) {
+        throw new Error("Failed to fetch news data")
       }
+      
+      const newsData: NewsResponse = await response.json()
+      
+      // Update all company statuses with the results
+      setCompanyStatuses(prev => prev.map(company => {
+        const newsItem = newsData.company_news.find(
+          news => news.company_name === company.name
+        )
+        
+        if (newsItem) {
+          return {
+            ...company,
+            status: 'completed',
+            data: newsItem
+          }
+        } else {
+          return {
+            ...company,
+            status: 'error',
+            error: 'No data received'
+          }
+        }
+      }))
+      
+    } catch (error) {
+      // Update all statuses to error
+      setCompanyStatuses(prev => prev.map(c => ({ 
+        ...c, 
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Failed to analyze news'
+      })))
+    } finally {
+      setIsAnalyzing(false)
     }
-    
-    setIsAnalyzing(false)
   }, [companiesData])
 
   // Initial load
