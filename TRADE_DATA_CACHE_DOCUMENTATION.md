@@ -47,7 +47,10 @@ The application implements multiple levels of caching with different durations:
 1. **Trade Data Cache** - Raw trade data from database (1 hour)
 2. **Portfolio Compositions Cache** - Historical portfolio compositions with real prices (20 minutes)
 3. **Portfolio History Cache** - Daily portfolio performance data (20 minutes)
-4. **API Response Cache** - HTTP cache headers for client-side caching
+4. **News Analysis Cache** - Company news analysis with two-tier caching:
+   - Database cache: Stores individual company news analysis
+   - Memory cache: Caches entire news response (1 hour)
+5. **API Response Cache** - HTTP cache headers for client-side caching
 
 ### Cache Configuration
 
@@ -78,6 +81,7 @@ NEWS_ANALYSIS: 3600 // 1 hour (Gemini API calls are expensive)
 2. **getCachedTradeDataBySymbol(symbol)** - Fetches trade data for a specific symbol with 1-hour caching
 3. **getCachedPortfolioCompositions()** - Calculates and caches portfolio compositions with 20-minute caching
 4. **getCachedPortfolioHistory()** - Calculates and caches daily portfolio performance with 20-minute caching
+5. **getCachedNewsAnalysis()** - Analyzes and caches news for all companies with 1-hour caching
 
 ## Data Flow
 
@@ -94,6 +98,26 @@ NEWS_ANALYSIS: 3600 // 1 hour (Gemini API calls are expensive)
 2. **Subsequent Requests** (within 20 minutes):
    - Return cached compositions immediately
    - No database or Yahoo Finance queries
+
+### News Analysis
+
+1. **First Request**:
+   - Fetch cached trade data to get company list
+   - For each company:
+     - Check database cache for existing news
+     - If not cached, query Gemini API with Google Search
+     - Store result in database cache
+   - Cache entire response in memory for 1 hour
+   - Return data
+
+2. **Subsequent Requests** (within 1 hour):
+   - Return cached news analysis immediately
+   - No database queries or API calls
+
+3. **Partial Cache Hits**:
+   - If some companies have cached news in database
+   - Only fetch news for companies without cache
+   - Reduces Gemini API calls significantly
 
 ### Calculation Process
 
