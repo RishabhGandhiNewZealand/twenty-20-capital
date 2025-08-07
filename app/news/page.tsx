@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, TrendingUp, Link2, CheckCircle2, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react"
 import { format } from "date-fns"
@@ -65,6 +65,7 @@ export default function NewsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set())
+  const isAnalyzingRef = useRef(false)
 
   // Helper function to extract symbol from company name
   const extractSymbol = (companyName: string): string | null => {
@@ -122,6 +123,61 @@ export default function NewsPage() {
       }))
       setCompanyStatuses(statuses)
       
+      // Auto-start analysis immediately after companies are loaded
+      if (!isAnalyzingRef.current) {
+        isAnalyzingRef.current = true
+        setIsAnalyzing(true)
+        
+        // Update all statuses to loading
+        setCompanyStatuses(data.companies.map((company: string) => ({
+          name: company,
+          status: 'loading'
+        })))
+        
+        try {
+          // Fetch all news at once from the cached endpoint
+          const newsResponse = await fetch("/api/news")
+          
+          if (!newsResponse.ok) {
+            throw new Error("Failed to fetch news data")
+          }
+          
+          const newsData: NewsResponse = await newsResponse.json()
+          
+          // Update all company statuses with the results
+          setCompanyStatuses(data.companies.map((company: string) => {
+            const newsItem = newsData.company_news.find(
+              news => news.company_name === company
+            )
+            
+            if (newsItem) {
+              return {
+                name: company,
+                status: 'completed' as const,
+                data: newsItem
+              }
+            } else {
+              return {
+                name: company,
+                status: 'error' as const,
+                error: 'No data received'
+              }
+            }
+          }))
+          
+        } catch (analysisError) {
+          // Update all statuses to error
+          setCompanyStatuses(data.companies.map((company: string) => ({ 
+            name: company,
+            status: 'error' as const,
+            error: analysisError instanceof Error ? analysisError.message : 'Failed to analyze news'
+          })))
+        } finally {
+          setIsAnalyzing(false)
+          isAnalyzingRef.current = false
+        }
+      }
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load companies")
     } finally {
@@ -129,73 +185,10 @@ export default function NewsPage() {
     }
   }, [])
 
-  // Fetch all news at once from the cached endpoint
-  const analyzeAllCompanies = useCallback(async () => {
-    if (!companiesData || isAnalyzing) return
-    
-    setIsAnalyzing(true)
-    
-    try {
-      // Update all statuses to loading
-      setCompanyStatuses(prev => prev.map(c => ({ ...c, status: 'loading' })))
-      
-      // Fetch all news at once from the cached endpoint
-      const response = await fetch("/api/news")
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch news data")
-      }
-      
-      const newsData: NewsResponse = await response.json()
-      
-      // Update all company statuses with the results
-      setCompanyStatuses(prev => prev.map(company => {
-        const newsItem = newsData.company_news.find(
-          news => news.company_name === company.name
-        )
-        
-        if (newsItem) {
-          return {
-            ...company,
-            status: 'completed',
-            data: newsItem
-          }
-        } else {
-          return {
-            ...company,
-            status: 'error',
-            error: 'No data received'
-          }
-        }
-      }))
-      
-    } catch (error) {
-      // Update all statuses to error
-      setCompanyStatuses(prev => prev.map(c => ({ 
-        ...c, 
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Failed to analyze news'
-      })))
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }, [companiesData, isAnalyzing])
-
   // Initial load
   useEffect(() => {
     fetchCompanies()
   }, [])
-
-  // Auto-start analysis when companies are loaded
-  useEffect(() => {
-    // Start analysis if we have companies and all are still pending
-    if (companiesData && companyStatuses.length > 0) {
-      const allPending = companyStatuses.every(c => c.status === 'pending')
-      if (allPending && !isAnalyzing) {
-        analyzeAllCompanies()
-      }
-    }
-  }, [companiesData, companyStatuses, isAnalyzing, analyzeAllCompanies])
 
 
 
