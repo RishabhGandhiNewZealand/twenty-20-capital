@@ -94,31 +94,39 @@ export class NewsCache {
     const sql = getDb()
     
     try {
-      logger.info(`Looking for fresh cache entry for ${company}`)
+      logger.info(`Looking for cache entry for ${company}`)
       
-      // Look for a recent cache entry for this company where the end_date is within 7 days of now
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      // Look for cache entries for this company that are:
+      // 1. Less than 1 month old
+      // 2. Cover a recent period (end_date within last 45 days)
+      // This allows us to reuse cache even if date ranges don't match exactly
+      const oneMonthAgo = new Date()
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+      
+      const fortyFiveDaysAgo = new Date()
+      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
       
       const results = await sql<CacheEntry[]>`
         SELECT * FROM application.news_cache 
         WHERE company_name = ${company}
-        AND end_date >= ${sevenDaysAgo.toISOString().split('T')[0]}
-        ORDER BY end_date DESC, created_at DESC
+        AND created_at > ${oneMonthAgo}
+        AND end_date >= ${fortyFiveDaysAgo.toISOString().split('T')[0]}
+        ORDER BY created_at DESC
         LIMIT 1
       `
       
       if (results.length === 0) {
-        logger.info(`No fresh cache found for ${company} (within 7 days)`)
+        logger.info(`No fresh cache found for ${company} (must be less than 1 month old)`)
         return null
       }
       
       const entry = results[0]
-      const daysSinceEnd = Math.floor((new Date().getTime() - new Date(entry.end_date).getTime()) / (1000 * 60 * 60 * 24))
+      const ageInDays = Math.floor((new Date().getTime() - new Date(entry.created_at).getTime()) / (1000 * 60 * 60 * 24))
       
       logger.info(`Found cache entry for ${company}:`)
-      logger.info(`  - Date range: ${entry.start_date} to ${entry.end_date}`)
-      logger.info(`  - Days since end date: ${daysSinceEnd}`)
+      logger.info(`  - Original date range: ${entry.start_date} to ${entry.end_date}`)
+      logger.info(`  - Requested date range: ${startDate} to ${endDate}`)
+      logger.info(`  - Age: ${ageInDays} days old`)
       logger.info(`  - Created: ${entry.created_at}`)
       
       // Update access statistics
@@ -129,11 +137,11 @@ export class NewsCache {
         WHERE id = ${entry.id}
       `
       
-      logger.info(`Cache hit for ${company} (accessed ${entry.request_count + 1} times)`)
+      logger.info(`Cache hit for ${company} - returning cached data`)
       return entry.response_data
       
     } catch (error) {
-      logger.error(`Error retrieving from cache for ${company}:`, error)
+      logger.error(`Error getting cached news for ${company}:`, error)
       return null
     }
   }

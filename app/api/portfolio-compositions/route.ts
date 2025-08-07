@@ -1,10 +1,9 @@
-import { parseCSVData } from '@/lib/portfolio'
+import { NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
+import { getCachedTradeData } from '@/lib/trade-data-cache'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
-import { getCompanyColor } from '@/lib/company-colors'
-import fs from 'fs/promises'
-import path from 'path'
 
 interface HoldingAtDate {
   symbol: string
@@ -19,26 +18,25 @@ interface CompositionData {
   [date: string]: HoldingAtDate[]
 }
 
-async function downloadTestData(): Promise<string> {
-  const url = process.env.TRADE_DATA_BLOB_URL
-  if (!url) {
-    throw new Error('TRADE_DATA_BLOB_URL environment variable is not set')
-  }
-  console.log('Downloading data from blob storage...')
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to download data: ${response.statusText}`)
-  }
-  return await response.text()
-}
+// Cache configuration
+const CACHE_REVALIDATE_SECONDS = 1200 // 20 minutes for Yahoo Finance data
+const CACHE_TAG = 'portfolio-compositions'
 
-async function cachePortfolioCompositions() {
+/**
+ * Calculate portfolio compositions for historical dates with actual prices
+ * This is the raw calculation function that will be cached
+ */
+async function calculatePortfolioCompositions(): Promise<CompositionData> {
   try {
-    console.log('Starting portfolio composition caching...')
+    logger.info('Starting portfolio composition calculation...')
     
-    // Download CSV data
-    const csvContent = await downloadTestData()
-    const trades = parseCSVData(csvContent)
+    // Fetch cached trade data from database
+    const trades = await getCachedTradeData()
+    
+    if (!trades || trades.length === 0) {
+      logger.warn('No trade data found for portfolio compositions')
+      return {}
+    }
     
     // Sort trades by date
     trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -47,14 +45,14 @@ async function cachePortfolioCompositions() {
     const startDate = new Date(trades[0].date)
     const endDate = new Date()
     
-    console.log(`Processing dates from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    logger.info(`Processing dates from ${startDate.toISOString()} to ${endDate.toISOString()}`)
     
     // Get unique tickers
     const tickers = [...new Set(trades.map(t => t.code))]
-    console.log('Tickers found:', tickers)
+    logger.info('Tickers found:', tickers)
     
     // Fetch all historical prices in parallel
-    console.log('Fetching historical prices...')
+    logger.info('Fetching historical prices...')
     const priceDataPromises = tickers.map(async (ticker) => {
       try {
         let yfinanceTicker = ticker
@@ -76,13 +74,13 @@ async function cachePortfolioCompositions() {
         
         return { ticker, priceMap }
       } catch (error) {
-        console.error(`Error fetching prices for ${ticker}:`, error)
+        logger.error(`Error fetching prices for ${ticker}:`, error)
         return { ticker, priceMap: new Map<string, number>() }
       }
     })
     
     // Fetch exchange rates
-    console.log('Fetching exchange rates...')
+    logger.info('Fetching exchange rates...')
     const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', {
       period1: startDate,
       period2: endDate,
@@ -150,7 +148,7 @@ async function cachePortfolioCompositions() {
     }
     
     // Calculate compositions for each date
-    console.log('Calculating daily compositions...')
+    logger.info('Calculating daily compositions...')
     const compositions: CompositionData = {}
     const holdings = new Map<string, {
       symbol: string
@@ -227,19 +225,45 @@ async function cachePortfolioCompositions() {
       processDate.setDate(processDate.getDate() + 1)
     }
     
-    // Save to file
-    const outputPath = path.join(process.cwd(), 'public', 'data', 'portfolio-compositions.json')
-    await fs.mkdir(path.dirname(outputPath), { recursive: true })
-    await fs.writeFile(outputPath, JSON.stringify(compositions, null, 2))
-    
-    console.log(`Successfully cached ${Object.keys(compositions).length} daily compositions`)
-    console.log(`Output saved to: ${outputPath}`)
+    logger.info(`Successfully calculated ${Object.keys(compositions).length} daily compositions`)
+    return compositions
     
   } catch (error) {
-    console.error('Error caching portfolio compositions:', error)
-    process.exit(1)
+    logger.error('Error calculating portfolio compositions:', error)
+    throw error
   }
 }
 
-// Run the caching script
-cachePortfolioCompositions()
+/**
+ * Cached version of calculatePortfolioCompositions
+ * This function will cache the results for the specified duration
+ */
+const getCachedPortfolioCompositions = unstable_cache(
+  calculatePortfolioCompositions,
+  [CACHE_TAG],
+  {
+    revalidate: CACHE_REVALIDATE_SECONDS,
+    tags: [CACHE_TAG]
+  }
+)
+
+export async function GET() {
+  try {
+    // Fetch cached portfolio compositions
+    const compositions = await getCachedPortfolioCompositions()
+    
+    // Set cache headers for client-side caching
+    return NextResponse.json(compositions, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
+      }
+    })
+    
+  } catch (error) {
+    logger.error('Error in portfolio compositions endpoint:', error)
+    return NextResponse.json(
+      { error: 'Failed to calculate portfolio compositions' },
+      { status: 500 }
+    )
+  }
+}

@@ -61,39 +61,63 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   useEffect(() => {
     async function loadCompositionData() {
       try {
-        const response = await fetch('/data/portfolio-compositions.json')
+        // Try the API endpoint first
+        const response = await fetch('/api/portfolio-compositions')
         if (!response.ok) {
-          throw new Error('Failed to load composition data')
-        }
-        const data = await response.json()
-        setCompositionData(data)
-        
-        // Get available dates and sort them
-        const dates = Object.keys(data).sort()
-        setAvailableDates(dates)
-        
-        // Set initial slider to today's date if current holdings exist, otherwise latest historical date
-        if (dates.length > 0) {
-          // Check if we have current holdings passed as props
-          if (currentHoldings && currentHoldings.length > 0) {
-            // Set to max value to show today's data
-            setSliderValue(dates.length)
-            setDisplayDate(null) // null indicates today
-          } else {
-            // Fall back to latest historical date
-            setSliderValue(dates.length - 1)
-            setDisplayDate(dates[dates.length - 1])
+          // Fallback to static file if API fails
+          const staticResponse = await fetch('/data/portfolio-compositions.json')
+          if (!staticResponse.ok) {
+            throw new Error('Failed to load composition data')
+          }
+          const data = await staticResponse.json()
+          setCompositionData(data)
+          
+          // Get available dates and sort them
+          const dates = Object.keys(data).sort()
+          setAvailableDates(dates)
+          
+          // Set initial slider to today's date if current holdings exist, otherwise latest historical date
+          if (dates.length > 0) {
+            // Check if we have current holdings passed as props
+            if (currentHoldings && currentHoldings.length > 0) {
+              // Set to max value to show today's data
+              setSliderValue(dates.length)
+            } else {
+              // Set to latest historical date
+              setSliderValue(dates.length - 1)
+              setDisplayDate(dates[dates.length - 1])
+            }
+          }
+        } else {
+          const data = await response.json()
+          setCompositionData(data)
+          
+          // Get available dates and sort them
+          const dates = Object.keys(data).sort()
+          setAvailableDates(dates)
+          
+          // Set initial slider to today's date if current holdings exist, otherwise latest historical date
+          if (dates.length > 0) {
+            // Check if we have current holdings passed as props
+            if (currentHoldings && currentHoldings.length > 0) {
+              // Set to max value to show today's data
+              setSliderValue(dates.length)
+            } else {
+              // Set to latest historical date
+              setSliderValue(dates.length - 1)
+              setDisplayDate(dates[dates.length - 1])
+            }
           }
         }
         
         setLoading(false)
-      } catch (err) {
-        console.error('Error loading composition data:', err)
+      } catch (error) {
+        console.error('Error loading composition data:', error)
         setError('Failed to load historical composition data')
         setLoading(false)
       }
     }
-
+    
     loadCompositionData()
   }, [currentHoldings])
 

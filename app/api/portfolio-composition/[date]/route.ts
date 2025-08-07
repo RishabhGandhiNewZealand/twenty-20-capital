@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { parseCSVData } from '@/lib/portfolio'
-import { downloadTradeDataFromBlob } from '@/lib/blob-utils'
+import { getCachedTradeData } from '@/lib/trade-data-cache'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
@@ -33,9 +32,18 @@ export async function GET(
       })
     }
 
-    // Download CSV from Vercel Blob storage
-    const csvContent = await downloadTradeDataFromBlob()
-    const trades = parseCSVData(csvContent)
+    // Fetch cached trade data from database
+    const trades = await getCachedTradeData()
+    
+    // If no trades found, return empty response
+    if (!trades || trades.length === 0) {
+      logger.warn('No trade data found in database')
+      return NextResponse.json({
+        date: targetDate,
+        holdings: [],
+        cached: false
+      })
+    }
     
     // Sort trades by date
     trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())

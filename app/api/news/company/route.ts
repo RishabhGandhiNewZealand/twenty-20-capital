@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { newsCache } from '@/lib/news-cache'
+import { unstable_cache } from 'next/cache'
+import { CACHE_DURATIONS, CACHE_TAGS } from '@/lib/cache-config'
 
 // Analyze news for a single company
 async function analyzeCompanyNews(
@@ -236,43 +238,27 @@ Note: If the company name includes a stock ticker in parentheses, use it to ensu
   }
 }
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const company = searchParams.get('company')
-    
-    if (!company) {
-      return NextResponse.json(
-        { error: 'Company parameter is required' },
-        { status: 400 }
-      )
-    }
-    
-    // Calculate date range
-    const currentDate = new Date().toISOString().split('T')[0]
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(endDate.getDate() - 30)
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+// Create a cached version of the single company analysis
+const getCachedCompanyNews = unstable_cache(
+  async (company: string, startDate: string, endDate: string) => {
+    logger.info(`[UNSTABLE_CACHE MISS] Fetching news for ${company}`)
     
     // Initialize cache
     await newsCache.initialize()
     
-    // Check cache first - the cache service will only return fresh data (end date within 7 days)
-    const cachedResult = await newsCache.get(company, startDateStr, endDateStr)
+    // Check database cache first
+    const cachedResult = await newsCache.get(company, startDate, endDate)
     if (cachedResult) {
-      logger.info(`Returning fresh cached result for ${company}`)
-      return NextResponse.json(cachedResult)
+      logger.info(`[DB CACHE HIT] Returning cached result for ${company}`)
+      return { data: cachedResult, source: 'db-cache' }
     }
+    
+    logger.info(`[DB CACHE MISS] No cached result for ${company}, calling Gemini...`)
     
     // Check if Gemini API key is configured
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'News service not configured. Please set GEMINI_API_KEY.' },
-        { status: 500 }
-      )
+      throw new Error('News service not configured. Please set GEMINI_API_KEY.')
     }
 
     // Initialize Gemini
@@ -282,10 +268,9 @@ export async function GET(request: Request) {
     try {
       genAI = new GoogleGenerativeAI(apiKey)
       model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash-exp",
         generationConfig: {
           temperature: 0.3,
-          // Not setting topK or topP as per recommendation
         },
         tools: [{
           googleSearch: {}
@@ -295,10 +280,9 @@ export async function GET(request: Request) {
       // Fallback model
       genAI = new GoogleGenerativeAI(apiKey)
       model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-1.5-flash",
         generationConfig: {
           temperature: 0.3,
-          // Not setting topK or topP as per recommendation
         },
         tools: [{
           googleSearch: {}
@@ -307,7 +291,8 @@ export async function GET(request: Request) {
     }
 
     // Analyze the company
-    const result = await analyzeCompanyNews(company, model, startDateStr, endDateStr, currentDate)
+    const currentDate = new Date().toISOString().split('T')[0]
+    const result = await analyzeCompanyNews(company, model, startDate, endDate, currentDate)
     
     // Only cache successful results with news found
     const shouldCache = result && 
@@ -321,24 +306,71 @@ export async function GET(request: Request) {
     if (shouldCache) {
       try {
         logger.info(`Attempting to cache result for ${company} (status: ${result.status}, summaries: ${result.summary_points.length}, refs: ${result.references.length})`)
-        await newsCache.set(company, startDateStr, endDateStr, result)
+        await newsCache.set(company, startDate, endDate, result)
         logger.info(`Successfully cached result for ${company}`)
       } catch (cacheError: any) {
         logger.error(`Failed to cache result for ${company}:`, cacheError)
-        // Continue even if caching fails - don't break the user experience
+        // Continue even if caching fails
       }
-    } else {
-      const reasons = []
-      if (!result) reasons.push('no result')
-      if (result?.status !== 'news_found') reasons.push(`status: ${result?.status}`)
-      if (result?.error) reasons.push('has error')
-      if (!result?.summary_points?.length) reasons.push('no summaries')
-      if (!result?.references?.length) reasons.push('no references')
-      
-      logger.info(`Skipping cache for ${company} - Reasons: ${reasons.join(', ')}`)
     }
     
-    return NextResponse.json(result)
+    return { data: result, source: 'gemini' }
+  },
+  // Cache key includes company name and date range
+  ['news-company'],
+  {
+    revalidate: CACHE_DURATIONS.NEWS_ANALYSIS,
+    tags: [CACHE_TAGS.NEWS]
+  }
+)
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const company = searchParams.get('company')
+    const checkCache = searchParams.get('checkCache') === 'true'
+    
+    if (!company) {
+      return NextResponse.json(
+        { error: 'Company parameter is required' },
+        { status: 400 }
+      )
+    }
+    
+    // Calculate date range
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(endDate.getDate() - 30)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    const endDateStr = new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    const startTime = Date.now()
+    
+    // Use the cached function
+    const { data, source } = await getCachedCompanyNews(company, startDateStr, endDateStr)
+    
+    const duration = Date.now() - startTime
+    
+    // Determine cache status
+    let cacheStatus = 'MISS'
+    if (duration < 100) {
+      // Very fast response indicates unstable_cache hit
+      cacheStatus = 'HIT'
+      logger.info(`[UNSTABLE_CACHE HIT] Returned ${company} in ${duration}ms`)
+    } else if (source === 'db-cache') {
+      cacheStatus = 'HIT'
+      logger.info(`[DB CACHE] Returned ${company} in ${duration}ms`)
+    } else {
+      logger.info(`[GEMINI API] Returned ${company} in ${duration}ms`)
+    }
+    
+    return NextResponse.json(data, {
+      headers: {
+        'X-Cache-Status': cacheStatus,
+        'X-Cache-Source': source,
+        'X-Response-Time': duration.toString()
+      }
+    })
 
   } catch (error: any) {
     logger.error('Error in single company analysis:', error)
