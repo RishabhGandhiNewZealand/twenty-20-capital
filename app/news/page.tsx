@@ -131,7 +131,7 @@ export default function NewsPage() {
 
   // Fetch all news at once from the cached endpoint
   const analyzeAllCompanies = useCallback(async () => {
-    if (!companiesData) return
+    if (!companiesData || isAnalyzing) return
     
     setIsAnalyzing(true)
     
@@ -179,19 +179,19 @@ export default function NewsPage() {
     } finally {
       setIsAnalyzing(false)
     }
-  }, [companiesData])
+  }, [companiesData, isAnalyzing])
 
   // Initial load
   useEffect(() => {
     fetchCompanies()
-  }, [fetchCompanies])
+  }, [])
 
-  // Start analysis when companies are loaded
+  // Auto-start analysis when companies are loaded
   useEffect(() => {
-    if (companiesData && companyStatuses.length > 0 && !isAnalyzing) {
-      // Check if we need to start/resume analysis
-      const hasIncomplete = companyStatuses.some(c => c.status === 'pending')
-      if (hasIncomplete) {
+    // Start analysis if we have companies and all are still pending
+    if (companiesData && companyStatuses.length > 0) {
+      const allPending = companyStatuses.every(c => c.status === 'pending')
+      if (allPending && !isAnalyzing) {
         analyzeAllCompanies()
       }
     }
