@@ -5,7 +5,6 @@ import "./globals.css"
 import Navigation from "@/components/navigation"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes"
-import ThemeToggle from "@/components/theme-toggle"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -35,13 +34,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="relative">
-            <div className="absolute right-4 top-4 z-50">
-              <ThemeToggle />
-            </div>
-            <Navigation />
-            {children}
-          </div>
+          <Navigation />
+          {children}
           <Analytics />
         </ThemeProvider>
       </body>

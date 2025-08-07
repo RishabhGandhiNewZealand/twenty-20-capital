@@ -5,6 +5,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { useState } from "react"
+import ThemeToggle from "@/components/theme-toggle"
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -41,12 +42,15 @@ export default function Navigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className={itemClass(item.href)}>
-                {item.label}
-              </Link>
-            ))}
+          <div className="hidden md:flex items-center space-x-4">
+            <div className="flex space-x-2">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} className={itemClass(item.href)}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            <ThemeToggle />
           </div>
 
           {/* Mobile Menu Button */}
@@ -76,6 +80,9 @@ export default function Navigation() {
                   {item.label}
                 </Link>
               ))}
+              <div className="px-4 pt-2">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         )}
