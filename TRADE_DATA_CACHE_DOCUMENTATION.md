@@ -67,6 +67,9 @@ EXCHANGE_RATES: 1200 // 20 minutes
 
 // Other API data
 NEWS_ANALYSIS: 3600 // 1 hour (Gemini API calls are expensive)
+
+// Database cache freshness
+NEWS_DB_CACHE_MAX_AGE: 30 days // News older than 1 month is refreshed
 ```
 
 ### Cache Duration Rationale
@@ -105,8 +108,9 @@ NEWS_ANALYSIS: 3600 // 1 hour (Gemini API calls are expensive)
    - Fetch cached trade data to get company list
    - For each company:
      - Check database cache for existing news
-     - If not cached, query Gemini API with Google Search
-     - Store result in database cache
+     - If cached and less than 1 month old: use cached data
+     - If not cached or older than 1 month: query Gemini API
+     - Store/update result in database cache
    - Cache entire response in memory for 1 hour
    - Return data
 
@@ -114,10 +118,11 @@ NEWS_ANALYSIS: 3600 // 1 hour (Gemini API calls are expensive)
    - Return cached news analysis immediately
    - No database queries or API calls
 
-3. **Partial Cache Hits**:
-   - If some companies have cached news in database
-   - Only fetch news for companies without cache
-   - Reduces Gemini API calls significantly
+3. **Cache Freshness Policy**:
+   - Database cache entries must be less than 1 month old
+   - Entries older than 1 month are considered stale
+   - Stale entries trigger a fresh Gemini API call
+   - Ensures news data is reasonably current while minimizing API costs
 
 ### Calculation Process
 

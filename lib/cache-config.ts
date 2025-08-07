@@ -18,6 +18,11 @@ export const CACHE_DURATIONS = {
   NEWS_ANALYSIS: 3600, // 1 hour (Gemini API calls are expensive)
 } as const
 
+// Cache freshness policies (in days)
+export const CACHE_FRESHNESS = {
+  NEWS_DB_CACHE_MAX_AGE: 30, // News database cache entries older than 30 days are considered stale
+} as const
+
 // Cache tags for invalidation
 export const CACHE_TAGS = {
   TRADE_DATA: 'trade-data',

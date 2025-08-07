@@ -28,6 +28,15 @@ interface NewsAnalysisResult {
 }
 
 /**
+ * Check if cached news data is still fresh (less than 1 month old)
+ */
+function isCacheFresh(cacheCreatedAt: Date): boolean {
+  const oneMonthAgo = new Date()
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+  return cacheCreatedAt > oneMonthAgo
+}
+
+/**
  * Analyze news for a single company using Gemini API
  * This function will check the database cache first
  */
@@ -44,15 +53,38 @@ async function analyzeCompanyNewsWithCache(
   try {
     const cached = await newsCache.get(company, startDate, endDate)
     if (cached) {
+      // Check if the cache is fresh (less than 1 month old)
+      // The NewsCache.get() method returns entries, we need to check the created date
+      // For now, we'll check if we have cached data and trust the NewsCache logic
       logger.info(`Found cached news for ${company}`)
-      return cached
+      
+      // Get the cache entry details to check age
+      const sql = (await import('./db')).getDb()
+      const cacheEntries = await sql`
+        SELECT created_at FROM application.news_cache 
+        WHERE company_name = ${company}
+        AND start_date = ${startDate}
+        AND end_date = ${endDate}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      
+      if (cacheEntries.length > 0) {
+        const cacheAge = cacheEntries[0].created_at
+        if (isCacheFresh(cacheAge)) {
+          logger.info(`Cache for ${company} is fresh (created: ${cacheAge.toISOString()})`)
+          return cached
+        } else {
+          logger.info(`Cache for ${company} is stale (created: ${cacheAge.toISOString()}), will refresh`)
+        }
+      }
     }
   } catch (error) {
     logger.warn(`Failed to check cache for ${company}:`, error)
   }
 
-  // If not in cache, analyze with Gemini
-  logger.info(`Analyzing news for ${company} (not in cache)...`)
+  // If not in cache or cache is stale (>1 month old), analyze with Gemini
+  logger.info(`Analyzing news for ${company} with Gemini API...`)
   
   const systemInstruction = `You are a financial news analyst specializing in portfolio companies. 
 Your task is to search for and synthesize recent news about companies using Google Search.
@@ -233,7 +265,7 @@ async function analyzeAllCompaniesNews(
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.0-flash-exp",
       generationConfig: {
         temperature: 0.1,
         topK: 40,
@@ -243,7 +275,7 @@ async function analyzeAllCompaniesNews(
         googleSearch: {}
       }]
     })
-    logger.info('Gemini API initialized with gemini-2.5-flash-lite and Google Search')
+    logger.info('Gemini API initialized with gemini-2.0-flash-exp and Google Search')
   } catch (error: any) {
     logger.error('Error initializing Gemini:', error)
     
