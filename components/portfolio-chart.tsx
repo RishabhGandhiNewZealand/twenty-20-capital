@@ -305,7 +305,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
               id="view-toggle"
               checked={showPercentage}
               onCheckedChange={setShowPercentage}
-              className="data-[state=checked]:bg-blue-600 scale-75 sm:scale-100"
+              className="data-[state=checked]:bg-[hsl(var(--primary))] scale-75 sm:scale-100"
             />
             <Label htmlFor="view-toggle" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -321,10 +321,10 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             <div className="absolute top-1 left-[60px] sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
               {portfolioStats.map((stat) => {
                 return (
-                  <div key={stat.title} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm">
+                  <div key={stat.title} className="bg-[hsl(var(--card))]/95 backdrop-blur-sm border border-[hsl(var(--border))] rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
                     <div>
-                      <p className="text-[8px] sm:text-[10px] text-gray-600 leading-tight">{stat.title}</p>
-                      <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
+                      <p className="text-[8px] sm:text-[10px] text-muted-foreground leading-tight">{stat.title}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-[hsl(var(--card-foreground))] leading-tight">{stat.value}</p>
                     </div>
                   </div>
                 )
