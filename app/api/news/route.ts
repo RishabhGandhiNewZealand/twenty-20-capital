@@ -1,47 +1,68 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { generatePortfolioData } from '@/lib/portfolioServerData'
-import { parseCSVData } from '@/lib/portfolio'
-import { downloadTradeDataFromBlob } from '@/lib/blob-utils'
+import { getCachedTradeData } from '@/lib/trade-data-cache'
+import { MIN_SHARE_THRESHOLD } from '@/lib/constants'
 
 // Fetch unique company names from portfolio data
 async function getPortfolioCompanies(): Promise<string[]> {
   try {
-    const companies = new Set<string>()
+    // Fetch cached trade data from database
+    const trades = await getCachedTradeData()
     
-    // Get portfolio data directly
-    const { holdings, exitedPositions } = await generatePortfolioData()
-    
-    // Add current holdings
-    holdings.forEach(holding => {
-      if (holding.name) {
-        companies.add(holding.name)
-      }
-    })
-    
-    // Add exited positions
-    exitedPositions.forEach(position => {
-      if (position.name) {
-        companies.add(position.name)
-      }
-    })
-    
-    // Also get raw trade data to ensure we capture all historical companies
-    try {
-      const csvContent = await downloadTradeDataFromBlob()
-      const trades = parseCSVData(csvContent)
-      trades.forEach(trade => {
-        if (trade.name) {
-          companies.add(trade.name)
-        }
-      })
-    } catch (error) {
-      logger.warn('Could not fetch raw trade data for complete company list:', error)
+    if (!trades || trades.length === 0) {
+      logger.warn('No trade data found in database')
+      // Return fallback list
+      return [
+        "Microsoft",
+        "Tesla", 
+        "Fonterra Co-operative Group",
+        "Fletcher Building",
+        "Meta Platforms",
+        "Salesforce",
+        "Alphabet",
+        "Amazon",
+        "Mainfreight"
+      ]
     }
     
-    const companyList = Array.from(companies)
-    logger.info('Found portfolio companies:', companyList)
+    // Calculate current holdings and get unique companies
+    const companies = new Map<string, string>() // Map of company name to symbol
+    const holdingsBySymbol = new Map<string, number>()
+    
+    // Process all trades to get unique companies and current holdings
+    for (const trade of trades) {
+      // Track all companies that have been traded
+      if (trade.name && trade.code) {
+        companies.set(trade.name, trade.code)
+      }
+      
+      // Calculate current holdings
+      const currentShares = holdingsBySymbol.get(trade.code) || 0
+      
+      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+        holdingsBySymbol.set(trade.code, currentShares + trade.qty)
+      } else if (trade.type === 'Sell') {
+        holdingsBySymbol.set(trade.code, currentShares + trade.qty) // qty is negative for sells
+      }
+    }
+    
+    // Filter to only include companies with current holdings
+    const currentCompanies = new Set<string>()
+    holdingsBySymbol.forEach((shares, symbol) => {
+      if (shares > MIN_SHARE_THRESHOLD) {
+        // Find the company name for this symbol
+        for (const [name, code] of companies.entries()) {
+          if (code === symbol) {
+            currentCompanies.add(name)
+            break
+          }
+        }
+      }
+    })
+    
+    const companyList = Array.from(currentCompanies)
+    logger.info(`Found ${companyList.length} companies with current holdings`)
     
     return companyList.length > 0 ? companyList : [
       // Fallback list if no companies found
