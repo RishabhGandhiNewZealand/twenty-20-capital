@@ -35,6 +35,8 @@ const sampleCompanies = [
 export default function ChartsPage() {
   const [open, setOpen] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState("")
+  const [portfolioTimePeriod, setPortfolioTimePeriod] = useState("quarterly")
+  const [researchTimePeriod, setResearchTimePeriod] = useState("quarterly")
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -56,6 +58,17 @@ export default function ChartsPage() {
         </TabsList>
 
         <TabsContent value="portfolio" className="space-y-4">
+          {/* Time period toggle */}
+          <div className="flex justify-center mb-6">
+            <Tabs value={portfolioTimePeriod} onValueChange={setPortfolioTimePeriod} className="w-auto">
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
+                <TabsTrigger value="quarterly-ttm">Quarterly (TTM)</TabsTrigger>
+                <TabsTrigger value="annual">Annual</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
           {/* Portfolio Stats view - kept blank as requested */}
           <Card>
             <CardContent className="pt-6">
@@ -67,6 +80,17 @@ export default function ChartsPage() {
         </TabsContent>
 
         <TabsContent value="research" className="space-y-4">
+          {/* Time period toggle */}
+          <div className="flex justify-center mb-6">
+            <Tabs value={researchTimePeriod} onValueChange={setResearchTimePeriod} className="w-auto">
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
+                <TabsTrigger value="quarterly-ttm">Quarterly (TTM)</TabsTrigger>
+                <TabsTrigger value="annual">Annual</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
           <Card>
             <CardHeader>
               <CardTitle>Company Research</CardTitle>
