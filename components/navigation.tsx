@@ -12,7 +12,8 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const navItems = [
-    { href: "/", label: "Portfolio" },
+    { href: "/", label: "Home" },
+    { href: "/portfolio", label: "Portfolio" },
     { href: "/reports", label: "Reports" },
     { href: "/analyses", label: "Analyses" },
     { href: "/news", label: "News" },
