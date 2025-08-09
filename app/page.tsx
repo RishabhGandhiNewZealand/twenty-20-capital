@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChartLine, Code2, Database, Globe, Zap, Shield, TrendingUp, ArrowRight, BarChart3 } from "lucide-react"
+import { ChartLine, Code2, Database, Globe, Zap, Shield, TrendingUp, ArrowRight, BarChart3, Eye } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -50,13 +50,13 @@ export default function LandingPage() {
     },
     {
       number: "02",
-      title: "The Solution",
-      content: "One dashboard. All my investments. Real-time updates. Performance metrics that actually matter."
+      title: "Existing Tools Failed",
+      content: "Even premium portfolio trackers couldn't show me what I needed. They were either too basic or buried the important stuff."
     },
     {
       number: "03",
-      title: "The Result",
-      content: "Now I can check my portfolio in seconds, not minutes. And I learned a ton building it."
+      title: "Built My Own",
+      content: "Now I have exactly what I wanted: real performance metrics, full transparency, and a way to share my investing journey."
     }
   ]
 
@@ -93,11 +93,48 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Motivation Section */}
+      <section className="py-12 sm:py-16 bg-gray-50 dark:bg-gray-900/50">
+        <div className="max-w-4xl mx-auto px-4">
+          <Card className="border-red-100 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20">
+            <CardHeader>
+              <CardTitle className="text-xl text-red-900 dark:text-red-100">Why Existing Solutions Weren't Enough</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-700 dark:text-gray-300">
+                I tried them all. Free tools, premium subscriptions, broker dashboards. They all fell short.
+              </p>
+              <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+                <li className="flex items-start">
+                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
+                  <span>Most trackers show you numbers but not the story. Where's my CAGR? How am I doing vs the market?</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
+                  <span>Premium tools cost $20+/month and still couldn't handle multiple brokers properly</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
+                  <span>No way to share my progress publicly. I wanted transparency in my investing journey</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
+                  <span>Cookie-cutter dashboards that don't show what actually matters to me</span>
+                </li>
+              </ul>
+              <p className="text-gray-700 dark:text-gray-300 font-medium pt-2">
+                So I built exactly what I wanted. And now it's public for everyone to see.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
       {/* Journey Section */}
       <section className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 text-gray-900 dark:text-gray-100">
-            Why I Built This
+            The Journey
           </h2>
           <div className="grid md:grid-cols-3 gap-6">
             {journeySteps.map((step, index) => (
@@ -129,7 +166,7 @@ export default function LandingPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center space-x-3 pb-3">
                 <ChartLine className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -162,6 +199,18 @@ export default function LandingPage() {
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
                   Combines Sharesies and Interactive Brokers in one view
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center space-x-3 pb-3">
+                <Eye className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                <CardTitle className="text-base">Full Transparency</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  My investing journey, wins and losses, all public
                 </p>
               </CardContent>
             </Card>
