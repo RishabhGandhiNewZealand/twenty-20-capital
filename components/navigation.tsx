@@ -13,6 +13,7 @@ export default function Navigation() {
 
   const navItems = [
     { href: "/", label: "Portfolio" },
+    { href: "/charts", label: "Charts" },
     { href: "/reports", label: "Reports" },
     { href: "/analyses", label: "Analyses" },
     { href: "/news", label: "News" },
