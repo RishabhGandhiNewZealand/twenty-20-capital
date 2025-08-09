@@ -46,7 +46,7 @@ export default function ChartsPage() {
       </div>
 
       <Tabs defaultValue="portfolio" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
           <TabsTrigger value="portfolio" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Portfolio Stats
           </TabsTrigger>
