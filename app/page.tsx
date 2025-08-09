@@ -96,35 +96,40 @@ export default function LandingPage() {
       {/* Motivation Section */}
       <section className="py-12 sm:py-16 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-4xl mx-auto px-4">
-          <Card className="border-red-100 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20">
+          <Card className="border-2 border-orange-200 dark:border-orange-900/50 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl text-red-900 dark:text-red-100">Why Existing Solutions Weren't Enough</CardTitle>
+              <CardTitle className="text-xl text-gray-900 dark:text-gray-100 flex items-center">
+                <span className="text-2xl mr-2">🤔</span>
+                Why Existing Solutions Weren't Enough
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-gray-700 dark:text-gray-300">
+              <p className="text-gray-700 dark:text-gray-300 font-medium">
                 I tried them all. Free tools, premium subscriptions, broker dashboards. They all fell short.
               </p>
-              <ul className="space-y-2 text-gray-600 dark:text-gray-400">
+              <ul className="space-y-3">
                 <li className="flex items-start">
-                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
-                  <span>Most trackers show you numbers but not the story. Where's my CAGR? How am I doing vs the market?</span>
+                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400">Most trackers show you numbers but not the story. Where's my CAGR? How am I doing vs the market?</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
-                  <span>Premium tools cost $20+/month and still couldn't handle multiple brokers properly</span>
+                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400">Premium tools cost $20+/month and still couldn't handle multiple brokers properly</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
-                  <span>No way to share my progress publicly. I wanted transparency in my investing journey</span>
+                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400">No way to share my progress publicly. I wanted transparency in my investing journey</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-red-600 dark:text-red-400 mr-2">•</span>
-                  <span>Cookie-cutter dashboards that don't show what actually matters to me</span>
+                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400">Cookie-cutter dashboards that don't show what actually matters to me</span>
                 </li>
               </ul>
-              <p className="text-gray-700 dark:text-gray-300 font-medium pt-2">
-                So I built exactly what I wanted. And now it's public for everyone to see.
-              </p>
+              <div className="pt-4 border-t border-orange-200 dark:border-gray-700">
+                <p className="text-gray-800 dark:text-gray-200 font-semibold text-lg">
+                  So I built exactly what I wanted. And now it's public for everyone to see.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
