@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChartLine, Code2, Database, Globe, Zap, Shield, TrendingUp, ArrowRight, Cpu, Cloud, BarChart3 } from "lucide-react"
+import { ChartLine, Code2, Database, Globe, Zap, Shield, TrendingUp, ArrowRight, BarChart3 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -12,39 +12,33 @@ export default function LandingPage() {
   const technicalHighlights = [
     {
       icon: Zap,
-      title: "Real-time Market Data",
-      description: "Yahoo Finance API integration for live stock prices and exchange rates",
-      details: "Implemented intelligent caching with 5-minute intervals for price updates, reducing API calls by 80% while maintaining data freshness"
+      title: "Live Market Data",
+      description: "Yahoo Finance API integration with smart caching",
+      details: "Built a caching layer that updates prices every 5 minutes during market hours. This cut API calls by 80% without sacrificing data freshness."
     },
     {
       icon: Database,
-      title: "Multi-tier Caching Architecture",
-      description: "PostgreSQL with Neon for trade data, Vercel Blob for static assets",
-      details: "Designed a sophisticated caching system with different TTLs: 1 hour for trade data, 20 minutes for portfolio compositions, and 5 minutes for live prices"
+      title: "Smart Caching Strategy",
+      description: "PostgreSQL with Neon for fast data access",
+      details: "Different cache durations for different data types: 1 hour for trades, 20 minutes for compositions, 5 minutes for prices. It just works."
     },
     {
       icon: Globe,
       title: "Multi-currency Support",
-      description: "Automatic conversion between USD and NZD with real-time exchange rates",
-      details: "Built a currency conversion system that handles multiple brokers (Sharesies, Interactive Brokers) with different base currencies seamlessly"
+      description: "Handles USD and NZD seamlessly",
+      details: "Whether it's Sharesies in NZD or Interactive Brokers in USD, everything gets converted and displayed in your preferred currency."
     },
     {
       icon: BarChart3,
-      title: "Performance Benchmarking",
-      description: "S&P 500 comparison with CAGR calculations and historical tracking",
-      details: "Developed algorithms to calculate time-weighted returns and compare portfolio performance against market benchmarks since inception"
-    },
-    {
-      icon: Cloud,
-      title: "Edge Computing",
-      description: "Vercel Edge Functions for optimal global performance",
-      details: "Leveraged edge computing for API routes, reducing latency by serving data from locations closest to users"
+      title: "Performance Tracking",
+      description: "Compare against the S&P 500",
+      details: "Calculate CAGR, track historical performance, and see how you're doing against the market benchmark. No more guesswork."
     },
     {
       icon: Shield,
-      title: "Type-safe Architecture",
-      description: "Full TypeScript implementation with strict type checking",
-      details: "Comprehensive type definitions for all data structures, ensuring compile-time safety and better developer experience"
+      title: "TypeScript Everything",
+      description: "Type-safe from database to UI",
+      details: "Full TypeScript coverage means fewer bugs and better code completion. The compiler catches issues before they hit production."
     }
   ]
 
@@ -52,17 +46,17 @@ export default function LandingPage() {
     {
       number: "01",
       title: "The Problem",
-      content: "Managing investments across multiple brokers meant constantly switching between platforms, manually calculating returns, and losing track of the big picture."
+      content: "I was juggling spreadsheets, logging into multiple broker accounts, and still couldn't see my overall performance."
     },
     {
       number: "02",
-      title: "The Vision",
-      content: "A unified dashboard that brings together all my investments, shows real-time performance, and helps me make informed decisions at a glance."
+      title: "The Solution",
+      content: "One dashboard. All my investments. Real-time updates. Performance metrics that actually matter."
     },
     {
       number: "03",
-      title: "The Build",
-      content: "Leveraging modern web technologies to create a fast, reliable, and beautiful investment tracking experience."
+      title: "The Result",
+      content: "Now I can check my portfolio in seconds, not minutes. And I learned a ton building it."
     }
   ]
 
@@ -71,27 +65,27 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-gray-100/[0.03] dark:bg-grid-gray-100/[0.01]" />
-        <div className="max-w-7xl mx-auto px-4 py-20 sm:py-32 relative">
-          <div className="text-center space-y-8">
-            <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 dark:text-gray-100">
-              From Scattered Spreadsheets to
-              <span className="text-blue-600 dark:text-blue-400"> Unified Insights</span>
+        <div className="max-w-7xl mx-auto px-4 py-16 sm:py-24 relative">
+          <div className="text-center space-y-6">
+            <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 dark:text-gray-100">
+              I Got Tired of Spreadsheets
+              <span className="text-blue-600 dark:text-blue-400"> So I Built This</span>
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              I built a personal investment portfolio tracker to solve my own problem: getting a concise, 
-              unified view of investments across multiple brokers while growing my technical skills.
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              A portfolio tracker that actually shows me what I need to know. 
+              One place for all my investments across Sharesies and Interactive Brokers.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Link href="/portfolio">
                 <Button size="lg" className="group">
-                  View Live Portfolio
+                  See the Portfolio
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link href="#technical-deep-dive">
                 <Button size="lg" variant="outline">
                   <Code2 className="mr-2 h-4 w-4" />
-                  Technical Deep Dive
+                  How It's Built
                 </Button>
               </Link>
             </div>
@@ -100,22 +94,22 @@ export default function LandingPage() {
       </section>
 
       {/* Journey Section */}
-      <section className="py-16 sm:py-24">
+      <section className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-900 dark:text-gray-100">
-            The Journey
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 text-gray-900 dark:text-gray-100">
+            Why I Built This
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {journeySteps.map((step, index) => (
-              <Card key={index} className="border-blue-100 dark:border-blue-900 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="text-5xl font-bold text-blue-600 dark:text-blue-400 opacity-20 mb-4">
+              <Card key={index} className="border-blue-100 dark:border-blue-900">
+                <CardHeader className="pb-3">
+                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 opacity-20 mb-2">
                     {step.number}
                   </div>
-                  <CardTitle className="text-xl">{step.title}</CardTitle>
+                  <CardTitle className="text-lg">{step.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 dark:text-gray-400">{step.content}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{step.content}</p>
                 </CardContent>
               </Card>
             ))}
@@ -124,51 +118,50 @@ export default function LandingPage() {
       </section>
 
       {/* Key Features Section */}
-      <section className="py-16 sm:py-24 bg-gray-50 dark:bg-gray-900/50">
+      <section className="py-12 sm:py-16 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-              What I Built
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-gray-900 dark:text-gray-100">
+              What It Does
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              A comprehensive investment tracking platform that brings together data from multiple sources 
-              into a single, actionable view.
+            <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+              Everything I needed to track my investments properly
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4">
             <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center space-x-4">
-                <ChartLine className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                <CardTitle className="text-lg">Real-time Portfolio Tracking</CardTitle>
+              <CardHeader className="flex flex-row items-center space-x-3 pb-3">
+                <ChartLine className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <CardTitle className="text-base">Live Updates</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Live market data updates every 5 minutes during trading hours
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Prices refresh every 5 minutes when markets are open
                 </p>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center space-x-4">
-                <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
-                <CardTitle className="text-lg">Performance Analytics</CardTitle>
+              <CardHeader className="flex flex-row items-center space-x-3 pb-3">
+                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                <CardTitle className="text-base">Real Performance</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-400">
-                  CAGR calculations and S&P 500 benchmark comparisons
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  CAGR, total returns, and S&P 500 comparison
                 </p>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center space-x-4">
-                <Globe className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                <CardTitle className="text-lg">Multi-broker Integration</CardTitle>
+              <CardHeader className="flex flex-row items-center space-x-3 pb-3">
+                <Globe className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                <CardTitle className="text-base">Multiple Brokers</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Unified view across Sharesies and Interactive Brokers
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Combines Sharesies and Interactive Brokers in one view
                 </p>
               </CardContent>
             </Card>
@@ -177,19 +170,18 @@ export default function LandingPage() {
       </section>
 
       {/* Technical Deep Dive Section */}
-      <section id="technical-deep-dive" className="py-16 sm:py-24">
+      <section id="technical-deep-dive" className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-              Technical Architecture
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-gray-900 dark:text-gray-100">
+              The Technical Bits
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Built with modern web technologies and best practices to ensure performance, 
-              reliability, and maintainability.
+            <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+              Some interesting problems I solved along the way
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4">
             {technicalHighlights.map((highlight, index) => {
               const Icon = highlight.icon
               const isActive = activeSection === highlight.title
@@ -202,13 +194,13 @@ export default function LandingPage() {
                   }`}
                   onClick={() => setActiveSection(isActive ? null : highlight.title)}
                 >
-                  <CardHeader>
-                    <div className="flex items-start space-x-4">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start space-x-3">
                       <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                        <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="flex-1">
-                        <CardTitle className="text-lg mb-2">{highlight.title}</CardTitle>
+                        <CardTitle className="text-base mb-1">{highlight.title}</CardTitle>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {highlight.description}
                         </p>
@@ -217,7 +209,7 @@ export default function LandingPage() {
                   </CardHeader>
                   {isActive && (
                     <CardContent className="pt-0">
-                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                         <p className="text-sm text-gray-700 dark:text-gray-300">
                           {highlight.details}
                         </p>
@@ -230,16 +222,16 @@ export default function LandingPage() {
           </div>
 
           {/* Tech Stack */}
-          <div className="mt-12 text-center">
-            <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Tech Stack</h3>
-            <div className="flex flex-wrap justify-center gap-4">
+          <div className="mt-8 text-center">
+            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Built With</h3>
+            <div className="flex flex-wrap justify-center gap-3">
               {[
                 "Next.js 15", "TypeScript", "Tailwind CSS", "PostgreSQL", 
                 "Vercel", "Recharts", "Yahoo Finance API", "Neon Database"
               ].map((tech) => (
                 <span 
                   key={tech}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300"
+                  className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   {tech}
                 </span>
@@ -250,24 +242,24 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 sm:py-24 bg-blue-600 dark:bg-blue-700">
+      <section className="py-12 sm:py-16 bg-blue-600 dark:bg-blue-700">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            Ready to Explore?
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+            Want to See It in Action?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Dive into the live portfolio dashboard or check out the technical implementation details.
+          <p className="text-lg text-blue-100 mb-6">
+            Check out the live portfolio or learn more about how it works.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/portfolio">
               <Button size="lg" variant="secondary" className="group">
-                View Portfolio Dashboard
+                View Portfolio
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link href="/about">
               <Button size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-blue-600">
-                Learn More About Me
+                About Me
               </Button>
             </Link>
           </div>
