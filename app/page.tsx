@@ -98,8 +98,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4">
           <Card className="border-2 border-orange-200 dark:border-orange-900/50 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl text-gray-900 dark:text-gray-100 flex items-center">
-                <span className="text-2xl mr-2">🤔</span>
+              <CardTitle className="text-xl text-gray-900 dark:text-gray-100">
                 Why Existing Solutions Weren't Enough
               </CardTitle>
             </CardHeader>
