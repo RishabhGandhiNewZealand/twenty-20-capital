@@ -79,7 +79,7 @@ export default function AboutPage() {
                 <h4 className="font-semibold text-gray-900 mb-2">Key Metrics & Approach:</h4>
                 <ul className="space-y-1 text-gray-700">
                   <li>• <strong>Benchmark:</strong> S&P 500 comparison on total value CAGR basis</li>
-                  <li>• <strong>Capital Contribution:</strong> $20,000 NZD annually (majority of savings)</li>
+                  <li>• <strong>Capital Contribution:</strong> Majority of savings</li>
                   <li>• <strong>Time Horizon:</strong> 40+ years of consistent investing</li>
                   <li>• <strong>Focus:</strong> Capital preservation with superior long-term returns</li>
                 </ul>
