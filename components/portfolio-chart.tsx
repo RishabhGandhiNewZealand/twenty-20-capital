@@ -58,7 +58,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   useEffect(() => {
     async function fetchPortfolioHistory() {
       try {
-        const response = await fetch('/api/portfolio-history')
+        const response = await fetch('/api/portfolio-history', { cache: 'no-store' })
         if (!response.ok) {
           throw new Error('Failed to fetch portfolio history')
         }
