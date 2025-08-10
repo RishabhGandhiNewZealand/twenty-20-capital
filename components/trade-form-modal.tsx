@@ -63,7 +63,7 @@ export function TradeFormModal({ open, onOpenChange, trade, onSubmit }: TradeFor
         instrumentCurrency: "USD",
         brokerage: 0,
         brokerageCurrency: "USD",
-        exchRate: 1,
+        exchRate: 0.60,  // Default NZD/USD rate
         value: 0,
       })
     }
@@ -78,16 +78,25 @@ export function TradeFormModal({ open, onOpenChange, trade, onSubmit }: TradeFor
     const exchRate = parseFloat(formData.exchRate.toString()) || 1
     
     let value = 0
-    if (formData.type === 'Buy' || formData.type === 'Reinvestment') {
-      // For buys, value = (qty * price + brokerage) * exchRate
-      value = (qty * price + brokerage) * exchRate
+    if (formData.instrumentCurrency === 'USD') {
+      // Convert USD to NZD: divide by NZD/USD rate
+      // e.g., $100 USD / 0.60 = $166.67 NZD
+      if (formData.type === 'Buy' || formData.type === 'Reinvestment') {
+        value = (qty * price + brokerage) / exchRate
+      } else {
+        value = (qty * price - brokerage) / exchRate
+      }
     } else {
-      // For sells, value = (qty * price - brokerage) * exchRate
-      value = (qty * price - brokerage) * exchRate
+      // For NZD instruments, no conversion needed
+      if (formData.type === 'Buy' || formData.type === 'Reinvestment') {
+        value = qty * price + brokerage
+      } else {
+        value = qty * price - brokerage
+      }
     }
     
     setFormData(prev => ({ ...prev, value: parseFloat(value.toFixed(8)) }))
-  }, [formData.qty, formData.price, formData.brokerage, formData.exchRate, formData.type])
+  }, [formData.qty, formData.price, formData.brokerage, formData.exchRate, formData.type, formData.instrumentCurrency])
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof TradeRecord, string>> = {}
@@ -286,17 +295,18 @@ export function TradeFormModal({ open, onOpenChange, trade, onSubmit }: TradeFor
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="exchRate">Exchange Rate to NZD *</Label>
+                <Label htmlFor="exchRate">Exchange Rate (NZD/USD) *</Label>
                 <Input
                   id="exchRate"
                   type="number"
                   step="0.00000001"
                   value={formData.exchRate}
                   onChange={(e) => handleInputChange("exchRate", parseFloat(e.target.value) || 1)}
-                  placeholder="1.00"
+                  placeholder="0.60"
                   className={errors.exchRate ? "border-red-500" : ""}
                 />
                 {errors.exchRate && <p className="text-sm text-red-500">{errors.exchRate}</p>}
+                <p className="text-xs text-gray-500">Enter NZD/USD rate (e.g., 0.60 means 1 NZD = 0.60 USD)</p>
               </div>
             </div>
             
