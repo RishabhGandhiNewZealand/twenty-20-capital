@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getTradeData } from '@/lib/trade-data-cache'
+import { NextResponse } from 'next/server'
+import { getCachedTradeData } from '@/lib/trade-data-cache'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
@@ -17,18 +17,14 @@ interface HoldingAtDate {
 const compositionCache = new Map<string, HoldingAtDate[]>()
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { date: string } }
 ) {
   try {
     const targetDate = params.date
-    
-    // Check if we should bypass cache
-    const searchParams = request.nextUrl.searchParams
-    const forceRefresh = searchParams.get('refresh') === 'true'
 
-    // Fetch trade data from database (with optional cache bypass)
-    const trades = await getTradeData(forceRefresh)
+    // Fetch cached trade data from database
+    const trades = await getCachedTradeData()
     
     // If no trades found, return empty response
     if (!trades || trades.length === 0) {

@@ -5,24 +5,25 @@ import { logger } from '@/lib/logger'
 // POST endpoint to invalidate portfolio cache only
 export async function POST() {
   try {
-    // Invalidate all portfolio-related cache tags
-    // This will clear the portfolio data cache but NOT the news cache
+    // Invalidate the master portfolio tag - this will clear ALL portfolio-related caches
+    // All our unstable_cache functions are tagged with 'portfolio-all'
+    await revalidateTag('portfolio-all')
+    
+    // Also invalidate individual tags for good measure
     await revalidateTag('trade-data')
     await revalidateTag('portfolio-history')
     await revalidateTag('portfolio-compositions')
     
-    // Also revalidate the portfolio page paths to ensure fresh data
-    await revalidatePath('/portfolio')
-    await revalidatePath('/api/portfolio')
-    await revalidatePath('/api/portfolio-current')
-    await revalidatePath('/api/portfolio-history')
-    await revalidatePath('/api/portfolio-compositions')
+    // Revalidate specific paths to ensure Next.js clears any page-level caching
+    await revalidatePath('/portfolio', 'page')
+    await revalidatePath('/trades', 'page')
     
-    logger.info('Portfolio cache invalidated successfully - cleared all related caches')
+    logger.info('Portfolio cache invalidated successfully - cleared all related caches via portfolio-all tag')
     
     return NextResponse.json({ 
       success: true,
-      message: 'Portfolio cache invalidated successfully'
+      message: 'Portfolio cache invalidated successfully',
+      invalidatedTags: ['portfolio-all', 'trade-data', 'portfolio-history', 'portfolio-compositions']
     })
   } catch (error) {
     logger.error('Error invalidating portfolio cache:', error)

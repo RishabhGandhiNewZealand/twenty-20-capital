@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { unstable_cache } from 'next/cache'
-import { getTradeData } from '@/lib/trade-data-cache'
+import { getCachedTradeData } from '@/lib/trade-data-cache'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
@@ -26,12 +26,12 @@ const CACHE_TAG = 'portfolio-compositions'
  * Calculate portfolio compositions for historical dates with actual prices
  * This is the raw calculation function that will be cached
  */
-async function calculatePortfolioCompositions(forceRefresh: boolean = false): Promise<CompositionData> {
+async function calculatePortfolioCompositions(): Promise<CompositionData> {
   try {
-    logger.info(`Starting portfolio composition calculation... (forceRefresh: ${forceRefresh})`)
+    logger.info('Starting portfolio composition calculation...')
     
-    // Fetch trade data from database (with optional cache bypass)
-    const trades = await getTradeData(forceRefresh)
+    // Fetch cached trade data from database
+    const trades = await getCachedTradeData()
     
     if (!trades || trades.length === 0) {
       logger.warn('No trade data found for portfolio compositions')
@@ -240,33 +240,22 @@ async function calculatePortfolioCompositions(forceRefresh: boolean = false): Pr
  */
 const getCachedPortfolioCompositions = unstable_cache(
   calculatePortfolioCompositions,
-  [CACHE_TAG],
+  ['portfolio-compositions'],
   {
-    revalidate: CACHE_REVALIDATE_SECONDS,
-    tags: [CACHE_TAG]
+    revalidate: false, // Don't auto-revalidate, we'll manually invalidate
+    tags: ['portfolio-compositions', 'portfolio-all']
   }
 )
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Check if we should bypass cache
-    const searchParams = request.nextUrl.searchParams
-    const forceRefresh = searchParams.get('refresh') === 'true'
-    
-    let compositions
-    if (forceRefresh) {
-      // Bypass unstable_cache and calculate directly
-      logger.info('Bypassing cache for portfolio compositions')
-      compositions = await calculatePortfolioCompositions(true)
-    } else {
-      // Use cached version
-      compositions = await getCachedPortfolioCompositions()
-    }
+    // Fetch cached portfolio compositions
+    const compositions = await getCachedPortfolioCompositions()
     
     // Set cache headers for client-side caching
     return NextResponse.json(compositions, {
       headers: {
-        'Cache-Control': forceRefresh ? 'no-cache, no-store' : 'public, s-maxage=1200, stale-while-revalidate=1800',
+        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
       }
     })
     

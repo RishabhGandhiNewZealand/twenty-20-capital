@@ -2,7 +2,6 @@ import { unstable_cache } from 'next/cache'
 import { getDb } from './db'
 import { logger } from './logger'
 import { TradeRecord } from '@/types/portfolio'
-import { getPortfolioCacheVersion } from './cache-version'
 
 // Cache configuration
 const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
@@ -61,27 +60,16 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
 }
 
 /**
- * Get trade data - either fresh or cached based on forceRefresh flag
- */
-export async function getTradeData(forceRefresh: boolean = false): Promise<TradeRecord[]> {
-  if (forceRefresh) {
-    logger.info('Fetching fresh trade data (bypassing cache)')
-    return fetchTradeDataFromDB()
-  }
-  return getCachedTradeData()
-}
-
-/**
  * Cached version of fetchTradeDataFromDB
  * This function will cache the results for the specified duration
  * and serve from cache on subsequent calls within the same session
  */
 export const getCachedTradeData = unstable_cache(
   fetchTradeDataFromDB,
-  [CACHE_TAG], // Cache key
+  ['trade-data'], // Cache key parts
   {
-    revalidate: CACHE_REVALIDATE_SECONDS,
-    tags: [CACHE_TAG]
+    revalidate: false, // Don't auto-revalidate, we'll manually invalidate
+    tags: ['trade-data', 'portfolio-all']
   }
 )
 
@@ -142,10 +130,10 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
  */
 export const getCachedTradeDataBySymbol = unstable_cache(
   fetchTradeDataBySymbolFromDB,
-  [`${CACHE_TAG}-symbol`], // Cache key prefix
+  ['trade-data-symbol'], // Cache key prefix
   {
-    revalidate: CACHE_REVALIDATE_SECONDS,
-    tags: [CACHE_TAG]
+    revalidate: false, // Don't auto-revalidate, we'll manually invalidate
+    tags: ['trade-data', 'portfolio-all']
   }
 )
 

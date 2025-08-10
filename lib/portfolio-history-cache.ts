@@ -199,9 +199,9 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
  */
 export const getCachedPortfolioHistory = unstable_cache(
   calculatePortfolioHistory,
-  [CACHE_TAG],
+  ['portfolio-history'],
   {
-    revalidate: CACHE_REVALIDATE_SECONDS,
-    tags: [CACHE_TAG]
+    revalidate: false, // Don't auto-revalidate, we'll manually invalidate
+    tags: ['portfolio-history', 'portfolio-all']
   }
 )

@@ -254,11 +254,6 @@ export default function TradesPage() {
         method: 'POST'
       })
       
-      // Set a flag to force refresh on next portfolio page load
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('portfolio-refresh-needed', 'true')
-      }
-      
     } catch (err) {
       console.error('Error saving changes:', err)
       setError(err instanceof Error ? err.message : 'Failed to save changes')
