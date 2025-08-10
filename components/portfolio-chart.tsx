@@ -346,12 +346,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 data={performanceData}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
               >
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke="rgba(0, 0, 0, 0.15)"
-                  vertical={true}
-                  horizontal={true}
-                />
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date" 
                   tick={{ fontSize: 10 }}
@@ -413,12 +408,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 data={data}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
               >
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke="rgba(0, 0, 0, 0.15)"
-                  vertical={true}
-                  horizontal={true}
-                />
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date" 
                   tick={{ fontSize: 10 }}
