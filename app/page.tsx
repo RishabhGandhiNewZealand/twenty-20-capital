@@ -42,23 +42,7 @@ export default function LandingPage() {
     }
   ]
 
-  const journeySteps = [
-    {
-      number: "01",
-      title: "The Problem",
-      content: "I was juggling spreadsheets, logging into multiple broker accounts, and still couldn't see my overall performance."
-    },
-    {
-      number: "02",
-      title: "Existing Tools Failed",
-      content: "Even premium portfolio trackers couldn't show me what I needed. They were either too basic or buried the important stuff."
-    },
-    {
-      number: "03",
-      title: "Built My Own",
-      content: "Now I have exactly what I wanted: real performance metrics, full transparency, and a way to share my investing journey."
-    }
-  ]
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
@@ -134,68 +118,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Journey Section */}
-      <section className="py-12 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 text-gray-900 dark:text-gray-100">
-            The Journey
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6 relative">
-            {/* Connection lines for desktop */}
-            <div className="hidden md:block absolute top-1/2 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-blue-200 via-blue-300 to-blue-200 dark:from-blue-800 dark:via-blue-700 dark:to-blue-800 -translate-y-1/2 z-0" />
-            
-            {journeySteps.map((step, index) => {
-              // Define graphics for each step
-              const graphics = [
-                // Step 1: The Problem - Scattered papers
-                <svg key="1" className="w-full h-32" viewBox="0 0 200 100" fill="none">
-                  <rect x="20" y="20" width="40" height="50" rx="2" className="fill-gray-200 dark:fill-gray-700" transform="rotate(-15 40 45)" />
-                  <rect x="60" y="30" width="40" height="50" rx="2" className="fill-gray-300 dark:fill-gray-600" transform="rotate(10 80 55)" />
-                  <rect x="100" y="25" width="40" height="50" rx="2" className="fill-gray-200 dark:fill-gray-700" transform="rotate(-5 120 50)" />
-                  <rect x="140" y="35" width="40" height="50" rx="2" className="fill-gray-300 dark:fill-gray-600" transform="rotate(15 160 60)" />
-                  <text x="100" y="90" textAnchor="middle" className="fill-gray-500 dark:fill-gray-400 text-xs">Scattered Data</text>
-                </svg>,
-                // Step 2: Existing Tools Failed - Broken chart
-                <svg key="2" className="w-full h-32" viewBox="0 0 200 100" fill="none">
-                  <path d="M 20 70 L 60 50 L 80 60 L 100 30" className="stroke-red-400 dark:stroke-red-600" strokeWidth="3" strokeDasharray="5,5" />
-                  <path d="M 100 30 L 120 45 L 140 35 L 180 55" className="stroke-gray-300 dark:stroke-gray-600" strokeWidth="3" />
-                  <circle cx="100" cy="30" r="8" className="fill-red-500 dark:fill-red-600" />
-                  <text x="100" y="15" textAnchor="middle" className="fill-red-500 dark:fill-red-400 text-2xl font-bold">?</text>
-                  <text x="100" y="90" textAnchor="middle" className="fill-gray-500 dark:fill-gray-400 text-xs">Missing Pieces</text>
-                </svg>,
-                // Step 3: Built My Own - Rising chart
-                <svg key="3" className="w-full h-32" viewBox="0 0 200 100" fill="none">
-                  <path d="M 20 70 L 60 60 L 100 40 L 140 30 L 180 20" className="stroke-green-500 dark:stroke-green-400" strokeWidth="3" />
-                  <circle cx="20" cy="70" r="4" className="fill-green-500 dark:fill-green-400" />
-                  <circle cx="60" cy="60" r="4" className="fill-green-500 dark:fill-green-400" />
-                  <circle cx="100" cy="40" r="4" className="fill-green-500 dark:fill-green-400" />
-                  <circle cx="140" cy="30" r="4" className="fill-green-500 dark:fill-green-400" />
-                  <circle cx="180" cy="20" r="4" className="fill-green-500 dark:fill-green-400" />
-                  <path d="M 170 25 L 185 10 M 185 10 L 185 25 M 185 10 L 170 10" className="stroke-green-500 dark:stroke-green-400" strokeWidth="2" />
-                  <text x="100" y="90" textAnchor="middle" className="fill-gray-500 dark:fill-gray-400 text-xs">Complete Solution</text>
-                </svg>
-              ]
-              
-              return (
-                <Card key={index} className="border-blue-100 dark:border-blue-900 relative z-10 bg-white dark:bg-gray-900">
-                  <CardHeader className="pb-3">
-                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 opacity-20 mb-2">
-                      {step.number}
-                    </div>
-                    <CardTitle className="text-lg">{step.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4">
-                      {graphics[index]}
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">{step.content}</p>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      </section>
+
 
       {/* Key Features Section */}
       <section className="py-12 sm:py-16 bg-gray-50 dark:bg-gray-900/50">
