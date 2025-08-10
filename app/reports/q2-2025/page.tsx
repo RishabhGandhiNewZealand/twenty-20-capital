@@ -307,9 +307,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $240-250 USD</p>
                     <p><strong>Cost Basis:</strong> $173 USD</p>
-                    <p><strong>Final Position:</strong> 18 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(18, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $176 USD</p>
-                    <p><strong>Portfolio Value:</strong> $5,280 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(5280, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
 
@@ -332,9 +332,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $90-100 NZD</p>
                     <p><strong>Cost Basis:</strong> $64.20 NZD</p>
-                    <p><strong>Final Position:</strong> 67 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(67, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $67.15 NZD</p>
-                    <p><strong>Portfolio Value:</strong> $4,499 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(4499, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
               </div>
@@ -370,9 +370,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $570-580 USD</p>
                     <p><strong>Cost Basis:</strong> $449 USD</p>
-                    <p><strong>Final Position:</strong> 4 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $561 USD</p>
-                    <p><strong>Portfolio Value:</strong> $3,740 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(3740, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
 
@@ -395,9 +395,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $720 USD</p>
                     <p><strong>Cost Basis:</strong> $450 USD</p>
-                    <p><strong>Final Position:</strong> 3 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(3, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $719 USD</p>
-                    <p><strong>Portfolio Value:</strong> $3,595 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(3595, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
 
@@ -420,9 +420,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $1100 USD</p>
                     <p><strong>Cost Basis:</strong> $769 USD</p>
-                    <p><strong>Final Position:</strong> 2 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(2, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $1340 USD</p>
-                    <p><strong>Portfolio Value:</strong> $4,467 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(4467, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
 
@@ -445,9 +445,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $620-670 USD</p>
                     <p><strong>Cost Basis:</strong> $510 USD</p>
-                    <p><strong>Final Position:</strong> 5 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(5, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $527 USD</p>
-                    <p><strong>Portfolio Value:</strong> $4,392 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(4392, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
 
@@ -470,9 +470,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $270-300 USD</p>
                     <p><strong>Cost Basis:</strong> $194 USD</p>
-                    <p><strong>Final Position:</strong> 13 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(13, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $219 USD</p>
-                    <p><strong>Portfolio Value:</strong> $4,745 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(4745, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
 
@@ -495,9 +495,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $110-120 USD</p>
                     <p><strong>Cost Basis:</strong> $68.4 USD</p>
-                    <p><strong>Final Position:</strong> 40 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(40, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $93.3 USD</p>
-                    <p><strong>Portfolio Value:</strong> $6,220 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(6220, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
 
@@ -520,9 +520,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $900-1000 USD</p>
                     <p><strong>Cost Basis:</strong> $713 USD</p>
-                    <p><strong>Final Position:</strong> 4 shares</p>
+                    <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $774 USD</p>
-                    <p><strong>Portfolio Value:</strong> $5,160 NZD</p>
+                    <p><strong>Portfolio Value:</strong> {maskCurrency(5160, isAnonymized, 'NZD')}</p>
                   </div>
                 </div>
               </div>

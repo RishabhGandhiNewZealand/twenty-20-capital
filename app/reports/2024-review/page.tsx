@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskShares } from "@/lib/anonymization-utils"
 
 export default function Review2024Page() {
   const { isAnonymized } = useAnonymization()
@@ -173,7 +174,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">50 shares</div>
+                      <div className="font-semibold">{maskShares(50, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2024</div>
@@ -223,7 +224,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">20 shares</div>
+                      <div className="font-semibold">{maskShares(20, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -330,7 +331,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">3 shares</div>
+                      <div className="font-semibold">{maskShares(3, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -389,7 +390,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">7 shares</div>
+                      <div className="font-semibold">{maskShares(7, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -448,7 +449,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">4 shares</div>
+                      <div className="font-semibold">{maskShares(4, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -555,7 +556,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">6 shares</div>
+                      <div className="font-semibold">{maskShares(6, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -605,7 +606,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">2 shares</div>
+                      <div className="font-semibold">{maskShares(2, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -653,7 +654,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">35 shares</div>
+                      <div className="font-semibold">{maskShares(35, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -705,7 +706,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">2 shares</div>
+                      <div className="font-semibold">{maskShares(2, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -753,7 +754,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">11 shares</div>
+                      <div className="font-semibold">{maskShares(11, isAnonymized)} shares</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
