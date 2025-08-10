@@ -326,16 +326,23 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
               />
               <YAxis 
                 stroke="#6b7280"
-                tick={{ fontSize: 12 }}
+                tick={{ 
+                  fontSize: 12,
+                  // Hide tick text when data is masked in value view
+                  fill: (!showPercentage && isDataMasked) ? 'transparent' : '#6b7280'
+                }}
                 tickFormatter={(value) => {
                   if (showPercentage) {
                     return `${value.toFixed(0)}%`
                   }
-                  if (isDataMasked) {
-                    return ''
-                  }
+                  // Always return the formatted value, but it will be transparent when masked
                   return `$${(value / 1000).toFixed(0)}k`
                 }}
+                // Keep axis line and ticks visible
+                axisLine={{ stroke: '#6b7280' }}
+                tickLine={{ stroke: '#6b7280' }}
+                // Ensure domain is always calculated from data
+                domain={['dataMin', 'dataMax']}
               />
               <Tooltip 
                 content={showPercentage ? CustomTooltipPercentage : <CustomTooltipValue />}
@@ -350,6 +357,8 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                     strokeWidth={2}
                     name="Portfolio"
                     dot={false}
+                    // Ensure line connects even with missing points
+                    connectNulls={true}
                   />
                   <Line 
                     type="monotone" 
@@ -358,6 +367,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                     strokeWidth={2}
                     name="S&P 500"
                     dot={false}
+                    connectNulls={true}
                   />
                 </>
               ) : (
@@ -369,6 +379,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                     strokeWidth={2}
                     name="Portfolio Value"
                     dot={false}
+                    connectNulls={true}
                   />
                   <Line 
                     type="monotone" 
@@ -378,6 +389,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                     strokeDasharray="5 5"
                     name="Cost Basis"
                     dot={false}
+                    connectNulls={true}
                   />
                   <Line 
                     type="monotone" 
@@ -386,6 +398,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                     strokeWidth={2}
                     name="S&P 500 Value"
                     dot={false}
+                    connectNulls={true}
                   />
                 </>
               )}
