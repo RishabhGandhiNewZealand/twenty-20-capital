@@ -3,14 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, Target, Plus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
+import { ANONYMIZATION_CONSTANT } from "@/lib/anonymization-constant"
 
 export default function Q2Report2025Page() {
 
   const quarterStats = [
     { label: "Q2 Return", value: "+5.18%", icon: TrendingUp },
     { label: "S&P 500 Return Unhedged", value: "+6.05%", icon: DollarSign },
-    { label: "Portfolio Value", value: "$42,098 NZD", icon: Target },
-    { label: "Portfolio Additions", value: "$2,000 NZD", icon: Plus },
+    { label: "Portfolio Value", value: `$${Math.round(42098 * ANONYMIZATION_CONSTANT).toLocaleString()} NZD`, icon: Target },
+    { label: "Portfolio Additions", value: `$${Math.round(2000 * ANONYMIZATION_CONSTANT).toLocaleString()} NZD`, icon: Plus },
   ]
 
   // Portfolio Holdings - calculating proper allocations for Q2
@@ -19,9 +20,9 @@ export default function Q2Report2025Page() {
       symbol: "UBER", 
       name: "Uber Technologies",
       return: "+28.0%",
-      shares: 40,
-      usdValue: 3732, // $93.3 * 40 shares
-      nzdValue: "$6,220",
+      shares: Math.round(40 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(3732 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(6220 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -29,9 +30,9 @@ export default function Q2Report2025Page() {
       symbol: "GOOGL", 
       name: "Alphabet Inc",
       return: "+14.2%",
-      shares: 18,
-      usdValue: 3168, // $176 * 18 shares
-      nzdValue: "$5,280",
+      shares: Math.round(18 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(3168 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(5280 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -39,9 +40,9 @@ export default function Q2Report2025Page() {
       symbol: "AMZN", 
       name: "Amazon.com Inc",
       return: "+15.3%",
-      shares: 13,
-      usdValue: 2847, // $219 * 13 shares
-      nzdValue: "$4,745",
+      shares: Math.round(13 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(2847 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(4745 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -49,9 +50,9 @@ export default function Q2Report2025Page() {
       symbol: "ASML", 
       name: "ASML Holding N.V.",
       return: "+16.9%",
-      shares: 4,
-      usdValue: 3096, // $774 * 4 shares
-      nzdValue: "$5,160",
+      shares: Math.round(4 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(3096 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(5160 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -59,9 +60,9 @@ export default function Q2Report2025Page() {
       symbol: "MFT", 
       name: "Mainfreight Limited",
       return: "-8.5%",
-      shares: 67,
-      usdValue: 2742, // $67.15 NZD * 67 shares * 0.61 USD/NZD rate (Jun 30, 2025)
-      nzdValue: "$4,499",
+      shares: Math.round(67 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(2742 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(4499 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "NZD",
       tier: "A"
     },
@@ -69,9 +70,9 @@ export default function Q2Report2025Page() {
       symbol: "NFLX", 
       name: "Netflix Inc",
       return: "+43.8%",
-      shares: 2,
-      usdValue: 2680, // $1340 * 2 shares
-      nzdValue: "$4,467",
+      shares: Math.round(2 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(2680 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(4467 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -79,9 +80,9 @@ export default function Q2Report2025Page() {
       symbol: "SPGI", 
       name: "S&P Global Inc",
       return: "+3.7%",
-      shares: 5,
-      usdValue: 2635, // $527 * 5 shares
-      nzdValue: "$4,392",
+      shares: Math.round(5 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(2635 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(4392 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -89,9 +90,9 @@ export default function Q2Report2025Page() {
       symbol: "META", 
       name: "Meta Platforms Inc",
       return: "+24.8%",
-      shares: 3,
-      usdValue: 2157, // $719 * 3 shares
-      nzdValue: "$3,595",
+      shares: Math.round(3 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(2157 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(3595 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -99,9 +100,9 @@ export default function Q2Report2025Page() {
       symbol: "MA", 
       name: "Mastercard Inc",
       return: "+2.4%",
-      shares: 4,
-      usdValue: 2244, // $561 * 4 shares
-      nzdValue: "$3,740",
+      shares: Math.round(4 * ANONYMIZATION_CONSTANT),
+      usdValue: Math.round(2244 * ANONYMIZATION_CONSTANT), // Anonymized
+      nzdValue: `$${Math.round(3740 * ANONYMIZATION_CONSTANT).toLocaleString()}`,
       stockCurrency: "USD",
       tier: "S"
     }

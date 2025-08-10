@@ -2,8 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Globe, AlertTriangle, Microscope, Target, Loader2 } from "lucide-react"
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import { StockPrice, StockPriceError } from "@/types/stock"
+import { ANONYMIZATION_CONSTANT } from "@/lib/anonymization-constant"
 
 export default function ASMLAnalysisPage() {
   const [stockData, setStockData] = useState<{
@@ -57,9 +59,9 @@ export default function ASMLAnalysisPage() {
     "Near-monopoly in EUV lithography with 90%+ market share",
     "Essential for advanced semiconductor manufacturing",
     "Technological lead of decades over competitors", 
-    "EUV machines priced at $300M+ each with strong pricing power",
+    `EUV machines priced at $${Math.round(300 * ANONYMIZATION_CONSTANT)}M+ each with strong pricing power`,
     "Critical enabler for AI, cloud computing, and automotive chips",
-    "Robust order backlog providing revenue visibility",
+    "Robust order backlog providing revenue visibility"
   ]
 
   const risks = [
@@ -114,7 +116,7 @@ export default function ASMLAnalysisPage() {
                   <Target className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-900">$900 USD</div>
+                  <div className="text-2xl font-bold text-blue-900">${Math.round(900 * ANONYMIZATION_CONSTANT)} USD</div>
                 </CardContent>
               </Card>
             </div>
@@ -168,7 +170,7 @@ export default function ASMLAnalysisPage() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-700 mb-4">
-              ASML holds a near-monopoly in the high-end lithography machine market, commanding over 90% market share in this segment. The company's technological lead is so substantial that it would require a competitor decades and tens of billions of dollars to develop a comparable machine and establish a sustainable supply chain. This dominant position grants ASML significant pricing power, with each EUV machine selling for upwards of $300 million. Due to the sheer size and complexity of these machines, ASML is limited in how many it can produce annually, further enhancing its pricing leverage.
+              ASML holds a near-monopoly in the high-end lithography machine market, commanding over 90% market share in this segment. The company's technological lead is so substantial that it would require a competitor decades and tens of billions of dollars to develop a comparable machine and establish a sustainable supply chain. This dominant position grants ASML significant pricing power, with each EUV machine selling for upwards of ${Math.round(300 * ANONYMIZATION_CONSTANT)} million. Due to the sheer size and complexity of these machines, ASML is limited in how many it can produce annually, further enhancing its pricing leverage.
             </p>
             
             {/* Market Share Chart */}
@@ -247,16 +249,16 @@ export default function ASMLAnalysisPage() {
                 Investment Strengths
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {strengths.map((strength, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    <span className="text-gray-700">{strength}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
+                          <CardContent>
+                <ul className="space-y-3">
+                  {strengths.map((strength, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                      <span className="text-gray-700">{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
           </Card>
 
           {/* Investment Risks */}
@@ -294,7 +296,7 @@ export default function ASMLAnalysisPage() {
                 In summary, ASML's unparalleled technological leadership, dominant market position, continuous innovation, and the escalating global demand for advanced semiconductors collectively make a compelling case for investing in its stock.
               </p>
               <p>
-                <strong>Price Target: $900 USD</strong> reflecting the company's monopoly position, technological moat, and essential role in enabling the next generation of semiconductor manufacturing across AI, automotive, and cloud computing applications.
+                <strong>Price Target: ${Math.round(900 * ANONYMIZATION_CONSTANT)} USD</strong> reflecting the company's monopoly position, technological moat, and essential role in enabling the next generation of semiconductor manufacturing across AI, automotive, and cloud computing applications.
               </p>
             </div>
           </CardContent>

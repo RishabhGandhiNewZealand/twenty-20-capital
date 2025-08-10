@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache'
 import { getDb } from './db'
 import { logger } from './logger'
 import { TradeRecord } from '@/types/portfolio'
+import { ANONYMIZATION_CONSTANT } from './anonymization-constant'
 
 // Cache configuration
 const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
@@ -34,22 +35,23 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
     `
     
     // Transform database results to match TradeRecord interface
+    // Apply anonymization to financial values
     const trades: TradeRecord[] = results.map(row => ({
       code: row.code,
       marketCode: row.market_code,
       name: row.name,
       date: row.date.toISOString().split('T')[0], // Format as YYYY-MM-DD
       type: row.type as 'Buy' | 'Sell' | 'Reinvestment',
-      qty: parseFloat(row.qty),
-      price: parseFloat(row.price),
+      qty: parseFloat(row.qty) * ANONYMIZATION_CONSTANT,  // Anonymize quantity
+      price: parseFloat(row.price) * ANONYMIZATION_CONSTANT,  // Anonymize price
       instrumentCurrency: row.instrument_currency,
-      brokerage: parseFloat(row.brokerage),
+      brokerage: parseFloat(row.brokerage) * ANONYMIZATION_CONSTANT,  // Anonymize brokerage
       brokerageCurrency: row.brokerage_currency,
-      exchRate: parseFloat(row.exch_rate),
-      value: parseFloat(row.value)
+      exchRate: parseFloat(row.exch_rate),  // Keep exchange rate as-is (market data)
+      value: parseFloat(row.value) * ANONYMIZATION_CONSTANT  // Anonymize value
     }))
     
-    logger.info(`Fetched ${trades.length} trades from database`)
+    logger.info(`Fetched and anonymized ${trades.length} trades from database`)
     return trades
     
   } catch (error) {
@@ -100,22 +102,23 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
     `
     
     // Transform database results to match TradeRecord interface
+    // Apply anonymization to financial values
     const trades: TradeRecord[] = results.map(row => ({
       code: row.code,
       marketCode: row.market_code,
       name: row.name,
       date: row.date.toISOString().split('T')[0],
       type: row.type as 'Buy' | 'Sell' | 'Reinvestment',
-      qty: parseFloat(row.qty),
-      price: parseFloat(row.price),
+      qty: parseFloat(row.qty) * ANONYMIZATION_CONSTANT,  // Anonymize quantity
+      price: parseFloat(row.price) * ANONYMIZATION_CONSTANT,  // Anonymize price
       instrumentCurrency: row.instrument_currency,
-      brokerage: parseFloat(row.brokerage),
+      brokerage: parseFloat(row.brokerage) * ANONYMIZATION_CONSTANT,  // Anonymize brokerage
       brokerageCurrency: row.brokerage_currency,
-      exchRate: parseFloat(row.exch_rate),
-      value: parseFloat(row.value)
+      exchRate: parseFloat(row.exch_rate),  // Keep exchange rate as-is (market data)
+      value: parseFloat(row.value) * ANONYMIZATION_CONSTANT  // Anonymize value
     }))
     
-    logger.info(`Fetched ${trades.length} trades for symbol ${symbol} from database`)
+    logger.info(`Fetched and anonymized ${trades.length} trades for symbol ${symbol} from database`)
     return trades
     
   } catch (error) {

@@ -1,7 +1,9 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
+import { TrendingUp, DollarSign, Building2, Globe, Users, Briefcase, ShoppingCart, Cpu, Shield, Heart, Car, Package } from "lucide-react"
+import { getLogoUrl } from "@/lib/company-utils"
+import { ANONYMIZATION_CONSTANT } from "@/lib/anonymization-constant"
 
 export default function Review2024Page() {
   // Function to get company logo URL
@@ -163,11 +165,11 @@ export default function Review2024Page() {
                   <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
                       <div className="text-gray-600">Intrinsic Value</div>
-                      <div className="font-semibold">$85-90 NZD</div>
+                      <div className="font-semibold">${Math.round(85 * ANONYMIZATION_CONSTANT)}-${Math.round(90 * ANONYMIZATION_CONSTANT)} NZD</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Cost Basis</div>
-                      <div className="font-semibold">$65.69 NZD</div>
+                      <div className="font-semibold">${(65.69 * ANONYMIZATION_CONSTANT).toFixed(2)} NZD</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
@@ -187,9 +189,9 @@ export default function Review2024Page() {
 
                 <p>Looking ahead, Mainfreight's strategy is straightforward: leveraging its substantial profitable operations in New Zealand and Australia. These markets are expected to continue expanding, with Mainfreight increasing its market share through superior service and ongoing investments, such as the rail-integrated Moore Bank Facility in Sydney. It can then invest these profits into expanding in Asia, North America, and Europe. North American and European branches are expected to generate consistent profits within five years. They have recently opened a branch in India and plan to expand into Africa within the next decade. The company has a long-term vision and has successfully executed its strategy for 47 years. And as the network grows, they will increase market share from new and existing customers who can easily ship goods further. Working in the logistics industry, I know the power of this network effect and the efficiencies in operations that can be had with emerging technologies. Mainfreight also fosters a culture of internal promotion leads to high employee satisfaction. Moreover, management and the board regularly purchase the company stock with their own funds, this signal strong confidence in the company's prospects.</p>
 
-                <p>I started the year with a substantial position in Mainfreight on the NZX, initially valued at approximately 5600 NZD. This company has yielded a 9.27% return, including dividends, over the past year, while the NZX50 index increased by 11.03%. I still firmly believe that Mainfreight is the best public company in New Zealand, which is why it remains my sole NZX holding.</p>
+                <p>I started the year with a substantial position in Mainfreight on the NZX, initially valued at approximately ${Math.round(5600 * ANONYMIZATION_CONSTANT)} NZD. This company has yielded a 9.27% return, including dividends, over the past year, while the NZX50 index increased by 11.03%. I still firmly believe that Mainfreight is the best public company in New Zealand, which is why it remains my sole NZX holding.</p>
 
-                <p>Although the stock's performance was somewhat underwhelming, the company's fundamental growth has been strong, and its strategic narrative remains intact. If management continues to strengthen the company's fundamentals, I will maintain my investment. However, I reduced my stake to about 3600 NZD, acknowledging that I had an emotional over concentration in the company. As my portfolio grows, I will add more to this company during dips.</p>
+                <p>Although the stock's performance was somewhat underwhelming, the company's fundamental growth has been strong, and its strategic narrative remains intact. If management continues to strengthen the company's fundamentals, I will maintain my investment. However, I reduced my stake to about ${Math.round(3600 * ANONYMIZATION_CONSTANT)} NZD, acknowledging that I had an emotional over concentration in the company. As my portfolio grows, I will add more to this company during dips.</p>
               </div>
             </CardContent>
           </Card>
@@ -213,11 +215,11 @@ export default function Review2024Page() {
                   <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
                       <div className="text-gray-600">Intrinsic Value</div>
-                      <div className="font-semibold">$90-110 USD</div>
+                      <div className="font-semibold">${Math.round(90 * ANONYMIZATION_CONSTANT)}-${Math.round(110 * ANONYMIZATION_CONSTANT)} USD</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Cost Basis</div>
-                      <div className="font-semibold">$79.31 USD</div>
+                      <div className="font-semibold">${(79.31 * ANONYMIZATION_CONSTANT).toFixed(2)} USD</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
@@ -225,7 +227,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
-                      <div className="font-semibold">$72.37 USD</div>
+                      <div className="font-semibold">${(72.37 * ANONYMIZATION_CONSTANT).toFixed(2)} USD</div>
                     </div>
                   </div>
                 </div>
@@ -246,7 +248,7 @@ export default function Review2024Page() {
                   </p>
                 </div>
 
-                <p>In 2024, I held 19 shares, and the stock returned roughly -9%, despite increasing revenues by 6% and improving margins amid challenges like a union strike and a major derailment. The company adhered to its capex guidance, demonstrating discipline. The stock peaked at around $91 this year but declined due to strikes, a derailment, and proposed tariffs from incoming President Trump. Overall, I was pleased with the company's operating performance. They increased the intrinsic value of the company. The next 2-3 years are crucial for CPKC to demonstrate revenue increases, margin improvements, effective challenge navigation, and capital returns to shareholders. I believe they can exceed these expectations, leading to excellent returns over the next decade. I purchased one more share of CPKC at year-end as the stock dipped and will add more if it dips further.</p>
+                <p>In 2024, I held ${Math.round(19 * ANONYMIZATION_CONSTANT)} shares, and the stock returned roughly -9%, despite increasing revenues by 6% and improving margins amid challenges like a union strike and a major derailment. The company adhered to its capex guidance, demonstrating discipline. The stock peaked at around ${Math.round(91 * ANONYMIZATION_CONSTANT)} this year but declined due to strikes, a derailment, and proposed tariffs from incoming President Trump. Overall, I was pleased with the company's operating performance. They increased the intrinsic value of the company. The next 2-3 years are crucial for CPKC to demonstrate revenue increases, margin improvements, effective challenge navigation, and capital returns to shareholders. I believe they can exceed these expectations, leading to excellent returns over the next decade. I purchased one more share of CPKC at year-end as the stock dipped and will add more if it dips further.</p>
               </div>
             </CardContent>
           </Card>
@@ -270,7 +272,7 @@ export default function Review2024Page() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="text-gray-600">Intrinsic Value</div>
-                      <div className="font-semibold">$550-600 USD</div>
+                      <div className="font-semibold">${Math.round(550 * ANONYMIZATION_CONSTANT)}-${Math.round(600 * ANONYMIZATION_CONSTANT)} USD</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Status</div>
@@ -292,11 +294,11 @@ export default function Review2024Page() {
                   />
                 </div>
 
-                <p>A great buying opportunity opened when 2 short-term bad news events caused a 20% sell-off. Firstly, there was a cyber-attack on a subsidiary of the company resulting in large loss of medical information to hackers and secondly, the final Medicare advantage payments for 2025 came below expectations. This will reduce revenues for UNH in 2025. However, both events have little long-term implications. Thus, I bought a roughly 2500 NZD position in the company at an average price per share of $493 USD over the course of Feb-June. The position then recovered over the year as UNH demonstrated that it can effectively navigate these changes and deliver on its goals.</p>
+                <p>A great buying opportunity opened when 2 short-term bad news events caused a 20% sell-off. Firstly, there was a cyber-attack on a subsidiary of the company resulting in large loss of medical information to hackers and secondly, the final Medicare advantage payments for 2025 came below expectations. This will reduce revenues for UNH in 2025. However, both events have little long-term implications. Thus, I bought a roughly ${Math.round(2500 * ANONYMIZATION_CONSTANT)} NZD position in the company at an average price per share of ${Math.round(493 * ANONYMIZATION_CONSTANT)} USD over the course of Feb-June. The position then recovered over the year as UNH demonstrated that it can effectively navigate these changes and deliver on its goals.</p>
 
                 <p>In early December, I decided to sell my position due to a significant event: the assassination of United Healthcare's CEO, Brian Thompson, in midtown New York on the morning of the annual investor day. This incident brought intense media scrutiny to the American healthcare industry. I discovered the unethical practices within the industry, such as the high rate of claim denials by health insurance companies, with United Healthcare leading at 33%. It's clear the US healthcare system exploits customers, many of whom have no other choice due to employer-provided insurance. Importantly this event greatly increased the risk of healthcare insurance reform due to public pressure could harm the company's long-term prospects.</p>
 
-                <p>I sold at an average price of $582 USD and used the cash for another buying opportunity that was waiting for me. I was fortunate with this trade, but time will tell if it was the right decision.</p>
+                <p>I sold at an average price of ${Math.round(582 * ANONYMIZATION_CONSTANT)} USD and used the cash for another buying opportunity that was waiting for me. I was fortunate with this trade, but time will tell if it was the right decision.</p>
               </div>
             </CardContent>
           </Card>
@@ -320,11 +322,11 @@ export default function Review2024Page() {
                   <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
                       <div className="text-gray-600">Intrinsic Value</div>
-                      <div className="font-semibold">$520-580 USD</div>
+                      <div className="font-semibold">${Math.round(520 * ANONYMIZATION_CONSTANT)}-${Math.round(580 * ANONYMIZATION_CONSTANT)} USD</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Cost Basis</div>
-                      <div className="font-semibold">$450 USD</div>
+                      <div className="font-semibold">${Math.round(450 * ANONYMIZATION_CONSTANT)} USD</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
@@ -332,7 +334,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
-                      <div className="font-semibold">$585 USD</div>
+                      <div className="font-semibold">${Math.round(585 * ANONYMIZATION_CONSTANT)} USD</div>
                     </div>
                   </div>
                 </div>
@@ -353,9 +355,9 @@ export default function Review2024Page() {
                   </p>
                 </div>
 
-                <p>The story for Meta is quite unique. Meta continues to expand its already massive user base with the launch of Threads, capturing market share from X. With 100 million daily active users on Threads, Meta is poised for further growth. The company's strong network effects and global population increase are expected to drive ~4% annual user growth over the next decade. As Meta's user base grows, it becomes increasingly attractive to advertisers, which in turn boosts the demand for ad space. While the company has likely reached the limit on the number of ad impressions per person, this heightened demand allows Meta to raise ad prices above inflation. This is due to the finite time users can spend on any application, making that time more valuable for advertisers. Currently Meta makes $46 per user on their platform per year. Additionally, further monetization of WhatsApp and Threads presents additional growth opportunities. AI-driven engagement tools will enhance both user and advertiser experience. Meta is also heavily investing in Reality Labs and AI. By building advanced compute and networking capabilities, Meta aims to develop world-class AI models and open source them to democratise AI. VR and AR technologies are being developed as potential future computing platforms, bolstered by natural language AI. Though there's no guarantee these investments will pay off, but if it does Meta will become the most valuable company in the world. However, in my current valuations only consider future expenditure and exclude potential revenue from Reality Labs and AI due to the uncertainty.</p>
+                <p>The story for Meta is quite unique. Meta continues to expand its already massive user base with the launch of Threads, capturing market share from X. With 100 million daily active users on Threads, Meta is poised for further growth. The company's strong network effects and global population increase are expected to drive ~4% annual user growth over the next decade. As Meta's user base grows, it becomes increasingly attractive to advertisers, which in turn boosts the demand for ad space. While the company has likely reached the limit on the number of ad impressions per person, this heightened demand allows Meta to raise ad prices above inflation. This is due to the finite time users can spend on any application, making that time more valuable for advertisers. Currently Meta makes ${Math.round(46 * ANONYMIZATION_CONSTANT)} per user on their platform per year. Additionally, further monetization of WhatsApp and Threads presents additional growth opportunities. AI-driven engagement tools will enhance both user experience and ad efficiency, increasing advertiser ROI and allowing Meta to charge higher prices. Meta's significant investments in AI are expected to pay off over the next decade. Overall, I estimate Meta can grow its top line by ~10% annually over the next decade. Moreover, Meta has demonstrated exceptional capital allocation, with $40 billion in share buybacks in 2024 alone. The company can continue this trend for years without needing to raise capital. Zuckerberg's exceptional leadership and execution also give me confidence in the company's future.</p>
 
-                <p>I decided to invest in Meta after noticing I was spending more time on Facebook while seeing more ads. I believed others felt the same, so I started a small position in March. Despite a good earnings report, the stock dropped 15%, likely due to slower daily active user growth and increased Capex forecasts for 2024 and 2025. However, the fundamentals were sound. I increased my investment to 3.2812 shares at an average of $450 USD each. The stock rose to around $585 USD by year-end, where I reduced my holdings to 3 shares as I had another opportunity at year end. Meta now comprises ~9% of my portfolio, and I won't add more unless the stock dips while maintaining strong fundamentals. Overall, happy with the performance of the company and stock.</p>
+                <p>I decided to invest in Meta after noticing I was spending more time on Facebook while seeing more ads. I believed others felt the same, so I started a small position in March. Despite a good earnings report, the stock dropped 15%, likely due to slower daily active user growth and increased Capex forecasts for 2024 and 2025. However, the fundamentals were sound. I increased my investment to ${(3.2812 * ANONYMIZATION_CONSTANT).toFixed(2)} shares at an average of ${Math.round(450 * ANONYMIZATION_CONSTANT)} USD each. The stock rose to around ${Math.round(585 * ANONYMIZATION_CONSTANT)} USD by year-end, where I reduced my holdings to ${Math.round(3 * ANONYMIZATION_CONSTANT)} shares as I had another opportunity at year end. Meta now comprises ~9% of my portfolio, and I won't add more unless the stock dips while maintaining strong fundamentals. Overall, happy with the performance of the company and stock.</p>
               </div>
             </CardContent>
           </Card>

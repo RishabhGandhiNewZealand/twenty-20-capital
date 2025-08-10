@@ -5,6 +5,7 @@ import { TrendingUp, DollarSign, Users, AlertTriangle, Target, Building2, Databa
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { StockPrice, StockPriceError } from "@/types/stock"
+import { ANONYMIZATION_CONSTANT } from "@/lib/anonymization-constant"
 
 export default function UberAnalysisPage() {
   const [stockData, setStockData] = useState<{
@@ -98,7 +99,7 @@ export default function UberAnalysisPage() {
               <Target className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-900">$110 USD</div>
+              <div className="text-2xl font-bold text-blue-900">${Math.round(110 * ANONYMIZATION_CONSTANT)} USD</div>
             </CardContent>
           </Card>
         </div>
@@ -155,20 +156,20 @@ export default function UberAnalysisPage() {
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Example Transaction</h3>
               <div className="prose max-w-none text-gray-700">
                 <p className="mb-4">
-                  Consider a food delivery transaction where an order is placed for $30 worth of food from a local restaurant. Additional fees, including delivery and service charges, bring the total to $40. From this amount:
+                  Consider a food delivery transaction where an order is placed for ${Math.round(30 * ANONYMIZATION_CONSTANT)} worth of food from a local restaurant. Additional fees, including delivery and service charges, bring the total to ${Math.round(40 * ANONYMIZATION_CONSTANT)}. From this amount:
                 </p>
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">Restaurant receives:</span>
-                    <span className="font-bold text-blue-800">~$20</span>
+                    <span className="font-bold text-blue-800">~${Math.round(20 * ANONYMIZATION_CONSTANT)}</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">Driver receives:</span>
-                    <span className="font-bold text-blue-800">~$10</span>
+                    <span className="font-bold text-blue-800">~${Math.round(10 * ANONYMIZATION_CONSTANT)}</span>
                   </div>
                   <div className="border-t border-blue-300 pt-3 mt-3 flex justify-between items-center">
                     <span className="font-semibold">Uber retains:</span>
-                    <span className="font-bold text-blue-900">~$10</span>
+                    <span className="font-bold text-blue-900">~${Math.round(10 * ANONYMIZATION_CONSTANT)}</span>
                   </div>
                 </div>
                 <p className="mb-4">
