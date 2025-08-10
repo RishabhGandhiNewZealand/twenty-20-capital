@@ -66,10 +66,10 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
  */
 export const getCachedTradeData = unstable_cache(
   fetchTradeDataFromDB,
-  ['trade-data'], // Cache key parts
+  [CACHE_TAG], // Cache key
   {
-    revalidate: false, // Don't auto-revalidate, we'll manually invalidate
-    tags: ['trade-data', 'portfolio-all']
+    revalidate: CACHE_REVALIDATE_SECONDS,
+    tags: [CACHE_TAG]
   }
 )
 
@@ -130,10 +130,10 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
  */
 export const getCachedTradeDataBySymbol = unstable_cache(
   fetchTradeDataBySymbolFromDB,
-  ['trade-data-symbol'], // Cache key prefix
+  [`${CACHE_TAG}-symbol`], // Cache key prefix
   {
-    revalidate: false, // Don't auto-revalidate, we'll manually invalidate
-    tags: ['trade-data', 'portfolio-all']
+    revalidate: CACHE_REVALIDATE_SECONDS,
+    tags: [CACHE_TAG]
   }
 )
 

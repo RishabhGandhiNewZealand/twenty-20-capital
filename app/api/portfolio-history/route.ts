@@ -109,7 +109,20 @@ function fillMissingDates(priceMap: Map<string, number>, startDate: Date, endDat
 
 export async function GET() {
   try {
-    logger.debug('Calculating portfolio history...')
+    // Check cache first
+    const cacheKey = 'portfolio-history'
+    const cached = cache.get(cacheKey)
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL.PORTFOLIO_HISTORY) {
+      logger.debug('Returning cached portfolio history')
+      return NextResponse.json({
+        history: cached.data,
+        lastUpdated: new Date(cached.timestamp).toISOString(),
+        cached: true
+      })
+    }
+
+    logger.debug('Cache miss, calculating portfolio history...')
 
     // Fetch cached trade data from database
     const trades = await getCachedTradeData()
@@ -331,8 +344,12 @@ export async function GET() {
         processDate.setDate(processDate.getDate() + 1)
       }
 
-      // No longer caching in memory - rely on Next.js cache
-      
+      // Cache the result
+      cache.set(cacheKey, {
+        data: portfolioHistory,
+        timestamp: Date.now()
+      })
+
       return NextResponse.json({
         history: portfolioHistory,
         lastUpdated: new Date().toISOString(),

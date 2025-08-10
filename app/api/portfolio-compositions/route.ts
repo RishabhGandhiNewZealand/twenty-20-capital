@@ -240,10 +240,10 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
  */
 const getCachedPortfolioCompositions = unstable_cache(
   calculatePortfolioCompositions,
-  ['portfolio-compositions'],
+  [CACHE_TAG],
   {
-    revalidate: false, // Don't auto-revalidate, we'll manually invalidate
-    tags: ['portfolio-compositions', 'portfolio-all']
+    revalidate: CACHE_REVALIDATE_SECONDS,
+    tags: [CACHE_TAG]
   }
 )
 
@@ -252,8 +252,12 @@ export async function GET() {
     // Fetch cached portfolio compositions
     const compositions = await getCachedPortfolioCompositions()
     
-    // Return without HTTP cache headers - relying on Next.js unstable_cache instead
-    return NextResponse.json(compositions)
+    // Set cache headers for client-side caching
+    return NextResponse.json(compositions, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
+      }
+    })
     
   } catch (error) {
     logger.error('Error in portfolio compositions endpoint:', error)

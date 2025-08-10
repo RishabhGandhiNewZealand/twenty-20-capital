@@ -22,6 +22,15 @@ export async function GET(
 ) {
   try {
     const targetDate = params.date
+    
+    // Check cache first
+    if (compositionCache.has(targetDate)) {
+      return NextResponse.json({
+        date: targetDate,
+        holdings: compositionCache.get(targetDate),
+        cached: true
+      })
+    }
 
     // Fetch cached trade data from database
     const trades = await getCachedTradeData()
@@ -158,7 +167,8 @@ export async function GET(
     // Sort by value descending
     holdingsWithValues.sort((a, b) => b.value - a.value)
     
-    // No longer caching in memory - rely on Next.js cache
+    // Cache the result
+    compositionCache.set(targetDate, holdingsWithValues)
     
     return NextResponse.json({
       date: targetDate,

@@ -65,10 +65,10 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     async function loadCompositionData() {
       try {
         // Try the API endpoint first
-        const response = await fetch('/api/portfolio-compositions', { cache: 'no-store' })
+        const response = await fetch('/api/portfolio-compositions')
         if (!response.ok) {
           // Fallback to static file if API fails
-          const staticResponse = await fetch('/data/portfolio-compositions.json', { cache: 'no-store' })
+          const staticResponse = await fetch('/data/portfolio-compositions.json')
           if (!staticResponse.ok) {
             throw new Error('Failed to load composition data')
           }
@@ -158,7 +158,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       // If not in pre-cached data, fetch from API
       async function fetchComposition() {
         try {
-          const response = await fetch(`/api/portfolio-composition/${selectedDate}`, { cache: 'no-store' })
+          const response = await fetch(`/api/portfolio-composition/${selectedDate}`)
           if (!response.ok) {
             throw new Error('Failed to fetch composition')
           }
