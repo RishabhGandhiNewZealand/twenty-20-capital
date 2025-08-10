@@ -10,6 +10,8 @@ import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
 import { formatNumber, formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskCurrency, maskShares, maskValue } from "@/lib/anonymization-utils"
 
 interface CurrentHolding {
   symbol: string
@@ -40,12 +42,13 @@ function createPortfolioStats(
   portfolioValue: string,
   portfolioCAGR: number,
   sp500CAGR: number,
-  subtitle: string = "Current portfolio value"
+  subtitle: string = "Current portfolio value",
+  isAnonymized: boolean = false
 ) {
   return [
     {
       title: "Portfolio Value (NZD)",
-      value: portfolioValue,
+      value: isAnonymized ? "NZ$***" : portfolioValue,
       subtitle: subtitle,
       icon: DollarSign,
     },
@@ -69,8 +72,9 @@ export default function HomePage() {
   const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const { isAnonymized } = useAnonymization()
   const [portfolioStats, setPortfolioStats] = useState(
-    createPortfolioStats("Loading...", 0, 0, "Calculating current value")
+    createPortfolioStats("Loading...", 0, 0, "Calculating current value", isAnonymized)
   )
 
 
@@ -133,7 +137,7 @@ export default function HomePage() {
             const portfolioCAGR = calculateCAGRFromGainPercent(updatedSummary.totalGainPercent, yearsSinceInception)
             const sp500CAGR = calculateCAGRFromGainPercent(updatedSummary.sp500GainPercent, yearsSinceInception)
 
-            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR))
+            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
           }
         } else {
           // Fallback to using data from portfolio-current if history fails
@@ -146,7 +150,7 @@ export default function HomePage() {
           const portfolioCAGR = calculateCAGRFromGainPercent(totalGainPercent, yearsSinceInception)
           const sp500CAGR = calculateCAGRFromGainPercent(sp500GainPercent, yearsSinceInception)
 
-          setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR))
+          setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
         }
 
       } catch (error) {
@@ -165,7 +169,7 @@ export default function HomePage() {
     }
 
     fetchPortfolioData()
-  }, [])
+  }, [isAnonymized])
 
 
 
@@ -251,7 +255,7 @@ export default function HomePage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatNumber(holding.shares, 2)}
+                            {maskShares(holding.shares, isAnonymized)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatCurrencyWithDecimals(holding.currentPrice, holding.currency)}
@@ -265,11 +269,11 @@ export default function HomePage() {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(holding.currentValueNZD)}
+                            {maskCurrency(holding.currentValueNZD, isAnonymized)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {formatCurrency(holding.gainNZD)}
+                              {maskCurrency(holding.gainNZD, isAnonymized)}
                               <span className="text-xs ml-1">
                                 ({holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%)
                               </span>
@@ -285,11 +289,11 @@ export default function HomePage() {
                             Total Portfolio
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            Value: {formatCurrency(summary.totalValueNZD)}
+                            Value: {maskCurrency(summary.totalValueNZD, isAnonymized)}
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <div className={summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {formatCurrency(summary.totalGainNZD)}
+                              {maskCurrency(summary.totalGainNZD, isAnonymized)}
                               <span className="text-xs ml-1">
                                 ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
                               </span>
@@ -301,11 +305,11 @@ export default function HomePage() {
                             S&P 500 Benchmark
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            Value: {formatCurrency(summary.sp500Value)}
+                            Value: {maskCurrency(summary.sp500Value, isAnonymized)}
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {formatCurrency(summary.sp500GainNZD)}
+                              {maskCurrency(summary.sp500GainNZD, isAnonymized)}
                               <span className="text-xs ml-1">
                                 ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
                               </span>
@@ -350,14 +354,14 @@ export default function HomePage() {
                         <div className={`text-sm font-medium ${
                           holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {formatCurrency(holding.gainNZD)}
+                          {maskCurrency(holding.gainNZD, isAnonymized)}
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <div className="text-gray-500">Shares</div>
-                          <div className="font-medium">{formatNumber(holding.shares, 2)}</div>
+                          <div className="font-medium">{maskShares(holding.shares, isAnonymized)}</div>
                         </div>
                         <div>
                           <div className="text-gray-500">Current Price</div>
@@ -378,7 +382,7 @@ export default function HomePage() {
                         </div>
                         <div>
                           <div className="text-gray-500">Total Value</div>
-                          <div className="font-medium text-gray-900">{formatCurrency(holding.currentValueNZD)}</div>
+                          <div className="font-medium text-gray-900">{maskCurrency(holding.currentValueNZD, isAnonymized)}</div>
                         </div>
                       </div>
                     </div>
@@ -392,11 +396,11 @@ export default function HomePage() {
                         <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <div className="text-gray-500">Market Value</div>
-                            <div className="font-medium text-lg">{formatCurrency(summary.totalValueNZD)}</div>
+                            <div className="font-medium text-lg">{maskCurrency(summary.totalValueNZD, isAnonymized)}</div>
                           </div>
                           <div>
                             <div className="text-gray-500">Cost Basis</div>
-                            <div className="font-medium">{formatCurrency(summary.totalCostBasisNZD)}</div>
+                            <div className="font-medium">{maskCurrency(summary.totalCostBasisNZD, isAnonymized)}</div>
                           </div>
                         </div>
                         <div className={`text-center py-2 rounded-lg ${
@@ -406,7 +410,7 @@ export default function HomePage() {
                           <div className={`font-bold text-lg ${
                             summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            {formatCurrency(summary.totalGainNZD)} ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
+                            {maskCurrency(summary.totalGainNZD, isAnonymized)} ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
                           </div>
                         </div>
                       </div>
@@ -416,11 +420,11 @@ export default function HomePage() {
                         <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <div className="text-gray-600">Market Value</div>
-                            <div className="font-medium text-lg">{formatCurrency(summary.sp500Value)}</div>
+                            <div className="font-medium text-lg">{maskCurrency(summary.sp500Value, isAnonymized)}</div>
                           </div>
                           <div>
                             <div className="text-gray-600">Cost Basis</div>
-                            <div className="font-medium">{formatCurrency(summary.totalCostBasisNZD)}</div>
+                            <div className="font-medium">{maskCurrency(summary.totalCostBasisNZD, isAnonymized)}</div>
                           </div>
                         </div>
                         <div className={`text-center py-2 rounded-lg ${
@@ -430,7 +434,7 @@ export default function HomePage() {
                           <div className={`font-bold text-lg ${
                             summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            {formatCurrency(summary.sp500GainNZD)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
+                            {maskCurrency(summary.sp500GainNZD, isAnonymized)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
                           </div>
                         </div>
                       </div>
@@ -507,14 +511,14 @@ export default function HomePage() {
                           <span className="text-sm text-gray-600">{holdingPeriod}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
-                          <span className="text-gray-700">{formatCurrency(position.totalInvestedNZD, 'NZD')}</span>
+                          <span className="text-gray-700">{maskCurrency(position.totalInvestedNZD, isAnonymized, 'NZD')}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
-                          <span className="text-gray-700">{formatCurrency(position.totalReturnNZD, 'NZD')}</span>
+                          <span className="text-gray-700">{maskCurrency(position.totalReturnNZD, isAnonymized, 'NZD')}</span>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className={`font-medium ${position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(position.profitLossNZD, 'NZD')}
+                            {maskCurrency(position.profitLossNZD, isAnonymized, 'NZD')}
                           </span>
                         </td>
                         <td className="py-3 px-2 text-right">
@@ -580,7 +584,7 @@ export default function HomePage() {
                       <div className={`text-sm font-medium ${
                         position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {formatCurrency(position.profitLossNZD, 'NZD')}
+                        {maskCurrency(position.profitLossNZD, isAnonymized, 'NZD')}
                       </div>
                     </div>
                     
@@ -599,11 +603,11 @@ export default function HomePage() {
                       </div>
                       <div>
                         <div className="text-gray-500">Total Invested</div>
-                        <div className="font-medium text-gray-600">{formatCurrency(position.totalInvestedNZD, 'NZD')}</div>
+                        <div className="font-medium text-gray-600">{maskCurrency(position.totalInvestedNZD, isAnonymized, 'NZD')}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">Total Return</div>
-                        <div className="font-medium text-gray-900">{formatCurrency(position.totalReturnNZD, 'NZD')}</div>
+                        <div className="font-medium text-gray-900">{maskCurrency(position.totalReturnNZD, isAnonymized, 'NZD')}</div>
                       </div>
                       <div>
                         <div className="text-gray-500">CAGR</div>
