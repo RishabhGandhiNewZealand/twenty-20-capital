@@ -3,14 +3,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, AlertTriangle, Target, Plus, Minus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskCurrency, maskShares } from "@/lib/anonymization-utils"
 
 export default function Q1Report2025Page() {
+  const { isAnonymized } = useAnonymization()
 
   const quarterStats = [
     { label: "Q1 Return", value: "-5.4%", icon: TrendingUp },
     { label: "S&P 500 Return Unhedged", value: "-4.2%", icon: DollarSign },
-    { label: "Portfolio Value", value: "$34,788 NZD", icon: Target },
-    { label: "Portfolio Additions", value: "$6,500 NZD", icon: Plus },
+    { label: "Portfolio Value", value: 34788, icon: Target, isCurrency: true },
+    { label: "Portfolio Additions", value: 6500, icon: Plus, isCurrency: true },
   ]
 
   // Portfolio Holdings - calculating proper allocations
@@ -21,7 +24,7 @@ export default function Q1Report2025Page() {
       return: "+6.5%",
       shares: 40,
       usdValue: 2916, // $72.9 * 40 shares
-      nzdValue: "$4,860",
+      nzdValue: 4860,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -31,7 +34,7 @@ export default function Q1Report2025Page() {
       return: "-10.9%",
       shares: 15,
       usdValue: 2310, // $154 * 15 shares
-      nzdValue: "$3,850",
+      nzdValue: 3850,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -41,7 +44,7 @@ export default function Q1Report2025Page() {
       return: "-2.1%",
       shares: 13,
       usdValue: 2470, // $190 * 13 shares
-      nzdValue: "$4,117",
+      nzdValue: 4117,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -51,7 +54,7 @@ export default function Q1Report2025Page() {
       return: "+28.0%",
       shares: 3,
       usdValue: 1728, // $576 * 3 shares
-      nzdValue: "$2,880",
+      nzdValue: 2880,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -61,7 +64,7 @@ export default function Q1Report2025Page() {
       return: "+21.1%",
       shares: 2,
       usdValue: 1864, // $932 * 2 shares
-      nzdValue: "$3,107",
+      nzdValue: 3107,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -71,7 +74,7 @@ export default function Q1Report2025Page() {
       return: "+22.0%",
       shares: 4,
       usdValue: 2192, // $548 * 4 shares
-      nzdValue: "$3,653",
+      nzdValue: 3653,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -81,7 +84,7 @@ export default function Q1Report2025Page() {
       return: "-7.2%",
       shares: 4,
       usdValue: 2648, // $662 * 4 shares
-      nzdValue: "$4,413",
+      nzdValue: 4413,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -91,7 +94,7 @@ export default function Q1Report2025Page() {
       return: "-0.4%",
       shares: 5,
       usdValue: 2540, // $508 * 5 shares
-      nzdValue: "$4,233",
+      nzdValue: 4233,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -101,7 +104,7 @@ export default function Q1Report2025Page() {
       return: "+11.9%",
       shares: 50,
       usdValue: 2279, // $73.50 NZD * 50 shares * 0.62 USD/NZD rate (Mar 31, 2025)
-      nzdValue: "$3,675",
+      nzdValue: 3675,
       stockCurrency: "NZD",
       tier: "A"
     }
@@ -116,7 +119,7 @@ export default function Q1Report2025Page() {
   })).sort((a, b) => b.allocation - a.allocation)
 
   const totalValue = portfolioHoldings.reduce((sum, holding) => {
-    return sum + parseFloat(holding.nzdValue.replace(/[$,]/g, ''))
+    return sum + holding.nzdValue
   }, 0)
 
   return (
@@ -138,7 +141,9 @@ export default function Q1Report2025Page() {
                   <Icon className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {stat.isCurrency ? maskCurrency(stat.value, isAnonymized, 'NZD') : stat.value}
+                  </div>
                 </CardContent>
               </Card>
             )
@@ -229,11 +234,11 @@ export default function Q1Report2025Page() {
                             <span className="font-medium text-gray-900">{holding.allocation}%</span>
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <span className="text-gray-700">{holding.shares}</span>
+                            <span className="text-gray-700">{maskShares(holding.shares, isAnonymized)}</span>
                           </td>
                           <td className="py-3 px-2 text-right">
                             <span className="font-medium text-gray-900">
-                              {holding.nzdValue}
+                              {maskCurrency(holding.nzdValue, isAnonymized, 'NZD')}
                             </span>
                           </td>
                           <td className="py-3 px-2 text-center">
@@ -409,9 +414,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-4 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $900-1000 USD</p>
                      <p><strong>Cost Basis:</strong> $713 USD</p>
-                     <p><strong>Final Position:</strong> 4 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
                      <p><strong>Price@31/3/2025:</strong> $662 USD</p>
-                     <p><strong>Portfolio Value:</strong> $4,413 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(4413, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
               </div>
@@ -447,9 +452,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $620-670 USD</p>
                      <p><strong>Cost Basis:</strong> $510 USD</p>
-                     <p><strong>Final Position:</strong> 5 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(5, isAnonymized)} shares</p>
                      <p><strong>Price@31/3/2025:</strong> $508 USD</p>
-                     <p><strong>Portfolio Value:</strong> $4,233 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(4233, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
 
@@ -467,14 +472,14 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Amazon (AMZN: NASDAQ) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    The biggest change in my sentiment for the portfolio was my increased conviction of Amazon as a business. Amazon is one of the best businesses in the world. And with economic uncertainty in the air due to geo-politics, I think Amazon will greatly benefit from this period as they have in the past. They will gain market share and consolidate their monopoly. There is no real threat to their company from AI or regulation. And their runway for growth is much larger than the market predicts. Moreover, they are primed for massive margin expansion as the high margin parts of their business continue to grow faster than the low margin parts. I think Amazon will likely be a 10 trillion dollar company in the next decade and the market is greatly undervaluing the company. I more than doubled my Amazon position this quarter.
+                    The biggest change in my sentiment for the portfolio was my increased conviction of Amazon as a business. Amazon is one of the best businesses in the world. And with economic uncertainty in the air due to geo-politics, I think Amazon will greatly benefit from this period as they have in the past. They will gain market share and consolidate their monopoly. There is no real threat to their company from AI or regulation. And their runway for growth is much larger than the market predicts. Moreover, they are primed for massive margin expansion as the high margin parts of their business continue to grow faster than the low margin parts. I think Amazon will likely be a 10 trillion dollar company in the next decade and the market is greatly undervaluing the company. I more than {isAnonymized ? "***" : "doubled"} my Amazon position this quarter.
                   </p>
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $270-300 USD</p>
                      <p><strong>Cost Basis:</strong> $194 USD</p>
-                     <p><strong>Final Position:</strong> 13 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(13, isAnonymized)} shares</p>
                      <p><strong>Price@31/3/2025:</strong> $190 USD</p>
-                     <p><strong>Portfolio Value:</strong> $4,117 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(4117, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
 
@@ -497,9 +502,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $240-250 USD</p>
                      <p><strong>Cost Basis:</strong> $173 USD</p>
-                     <p><strong>Final Position:</strong> 15 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(15, isAnonymized)} shares</p>
                      <p><strong>Price@31/12/2025:</strong> $154 USD</p>
-                     <p><strong>Portfolio Value:</strong> $3,850 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(3850, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
 
@@ -522,9 +527,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $100-120 USD</p>
                      <p><strong>Cost Basis:</strong> $68.4 USD</p>
-                     <p><strong>Final Position:</strong> 40 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(40, isAnonymized)} shares</p>
                      <p><strong>Price@31/12/2025:</strong> $72.9 USD</p>
-                     <p><strong>Portfolio Value:</strong> $4,860 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(4860, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
               </div>
@@ -560,9 +565,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $550-570 USD</p>
                      <p><strong>Cost Basis:</strong> $449 USD</p>
-                     <p><strong>Final Position:</strong> 4 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
                      <p><strong>Price@31/12/2025:</strong> $548 USD</p>
-                     <p><strong>Portfolio Value:</strong> $3,653 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(3653, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
 
@@ -585,9 +590,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $700 USD</p>
                      <p><strong>Cost Basis:</strong> $450 USD</p>
-                     <p><strong>Final Position:</strong> 3 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(3, isAnonymized)} shares</p>
                      <p><strong>Price@31/12/2025:</strong> $576 USD</p>
-                     <p><strong>Portfolio Value:</strong> $2,880 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(2880, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
 
@@ -610,9 +615,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $85-90 NZD</p>
                      <p><strong>Cost Basis:</strong> $65.69 NZD</p>
-                     <p><strong>Final Position:</strong> 50 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(50, isAnonymized)} shares</p>
                      <p><strong>Price @31/12/2024:</strong> $73.50 NZD</p>
-                     <p><strong>Portfolio Value:</strong> $3,675 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(3675, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
 
@@ -635,9 +640,9 @@ export default function Q1Report2025Page() {
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $1000-1100 USD</p>
                      <p><strong>Cost Basis:</strong> $769 USD</p>
-                     <p><strong>Final Position:</strong> 2 shares</p>
+                     <p><strong>Final Position:</strong> {maskShares(2, isAnonymized)} shares</p>
                      <p><strong>Price@31/12/2025:</strong> $932 USD</p>
-                     <p><strong>Portfolio Value:</strong> $3,107 NZD</p>
+                     <p><strong>Portfolio Value:</strong> {maskCurrency(3107, isAnonymized, 'NZD')}</p>
                    </div>
                 </div>
               </div>

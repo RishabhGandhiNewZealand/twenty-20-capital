@@ -6,6 +6,8 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Loader2, TrendingUp, DollarSign } from "lucide-react"
 import { formatCurrency, formatPercentage as formatPercentageBase } from "@/lib/financial-calculations"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskCurrency } from "@/lib/anonymization-utils"
 import {
   LineChart,
   Line,
@@ -51,6 +53,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   const [error, setError] = useState<string | null>(null)
   const [showPercentage, setShowPercentage] = useState(false)
   const [hideStats, setHideStats] = useState(false)
+  const { isAnonymized } = useAnonymization()
 
   useEffect(() => {
     async function fetchPortfolioHistory() {
@@ -168,29 +171,33 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             })}
           </p>
           <div className="space-y-1">
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-blue-600">Portfolio Value:</span>
-              <span className="text-sm font-medium">{formatCurrency(portfolioValue)}</span>
-            </div>
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600">S&P 500 Value:</span>
-              <span className="text-sm font-medium">{formatCurrency(sp500Value)}</span>
-            </div>
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-red-600">Cost Basis:</span>
-              <span className="text-sm font-medium">{formatCurrency(costBasis)}</span>
-            </div>
-            <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
+            {!isAnonymized && (
+              <>
+                <div className="flex justify-between items-center gap-4">
+                  <span className="text-sm text-blue-600">Portfolio Value:</span>
+                  <span className="text-sm font-medium">{formatCurrency(portfolioValue)}</span>
+                </div>
+                <div className="flex justify-between items-center gap-4">
+                  <span className="text-sm text-green-600">S&P 500 Value:</span>
+                  <span className="text-sm font-medium">{formatCurrency(sp500Value)}</span>
+                </div>
+                <div className="flex justify-between items-center gap-4">
+                  <span className="text-sm text-red-600">Cost Basis:</span>
+                  <span className="text-sm font-medium">{formatCurrency(costBasis)}</span>
+                </div>
+              </>
+            )}
+            <div className={!isAnonymized ? "pt-2 mt-2 border-t border-[hsl(var(--border))]" : ""}>
               <div className="flex justify-between items-center gap-4">
                 <span className="text-sm text-gray-600">Portfolio Gain:</span>
                 <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(gain)} ({gainPercent.toFixed(1)}%)
+                  {!isAnonymized && `${maskCurrency(gain, isAnonymized)} `}({gainPercent.toFixed(1)}%)
                 </span>
               </div>
               <div className="flex justify-between items-center gap-4">
                 <span className="text-sm text-gray-600">S&P 500 Gain:</span>
                 <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(sp500Gain)} ({sp500GainPercent.toFixed(1)}%)
+                  {!isAnonymized && `${maskCurrency(sp500Gain, isAnonymized)} `}({sp500GainPercent.toFixed(1)}%)
                 </span>
               </div>
             </div>
@@ -318,7 +325,9 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         <div className="h-[300px] sm:h-[400px] w-full relative">
           {/* Portfolio Stats Overlay - Mobile Responsive */}
           {portfolioStats.length > 0 && !hideStats && (
-            <div className="absolute top-1 left-[60px] sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
+            <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${
+              isAnonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
+            }`}>
               {portfolioStats.map((stat) => {
                 return (
                   <div key={stat.title} className="bg-[hsl(var(--card))]/95 backdrop-blur-sm border border-[hsl(var(--border))] rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
@@ -352,10 +361,12 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10 }}
+                  tick={isAnonymized ? false : { fontSize: 10 }}
                   tickFormatter={(value) => `${value.toFixed(0)}%`}
                   domain={['dataMin - 10', 'dataMax + 10']}
-                  width={40}
+                  width={isAnonymized ? 10 : 40}
+                  axisLine={true}
+                  tickLine={!isAnonymized}
                 />
                 <Tooltip content={<CustomTooltipPercentage />} />
                 <Legend 
@@ -412,9 +423,11 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10 }}
+                  tick={isAnonymized ? false : { fontSize: 10 }}
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  width={45}
+                  width={isAnonymized ? 10 : 45}
+                  axisLine={true}
+                  tickLine={!isAnonymized}
                 />
                 <Tooltip content={<CustomTooltipValue />} />
                 <Legend 

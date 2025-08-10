@@ -12,10 +12,15 @@ import {
   FileText, 
   BarChart3, 
   Newspaper, 
-  User 
+  User,
+  Shield,
+  ShieldOff
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { PasswordModal } from "@/components/password-modal"
+import { Button } from "@/components/ui/button"
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -30,6 +35,8 @@ export default function SidebarNavigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const { isAnonymized, setAnonymized } = useAnonymization()
 
   // Get current page info
   const currentPage = navItems.find(item => item.href === pathname) || navItems[0]
@@ -54,6 +61,16 @@ export default function SidebarNavigation() {
       setIsOpen(false)
     }
   }, [pathname, isMobile])
+
+  const handleAnonymizationToggle = () => {
+    if (isAnonymized) {
+      // If currently anonymized, show password modal to de-anonymize
+      setShowPasswordModal(true)
+    } else {
+      // If not anonymized, re-enable anonymization
+      setAnonymized(true)
+    }
+  }
 
   return (
     <>
@@ -105,8 +122,8 @@ export default function SidebarNavigation() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <nav className="h-full overflow-y-auto p-4">
-          <ul className="space-y-1">
+        <nav className="h-full flex flex-col overflow-y-auto p-4">
+          <ul className="space-y-1 flex-1">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -129,8 +146,41 @@ export default function SidebarNavigation() {
               )
             })}
           </ul>
+          
+          {/* Anonymization Toggle at the bottom */}
+          <div className="pt-4 mt-4 border-t border-border">
+            <Button
+              onClick={handleAnonymizationToggle}
+              variant="outline"
+              className="w-full justify-start"
+              size="sm"
+            >
+              {isAnonymized ? (
+                <>
+                  <Shield className="h-4 w-4 mr-2" />
+                  <span>Anonymized View</span>
+                </>
+              ) : (
+                <>
+                  <ShieldOff className="h-4 w-4 mr-2" />
+                  <span>Full View</span>
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2 px-1">
+              {isAnonymized 
+                ? "Portfolio values are hidden" 
+                : "Showing actual values"}
+            </p>
+          </div>
         </nav>
       </aside>
+
+      {/* Password Modal */}
+      <PasswordModal 
+        open={showPasswordModal} 
+        onOpenChange={setShowPasswordModal} 
+      />
 
       {/* Overlay for mobile */}
       {isOpen && isMobile && (

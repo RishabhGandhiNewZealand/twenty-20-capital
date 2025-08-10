@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { formatCurrency } from "@/lib/financial-calculations"
 import { formatDate } from "@/lib/format-utils"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskCurrency } from "@/lib/anonymization-utils"
 
 interface ChartData {
   name: string
@@ -56,6 +58,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const [playbackSpeed, setPlaybackSpeed] = useState(1) // 0.5, 1, or 2
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const { isAnonymized } = useAnonymization()
 
   // Load the pre-cached composition data on mount
   useEffect(() => {
@@ -318,7 +321,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           rx={4} 
           ry={4}
         />
-        {showValue && (
+        {showValue && !isAnonymized && (
           <text 
             x={x + (isMobile ? 5 : 10)} 
             y={y + height / 2} 
@@ -355,10 +358,12 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           <p className="font-semibold text-[hsl(var(--card-foreground))]">{data.symbol}</p>
           <p className="text-sm text-gray-600 mb-2">{holding?.name}</p>
           <div className="space-y-1">
-            <p className="text-sm">
-              <span className="text-gray-500">Value:</span>
-              <span className="font-medium ml-1">{formatCurrency(data.value)}</span>
-            </p>
+            {!isAnonymized && (
+              <p className="text-sm">
+                <span className="text-gray-500">Value:</span>
+                <span className="font-medium ml-1">{formatCurrency(data.value)}</span>
+              </p>
+            )}
             <p className="text-sm">
               <span className="text-gray-500">Allocation:</span>
               <span className="font-medium ml-1">{data.percentage.toFixed(1)}%</span>
@@ -371,6 +376,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   }
 
   const formatTickValue = (value: number) => {
+    if (isAnonymized) return '';
     if (!value || isNaN(value)) return '$0';
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`
@@ -545,8 +551,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 <XAxis 
                   type="number" 
                   tickFormatter={formatTickValue}
-                  tick={{ fontSize: 10, fill: '#b1b1b1' }}
+                  tick={isAnonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
                   domain={[0, 'dataMax']}
+                  axisLine={!isAnonymized}
                 />
                 <YAxis 
                   type="category" 
