@@ -325,7 +325,9 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         <div className="h-[300px] sm:h-[400px] w-full relative">
           {/* Portfolio Stats Overlay - Mobile Responsive */}
           {portfolioStats.length > 0 && !hideStats && (
-            <div className="absolute top-1 left-[60px] sm:top-2 sm:left-24 z-10 space-y-1 sm:space-y-1.5">
+            <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${
+              isAnonymized ? 'left-[15px] sm:left-[20px]' : 'left-[60px] sm:left-24'
+            }`}>
               {portfolioStats.map((stat) => {
                 return (
                   <div key={stat.title} className="bg-[hsl(var(--card))]/95 backdrop-blur-sm border border-[hsl(var(--border))] rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
@@ -363,7 +365,8 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   tickFormatter={(value) => `${value.toFixed(0)}%`}
                   domain={['dataMin - 10', 'dataMax + 10']}
                   width={isAnonymized ? 10 : 40}
-                  axisLine={!isAnonymized}
+                  axisLine={true}
+                  tickLine={!isAnonymized}
                 />
                 <Tooltip content={<CustomTooltipPercentage />} />
                 <Legend 
@@ -423,7 +426,8 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   tick={isAnonymized ? false : { fontSize: 10 }}
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                   width={isAnonymized ? 10 : 45}
-                  axisLine={!isAnonymized}
+                  axisLine={true}
+                  tickLine={!isAnonymized}
                 />
                 <Tooltip content={<CustomTooltipValue />} />
                 <Legend 
