@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes"
 import { AnonymizationProvider } from "@/contexts/AnonymizationContext"
 import { AuthProvider } from "@/contexts/AuthContext"
+// import { AuthDebug } from "@/components/auth-debug" // Uncomment for debugging
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -42,6 +43,7 @@ export default function RootLayout({
               <main className="min-h-screen">
                 {children}
               </main>
+              {/* <AuthDebug /> */}
               <Analytics />
             </AnonymizationProvider>
           </AuthProvider>

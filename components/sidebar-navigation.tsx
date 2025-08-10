@@ -15,7 +15,9 @@ import {
   User,
   Shield,
   ShieldOff,
-  Database
+  Database,
+  LogIn,
+  LogOut
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -43,7 +45,7 @@ export default function SidebarNavigation() {
   const [isMobile, setIsMobile] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const { isAnonymized, setAnonymized } = useAnonymization()
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin, logout } = useAuth()
 
   // Get current page info
   const currentPage = navItems.find(item => item.href === pathname) || navItems[0]
@@ -186,8 +188,32 @@ export default function SidebarNavigation() {
             )}
           </ul>
           
-          {/* Anonymization Toggle at the bottom */}
-          <div className="pt-4 mt-4 border-t border-border">
+          {/* Bottom Controls */}
+          <div className="pt-4 mt-4 border-t border-border space-y-2">
+            {/* Admin Login/Logout */}
+            {isAuthenticated && isAdmin ? (
+              <Button
+                onClick={logout}
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                <span>Logout Admin</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setShowPasswordModal(true)}
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                <span>Admin Login</span>
+              </Button>
+            )}
+            
+            {/* Anonymization Toggle */}
             <Button
               onClick={handleAnonymizationToggle}
               variant="outline"

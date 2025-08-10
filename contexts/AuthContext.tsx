@@ -7,6 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAdmin: boolean
   password: string | null
+  isLoading: boolean
   login: (password: string) => Promise<boolean>
   logout: () => void
 }
@@ -17,14 +18,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [password, setPassword] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   // Check if user is already authenticated on mount
   useEffect(() => {
-    const storedPassword = localStorage.getItem('adminPassword')
-    if (storedPassword) {
-      verifyPassword(storedPassword)
+    const checkAuth = async () => {
+      const storedPassword = localStorage.getItem('adminPassword')
+      if (storedPassword) {
+        await verifyPassword(storedPassword)
+      }
+      setIsLoading(false)
     }
+    checkAuth()
   }, [])
 
   const verifyPassword = async (pwd: string): Promise<boolean> => {
@@ -74,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isAdmin, password, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isAdmin, password, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

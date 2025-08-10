@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { useAuth } from "@/contexts/AuthContext"
 import { EyeOff, Eye, Loader2 } from "lucide-react"
 
 interface PasswordModalProps {
@@ -26,6 +27,7 @@ export function PasswordModal({ open, onOpenChange }: PasswordModalProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { setAnonymized } = useAnonymization()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,24 +35,11 @@ export function PasswordModal({ open, onOpenChange }: PasswordModalProps) {
     setIsLoading(true)
     
     try {
-      // Call the API endpoint to verify the password
-      const response = await fetch('/api/auth/verify-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      })
+      // Use the AuthContext login method to set both auth state and verify password
+      const success = await login(password)
       
-      const data = await response.json()
-      
-      if (!response.ok) {
-        setError(data.error || "Authentication failed. Please try again.")
-        return
-      }
-      
-      if (data.success) {
-        // Correct password - disable anonymization
+      if (success) {
+        // Correct password - disable anonymization and auth state is set
         setAnonymized(false)
         setPassword("")
         setError("")
