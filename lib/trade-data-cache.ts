@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache'
 import { getDb } from './db'
 import { logger } from './logger'
 import { TradeRecord } from '@/types/portfolio'
+import { getPortfolioCacheVersion } from './cache-version'
 
 // Cache configuration
 const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
@@ -57,6 +58,17 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
     logger.error('Error fetching trade data from database:', error)
     throw error
   }
+}
+
+/**
+ * Get trade data - either fresh or cached based on forceRefresh flag
+ */
+export async function getTradeData(forceRefresh: boolean = false): Promise<TradeRecord[]> {
+  if (forceRefresh) {
+    logger.info('Fetching fresh trade data (bypassing cache)')
+    return fetchTradeDataFromDB()
+  }
+  return getCachedTradeData()
 }
 
 /**

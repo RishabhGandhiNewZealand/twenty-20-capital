@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { calculateDailyReturns } from '@/lib/portfolioCalculations'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { CACHE_TTL, FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
-import { getCachedTradeData } from '@/lib/trade-data-cache'
+import { getTradeData } from '@/lib/trade-data-cache'
 
 interface DailyPortfolioData {
   date: string
@@ -107,15 +107,16 @@ function fillMissingDates(priceMap: Map<string, number>, startDate: Date, endDat
   return filledMap
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Disabled in-memory cache to ensure fresh data after trades are updated
-    // Relying on Next.js cache and HTTP cache headers instead
+    // Check if we should bypass cache
+    const searchParams = request.nextUrl.searchParams
+    const forceRefresh = searchParams.get('refresh') === 'true'
     
-    logger.debug('Calculating portfolio history...')
+    logger.debug(`Calculating portfolio history... (forceRefresh: ${forceRefresh})`)
 
-    // Fetch cached trade data from database
-    const trades = await getCachedTradeData()
+    // Fetch trade data from database (with optional cache bypass)
+    const trades = await getTradeData(forceRefresh)
     
     // If no trades found, return empty response
     if (!trades || trades.length === 0) {

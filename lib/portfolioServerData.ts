@@ -1,13 +1,13 @@
 import { PortfolioHolding, ExitedPosition } from '@/types/portfolio'
 import { calculatePortfolioData } from './portfolio'
 import { logger } from './logger'
-import { getCachedTradeData } from './trade-data-cache'
+import { getTradeData } from './trade-data-cache'
 
 // This function can only be used server-side
-export async function generatePortfolioData(): Promise<{ holdings: PortfolioHolding[], exitedPositions: ExitedPosition[] }> {
+export async function generatePortfolioData(forceRefresh: boolean = false): Promise<{ holdings: PortfolioHolding[], exitedPositions: ExitedPosition[] }> {
   try {
-    // Fetch cached trade data from database
-    const trades = await getCachedTradeData()
+    // Fetch trade data from database (with optional cache bypass)
+    const trades = await getTradeData(forceRefresh)
     
     // If no trades found, return empty arrays
     if (!trades || trades.length === 0) {

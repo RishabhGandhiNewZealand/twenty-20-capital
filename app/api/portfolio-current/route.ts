@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
 import yahooFinance from 'yahoo-finance2'
-import { getCachedTradeData } from '@/lib/trade-data-cache'
+import { getTradeData } from '@/lib/trade-data-cache'
 
 interface CurrentHolding {
   symbol: string
@@ -69,10 +69,14 @@ async function getHistoricalPrice(ticker: string, date: Date): Promise<number> {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch cached trade data from database
-    const trades = await getCachedTradeData()
+    // Check if we should bypass cache
+    const searchParams = request.nextUrl.searchParams
+    const forceRefresh = searchParams.get('refresh') === 'true'
+    
+    // Fetch trade data from database (with optional cache bypass)
+    const trades = await getTradeData(forceRefresh)
     
     // If no trades found, return empty response
     if (!trades || trades.length === 0) {

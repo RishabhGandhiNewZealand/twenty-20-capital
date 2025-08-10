@@ -1,10 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { generatePortfolioData } from '@/lib/portfolioServerData'
 import { logger } from '@/lib/logger'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { holdings, exitedPositions } = await generatePortfolioData()
+    // Check if we should bypass cache
+    const searchParams = request.nextUrl.searchParams
+    const forceRefresh = searchParams.get('refresh') === 'true'
+    
+    const { holdings, exitedPositions } = await generatePortfolioData(forceRefresh)
     
     return NextResponse.json({
       holdings,

@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { unstable_cache } from 'next/cache'
-import { getCachedTradeData } from '@/lib/trade-data-cache'
+import { getTradeData } from '@/lib/trade-data-cache'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
@@ -26,12 +26,12 @@ const CACHE_TAG = 'portfolio-compositions'
  * Calculate portfolio compositions for historical dates with actual prices
  * This is the raw calculation function that will be cached
  */
-async function calculatePortfolioCompositions(): Promise<CompositionData> {
+async function calculatePortfolioCompositions(forceRefresh: boolean = false): Promise<CompositionData> {
   try {
-    logger.info('Starting portfolio composition calculation...')
+    logger.info(`Starting portfolio composition calculation... (forceRefresh: ${forceRefresh})`)
     
-    // Fetch cached trade data from database
-    const trades = await getCachedTradeData()
+    // Fetch trade data from database (with optional cache bypass)
+    const trades = await getTradeData(forceRefresh)
     
     if (!trades || trades.length === 0) {
       logger.warn('No trade data found for portfolio compositions')
