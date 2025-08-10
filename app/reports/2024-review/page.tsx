@@ -2,8 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
 
 export default function Review2024Page() {
+  const { isAnonymized } = useAnonymization()
   // Function to get company logo URL
   const getLogoUrl = (symbol: string) => {
     return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
