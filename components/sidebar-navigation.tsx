@@ -14,11 +14,13 @@ import {
   Newspaper, 
   User,
   Shield,
-  ShieldOff
+  ShieldOff,
+  Database
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { useAuth } from "@/contexts/AuthContext"
 import { PasswordModal } from "@/components/password-modal"
 import { Button } from "@/components/ui/button"
 
@@ -31,12 +33,17 @@ const navItems = [
   { href: "/about", label: "About", icon: User },
 ]
 
+const adminNavItems = [
+  { href: "/trades", label: "Trades", icon: Database },
+]
+
 export default function SidebarNavigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const { isAnonymized, setAnonymized } = useAnonymization()
+  const { isAuthenticated, isAdmin } = useAuth()
 
   // Get current page info
   const currentPage = navItems.find(item => item.href === pathname) || navItems[0]
@@ -145,6 +152,38 @@ export default function SidebarNavigation() {
                 </li>
               )
             })}
+            
+            {/* Admin Navigation Items */}
+            {isAuthenticated && isAdmin && (
+              <>
+                <li className="mt-2 pt-2 border-t border-border">
+                  <div className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Admin
+                  </div>
+                </li>
+                {adminNavItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+                  
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                          isActive
+                            ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </>
+            )}
           </ul>
           
           {/* Anonymization Toggle at the bottom */}
