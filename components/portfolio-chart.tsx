@@ -84,12 +84,14 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
           dataPoints: sampledData.length,
           firstPoint: sampledData[0],
           lastPoint: sampledData[sampledData.length - 1],
-          isDataMasked
+          isDataMasked,
+          sampleData: sampledData.slice(0, 3) // Log first 3 data points
         })
         
         setData(sampledData)
         setPerformanceData(sampledPerformanceData)
       } catch (err) {
+        console.error('Error fetching portfolio history:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
         setLoading(false)
@@ -97,7 +99,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     }
 
     fetchPortfolioHistory()
-  }, [])
+  }, []) // Remove isDataMasked from dependencies as it shouldn't trigger refetch
 
   // Calculate percentage performance relative to cost basis
   function calculatePerformanceData(data: PortfolioHistoryData[]): PerformanceData[] {
@@ -235,36 +237,6 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return null
   }
 
-  // Custom Y-axis tick component - defined inside the main component to access state
-  const CustomYAxisTick = (props: any) => {
-    const { x, y, payload } = props
-    
-    // Don't render text when data is masked and in value view
-    if (!showPercentage && isDataMasked) {
-      // Return empty tick (no text) but keep the tick mark
-      return <g transform={`translate(${x},${y})`} />
-    }
-    
-    const text = showPercentage 
-      ? `${payload.value.toFixed(0)}%`
-      : `$${(payload.value / 1000).toFixed(0)}k`
-    
-    return (
-      <g transform={`translate(${x},${y})`}>
-        <text
-          x={0}
-          y={0}
-          dy={4}
-          textAnchor="end"
-          fill="#6b7280"
-          fontSize={12}
-        >
-          {text}
-        </text>
-      </g>
-    )
-  }
-
   if (loading) {
     return (
       <Card className="border-blue-100">
@@ -346,12 +318,13 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
               })}
             </div>
           )}
-          {/* Chart - Only render if we have data */}
-          {(showPercentage ? performanceData : data).length > 0 ? (
-            <ResponsiveContainer width="100%" height={350}>
+          
+          {/* Chart wrapper with conditional class for masking Y-axis labels */}
+          <div className={`w-full h-full ${!showPercentage && isDataMasked ? 'masked-chart' : ''}`}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart 
                 data={showPercentage ? performanceData : data}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
@@ -365,12 +338,16 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 />
                 <YAxis 
                   stroke="#6b7280"
-                  tick={<CustomYAxisTick />}
-                  // Keep axis line and ticks visible
                   axisLine={{ stroke: '#6b7280' }}
                   tickLine={{ stroke: '#6b7280' }}
-                  // Ensure consistent width whether labels are shown or hidden
-                  width={50}
+                  width={60}
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  tickFormatter={(value) => {
+                    if (showPercentage) {
+                      return `${value.toFixed(0)}%`
+                    }
+                    return `$${(value / 1000).toFixed(0)}k`
+                  }}
                 />
                 <Tooltip 
                   content={showPercentage ? CustomTooltipPercentage : <CustomTooltipValue />}
@@ -385,7 +362,6 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                       strokeWidth={2}
                       name="Portfolio"
                       dot={false}
-                      // Ensure line connects even with missing points
                       connectNulls={true}
                     />
                     <Line 
@@ -432,11 +408,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 )}
               </LineChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-gray-500">Loading chart data...</p>
-            </div>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>

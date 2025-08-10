@@ -179,3 +179,14 @@ main > * {
   .dark .from-blue-50 { --tw-gradient-from: hsl(var(--secondary)) var(--tw-gradient-from-position); --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
   .dark .to-indigo-50 { --tw-gradient-to: hsl(var(--secondary)) var(--tw-gradient-to-position); }
 }
+
+/* Privacy masking for charts */
+.masked-chart .recharts-yAxis .recharts-text {
+  opacity: 0;
+}
+
+/* Keep the axis structure visible */
+.masked-chart .recharts-yAxis .recharts-cartesian-axis-line,
+.masked-chart .recharts-yAxis .recharts-cartesian-axis-tick-line {
+  opacity: 1;
+}
