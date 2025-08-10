@@ -252,12 +252,8 @@ export async function GET() {
     // Fetch cached portfolio compositions
     const compositions = await getCachedPortfolioCompositions()
     
-    // Set cache headers for client-side caching
-    return NextResponse.json(compositions, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
-      }
-    })
+    // Return without HTTP cache headers - relying on Next.js unstable_cache instead
+    return NextResponse.json(compositions)
     
   } catch (error) {
     logger.error('Error in portfolio compositions endpoint:', error)

@@ -18,6 +18,12 @@ export async function POST() {
     await revalidatePath('/portfolio', 'page')
     await revalidatePath('/trades', 'page')
     
+    // Also revalidate API routes to clear any route-level caching
+    await revalidatePath('/api/portfolio-current', 'route')
+    await revalidatePath('/api/portfolio', 'route')
+    await revalidatePath('/api/portfolio-history', 'route')
+    await revalidatePath('/api/portfolio-compositions', 'route')
+    
     logger.info('Portfolio cache invalidated successfully - cleared all related caches via portfolio-all tag')
     
     return NextResponse.json({ 
