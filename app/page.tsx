@@ -36,9 +36,9 @@ export default function LandingPage() {
     },
     {
       icon: Shield,
-      title: "TypeScript Everything",
-      description: "Type-safe from database to UI",
-      details: "Full TypeScript coverage means fewer bugs and better code completion. The compiler catches issues before they hit production."
+      title: "Modern Tech Stack",
+      description: "TypeScript, React, SQL, and Python working together",
+      details: "TypeScript for type-safe frontend and backend code. React with Next.js for the UI. PostgreSQL for reliable data storage. Python scripts for data processing and automation. Everything integrated seamlessly."
     }
   ]
 
@@ -242,7 +242,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap justify-center gap-3">
               {[
                 "Next.js 15", "TypeScript", "Tailwind CSS", "PostgreSQL", 
-                "Vercel", "Recharts", "Yahoo Finance API", "Neon Database"
+                "Vercel", "Recharts", "Yahoo Finance API", "Cursor", "Claude"
               ].map((tech) => (
                 <span 
                   key={tech}
