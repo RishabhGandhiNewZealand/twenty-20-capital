@@ -1,13 +1,13 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
+import { TrendingUp, DollarSign, Target, Briefcase, Award, Calendar, ChevronRight, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import { getLogoUrl } from "@/lib/company-utils"
+import { usePrivacy } from "@/lib/privacy-context"
+import { maskStringValue } from "@/lib/privacy-utils"
 
 export default function Review2024Page() {
-  // Function to get company logo URL
-  const getLogoUrl = (symbol: string) => {
-    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
-  }
+  const { isDataMasked } = usePrivacy()
 
   const getCompanyDomain = (symbol: string) => {
     const domains: { [key: string]: string } = {
@@ -221,7 +221,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">20 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "20 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -246,7 +246,7 @@ export default function Review2024Page() {
                   </p>
                 </div>
 
-                <p>In 2024, I held 19 shares, and the stock returned roughly -9%, despite increasing revenues by 6% and improving margins amid challenges like a union strike and a major derailment. The company adhered to its capex guidance, demonstrating discipline. The stock peaked at around $91 this year but declined due to strikes, a derailment, and proposed tariffs from incoming President Trump. Overall, I was pleased with the company's operating performance. They increased the intrinsic value of the company. The next 2-3 years are crucial for CPKC to demonstrate revenue increases, margin improvements, effective challenge navigation, and capital returns to shareholders. I believe they can exceed these expectations, leading to excellent returns over the next decade. I purchased one more share of CPKC at year-end as the stock dipped and will add more if it dips further.</p>
+                <p>In 2024, I held {isDataMasked ? "**" : "19"} shares, and the stock returned roughly -9%, despite increasing revenues by 6% and improving margins amid challenges like a union strike and a major derailment. The company adhered to its capex guidance, demonstrating discipline. The stock peaked at around $91 this year but declined due to strikes, a derailment, and proposed tariffs from incoming President Trump. Overall, I was pleased with the company's operating performance. They increased the intrinsic value of the company. The next 2-3 years are crucial for CPKC to demonstrate revenue increases, margin improvements, effective challenge navigation, and capital returns to shareholders. I believe they can exceed these expectations, leading to excellent returns over the next decade. I purchased one more share of CPKC at year-end as the stock dipped and will add more if it dips further.</p>
               </div>
             </CardContent>
           </Card>
@@ -328,7 +328,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">3 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "3 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -355,7 +355,7 @@ export default function Review2024Page() {
 
                 <p>The story for Meta is quite unique. Meta continues to expand its already massive user base with the launch of Threads, capturing market share from X. With 100 million daily active users on Threads, Meta is poised for further growth. The company's strong network effects and global population increase are expected to drive ~4% annual user growth over the next decade. As Meta's user base grows, it becomes increasingly attractive to advertisers, which in turn boosts the demand for ad space. While the company has likely reached the limit on the number of ad impressions per person, this heightened demand allows Meta to raise ad prices above inflation. This is due to the finite time users can spend on any application, making that time more valuable for advertisers. Currently Meta makes $46 per user on their platform per year. Additionally, further monetization of WhatsApp and Threads presents additional growth opportunities. AI-driven engagement tools will enhance both user and advertiser experience. Meta is also heavily investing in Reality Labs and AI. By building advanced compute and networking capabilities, Meta aims to develop world-class AI models and open source them to democratise AI. VR and AR technologies are being developed as potential future computing platforms, bolstered by natural language AI. Though there's no guarantee these investments will pay off, but if it does Meta will become the most valuable company in the world. However, in my current valuations only consider future expenditure and exclude potential revenue from Reality Labs and AI due to the uncertainty.</p>
 
-                <p>I decided to invest in Meta after noticing I was spending more time on Facebook while seeing more ads. I believed others felt the same, so I started a small position in March. Despite a good earnings report, the stock dropped 15%, likely due to slower daily active user growth and increased Capex forecasts for 2024 and 2025. However, the fundamentals were sound. I increased my investment to 3.2812 shares at an average of $450 USD each. The stock rose to around $585 USD by year-end, where I reduced my holdings to 3 shares as I had another opportunity at year end. Meta now comprises ~9% of my portfolio, and I won't add more unless the stock dips while maintaining strong fundamentals. Overall, happy with the performance of the company and stock.</p>
+                <p>I decided to invest in Meta after noticing I was spending more time on Facebook while seeing more ads. I believed others felt the same, so I started a small position in March. Despite a good earnings report, the stock dropped 15%, likely due to slower daily active user growth and increased Capex forecasts for 2024 and 2025. However, the fundamentals were sound. I increased my investment to {isDataMasked ? "**" : "3.2812"} shares at an average of $450 USD each. The stock rose to around $585 USD by year-end, where I reduced my holdings to {isDataMasked ? "**" : "3"} shares as I had another opportunity at year end. Meta now comprises ~9% of my portfolio, and I won't add more unless the stock dips while maintaining strong fundamentals. Overall, happy with the performance of the company and stock.</p>
               </div>
             </CardContent>
           </Card>
@@ -387,7 +387,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">7 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "7 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -403,7 +403,7 @@ export default function Review2024Page() {
 
                 <p>Salesforce's competitive advantage and growth potential stem from two main factors. Firstly, their product is deeply integrated into businesses, resulting in high switching costs in terms of time and money. The product provides an excellent ROI for most companies, making it essential for large enterprises. Salesforce offers a top CRM platform. Even if a company considers switching, migrating all customers and data to a new platform is a significant effort, acting as a deterrent and allowing Salesforce to increase its pricing over time. Secondly, Salesforce continues to develop or acquire complementary products like Agent Force, which uses the existing platform, data, and integrations to optimize processes with AI. These products enhance efficiency and business decision-making, satisfying and expanding their customer base. Upselling these additional products allows Salesforce to deliver more value and create new revenue streams.</p>
 
-                <p>I invested in Salesforce when the stock price declined by 20% after a weak Q1 2025 earnings report and increased uncertainty regarding AI's impact. Concerns were raised that generative AI might replicate Salesforce applications. While feasible on a small scale, recreating the comprehensive Salesforce platform would be challenging. I saw a buying opportunity at a price below its intrinsic value and initiated a half position after the dip. Over time, I grew more confident in the company's long-term growth prospects, especially with the positive shift in the AI narrative following the introduction of Agent Force. I increased my holdings to a full position, acquiring seven shares at an average cost of $253 USD per share. This stock has been my best performer this year, delivering a 67% money-weighted return. The stock has since climbed closer to its fair value, and I believe Salesforce can continue growing revenues and expanding margins, potentially achieving a CAGR of FCF exceeding 20% over the next 5-10 years. I do not plan to add to this position unless the stock experiences a similar dip, as it is currently my largest holding. I feel I got quite lucky with the timing of the company dipping and this year's gains, hopefully time will continue to prove that this is an excellent company.</p>
+                <p>I invested in Salesforce when the stock price declined by 20% after a weak Q1 2025 earnings report and increased uncertainty regarding AI's impact. Concerns were raised that generative AI might replicate Salesforce applications. While feasible on a small scale, recreating the comprehensive Salesforce platform would be challenging. I saw a buying opportunity at a price below its intrinsic value and initiated a half position after the dip. Over time, I grew more confident in the company's long-term growth prospects, especially with the positive shift in the AI narrative following the introduction of Agent Force. I increased my holdings to a full position, acquiring {isDataMasked ? "**" : "seven"} shares at an average cost of $253 USD per share. This stock has been my best performer this year, delivering a 67% money-weighted return. The stock has since climbed closer to its fair value, and I believe Salesforce can continue growing revenues and expanding margins, potentially achieving a CAGR of FCF exceeding 20% over the next 5-10 years. I do not plan to add to this position unless the stock experiences a similar dip, as it is currently my largest holding. I feel I got quite lucky with the timing of the company dipping and this year's gains, hopefully time will continue to prove that this is an excellent company.</p>
 
                 <div className="my-6">
                   <img 
@@ -446,7 +446,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">4 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "4 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -473,7 +473,7 @@ export default function Review2024Page() {
 
                 <p>Now that we understand the moat. The investment thesis is simple. There are three growth drivers. Firstly, about 37% of transactions worldwide still use cash. This will gradually shift to electronic payments as the world modernizes, benefiting MasterCard. Secondly, MasterCard is expanding into new global markets, increasing transaction volume and enabling more cross-border transactions, which have higher margins. Thirdly, as the global economy grows, people will spend more on the MasterCard network. Combined, these factors suggest MasterCard can grow revenue by 10-12% annually for the next decade. With 2% share buybacks and some margin expansion, I believe a FCF per share CAGR of 15% is realistic over the next 5-10 years.</p>
 
-                <p>Around mid-2024, the Federal Commerce Commission and other countries took regulatory action over the "high" fees and anti-competitive behaviour of Mastercard and Visa. Combined with slightly weak earnings reports in May and July, the stock traded down more than it should have given the fundamentals are still intact. However, I believe the fees are justified for the security and convenience provided, and significant deterioration of the moat from regulatory action is unlikely. Moreover, Mastercard's strong international presence and diversified revenues mitigate regulatory risks from any single country. So, I decided to build a position over June to August of 4 shares at an average price of $448 USD, which gave me a decent margin of safety. MasterCard was chosen over Visa due to its slightly higher growth prospects and larger international exposure. I consider it one of the best and safest long-term investments, and plan to add more shares in the future.</p>
+                <p>Around mid-2024, the Federal Commerce Commission and other countries took regulatory action over the "high" fees and anti-competitive behaviour of Mastercard and Visa. Combined with slightly weak earnings reports in May and July, the stock traded down more than it should have given the fundamentals are still intact. However, I believe the fees are justified for the security and convenience provided, and significant deterioration of the moat from regulatory action is unlikely. Moreover, Mastercard's strong international presence and diversified revenues mitigate regulatory risks from any single country. So, I decided to build a position over June to August of {isDataMasked ? "**" : "4"} shares at an average price of $448 USD, which gave me a decent margin of safety. MasterCard was chosen over Visa due to its slightly higher growth prospects and larger international exposure. I consider it one of the best and safest long-term investments, and plan to add more shares in the future.</p>
               </div>
             </CardContent>
           </Card>
@@ -505,7 +505,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">1.23 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "1.23 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -521,7 +521,7 @@ export default function Review2024Page() {
 
                 <p>MSCI's growth prospects are supported by three main factors: the global expansion of passive investing and ETF markets, which rely on MSCI's indexes and provide a steady stream of increasing asset-based fees; the increasing importance of high-quality data for AI and machine learning applications in financial markets, where MSCI is well-positioned to meet this demand; and MSCI's ability to innovate and offer new products tailored to the evolving needs of financial institutions, such as ESG and climate data. These factors indicate that MSCI has potential for sustained revenue growth in the coming years. The scalability of their business model will also enable further margin expansion. With both these factors, I expect MSCI to grow FCF by 15%+ per year for a long time.</p>
 
-                <p>I began investigating MSCI as I regularly work with data products and wanted to identify some of the leading producer and distributor globally. This led me to MSCI, and I commenced research after a slightly below-expected earnings report caused the stock to decline by 15%. At that time, I did not possess sufficient information about the company to make an investment. Following comprehensive research before its next earnings report in July, I initiated a partial position with 1.23 shares at an average price of $495 USD. The stock appreciated rapidly before I could complete my position. Nevertheless, the company's fundamentals continue to improve each quarter, and I plan to buy more during market dips over the upcoming year.</p>
+                <p>I began investigating MSCI as I regularly work with data products and wanted to identify some of the leading producer and distributor globally. This led me to MSCI, and I commenced research after a slightly below-expected earnings report caused the stock to decline by 15%. At that time, I did not possess sufficient information about the company to make an investment. Following comprehensive research before its next earnings report in July, I initiated a partial position with {isDataMasked ? "**" : "1.23"} shares at an average price of $495 USD. The stock appreciated rapidly before I could complete my position. Nevertheless, the company's fundamentals continue to improve each quarter, and I plan to buy more during market dips over the upcoming year.</p>
               </div>
             </CardContent>
           </Card>
@@ -553,7 +553,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">6 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "6 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -571,7 +571,7 @@ export default function Review2024Page() {
 
                 <p>Looking ahead, Amazon's retail business is expected to grow by mid-single digits per year as more shopping shifts online, with Amazon poised to gain a larger market share due to their superior service capabilities. Their third-party seller services are also expected to grow by approximately low teens, leveraging Amazon's extensive reach and distribution network. AWS is anticipated to continue growing mid-teens per year as the shift from on-premise computing to cloud computing increases, and as existing customers increase their compute workloads. The subscription business should also grow as more people recognize the value proposition of the Prime membership. Additionally, Amazon is massively expanding their advertising business, which is already a $58 billion per year business growing at 20%. They have a huge platform with more demand than supply, allowing for significant scaling opportunities. The key point to note with all this growth is that the high-margin parts of Amazon's business are growing much faster than standard retail, enabling Amazon to expand margins while sustaining low to mid-teens overall growth. Moreover, there are no foreseeable disruptions to their core businesses, giving Amazon full control over their future with a very long runway for continued growth.</p>
 
-                <p>I started a half position in Amazon before their August earnings report, and after the earnings report, the stock dipped 13% due to slightly slower-than-expected AWS growth by 1%. This larger-than-expected drop allowed me to build out my full position of 6 shares at an average cost of $174 USD. The stock recovered towards the end of the year with the general market and accelerating AWS growth. Overall, I am very pleased with the company's performance and look forward to seeing how it continues to perform. I also plan to add more shares if prices stay at current levels, as I believe the expected return on Amazon remains excellent even at current prices.</p>
+                <p>I started a half position in Amazon before their August earnings report, and after the earnings report, the stock dipped 13% due to slightly slower-than-expected AWS growth by 1%. This larger-than-expected drop allowed me to build out my full position of {isDataMasked ? "**" : "6"} shares at an average cost of $174 USD. The stock recovered towards the end of the year with the general market and accelerating AWS growth. Overall, I am very pleased with the company's performance and look forward to seeing how it continues to perform. I also plan to add more shares if prices stay at current levels, as I believe the expected return on Amazon remains excellent even at current prices.</p>
               </div>
             </CardContent>
           </Card>
@@ -603,7 +603,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">2 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "2 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -651,7 +651,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">35 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "35 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -671,7 +671,7 @@ export default function Review2024Page() {
 
                 <p>In the last quarter of the year, my increased use of Uber's services led me to believe that the company was experiencing increased user engagement. Researching further, I found this to be true; Uber's user base and usage frequency were steadily rising alongside their profitability. Despite this, the market sentiment towards Uber declined due to concerns over the impending threat of autonomous vehicles and a slight miss on their gross booking numbers.</p>
 
-                <p>Seeing this as an opportunity, I completed a position of 35 shares at an average cost of $68 USD. I plan to increase my stake to 15% of my portfolio while the price remains below $75 USD, as this should provide a sufficient margin of safety.</p>
+                <p>Seeing this as an opportunity, I completed a position of {isDataMasked ? "**" : "35"} shares at an average cost of $68 USD. I plan to increase my stake to 15% of my portfolio while the price remains below $75 USD, as this should provide a sufficient margin of safety.</p>
               </div>
             </CardContent>
           </Card>
@@ -703,7 +703,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">2 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "2 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -719,7 +719,7 @@ export default function Review2024Page() {
 
                 <p>The story for S&P Global is driven by three factors. First, their recurring sources of revenue from indexes and data products will continue to grow with increasing assets under management and increased demand for these products as the world increasingly relies on data. Second, the recent acquisition of IHS Markit bolstered their data product business and competes their other verticals. This acquisition was completed three years ago, and we are now seeing the synergy improvements that enhance margins while enabling further growth. Lastly, all the debt issued during the COVID pandemic needs to be re-rated as it comes due, a cycle that repeats every five years. During this time, S&P Global can increase prices more than before because companies must get the debt rated to save money. It is cyclical but with great predictability. With all these factors combined, I believe SPGI can provide very predictable 12%+ FCF growth for decades to come.</p>
 
-                <p>I started following S&P Global around the same time as MSCI, and while there haven't been any large dips this year, some uncertainty around the timing of interest rates has caused a little bit of volatility. However, in the long run, it doesn't matter what happens to interest rates; the debt must be reissued before it comes due. With higher rates, it might be slightly later, but it will happen. I was happy to buy this company with a lower margin of safety due to its predictability. Thus, I started a position of 2 shares at an average cost of $514 USD when I sold out of UNH. I will happily add more as the company greatly enhances the quality of my portfolio.</p>
+                <p>I started following S&P Global around the same time as MSCI, and while there haven't been any large dips this year, some uncertainty around the timing of interest rates has caused a little bit of volatility. However, in the long run, it doesn't matter what happens to interest rates; the debt must be reissued before it comes due. With higher rates, it might be slightly later, but it will happen. I was happy to buy this company with a lower margin of safety due to its predictability. Thus, I started a position of {isDataMasked ? "**" : "2"} shares at an average cost of $514 USD when I sold out of UNH. I will happily add more as the company greatly enhances the quality of my portfolio.</p>
               </div>
             </CardContent>
           </Card>
@@ -751,7 +751,7 @@ export default function Review2024Page() {
                     </div>
                     <div>
                       <div className="text-gray-600">Final Position</div>
-                      <div className="font-semibold">11 shares</div>
+                      <div className="font-semibold">{isDataMasked ? "** shares" : "11 shares"}</div>
                     </div>
                     <div>
                       <div className="text-gray-600">Price @31/12/2025</div>
@@ -767,7 +767,7 @@ export default function Review2024Page() {
 
                 <p>The growth strategy for Google is focused on expanding ad impressions and pricing across their services, despite losing 3% market share in the last two years due to the rise of Gen AI. This shift has not impacted their revenue at all, and the Search product continues to improve. Additionally, the continued growth and profitability of Google Cloud are expected to drive future performance, supported by investments in AI and data centre infrastructure. Google's effective reinvestment in their business over the past decade has resulted in the highest net income of any company globally on a trailing twelve-month basis, positioning them for 10-15% top-line growth over the next decade.</p>
 
-                <p>I invested in Google this year following judicial rulings affirming its status as an illegal monopoly, which I agree with as it has achieved this through not only superior products but lucrative anti-competitive deals, this monopoly currently poses no harm and continues to innovate. Moreover, concerns over AI's potential disruption of the search business and resultant stock volatility, I believe Google will navigate these challenges successfully through innovation and legal strategies. Consequently, I acquired 11 shares at an average price of $174 USD in early December, following the sale of my UNH holdings. I consider Google undervalued at current prices and plan to increase my stake throughout the year.</p>
+                <p>I invested in Google this year following judicial rulings affirming its status as an illegal monopoly, which I agree with as it has achieved this through not only superior products but lucrative anti-competitive deals, this monopoly currently poses no harm and continues to innovate. Moreover, concerns over AI's potential disruption of the search business and resultant stock volatility, I believe Google will navigate these challenges successfully through innovation and legal strategies. Consequently, I acquired {isDataMasked ? "**" : "11"} shares at an average price of $174 USD in early December, following the sale of my UNH holdings. I consider Google undervalued at current prices and plan to increase my stake throughout the year.</p>
               </div>
             </CardContent>
           </Card>

@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { formatCurrency } from "@/lib/financial-calculations"
 import { formatDate } from "@/lib/format-utils"
+import { usePrivacy } from "@/lib/privacy-context"
+import { formatCurrencyPrivate, formatSharesPrivate } from "@/lib/privacy-utils"
 
 interface ChartData {
   name: string
@@ -56,6 +58,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const [playbackSpeed, setPlaybackSpeed] = useState(1) // 0.5, 1, or 2
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const { isDataMasked } = usePrivacy()
 
   // Load the pre-cached composition data on mount
   useEffect(() => {
@@ -346,24 +349,31 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     )
   }
 
+  // Custom tooltip to show exact values
   const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload[0]) {
       const data = payload[0].payload
-      const holding = displayHoldings.find(h => h.symbol === data.symbol)
       return (
-        <div className="bg-[hsl(var(--card))] p-3 rounded-lg shadow-lg border border-[hsl(var(--border))]">
-          <p className="font-semibold text-[hsl(var(--card-foreground))]">{data.symbol}</p>
-          <p className="text-sm text-gray-600 mb-2">{holding?.name}</p>
-          <div className="space-y-1">
-            <p className="text-sm">
-              <span className="text-gray-500">Value:</span>
-              <span className="font-medium ml-1">{formatCurrency(data.value)}</span>
-            </p>
-            <p className="text-sm">
-              <span className="text-gray-500">Allocation:</span>
-              <span className="font-medium ml-1">{data.percentage.toFixed(1)}%</span>
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-2 mb-2">
+            <img 
+              src={getLogoUrl(data.symbol)} 
+              alt={data.symbol}
+              className="h-6 w-6 rounded-full"
+              onError={(e) => {
+                e.currentTarget.src = `https://ui-avatars.com/api/?name=${data.symbol}&background=0a1a16&color=f5f5f5`
+              }}
+            />
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {data.name}
             </p>
           </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Value: {formatCurrencyPrivate(data.value, { isDataMasked })}
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Allocation: {data.percentage.toFixed(1)}%
+          </p>
         </div>
       )
     }
@@ -542,19 +552,26 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  type="number" 
-                  tickFormatter={formatTickValue}
-                  tick={{ fontSize: 10, fill: '#b1b1b1' }}
-                  domain={[0, 'dataMax']}
-                />
                 <YAxis 
-                  type="category" 
-                  dataKey="symbol" 
-                  tick={<CustomYAxisTick />}
-                  width={75}
-                  axisLine={false}
-                  tickLine={false}
+                  dataKey="name"
+                  type="category"
+                  width={isMobile ? 60 : 100}
+                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  tickFormatter={(value) => {
+                    // For mobile, show just the symbol
+                    if (isMobile) {
+                      const holding = chartData.find(h => h.name === value)
+                      return holding?.symbol || value
+                    }
+                    // For desktop, truncate long names
+                    return value.length > 15 ? value.substring(0, 15) + '...' : value
+                  }}
+                />
+                <XAxis 
+                  type="number"
+                  domain={[0, 100]}
+                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  tickFormatter={(value) => isDataMasked ? '' : `${value}%`}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 

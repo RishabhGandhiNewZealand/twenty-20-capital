@@ -6,6 +6,8 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Loader2, TrendingUp, DollarSign } from "lucide-react"
 import { formatCurrency, formatPercentage as formatPercentageBase } from "@/lib/financial-calculations"
+import { usePrivacy } from "@/lib/privacy-context"
+import { formatCurrencyPrivate } from "@/lib/privacy-utils"
 import {
   LineChart,
   Line,
@@ -51,6 +53,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   const [error, setError] = useState<string | null>(null)
   const [showPercentage, setShowPercentage] = useState(false)
   const [hideStats, setHideStats] = useState(false)
+  const { isDataMasked } = usePrivacy()
 
   useEffect(() => {
     async function fetchPortfolioHistory() {
@@ -150,51 +153,25 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     }, [active])
 
     if (active && payload && payload.length) {
-      const portfolioValue = payload.find((p) => p.dataKey === 'portfolioValue')?.value as number
-      const costBasis = payload.find((p) => p.dataKey === 'costBasis')?.value as number
-      const sp500Value = payload.find((p) => p.dataKey === 'sp500Value')?.value as number
-      const gain = portfolioValue - costBasis
-      const gainPercent = costBasis > 0 ? ((gain / costBasis) * 100) : 0
-      const sp500Gain = sp500Value - costBasis
-      const sp500GainPercent = costBasis > 0 ? ((sp500Gain / costBasis) * 100) : 0
-
       return (
-        <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
-          <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
-            {new Date(label).toLocaleDateString('en-NZ', { 
-              year: 'numeric', 
-              month: 'short',
-              day: 'numeric'
-            })}
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+            {label}
           </p>
-          <div className="space-y-1">
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-blue-600">Portfolio Value:</span>
-              <span className="text-sm font-medium">{formatCurrency(portfolioValue)}</span>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center space-x-2">
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {entry.name}:
+              </span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {formatCurrencyPrivate(entry.value, { isDataMasked })}
+              </span>
             </div>
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600">S&P 500 Value:</span>
-              <span className="text-sm font-medium">{formatCurrency(sp500Value)}</span>
-            </div>
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-red-600">Cost Basis:</span>
-              <span className="text-sm font-medium">{formatCurrency(costBasis)}</span>
-            </div>
-            <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600">Portfolio Gain:</span>
-                <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(gain)} ({gainPercent.toFixed(1)}%)
-                </span>
-              </div>
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600">S&P 500 Gain:</span>
-                <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(sp500Gain)} ({sp500GainPercent.toFixed(1)}%)
-                </span>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       )
     }
@@ -331,126 +308,88 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
               })}
             </div>
           )}
-          <ResponsiveContainer width="100%" height="100%">
-            {showPercentage ? (
-              <LineChart
-                data={performanceData}
-                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 10 }}
-                  interval="preserveStartEnd"
-                  minTickGap={30}
-                  tickFormatter={(value) => {
-                    const date = new Date(value)
-                    return date.toLocaleDateString('en-NZ', { 
-                      month: 'short',
-                      year: '2-digit'
-                    })
-                  }}
-                />
-                <YAxis 
-                  tick={{ fontSize: 10 }}
-                  tickFormatter={(value) => `${value.toFixed(0)}%`}
-                  domain={['dataMin - 10', 'dataMax + 10']}
-                  width={40}
-                />
-                <Tooltip content={<CustomTooltipPercentage />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
-                  iconType="line"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="portfolioPerformance" 
-                  stroke="#00a37a"
-                  strokeWidth={2}
-                  name="Portfolio Performance"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="sp500Performance" 
-                  stroke="#b1b1b1"
-                  strokeWidth={2}
-                  name="S&P 500 Performance"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                {/* Zero line for reference */}
-                <Line 
-                  type="monotone" 
-                  dataKey={() => 0} 
-                  stroke="#4b4b4b"
-                  strokeWidth={1}
-                  strokeDasharray="3 3"
-                  name="Break Even"
-                  dot={false}
-                  legendType="none"
-                />
-              </LineChart>
-            ) : (
-              <LineChart
-                data={data}
-                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 10 }}
-                  interval="preserveStartEnd"
-                  minTickGap={30}
-                  tickFormatter={(value) => {
-                    const date = new Date(value)
-                    return date.toLocaleDateString('en-NZ', { 
-                      month: 'short',
-                      year: '2-digit'
-                    })
-                  }}
-                />
-                <YAxis 
-                  tick={{ fontSize: 10 }}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  width={45}
-                />
-                <Tooltip content={<CustomTooltipValue />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
-                  iconType="line"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="portfolioValue" 
-                  stroke="#00a37a"
-                  strokeWidth={2}
-                  name="Portfolio Value"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="sp500Value" 
-                  stroke="#b1b1b1"
-                  strokeWidth={2}
-                  name="S&P 500 Value"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="costBasis" 
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  name="Cost Basis"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  strokeDasharray="5 5"
-                />
-              </LineChart>
-            )}
+          {/* Chart */}
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart 
+              data={showPercentage ? performanceData : data}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis 
+                dataKey="date" 
+                stroke="#6b7280"
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  const date = new Date(value)
+                  return `${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`
+                }}
+              />
+              <YAxis 
+                stroke="#6b7280"
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  if (showPercentage) {
+                    return `${value.toFixed(0)}%`
+                  }
+                  if (isDataMasked) {
+                    return ''
+                  }
+                  return `$${(value / 1000).toFixed(0)}k`
+                }}
+              />
+              <Tooltip 
+                content={showPercentage ? CustomTooltipPercentage : <CustomTooltipValue />}
+              />
+              <Legend />
+              {showPercentage ? (
+                <>
+                  <Line 
+                    type="monotone" 
+                    dataKey="portfolioPerformance" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    name="Portfolio"
+                    dot={false}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="sp500Performance" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    name="S&P 500"
+                    dot={false}
+                  />
+                </>
+              ) : (
+                <>
+                  <Line 
+                    type="monotone" 
+                    dataKey="portfolioValue" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    name="Portfolio Value"
+                    dot={false}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="costBasis" 
+                    stroke="#6b7280" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    name="Cost Basis"
+                    dot={false}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="sp500Value" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    name="S&P 500 Value"
+                    dot={false}
+                  />
+                </>
+              )}
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>

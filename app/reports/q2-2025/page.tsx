@@ -3,14 +3,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, Target, Plus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
+import { usePrivacy } from "@/lib/privacy-context"
+import { maskStringValue } from "@/lib/privacy-utils"
 
 export default function Q2Report2025Page() {
+  const { isDataMasked } = usePrivacy()
 
   const quarterStats = [
     { label: "Q2 Return", value: "+5.18%", icon: TrendingUp },
     { label: "S&P 500 Return Unhedged", value: "+6.05%", icon: DollarSign },
-    { label: "Portfolio Value", value: "$42,098 NZD", icon: Target },
-    { label: "Portfolio Additions", value: "$2,000 NZD", icon: Plus },
+    { label: "Portfolio Value", value: maskStringValue("$42,098 NZD", { isDataMasked }), icon: Target },
+    { label: "Portfolio Additions", value: maskStringValue("$2,000 NZD", { isDataMasked }), icon: Plus },
   ]
 
   // Portfolio Holdings - calculating proper allocations for Q2
@@ -19,9 +22,9 @@ export default function Q2Report2025Page() {
       symbol: "UBER", 
       name: "Uber Technologies",
       return: "+28.0%",
-      shares: 40,
+      shares: isDataMasked ? "**" : 40,
       usdValue: 3732, // $93.3 * 40 shares
-      nzdValue: "$6,220",
+      nzdValue: maskStringValue("$6,220", { isDataMasked }),
       stockCurrency: "USD",
       tier: "A"
     },
@@ -29,9 +32,9 @@ export default function Q2Report2025Page() {
       symbol: "GOOGL", 
       name: "Alphabet Inc",
       return: "+14.2%",
-      shares: 18,
+      shares: isDataMasked ? "**" : 18,
       usdValue: 3168, // $176 * 18 shares
-      nzdValue: "$5,280",
+      nzdValue: maskStringValue("$5,280", { isDataMasked }),
       stockCurrency: "USD",
       tier: "A"
     },
@@ -39,9 +42,9 @@ export default function Q2Report2025Page() {
       symbol: "AMZN", 
       name: "Amazon.com Inc",
       return: "+15.3%",
-      shares: 13,
+      shares: isDataMasked ? "**" : 13,
       usdValue: 2847, // $219 * 13 shares
-      nzdValue: "$4,745",
+      nzdValue: maskStringValue("$4,745", { isDataMasked }),
       stockCurrency: "USD",
       tier: "S"
     },
@@ -49,9 +52,9 @@ export default function Q2Report2025Page() {
       symbol: "ASML", 
       name: "ASML Holding N.V.",
       return: "+16.9%",
-      shares: 4,
+      shares: isDataMasked ? "**" : 4,
       usdValue: 3096, // $774 * 4 shares
-      nzdValue: "$5,160",
+      nzdValue: maskStringValue("$5,160", { isDataMasked }),
       stockCurrency: "USD",
       tier: "S"
     },
@@ -59,9 +62,9 @@ export default function Q2Report2025Page() {
       symbol: "MFT", 
       name: "Mainfreight Limited",
       return: "-8.5%",
-      shares: 67,
+      shares: isDataMasked ? "**" : 67,
       usdValue: 2742, // $67.15 NZD * 67 shares * 0.61 USD/NZD rate (Jun 30, 2025)
-      nzdValue: "$4,499",
+      nzdValue: maskStringValue("$4,499", { isDataMasked }),
       stockCurrency: "NZD",
       tier: "A"
     },
@@ -69,9 +72,9 @@ export default function Q2Report2025Page() {
       symbol: "NFLX", 
       name: "Netflix Inc",
       return: "+43.8%",
-      shares: 2,
+      shares: isDataMasked ? "**" : 2,
       usdValue: 2680, // $1340 * 2 shares
-      nzdValue: "$4,467",
+      nzdValue: maskStringValue("$4,467", { isDataMasked }),
       stockCurrency: "USD",
       tier: "S"
     },
@@ -79,9 +82,9 @@ export default function Q2Report2025Page() {
       symbol: "SPGI", 
       name: "S&P Global Inc",
       return: "+3.7%",
-      shares: 5,
+      shares: isDataMasked ? "**" : 5,
       usdValue: 2635, // $527 * 5 shares
-      nzdValue: "$4,392",
+      nzdValue: maskStringValue("$4,392", { isDataMasked }),
       stockCurrency: "USD",
       tier: "S"
     },
@@ -89,9 +92,9 @@ export default function Q2Report2025Page() {
       symbol: "META", 
       name: "Meta Platforms Inc",
       return: "+24.8%",
-      shares: 3,
+      shares: isDataMasked ? "**" : 3,
       usdValue: 2157, // $719 * 3 shares
-      nzdValue: "$3,595",
+      nzdValue: maskStringValue("$3,595", { isDataMasked }),
       stockCurrency: "USD",
       tier: "S"
     },
@@ -99,9 +102,9 @@ export default function Q2Report2025Page() {
       symbol: "MA", 
       name: "Mastercard Inc",
       return: "+2.4%",
-      shares: 4,
+      shares: isDataMasked ? "**" : 4,
       usdValue: 2244, // $561 * 4 shares
-      nzdValue: "$3,740",
+      nzdValue: maskStringValue("$3,740", { isDataMasked }),
       stockCurrency: "USD",
       tier: "S"
     }
