@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { EyeOff, Eye } from "lucide-react"
+import { EyeOff, Eye, Loader2 } from "lucide-react"
 
 interface PasswordModalProps {
   open: boolean
@@ -24,29 +24,46 @@ export function PasswordModal({ open, onOpenChange }: PasswordModalProps) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const { setAnonymized } = useAnonymization()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setIsLoading(true)
     
-    // Check password against environment variable
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD
-    
-    if (!adminPassword) {
-      console.error("NEXT_PUBLIC_ADMIN_PASSWORD not configured")
-      setError("Authentication not configured. Please contact administrator.")
-      return
-    }
-    
-    if (password === adminPassword) {
-      // Correct password - disable anonymization
-      setAnonymized(false)
-      setPassword("")
-      setError("")
-      onOpenChange(false)
-    } else {
-      // Incorrect password
-      setError("Incorrect password. Please try again.")
+    try {
+      // Call the API endpoint to verify the password
+      const response = await fetch('/api/auth/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        setError(data.error || "Authentication failed. Please try again.")
+        return
+      }
+      
+      if (data.success) {
+        // Correct password - disable anonymization
+        setAnonymized(false)
+        setPassword("")
+        setError("")
+        onOpenChange(false)
+      } else {
+        // Incorrect password
+        setError("Incorrect password. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error verifying password:", error)
+      setError("Failed to verify password. Please try again.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -54,6 +71,7 @@ export function PasswordModal({ open, onOpenChange }: PasswordModalProps) {
     setPassword("")
     setError("")
     setShowPassword(false)
+    setIsLoading(false)
     onOpenChange(false)
   }
 
@@ -82,12 +100,14 @@ export function PasswordModal({ open, onOpenChange }: PasswordModalProps) {
                   placeholder="Enter password"
                   className="pr-10"
                   autoFocus
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-500" />
@@ -102,10 +122,19 @@ export function PasswordModal({ open, onOpenChange }: PasswordModalProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">Authenticate</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Authenticate"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
