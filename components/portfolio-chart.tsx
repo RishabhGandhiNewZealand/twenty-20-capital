@@ -326,7 +326,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
           {/* Portfolio Stats Overlay - Mobile Responsive */}
           {portfolioStats.length > 0 && !hideStats && (
             <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${
-              isAnonymized ? 'left-[15px] sm:left-[20px]' : 'left-[60px] sm:left-24'
+              isAnonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
             }`}>
               {portfolioStats.map((stat) => {
                 return (
@@ -346,7 +346,12 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 data={performanceData}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="rgba(0, 0, 0, 0.15)"
+                  vertical={true}
+                  horizontal={true}
+                />
                 <XAxis 
                   dataKey="date" 
                   tick={{ fontSize: 10 }}
@@ -408,7 +413,12 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 data={data}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="rgba(0, 0, 0, 0.15)"
+                  vertical={true}
+                  horizontal={true}
+                />
                 <XAxis 
                   dataKey="date" 
                   tick={{ fontSize: 10 }}
