@@ -247,15 +247,26 @@ const getCachedPortfolioCompositions = unstable_cache(
   }
 )
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch cached portfolio compositions
-    const compositions = await getCachedPortfolioCompositions()
+    // Check if we should bypass cache
+    const searchParams = request.nextUrl.searchParams
+    const forceRefresh = searchParams.get('refresh') === 'true'
+    
+    let compositions
+    if (forceRefresh) {
+      // Bypass unstable_cache and calculate directly
+      logger.info('Bypassing cache for portfolio compositions')
+      compositions = await calculatePortfolioCompositions(true)
+    } else {
+      // Use cached version
+      compositions = await getCachedPortfolioCompositions()
+    }
     
     // Set cache headers for client-side caching
     return NextResponse.json(compositions, {
       headers: {
-        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
+        'Cache-Control': forceRefresh ? 'no-cache, no-store' : 'public, s-maxage=1200, stale-while-revalidate=1800',
       }
     })
     
