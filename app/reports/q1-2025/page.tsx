@@ -3,14 +3,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, AlertTriangle, Target, Plus, Minus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskCurrency, maskShares } from "@/lib/anonymization-utils"
 
 export default function Q1Report2025Page() {
+  const { isAnonymized } = useAnonymization()
 
   const quarterStats = [
     { label: "Q1 Return", value: "-5.4%", icon: TrendingUp },
     { label: "S&P 500 Return Unhedged", value: "-4.2%", icon: DollarSign },
-    { label: "Portfolio Value", value: "$34,788 NZD", icon: Target },
-    { label: "Portfolio Additions", value: "$6,500 NZD", icon: Plus },
+    { label: "Portfolio Value", value: 34788, icon: Target, isCurrency: true },
+    { label: "Portfolio Additions", value: 6500, icon: Plus, isCurrency: true },
   ]
 
   // Portfolio Holdings - calculating proper allocations
@@ -21,7 +24,7 @@ export default function Q1Report2025Page() {
       return: "+6.5%",
       shares: 40,
       usdValue: 2916, // $72.9 * 40 shares
-      nzdValue: "$4,860",
+      nzdValue: 4860,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -31,7 +34,7 @@ export default function Q1Report2025Page() {
       return: "-10.9%",
       shares: 15,
       usdValue: 2310, // $154 * 15 shares
-      nzdValue: "$3,850",
+      nzdValue: 3850,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -41,7 +44,7 @@ export default function Q1Report2025Page() {
       return: "-2.1%",
       shares: 13,
       usdValue: 2470, // $190 * 13 shares
-      nzdValue: "$4,117",
+      nzdValue: 4117,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -51,7 +54,7 @@ export default function Q1Report2025Page() {
       return: "+28.0%",
       shares: 3,
       usdValue: 1728, // $576 * 3 shares
-      nzdValue: "$2,880",
+      nzdValue: 2880,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -61,7 +64,7 @@ export default function Q1Report2025Page() {
       return: "+21.1%",
       shares: 2,
       usdValue: 1864, // $932 * 2 shares
-      nzdValue: "$3,107",
+      nzdValue: 3107,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -71,7 +74,7 @@ export default function Q1Report2025Page() {
       return: "+22.0%",
       shares: 4,
       usdValue: 2192, // $548 * 4 shares
-      nzdValue: "$3,653",
+      nzdValue: 3653,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -81,7 +84,7 @@ export default function Q1Report2025Page() {
       return: "-7.2%",
       shares: 4,
       usdValue: 2648, // $662 * 4 shares
-      nzdValue: "$4,413",
+      nzdValue: 4413,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -91,7 +94,7 @@ export default function Q1Report2025Page() {
       return: "-0.4%",
       shares: 5,
       usdValue: 2540, // $508 * 5 shares
-      nzdValue: "$4,233",
+      nzdValue: 4233,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -101,7 +104,7 @@ export default function Q1Report2025Page() {
       return: "+11.9%",
       shares: 50,
       usdValue: 2279, // $73.50 NZD * 50 shares * 0.62 USD/NZD rate (Mar 31, 2025)
-      nzdValue: "$3,675",
+      nzdValue: 3675,
       stockCurrency: "NZD",
       tier: "A"
     }
@@ -116,7 +119,7 @@ export default function Q1Report2025Page() {
   })).sort((a, b) => b.allocation - a.allocation)
 
   const totalValue = portfolioHoldings.reduce((sum, holding) => {
-    return sum + parseFloat(holding.nzdValue.replace(/[$,]/g, ''))
+    return sum + holding.nzdValue
   }, 0)
 
   return (
@@ -138,7 +141,9 @@ export default function Q1Report2025Page() {
                   <Icon className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {stat.isCurrency ? maskCurrency(stat.value, isAnonymized, 'NZD') : stat.value}
+                  </div>
                 </CardContent>
               </Card>
             )
@@ -229,11 +234,11 @@ export default function Q1Report2025Page() {
                             <span className="font-medium text-gray-900">{holding.allocation}%</span>
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <span className="text-gray-700">{holding.shares}</span>
+                            <span className="text-gray-700">{maskShares(holding.shares, isAnonymized)}</span>
                           </td>
                           <td className="py-3 px-2 text-right">
                             <span className="font-medium text-gray-900">
-                              {holding.nzdValue}
+                              {maskCurrency(holding.nzdValue, isAnonymized, 'NZD')}
                             </span>
                           </td>
                           <td className="py-3 px-2 text-center">

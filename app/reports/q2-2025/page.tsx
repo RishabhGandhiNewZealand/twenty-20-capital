@@ -1,19 +1,22 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Briefcase, Target, Plus } from "lucide-react"
+import { TrendingUp, DollarSign, Briefcase, AlertTriangle, Target, Plus, Minus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskCurrency, maskShares } from "@/lib/anonymization-utils"
 
 export default function Q2Report2025Page() {
+  const { isAnonymized } = useAnonymization()
 
   const quarterStats = [
     { label: "Q2 Return", value: "+5.18%", icon: TrendingUp },
     { label: "S&P 500 Return Unhedged", value: "+6.05%", icon: DollarSign },
-    { label: "Portfolio Value", value: "$42,098 NZD", icon: Target },
-    { label: "Portfolio Additions", value: "$2,000 NZD", icon: Plus },
+    { label: "Portfolio Value", value: 42098, icon: Target, isCurrency: true },
+    { label: "Portfolio Additions", value: 2000, icon: Plus, isCurrency: true },
   ]
 
-  // Portfolio Holdings - calculating proper allocations for Q2
+  // Portfolio Holdings - calculating proper allocations
   const rawHoldings = [
     { 
       symbol: "UBER", 
@@ -21,7 +24,7 @@ export default function Q2Report2025Page() {
       return: "+28.0%",
       shares: 40,
       usdValue: 3732, // $93.3 * 40 shares
-      nzdValue: "$6,220",
+      nzdValue: 6220,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -31,7 +34,7 @@ export default function Q2Report2025Page() {
       return: "+14.2%",
       shares: 18,
       usdValue: 3168, // $176 * 18 shares
-      nzdValue: "$5,280",
+      nzdValue: 5280,
       stockCurrency: "USD",
       tier: "A"
     },
@@ -41,17 +44,17 @@ export default function Q2Report2025Page() {
       return: "+15.3%",
       shares: 13,
       usdValue: 2847, // $219 * 13 shares
-      nzdValue: "$4,745",
+      nzdValue: 4745,
       stockCurrency: "USD",
       tier: "S"
     },
     { 
-      symbol: "ASML", 
-      name: "ASML Holding N.V.",
+      symbol: "META", 
+      name: "Meta Platforms Inc",
       return: "+16.9%",
       shares: 4,
       usdValue: 3096, // $774 * 4 shares
-      nzdValue: "$5,160",
+      nzdValue: 5160,
       stockCurrency: "USD",
       tier: "S"
     },
@@ -61,7 +64,7 @@ export default function Q2Report2025Page() {
       return: "-8.5%",
       shares: 67,
       usdValue: 2742, // $67.15 NZD * 67 shares * 0.61 USD/NZD rate (Jun 30, 2025)
-      nzdValue: "$4,499",
+      nzdValue: 4499,
       stockCurrency: "NZD",
       tier: "A"
     },
@@ -71,37 +74,37 @@ export default function Q2Report2025Page() {
       return: "+43.8%",
       shares: 2,
       usdValue: 2680, // $1340 * 2 shares
-      nzdValue: "$4,467",
-      stockCurrency: "USD",
-      tier: "S"
-    },
-    { 
-      symbol: "SPGI", 
-      name: "S&P Global Inc",
-      return: "+3.7%",
-      shares: 5,
-      usdValue: 2635, // $527 * 5 shares
-      nzdValue: "$4,392",
-      stockCurrency: "USD",
-      tier: "S"
-    },
-    { 
-      symbol: "META", 
-      name: "Meta Platforms Inc",
-      return: "+24.8%",
-      shares: 3,
-      usdValue: 2157, // $719 * 3 shares
-      nzdValue: "$3,595",
+      nzdValue: 4467,
       stockCurrency: "USD",
       tier: "S"
     },
     { 
       symbol: "MA", 
       name: "Mastercard Inc",
-      return: "+2.4%",
+      return: "+3.7%",
       shares: 4,
-      usdValue: 2244, // $561 * 4 shares
-      nzdValue: "$3,740",
+      usdValue: 2112, // $528 * 4 shares
+      nzdValue: 3520,
+      stockCurrency: "USD",
+      tier: "S"
+    },
+    { 
+      symbol: "ASML", 
+      name: "ASML Holding N.V.",
+      return: "+50.0%",
+      shares: 4,
+      usdValue: 3992, // $998 * 4 shares
+      nzdValue: 6653,
+      stockCurrency: "USD",
+      tier: "S"
+    },
+    { 
+      symbol: "SPGI", 
+      name: "S&P Global Inc",
+      return: "+9.9%",
+      shares: 5,
+      usdValue: 2790, // $558 * 5 shares
+      nzdValue: 4650,
       stockCurrency: "USD",
       tier: "S"
     }
@@ -116,7 +119,7 @@ export default function Q2Report2025Page() {
   })).sort((a, b) => b.allocation - a.allocation)
 
   const totalValue = portfolioHoldings.reduce((sum, holding) => {
-    return sum + parseFloat(holding.nzdValue.replace(/[$,]/g, ''))
+    return sum + holding.nzdValue
   }, 0)
 
   return (
@@ -138,7 +141,9 @@ export default function Q2Report2025Page() {
                   <Icon className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {stat.isCurrency ? maskCurrency(stat.value, isAnonymized, 'NZD') : stat.value}
+                  </div>
                 </CardContent>
               </Card>
             )
@@ -229,11 +234,11 @@ export default function Q2Report2025Page() {
                             <span className="font-medium text-gray-900">{holding.allocation}%</span>
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <span className="text-gray-700">{holding.shares}</span>
+                            <span className="text-gray-700">{maskShares(holding.shares, isAnonymized)}</span>
                           </td>
                           <td className="py-3 px-2 text-right">
                             <span className="font-medium text-gray-900">
-                              {holding.nzdValue}
+                              {maskCurrency(holding.nzdValue, isAnonymized, 'NZD')}
                             </span>
                           </td>
                           <td className="py-3 px-2 text-center">

@@ -1,8 +1,14 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, FileText, TrendingUp } from "lucide-react"
 import Link from "next/link"
+import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { maskCurrency } from "@/lib/anonymization-utils"
 
 export default function ReportsPage() {
+  const { isAnonymized } = useAnonymization()
+  
   const reports2024 = [
     {
       title: "2024 Annual Review",
@@ -22,8 +28,8 @@ export default function ReportsPage() {
       href: "/reports/q1-2025",
       type: "Quarterly",
       performance: "-5.4%",
-      portfolioValue: "$34,788 NZD",
-      additions: "$6,500 NZD",
+      portfolioValue: 34788,
+      additions: 6500,
     },
     {
       title: "Q2 2025 Report",
@@ -32,8 +38,8 @@ export default function ReportsPage() {
       href: "/reports/q2-2025",
       type: "Quarterly",
       performance: "+5.18%",
-      portfolioValue: "$42,098 NZD",
-      additions: "$2,000 NZD",
+      portfolioValue: 42098,
+      additions: 2000,
     },
   ]
 
@@ -84,7 +90,7 @@ export default function ReportsPage() {
                       <div>
                         <p className="text-xs text-gray-500">Portfolio Value</p>
                         <p className="text-base sm:text-lg font-semibold text-gray-900">
-                          {report.portfolioValue}
+                          {maskCurrency(report.portfolioValue, isAnonymized, 'NZD')}
                         </p>
                       </div>
                     </div>
