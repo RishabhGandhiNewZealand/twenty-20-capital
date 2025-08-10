@@ -70,7 +70,7 @@ export function TradesList({ trades, stagedChanges, onEdit, onDelete }: TradesLi
         return (
           <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
             <Trash2 className="h-3 w-3" />
-            To Delete
+            Deleted
           </span>
         )
       default:

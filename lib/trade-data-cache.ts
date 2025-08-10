@@ -30,6 +30,7 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
         exch_rate,
         value
       FROM application.trade_data
+      WHERE deleted_flag = FALSE
       ORDER BY date ASC, id ASC
     `
     
@@ -95,7 +96,7 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
         exch_rate,
         value
       FROM application.trade_data
-      WHERE code = ${symbol}
+      WHERE code = ${symbol} AND deleted_flag = FALSE
       ORDER BY date ASC, id ASC
     `
     
@@ -165,6 +166,7 @@ export async function getTradeDataCacheStats() {
         MAX(date) as latest_trade,
         MAX(updated_at) as last_updated
       FROM application.trade_data
+      WHERE deleted_flag = FALSE
     `
     
     return {

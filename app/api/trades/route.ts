@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
-// GET endpoint to fetch all trades
+// GET endpoint to fetch all trades (excluding soft-deleted)
 export async function GET() {
   try {
     const sql = getDb()
@@ -26,6 +26,7 @@ export async function GET() {
         created_at,
         updated_at
       FROM application.trade_data
+      WHERE deleted_flag = FALSE
       ORDER BY date DESC, id DESC
     `
     
@@ -137,21 +138,25 @@ export async function POST(request: NextRequest) {
           logger.info(`Updated trade ID ${id}: ${trade.code}`)
           
         } else if (change.type === 'delete' && change.originalRecord?.id) {
-          // Delete trade
+          // Soft delete trade
           const id = change.originalRecord.id
           
           await sql`
-            DELETE FROM application.trade_data
+            UPDATE application.trade_data
+            SET
+              deleted_flag = TRUE,
+              deleted_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
             WHERE id = ${id}
           `
-          logger.info(`Deleted trade ID ${id}`)
+          logger.info(`Soft deleted trade ID ${id}`)
         }
       }
       
       // Commit transaction
       await sql`COMMIT`
       
-      // Fetch updated trades
+      // Fetch updated trades (excluding soft-deleted)
       const results = await sql`
         SELECT 
           id,
@@ -168,6 +173,7 @@ export async function POST(request: NextRequest) {
           exch_rate,
           value
         FROM application.trade_data
+        WHERE deleted_flag = FALSE
         ORDER BY date DESC, id DESC
       `
       

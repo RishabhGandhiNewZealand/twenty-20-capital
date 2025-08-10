@@ -89,12 +89,8 @@ export default function TradesPage() {
             id: change.originalRecord.id || (change.tempId ? -parseInt(change.tempId) : undefined)
           }
         }
-      } else if (change.type === 'delete' && change.originalRecord) {
-        displayedTrades = displayedTrades.filter(t => 
-          !(t.id && t.id === change.originalRecord?.id) &&
-          !(change.tempId && t.id === -parseInt(change.tempId))
-        )
       }
+      // Note: We don't filter out deleted trades - they remain visible with a "deleted" status
     })
     
     // Sort by date descending (most recent first)
@@ -129,24 +125,25 @@ export default function TradesPage() {
     )
     
     if (existingAddIndex !== -1) {
-      // Remove the add from staged changes
+      // Remove the add from staged changes (this is a new trade that was never saved)
       setStagedChanges(prev => prev.filter((_, index) => index !== existingAddIndex))
     } else {
-      // Check if this trade was previously edited
-      const existingEditIndex = stagedChanges.findIndex(
-        change => change.type === 'edit' && 
+      // Check if this trade was previously edited or deleted
+      const existingChangeIndex = stagedChanges.findIndex(
+        change => (change.type === 'edit' || change.type === 'delete') && 
         change.originalRecord?.id === tradeToDelete.id
       )
       
-      if (existingEditIndex !== -1) {
-        // Remove the edit and add a delete
-        setStagedChanges(prev => [
-          ...prev.filter((_, index) => index !== existingEditIndex),
-          {
+      if (existingChangeIndex !== -1) {
+        // Replace any existing change with a delete
+        setStagedChanges(prev => {
+          const updated = [...prev]
+          updated[existingChangeIndex] = {
             type: 'delete',
             originalRecord: trades.find(t => t.id === tradeToDelete.id)
           }
-        ])
+          return updated
+        })
       } else {
         // Add delete to staged changes
         setStagedChanges(prev => [...prev, {

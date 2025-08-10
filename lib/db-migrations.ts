@@ -121,9 +121,31 @@ export async function createTradeDataTable() {
         brokerage_currency VARCHAR(3) NOT NULL,
         exch_rate DECIMAL(18, 8) NOT NULL,
         value DECIMAL(18, 8) NOT NULL,
+        deleted_flag BOOLEAN DEFAULT FALSE,
+        deleted_at TIMESTAMP WITH TIME ZONE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
+    `
+    
+    // Add soft delete columns if they don't exist (for existing databases)
+    await sql`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_schema = 'application' 
+                      AND table_name = 'trade_data' 
+                      AND column_name = 'deleted_flag') THEN
+          ALTER TABLE application.trade_data ADD COLUMN deleted_flag BOOLEAN DEFAULT FALSE;
+        END IF;
+        
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_schema = 'application' 
+                      AND table_name = 'trade_data' 
+                      AND column_name = 'deleted_at') THEN
+          ALTER TABLE application.trade_data ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
+        END IF;
+      END $$;
     `
     
     // Create indexes for fast lookups
@@ -140,6 +162,11 @@ export async function createTradeDataTable() {
     await sql`
       CREATE INDEX IF NOT EXISTS idx_trade_data_type 
       ON application.trade_data(type)
+    `
+    
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_trade_data_deleted_flag 
+      ON application.trade_data(deleted_flag)
     `
     
     await sql`
