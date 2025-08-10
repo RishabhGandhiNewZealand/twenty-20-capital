@@ -14,7 +14,8 @@ import {
   Newspaper, 
   User,
   Shield,
-  ShieldOff
+  ShieldOff,
+  ListOrdered
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -22,9 +23,17 @@ import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { PasswordModal } from "@/components/password-modal"
 import { Button } from "@/components/ui/button"
 
-const navItems = [
+interface NavItem {
+  href: string
+  label: string
+  icon: any
+  requiresAuth?: boolean
+}
+
+const navItems: NavItem[] = [
   { href: "/", label: "Home", icon: Home },
   { href: "/portfolio", label: "Portfolio", icon: TrendingUp },
+  { href: "/trades", label: "Trades", icon: ListOrdered, requiresAuth: true },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/analyses", label: "Analyses", icon: BarChart3 },
   { href: "/news", label: "News", icon: Newspaper },
@@ -125,6 +134,11 @@ export default function SidebarNavigation() {
         <nav className="h-full flex flex-col overflow-y-auto p-4">
           <ul className="space-y-1 flex-1">
             {navItems.map((item) => {
+              // Hide auth-required items if user is anonymized
+              if (item.requiresAuth && isAnonymized) {
+                return null
+              }
+              
               const Icon = item.icon
               const isActive = pathname === item.href
               
@@ -141,6 +155,9 @@ export default function SidebarNavigation() {
                   >
                     <Icon className="h-5 w-5" />
                     <span>{item.label}</span>
+                    {item.requiresAuth && (
+                      <span className="ml-auto text-xs text-amber-600 dark:text-amber-400">Admin</span>
+                    )}
                   </Link>
                 </li>
               )
