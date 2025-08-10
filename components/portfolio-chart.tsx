@@ -79,6 +79,14 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         const sampledData = sampleData(formattedData, 200)
         const sampledPerformanceData = sampleData(performanceData, 200)
         
+        // Debug logging
+        console.log('Chart data loaded:', {
+          dataPoints: sampledData.length,
+          firstPoint: sampledData[0],
+          lastPoint: sampledData[sampledData.length - 1],
+          isDataMasked
+        })
+        
         setData(sampledData)
         setPerformanceData(sampledPerformanceData)
       } catch (err) {
@@ -227,6 +235,36 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return null
   }
 
+  // Custom Y-axis tick component - defined inside the main component to access state
+  const CustomYAxisTick = (props: any) => {
+    const { x, y, payload } = props
+    
+    // Don't render text when data is masked and in value view
+    if (!showPercentage && isDataMasked) {
+      // Return empty tick (no text) but keep the tick mark
+      return <g transform={`translate(${x},${y})`} />
+    }
+    
+    const text = showPercentage 
+      ? `${payload.value.toFixed(0)}%`
+      : `$${(payload.value / 1000).toFixed(0)}k`
+    
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          x={0}
+          y={0}
+          dy={4}
+          textAnchor="end"
+          fill="#6b7280"
+          fontSize={12}
+        >
+          {text}
+        </text>
+      </g>
+    )
+  }
+
   if (loading) {
     return (
       <Card className="border-blue-100">
@@ -308,102 +346,97 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
               })}
             </div>
           )}
-          {/* Chart */}
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart 
-              data={showPercentage ? performanceData : data}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
-                stroke="#6b7280"
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => {
-                  const date = new Date(value)
-                  return `${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`
-                }}
-              />
-              <YAxis 
-                stroke="#6b7280"
-                tick={{ 
-                  fontSize: 12,
-                  // Hide tick text when data is masked in value view
-                  fill: (!showPercentage && isDataMasked) ? 'transparent' : '#6b7280'
-                }}
-                tickFormatter={(value) => {
-                  if (showPercentage) {
-                    return `${value.toFixed(0)}%`
-                  }
-                  // Always return the formatted value, but it will be transparent when masked
-                  return `$${(value / 1000).toFixed(0)}k`
-                }}
-                // Keep axis line and ticks visible
-                axisLine={{ stroke: '#6b7280' }}
-                tickLine={{ stroke: '#6b7280' }}
-                // Ensure domain is always calculated from data
-                domain={['dataMin', 'dataMax']}
-              />
-              <Tooltip 
-                content={showPercentage ? CustomTooltipPercentage : <CustomTooltipValue />}
-              />
-              <Legend />
-              {showPercentage ? (
-                <>
-                  <Line 
-                    type="monotone" 
-                    dataKey="portfolioPerformance" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    name="Portfolio"
-                    dot={false}
-                    // Ensure line connects even with missing points
-                    connectNulls={true}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="sp500Performance" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    name="S&P 500"
-                    dot={false}
-                    connectNulls={true}
-                  />
-                </>
-              ) : (
-                <>
-                  <Line 
-                    type="monotone" 
-                    dataKey="portfolioValue" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    name="Portfolio Value"
-                    dot={false}
-                    connectNulls={true}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="costBasis" 
-                    stroke="#6b7280" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name="Cost Basis"
-                    dot={false}
-                    connectNulls={true}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="sp500Value" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    name="S&P 500 Value"
-                    dot={false}
-                    connectNulls={true}
-                  />
-                </>
-              )}
-            </LineChart>
-          </ResponsiveContainer>
+          {/* Chart - Only render if we have data */}
+          {(showPercentage ? performanceData : data).length > 0 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart 
+                data={showPercentage ? performanceData : data}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#6b7280"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value)
+                    return `${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`
+                  }}
+                />
+                <YAxis 
+                  stroke="#6b7280"
+                  tick={<CustomYAxisTick />}
+                  // Keep axis line and ticks visible
+                  axisLine={{ stroke: '#6b7280' }}
+                  tickLine={{ stroke: '#6b7280' }}
+                  // Ensure consistent width whether labels are shown or hidden
+                  width={50}
+                />
+                <Tooltip 
+                  content={showPercentage ? CustomTooltipPercentage : <CustomTooltipValue />}
+                />
+                <Legend />
+                {showPercentage ? (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="portfolioPerformance" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      name="Portfolio"
+                      dot={false}
+                      // Ensure line connects even with missing points
+                      connectNulls={true}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="sp500Performance" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      name="S&P 500"
+                      dot={false}
+                      connectNulls={true}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="portfolioValue" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      name="Portfolio Value"
+                      dot={false}
+                      connectNulls={true}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="costBasis" 
+                      stroke="#6b7280" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="Cost Basis"
+                      dot={false}
+                      connectNulls={true}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="sp500Value" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      name="S&P 500 Value"
+                      dot={false}
+                      connectNulls={true}
+                    />
+                  </>
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-gray-500">Loading chart data...</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
