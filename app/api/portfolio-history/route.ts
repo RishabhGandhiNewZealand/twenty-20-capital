@@ -137,8 +137,15 @@ export async function GET() {
       })
     }
 
-    // Sort trades by date
-    trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    // Sort trades by date, and within the same date: Sells first, then Buys, then Reinvestments
+    trades.sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime()
+      if (dateCompare !== 0) return dateCompare
+      
+      // Same date - sort by type: Sell -> Buy -> Reinvestment
+      const typeOrder = { 'Sell': 0, 'Buy': 1, 'Reinvestment': 2 }
+      return typeOrder[a.type] - typeOrder[b.type]
+    })
 
     // Get date range
     const startDate = new Date(trades[0].date)
@@ -265,7 +272,7 @@ export async function GET() {
       const sp500CostBasisByDate = new Map<string, number>()
       
       // Process all trades in chronological order to build up the capital flow
-      logger.debug('Processing trades to calculate capital flow...')
+      logger.debug('Processing trades to calculate capital flow (Sells before Buys on same day)...')
       trades.forEach(trade => {
         const dateStr = trade.date
         const exchangeRate = trade.instrumentCurrency === 'USD' 

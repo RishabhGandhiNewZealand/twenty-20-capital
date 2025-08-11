@@ -148,8 +148,16 @@ export async function GET() {
       }, { status: 404 })
     }
     
-    // Sort trades chronologically
-    trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    // Sort trades chronologically, and within the same date: Sells first, then Buys, then Reinvestments
+    // This ensures capital from sells is available for buys on the same day
+    trades.sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime()
+      if (dateCompare !== 0) return dateCompare
+      
+      // Same date - sort by type: Sell -> Buy -> Reinvestment
+      const typeOrder = { 'Sell': 0, 'Buy': 1, 'Reinvestment': 2 }
+      return typeOrder[a.type] - typeOrder[b.type]
+    })
     
     // Get current exchange rate
     const currentExchangeRate = await getExchangeRate()
