@@ -48,9 +48,18 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
 
   // Calculate value when qty or price changes
   useEffect(() => {
-    const calculatedValue = formData.qty * formData.price * formData.exchRate + formData.brokerage
+    // Exchange rate is NZD to USD (e.g., 0.59 means 1 NZD = 0.59 USD)
+    // To convert USD to NZD, we divide by the exchange rate
+    const baseValue = formData.qty * formData.price
+    const valueInNZD = formData.instrumentCurrency === 'NZD' 
+      ? baseValue 
+      : baseValue / formData.exchRate
+    const brokerageInNZD = formData.brokerageCurrency === 'NZD'
+      ? formData.brokerage
+      : formData.brokerage / formData.exchRate
+    const calculatedValue = valueInNZD + brokerageInNZD
     setFormData(prev => ({ ...prev, value: parseFloat(calculatedValue.toFixed(2)) }))
-  }, [formData.qty, formData.price, formData.exchRate, formData.brokerage])
+  }, [formData.qty, formData.price, formData.exchRate, formData.brokerage, formData.instrumentCurrency, formData.brokerageCurrency])
 
   const handleInputChange = (field: keyof TradeRecord, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -242,7 +251,7 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="exchRate">Exchange Rate *</Label>
+              <Label htmlFor="exchRate">Exchange Rate (NZD to {formData.instrumentCurrency}) *</Label>
               <Input
                 id="exchRate"
                 type="number"
@@ -250,6 +259,9 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
                 value={formData.exchRate}
                 onChange={(e) => handleInputChange("exchRate", parseFloat(e.target.value) || 1)}
               />
+              <p className="text-sm text-muted-foreground">
+                1 NZD = {formData.exchRate} {formData.instrumentCurrency}
+              </p>
               {errors.exchRate && <p className="text-sm text-destructive">{errors.exchRate}</p>}
             </div>
 
