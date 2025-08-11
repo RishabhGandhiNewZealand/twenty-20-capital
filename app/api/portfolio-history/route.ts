@@ -275,11 +275,14 @@ export async function GET() {
       logger.debug('Processing trades to calculate capital flow (Sells before Buys on same day)...')
       trades.forEach(trade => {
         const dateStr = trade.date
-        const exchangeRate = trade.instrumentCurrency === 'USD' 
-          ? (filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE)
-          : 1
         
-        const tradeValueNZD = Math.abs(trade.qty * trade.price * exchangeRate)
+        // For trade execution, use the actual exchange rate from the trade record
+        // This represents the fixed NZD amount at the time of the trade
+        const tradeValueNZD = Math.abs(trade.value) // Use the actual NZD value from the trade
+        
+        // Alternative calculation if value field is not reliable:
+        // const tradeExchangeRate = trade.instrumentCurrency === 'USD' ? trade.exchRate : 1
+        // const tradeValueNZD = Math.abs(trade.qty * trade.price * tradeExchangeRate)
         
         if (trade.type === 'Buy') {
           // Check if this buy is using sold capital or new capital
@@ -289,7 +292,8 @@ export async function GET() {
             logger.debug(`Trade ${dateStr}: Buy ${trade.code} using sold capital`, {
               tradeValue: tradeValueNZD.toFixed(2),
               remainingSoldCapital: runningSoldCapital.toFixed(2),
-              costBasis: runningCostBasis.toFixed(2)
+              costBasis: runningCostBasis.toFixed(2),
+              exchRate: trade.exchRate
             })
           } else {
             // This buy requires new capital (partially or fully)
@@ -300,6 +304,8 @@ export async function GET() {
             // Only buy S&P 500 shares with truly new capital
             const spyPrice = getNearestSPYPrice(dateStr, filledSPYPrices)
             if (spyPrice > 0) {
+              // For S&P 500, use the market exchange rate on the trade date
+              // since we're simulating a purchase at that time
               const spyExchangeRate = filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
               const spyPriceNZD = spyPrice * spyExchangeRate
               const newSp500Shares = newCapital / spyPriceNZD
@@ -309,7 +315,9 @@ export async function GET() {
                 newCapital: newCapital.toFixed(2),
                 totalCostBasis: runningCostBasis.toFixed(2),
                 newSp500Shares: newSp500Shares.toFixed(4),
-                totalSp500Shares: runningSp500Shares.toFixed(4)
+                totalSp500Shares: runningSp500Shares.toFixed(4),
+                tradeExchRate: trade.exchRate,
+                spyExchRate: spyExchangeRate
               })
             } else {
               logger.warn(`No SPY price available for ${dateStr}, skipping S&P 500 purchase`)
@@ -321,14 +329,16 @@ export async function GET() {
           logger.debug(`Trade ${dateStr}: Sell ${trade.code}`, {
             sellValue: tradeValueNZD.toFixed(2),
             totalSoldCapital: runningSoldCapital.toFixed(2),
-            costBasis: runningCostBasis.toFixed(2)
+            costBasis: runningCostBasis.toFixed(2),
+            exchRate: trade.exchRate
           })
         } else if (trade.type === 'Reinvestment') {
           // Reinvestment doesn't affect cost basis or S&P 500 purchases
           // It's just dividends being automatically reinvested
           logger.debug(`Trade ${dateStr}: Reinvestment ${trade.code} - no cost basis change`, {
             reinvestmentValue: tradeValueNZD.toFixed(2),
-            costBasis: runningCostBasis.toFixed(2)
+            costBasis: runningCostBasis.toFixed(2),
+            exchRate: trade.exchRate
           })
         }
         

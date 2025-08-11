@@ -190,9 +190,9 @@ export async function GET() {
     const tradeMatrix: TradeMatrix[] = []
     
     for (const trade of trades) {
-      const exchangeRate = trade.instrumentCurrency === 'USD' ? currentExchangeRate : 1
+      // Use the actual NZD value from the trade (fixed at time of execution)
+      const valueNZD = Math.abs(trade.value)
       const valueLocal = Math.abs(trade.qty * trade.price)
-      const valueNZD = valueLocal * exchangeRate
       
       let isNewCapital = false
       let newCapitalAmount = 0
@@ -227,7 +227,9 @@ export async function GET() {
           // Calculate S&P 500 equivalent purchase
           // Note: In production, you'd fetch actual SPY price for the trade date
           const spyPrice = 500 // Placeholder
-          const spyPriceNZD = spyPrice * exchangeRate
+          // Use current exchange rate for S&P 500 simulation since it's a market purchase
+          const spyExchangeRate = trade.instrumentCurrency === 'USD' ? currentExchangeRate : 1
+          const spyPriceNZD = spyPrice * spyExchangeRate
           if (spyPriceNZD > 0) {
             sp500Shares += newCapitalAmount / spyPriceNZD
             sp500CostBasis += newCapitalAmount
@@ -273,8 +275,11 @@ export async function GET() {
         runningCostBasis,
         runningCapitalPool,
         isNewCapital,
-        newCapitalAmount
-      })
+        newCapitalAmount,
+        // Add exchange rate info for debugging
+        tradeExchangeRate: trade.exchRate,
+        currentExchangeRate: trade.instrumentCurrency === 'USD' ? currentExchangeRate : 1
+      } as TradeMatrix & { tradeExchangeRate: number; currentExchangeRate: number })
     }
     
     // Calculate current holdings matrix
