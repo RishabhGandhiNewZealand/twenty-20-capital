@@ -67,8 +67,9 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     logger.error('Error fetching trades:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to fetch trades' },
+      { error: 'Failed to fetch trades', details: errorMessage },
       { status: 500 }
     )
   }
@@ -130,8 +131,9 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     logger.error('Error creating trade:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to create trade' },
+      { error: 'Failed to create trade', details: errorMessage },
       { status: 500 }
     )
   }
