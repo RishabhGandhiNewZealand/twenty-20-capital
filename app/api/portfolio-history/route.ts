@@ -291,31 +291,49 @@ export async function GET() {
           const tradeValueNZD = Math.abs(trade.qty * trade.price * exchangeRate)
           
           if (trade.type === 'Buy') {
+            // Check if this buy is using sold capital or new capital
             if (soldCapitalAvailable >= tradeValueNZD) {
+              // This buy is fully covered by previous sells - not new capital
               soldCapitalAvailable -= tradeValueNZD
+              logger.debug(`Date ${dateStr}: Buy using sold capital`, {
+                tradeValue: tradeValueNZD.toFixed(2),
+                remainingSoldCapital: soldCapitalAvailable.toFixed(2)
+              })
             } else {
+              // This buy requires new capital (partially or fully)
               const newCapital = tradeValueNZD - soldCapitalAvailable
               currentCostBasis += newCapital
               soldCapitalAvailable = 0
               
-              // Calculate how many SPY shares we could buy with this new capital
+              // Only buy S&P 500 shares with truly new capital
               const spyPrice = getNearestSPYPrice(dateStr, filledSPYPrices)
               if (spyPrice > 0) {
                 const spyPriceNZD = spyPrice * (filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE)
                 const newSp500Shares = newCapital / spyPriceNZD
                 sp500Shares += newSp500Shares
                 sp500CostBasis += newCapital
-                logger.debug(`Date ${dateStr}: Investing ${newCapital.toFixed(2)} NZD in S&P 500`, {
+                logger.debug(`Date ${dateStr}: Investing NEW capital ${newCapital.toFixed(2)} NZD in S&P 500`, {
                   newCapital: newCapital.toFixed(2),
                   newShares: newSp500Shares.toFixed(4),
-                  priceNZD: spyPriceNZD.toFixed(2)
+                  priceNZD: spyPriceNZD.toFixed(2),
+                  totalSp500Shares: (sp500Shares).toFixed(4)
                 })
               }
             }
           } else if (trade.type === 'Sell') {
+            // Add sold capital to available pool for re-investment
             soldCapitalAvailable += tradeValueNZD
+            logger.debug(`Date ${dateStr}: Sell added to capital pool`, {
+              sellValue: tradeValueNZD.toFixed(2),
+              totalSoldCapital: soldCapitalAvailable.toFixed(2)
+            })
+          } else if (trade.type === 'Reinvestment') {
+            // Reinvestment doesn't affect cost basis or S&P 500 purchases
+            // It's just dividends being automatically reinvested
+            logger.debug(`Date ${dateStr}: Reinvestment (dividend) - no cost basis change`, {
+              reinvestmentValue: tradeValueNZD.toFixed(2)
+            })
           }
-          // Reinvestment doesn't affect cost basis
         })
 
         // Calculate S&P 500 value
