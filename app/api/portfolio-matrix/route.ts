@@ -1,3 +1,14 @@
+/**
+ * TESTING/DEBUGGING API ROUTE
+ * 
+ * This endpoint is for testing and debugging purposes only.
+ * It provides a comprehensive matrix of portfolio data to help verify
+ * calculations, track capital flow, and debug issues with cost basis
+ * and S&P 500 benchmark calculations.
+ * 
+ * NOT FOR PRODUCTION USE
+ */
+
 import { NextResponse } from 'next/server'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
 import { logger } from '@/lib/logger'
@@ -124,7 +135,8 @@ async function getExchangeRate(): Promise<number> {
 
 export async function GET() {
   try {
-    logger.info('Generating portfolio matrix...')
+    // Log that this is a testing endpoint being accessed
+    logger.info('[TEST API] Generating portfolio matrix for debugging...')
     
     // Fetch trade data
     const trades = await getCachedTradeData()
@@ -373,14 +385,16 @@ export async function GET() {
       dailySnapshots
     }
     
-    logger.info('Portfolio matrix generated successfully', {
+    logger.info('[TEST API] Portfolio matrix generated successfully', {
       trades: matrix.trades.length,
       holdings: matrix.holdings.length,
       totalValue: matrix.performance.totalValueNZD.toFixed(2)
     })
     
+    // Add warning that this is test data
     return NextResponse.json({
       success: true,
+      warning: 'This is a testing/debugging endpoint. Not for production use.',
       matrix
     })
     

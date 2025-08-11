@@ -1,8 +1,12 @@
-# Portfolio Matrix API Documentation
+# Portfolio Matrix API Documentation (TESTING/DEBUGGING)
+
+## ⚠️ WARNING: Testing Endpoint Only
+
+**This API endpoint is for testing and debugging purposes only. It is NOT intended for production use.**
 
 ## Overview
 
-The Portfolio Matrix API provides a comprehensive view of all portfolio data in a structured matrix format. This endpoint aggregates trades, holdings, performance metrics, and capital flow information into a single response.
+The Portfolio Matrix API is a testing/debugging endpoint that provides a comprehensive view of all portfolio data in a structured matrix format. This endpoint is designed to help debug issues with cost basis calculations, capital flow tracking, and S&P 500 benchmark comparisons.
 
 ## Endpoint
 
@@ -17,6 +21,7 @@ GET /api/portfolio-matrix
 ```json
 {
   "success": true,
+  "warning": "This is a testing/debugging endpoint. Not for production use.",
   "matrix": {
     "metadata": {...},
     "trades": [...],
@@ -194,13 +199,15 @@ if data['success']:
         print(f"{holding['symbol']}: {holding['allocation']:.2f}%")
 ```
 
-## Key Features
+## Testing/Debugging Features
 
-1. **Capital Tracking**: Distinguishes between new capital and recycled capital from sells
-2. **Performance Metrics**: Includes both realized and unrealized gains
-3. **Benchmark Comparison**: Tracks S&P 500 performance with same investment timing
-4. **Historical Context**: Provides trade history with running calculations
-5. **Current Snapshot**: Real-time portfolio composition and valuations
+This endpoint is specifically useful for:
+
+1. **Debugging Cost Basis Issues**: See exactly when and why cost basis changes
+2. **Tracking Capital Flow**: Verify that sells create a capital pool and buys use it correctly
+3. **S&P 500 Benchmark Verification**: Ensure S&P 500 only "buys" with new capital
+4. **Trade Analysis**: See which trades used new vs recycled capital
+5. **Performance Verification**: Cross-check calculations with detailed breakdowns
 
 ## Notes
 
