@@ -166,3 +166,41 @@ export async function createTradeDataTable() {
     throw error
   }
 }
+
+// Function to add soft delete columns to trade_data table
+export async function addSoftDeleteToTradeData() {
+  const sql = getDb()
+  
+  try {
+    // Add deleted_flag column if it doesn't exist
+    await sql`
+      ALTER TABLE application.trade_data 
+      ADD COLUMN IF NOT EXISTS deleted_flag BOOLEAN DEFAULT FALSE
+    `
+    
+    // Add deleted_at column if it doesn't exist
+    await sql`
+      ALTER TABLE application.trade_data 
+      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE
+    `
+    
+    // Create index on deleted_flag for fast filtering
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_trade_data_deleted_flag 
+      ON application.trade_data(deleted_flag)
+    `
+    
+    // Create composite index for common query patterns
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_trade_data_not_deleted 
+      ON application.trade_data(deleted_flag, date DESC)
+      WHERE deleted_flag = FALSE
+    `
+    
+    logger.info('Soft delete columns added to trade_data table successfully')
+    
+  } catch (error) {
+    logger.error('Error adding soft delete columns to trade_data table:', error)
+    throw error
+  }
+}

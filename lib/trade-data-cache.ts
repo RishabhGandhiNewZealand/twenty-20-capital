@@ -30,6 +30,7 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
         exch_rate,
         value
       FROM application.trade_data
+      WHERE deleted_flag = FALSE OR deleted_flag IS NULL
       ORDER BY date ASC, id ASC
     `
     
@@ -95,7 +96,7 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
         exch_rate,
         value
       FROM application.trade_data
-      WHERE code = ${symbol}
+      WHERE code = ${symbol} AND (deleted_flag = FALSE OR deleted_flag IS NULL)
       ORDER BY date ASC, id ASC
     `
     
