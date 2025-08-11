@@ -16,7 +16,7 @@ import {
   Check,
   X
 } from "lucide-react"
-import { formatDate, formatCurrency } from "@/lib/format-utils"
+import { formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
 import TradeFormModal from "@/components/trade-form-modal"
 import ConfirmationDialog from "@/components/confirmation-dialog"
 
@@ -371,13 +371,13 @@ export default function TradesPage() {
                       <div>
                         <span className="text-muted-foreground">Price:</span>
                         <span className="ml-2 font-medium">
-                          {formatCurrency(trade.price, trade.instrumentCurrency)}
+                          {formatCurrencyWithDecimals(trade.price, trade.instrumentCurrency, 2)}
                         </span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Value:</span>
                         <span className="ml-2 font-medium">
-                          {formatCurrency(trade.value, 'NZD')}
+                          {formatCurrencyWithDecimals(trade.value, 'NZD', 2)}
                         </span>
                       </div>
                       <div>
