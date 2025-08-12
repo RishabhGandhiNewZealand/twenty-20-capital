@@ -160,11 +160,18 @@ export async function GET() {
           }
         }
       } else if (trade.type === 'Sell') {
-        current.shares += trade.qty // qty is negative for sells
-        // Proportionally reduce cost basis
-        if (current.shares > 0 && trade.qty < 0) {
-          const sellRatio = Math.abs(trade.qty) / (current.shares - trade.qty)
-          current.totalCostNZD *= (1 - sellRatio)
+        // For sells, qty should be positive in the database but we treat it as negative
+        const sharesSold = Math.abs(trade.qty)
+        const sharesBeforeSale = current.shares
+        current.shares -= sharesSold
+        
+        // Proportionally reduce cost basis only if shares remain
+        if (current.shares > 0 && sharesBeforeSale > 0) {
+          const remainingRatio = current.shares / sharesBeforeSale
+          current.totalCostNZD *= remainingRatio
+        } else {
+          // All shares sold
+          current.totalCostNZD = 0
         }
         soldCapitalAvailable += tradeValueNZD
       }
@@ -250,7 +257,9 @@ export async function GET() {
       lastUpdated: new Date().toISOString()
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       }
     })
   } catch (error) {

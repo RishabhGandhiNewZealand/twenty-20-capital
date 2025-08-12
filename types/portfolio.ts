@@ -1,4 +1,5 @@
 export interface TradeRecord {
+  id?: number // Optional for new trades that haven't been saved yet
   code: string
   marketCode: string
   name: string
@@ -11,6 +12,10 @@ export interface TradeRecord {
   brokerageCurrency: string
   exchRate: number
   value: number
+  deleted_flag?: boolean
+  deleted_at?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface PortfolioHolding {

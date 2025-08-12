@@ -14,7 +14,8 @@ import {
   Newspaper, 
   User,
   Shield,
-  ShieldOff
+  ShieldOff,
+  Database
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -145,6 +146,24 @@ export default function SidebarNavigation() {
                 </li>
               )
             })}
+            
+            {/* Trades link - only visible for admin users */}
+            {!isAnonymized && (
+              <li>
+                <Link
+                  href="/trades"
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    pathname === "/trades"
+                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <Database className="h-5 w-5" />
+                  <span>Trades</span>
+                </Link>
+              </li>
+            )}
           </ul>
           
           {/* Anonymization Toggle at the bottom */}

@@ -109,20 +109,8 @@ function fillMissingDates(priceMap: Map<string, number>, startDate: Date, endDat
 
 export async function GET() {
   try {
-    // Check cache first
-    const cacheKey = 'portfolio-history'
-    const cached = cache.get(cacheKey)
-    
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL.PORTFOLIO_HISTORY) {
-      logger.debug('Returning cached portfolio history')
-      return NextResponse.json({
-        history: cached.data,
-        lastUpdated: new Date(cached.timestamp).toISOString(),
-        cached: true
-      })
-    }
-
-    logger.debug('Cache miss, calculating portfolio history...')
+    // Caching disabled - always calculate fresh data
+    logger.debug('Calculating portfolio history (caching disabled)...')
 
     // Fetch cached trade data from database
     const trades = await getCachedTradeData()
@@ -245,7 +233,8 @@ export async function GET() {
           if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
             currentHoldings.set(trade.code, currentShares + trade.qty)
           } else if (trade.type === 'Sell') {
-            currentHoldings.set(trade.code, currentShares + trade.qty) // qty is negative for sells
+            // qty is positive in database, so we need to subtract for sells
+            currentHoldings.set(trade.code, Math.max(0, currentShares - Math.abs(trade.qty)))
           }
         })
 
@@ -418,16 +407,18 @@ export async function GET() {
         processDate.setDate(processDate.getDate() + 1)
       }
 
-      // Cache the result
-      cache.set(cacheKey, {
-        data: portfolioHistory,
-        timestamp: Date.now()
-      })
+      // Caching disabled - not storing results
 
       return NextResponse.json({
         history: portfolioHistory,
         lastUpdated: new Date().toISOString(),
         cached: false
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
       })
     } catch (error) {
       logger.error('Error during price fetching:', error)
