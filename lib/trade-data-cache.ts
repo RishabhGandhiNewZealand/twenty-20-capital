@@ -149,7 +149,7 @@ export async function getTradeDataCacheStats() {
       earliestTrade: stats[0].earliest_trade,
       latestTrade: stats[0].latest_trade,
       lastUpdated: stats[0].last_updated,
-      cacheRevalidateSeconds: CACHE_REVALIDATE_SECONDS
+      cacheRevalidateSeconds: 1200 // 20 minutes
     }
     
   } catch (error) {
