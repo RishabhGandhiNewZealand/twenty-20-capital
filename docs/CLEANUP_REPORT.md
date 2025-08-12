@@ -101,7 +101,8 @@ Before:
 
 After:
 lib/
-├── blob-utils.ts         # Blob storage utilities
+├── db.ts                 # Database connection
+├── trade-data-cache.ts   # Trade data access
 ├── company-colors.ts     # Company branding
 ├── company-utils.ts      # Company-related utilities
 ├── constants.ts          # App-wide constants
@@ -129,7 +130,7 @@ lib/
 
 ### 10. Data Processing
 
-#### Improved CSV Parsing
+#### Improved Data Processing
 - Better error handling for malformed data
 - Support for quoted fields with commas
 - Validation of required fields

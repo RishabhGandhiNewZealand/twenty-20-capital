@@ -9,7 +9,7 @@ The quarterly report pages (q1-2025, q2-2025) and annual review (2024-review) cu
 
 ## Recommended Improvements
 These values should be dynamically calculated from:
-1. The CSV trade data (for historical positions and cost basis)
+1. The database trade data (for historical positions and cost basis)
 2. Yahoo Finance API (for historical prices at quarter-end dates)
 3. Calculated metrics based on actual data
 
@@ -18,7 +18,7 @@ To properly refactor these pages:
 
 1. Create a `generateQuarterlyReport` function that:
    - Takes a quarter end date as input
-   - Reads trades from CSV up to that date
+   - Reads trades from database up to that date
    - Fetches historical prices for that date
    - Calculates actual returns and portfolio values
    - Returns structured data for the report

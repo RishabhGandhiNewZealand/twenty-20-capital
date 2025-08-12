@@ -34,7 +34,8 @@
 │   └── use-toast.ts
 │
 ├── lib/                  # Utility functions and configurations
-│   ├── blob-utils.ts
+│   ├── db.ts
+│   ├── trade-data-cache.ts
 │   ├── company-colors.ts
 │   ├── company-utils.ts
 │   ├── constants.ts

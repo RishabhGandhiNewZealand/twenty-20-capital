@@ -10,7 +10,7 @@ The Personal Portfolio Tracker is built using a modern, scalable architecture le
 - **TypeScript** for type safety and better developer experience
 - **Tailwind CSS** for utility-first styling
 - **Vercel** for deployment and edge functions
-- **Vercel Blob** for data storage
+- **Neon Database** for PostgreSQL data storage
 
 ## Architecture Diagram
 
@@ -34,7 +34,7 @@ The Personal Portfolio Tracker is built using a modern, scalable architecture le
 ├─────────────────────────────────────────────────────────────┤
 │                    External Services                         │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐    │
-│  │ Vercel Blob │  │Yahoo Finance│  │  Vercel Edge   │    │
+│  │Neon Database│  │Yahoo Finance│  │  Vercel Edge   │    │
 │  └─────────────┘  └─────────────┘  └─────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -60,7 +60,8 @@ The Personal Portfolio Tracker is built using a modern, scalable architecture le
 │   └── app-sidebar.tsx       # Navigation components
 ├── lib/                      # Utility functions
 │   ├── portfolio.ts          # Portfolio calculations
-│   ├── blob-utils.ts         # Storage utilities
+│   ├── db.ts                 # Database connection
+│   ├── trade-data-cache.ts   # Trade data access
 │   ├── constants.ts          # App constants
 │   └── utils.ts              # Helper functions
 ├── hooks/                    # Custom React hooks
@@ -152,7 +153,7 @@ Components are built using composition for flexibility:
 ### 1. Portfolio Data Flow
 
 ```
-User Request → API Route → Vercel Blob → Parse CSV → Calculate Holdings → Return JSON
+User Request → API Route → Database Query → Calculate Holdings → Return JSON
 ```
 
 ### 2. Real-time Price Updates

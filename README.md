@@ -27,6 +27,7 @@ This application serves as a comprehensive personal investment portfolio tracker
 - **Real-time Portfolio Valuation**: Live market data integration with Yahoo Finance API
 - **Multi-Currency Support**: Automatic conversion to NZD with support for USD and other currencies
 - **Transaction Tracking**: Complete buy/sell/reinvestment transaction history
+- **Trade Management Interface**: Add, edit, and delete trades with staged changes
 - **Position Management**: Current holdings with cost basis and gain/loss calculations
 - **Exited Positions**: Historical tracking of closed positions with realized gains
 
@@ -95,7 +96,7 @@ The application follows a modern, scalable architecture leveraging Next.js 15's 
 
 ### Backend
 - **Next.js API Routes**: Serverless functions
-- **Vercel Blob**: CSV data storage
+- **Neon Database**: PostgreSQL database for trade data
 - **Node.js**: Server runtime
 
 ### External Services
@@ -115,16 +116,15 @@ The application follows a modern, scalable architecture leveraging Next.js 15's 
 - Node.js 18.17 or later
 - pnpm (recommended) or npm
 - Vercel account for deployment
-- Access to trade data in CSV format
+- Neon database with trade data
 
 ### Environment Variables
 
 Create a `.env.local` file with the following variables:
 
 ```env
-# Vercel Blob Storage
-BLOB_READ_WRITE_TOKEN=your_blob_token
-TRADE_DATA_BLOB_URL=your_trade_data_url
+# Database Connection
+DATABASE_URL=your_neon_database_url
 
 # Optional: AI News Analysis
 GEMINI_API_KEY=your_gemini_api_key
@@ -153,15 +153,12 @@ pnpm dev
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-### Trade Data Format
+### Database Schema
 
-The application expects trade data in CSV format with the following structure:
-
-```csv
-Date,Type,Code,Units,Price,Fees,Value,Currency
-2024-01-15,Buy,AAPL,10,150.00,1.00,1501.00,USD
-2024-01-20,Sell,AAPL,5,155.00,1.00,774.00,USD
-```
+The application uses a PostgreSQL database with trade data stored in the `application.trade_data` table with columns for:
+- Trade details (code, name, date, type, quantity, price)
+- Currency information (instrument_currency, brokerage_currency, exchange_rate)
+- Transaction values and fees
 
 ## Project Structure
 
@@ -178,6 +175,8 @@ Date,Type,Code,Units,Price,Fees,Value,Currency
 │   ├── analyses/             # Company analysis pages
 │   ├── reports/              # Quarterly/annual reports
 │   ├── portfolio/            # Portfolio page
+│   ├── trades/              # Trade management page
+│   ├── news/                # AI-powered news analysis
 │   ├── about/               # About page
 │   └── page.tsx             # Home dashboard
 ├── components/              # React components
@@ -188,7 +187,8 @@ Date,Type,Code,Units,Price,Fees,Value,Currency
 │   ├── portfolio.ts        # Portfolio calculations
 │   ├── portfolio-cache-service.ts # Caching layer
 │   ├── financial-calculations.ts # Financial metrics
-│   ├── blob-utils.ts       # Storage utilities
+│   ├── db.ts              # Database connection
+│   ├── trade-data-cache.ts # Trade data access
 │   └── anonymization-utils.ts # Privacy features
 ├── contexts/               # React contexts
 │   └── AnonymizationContext.tsx
@@ -207,6 +207,14 @@ Date,Type,Code,Units,Price,Fees,Value,Currency
 - `GET /api/portfolio` - Complete portfolio data with holdings and exited positions
 - `GET /api/portfolio-current` - Real-time portfolio summary
 - `GET /api/portfolio-history` - Historical data for charts
+- `GET /api/portfolio-compositions` - Historical portfolio compositions
+
+#### Trade Management
+- `GET /api/trades` - Fetch all trades from database
+- `POST /api/trades` - Create new trade
+- `PUT /api/trades/[id]` - Update existing trade
+- `DELETE /api/trades/[id]` - Delete trade
+- `POST /api/trades/batch` - Batch update trades
 
 #### Market Data
 - `GET /api/stock-price/[symbol]` - Current stock price
@@ -215,6 +223,10 @@ Date,Type,Code,Units,Price,Fees,Value,Currency
 #### News & Analysis
 - `POST /api/news/analyze` - AI-powered news analysis
 - `GET /api/news/[symbol]` - Company-specific news
+
+#### Cache Management
+- `POST /api/cache/bust` - Clear specific cache keys
+- `POST /api/cache/warmup` - Pre-warm cache with data
 
 ### Response Formats
 

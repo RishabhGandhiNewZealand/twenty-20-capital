@@ -1,7 +1,7 @@
 # Pull Request Summary: Implement Comprehensive Caching System
 
 ## Overview
-This PR implements a comprehensive caching system for the Next.js portfolio application, migrating from Vercel Blob storage to Neon database with multi-tier caching for optimal performance.
+This PR implements a comprehensive caching system for the Next.js portfolio application, using Neon database with multi-tier caching for optimal performance.
 
 ## Key Changes
 

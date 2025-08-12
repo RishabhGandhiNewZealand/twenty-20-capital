@@ -40,7 +40,8 @@ The codebase has been thoroughly reviewed and is ready for submission. Below are
 - **`lib/format-utils.ts`** - All formatting utilities documented with parameter descriptions
 - **`lib/performance-utils.ts`** - Detailed documentation with usage examples and remarks
 - **`lib/company-colors.ts`** - Functions documented with clear parameter and return descriptions
-- **`lib/blob-utils.ts`** - All blob utilities have descriptive JSDoc comments
+- **`lib/db.ts`** - Database connection with clear documentation
+- **`lib/trade-data-cache.ts`** - Trade data access layer with JSDoc comments
 
 ### Documentation Quality:
 - All parameters documented with types and descriptions

@@ -58,6 +58,25 @@ Handles the navigation menu structure and routing logic:
 - Supports nested navigation structures
 - Integrates with Next.js routing
 
+### Trade Form Modal (`components/trade-form-modal.tsx`)
+
+Modal dialog for trade data entry:
+
+- Comprehensive form validation
+- Support for all trade types (Buy, Sell, Reinvestment)
+- Currency selection with exchange rate handling
+- Automatic value calculations
+- Date picker integration
+
+### Password Modal (`components/password-modal.tsx`)
+
+Security modal for anonymization feature:
+
+- Password input with visibility toggle
+- Loading states during authentication
+- Error handling for incorrect passwords
+- Integrates with authentication API
+
 ## Page Components
 
 ### Home Page (`app/page.tsx`)
@@ -71,6 +90,28 @@ The main dashboard that serves as the application entry point:
 - Lists exited positions
 
 This component orchestrates data fetching and coordinates the display of multiple child components.
+
+### Trades Page (`app/trades/page.tsx`)
+
+The trade management interface that allows users to:
+
+- View all trades in a grouped or flat view
+- Add new trades via modal form
+- Edit existing trades inline or via modal
+- Delete trades with confirmation
+- Stage changes before committing to database
+- Search and filter trades
+- View trade statistics by company
+
+### News Page (`app/news/page.tsx`)
+
+AI-powered news analysis page featuring:
+
+- Real-time news fetching for portfolio companies
+- Sentiment analysis and impact assessment
+- Grouped news by company with visual indicators
+- Expandable details with source links
+- Caching for performance optimization
 
 ### Reports Pages (`app/reports/*/page.tsx`)
 
