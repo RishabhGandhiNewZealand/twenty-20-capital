@@ -27,13 +27,3 @@ export const FALLBACK_NZD_TO_USD_RATE = 0.606
 
 // Minimum share threshold for current holdings
 export const MIN_SHARE_THRESHOLD = 0.001
-
-// Vercel Blob storage URL for trade data
-// This environment variable is available in the deployment
-// The SDK will use BLOB_READ_WRITE_TOKEN automatically for authentication
-export const TRADE_DATA_BLOB_URL = process.env.TRADE_DATA_BLOB_URL || ''
-
-// Warn if URL is not configured (only on server-side)
-if (typeof window === 'undefined' && !TRADE_DATA_BLOB_URL) {
-  console.warn('WARNING: TRADE_DATA_BLOB_URL environment variable is not set. Portfolio data will not be available.')
-}

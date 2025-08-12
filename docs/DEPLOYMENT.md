@@ -8,7 +8,7 @@ Before deploying, ensure you have:
 
 - [ ] A GitHub account with the repository
 - [ ] A Vercel account (free tier is sufficient)
-- [ ] Your trade data CSV file ready
+- [ ] A Neon database account with trade data
 - [ ] Node.js 18.17+ installed locally
 
 ## Deployment Options
@@ -51,21 +51,19 @@ The easiest way to deploy is using Vercel's GitHub integration.
    - **Output Directory**: `.next` (default)
    - **Install Command**: `npm install` (default)
 
-#### Step 3: Set Up Blob Storage
+#### Step 3: Set Up Database
 
-1. **In Vercel Dashboard, go to "Storage"**
+1. **Create a Neon Database account at [neon.tech](https://neon.tech)**
 
-2. **Create a new Blob store:**
+2. **Create a new database:**
    - Click "Create Database"
-   - Select "Blob"
-   - Choose a name (e.g., `portfolio-data`)
-   - Select your region
+   - Choose your region
+   - Note your connection string
 
-3. **Upload your trade data:**
-   - Go to your Blob store dashboard
-   - Click "Upload"
-   - Select your CSV file
-   - Note the file URL
+3. **Set up your trade data table:**
+   - Use the Neon SQL editor or a PostgreSQL client
+   - Create the `application.trade_data` table
+   - Import your trade data
 
 #### Step 4: Configure Environment Variables
 
@@ -75,10 +73,11 @@ The easiest way to deploy is using Vercel's GitHub integration.
 
    | Key | Value | Environment |
    |-----|-------|-------------|
-   | `BLOB_READ_WRITE_TOKEN` | (Auto-populated by Vercel) | All |
-   | `TRADE_DATA_BLOB_URL` | Your blob file URL | All |
+   | `DATABASE_URL` | Your Neon connection string | All |
+   | `GEMINI_API_KEY` | (Optional) Gemini API key | All |
+   | `ADMIN_PASSWORD` | (Optional) Admin password | All |
 
-3. **The `BLOB_READ_WRITE_TOKEN` is automatically set when you connect the Blob store**
+3. **Ensure the connection string includes SSL mode for production**
 
 #### Step 5: Deploy
 
@@ -183,8 +182,7 @@ module.exports = {
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob access token | `vercel_blob_rw_aBc123...` |
-| `TRADE_DATA_BLOB_URL` | URL to your trade CSV | `https://abc.blob.vercel-storage.com/trades.csv` |
+| `DATABASE_URL` | Neon database connection string | `postgresql://user:pass@host/db?sslmode=require` |
 
 ### Optional Variables
 
@@ -206,7 +204,7 @@ module.exports = {
 ### During Deployment
 
 - [ ] Vercel project created
-- [ ] Blob storage configured
+- [ ] Database configured
 - [ ] Environment variables set
 - [ ] Domain configured (if custom)
 - [ ] Initial deployment successful
@@ -241,8 +239,8 @@ vercel --prod
 
 ### Updating Trade Data
 
-1. **Upload new CSV to Blob storage**
-2. **Update `TRADE_DATA_BLOB_URL` if URL changed**
+1. **Update trade data in database via the Trades page**
+2. **Or use SQL commands to bulk update data**
 3. **No redeployment needed** - changes are immediate
 
 ## Rollback Procedures
@@ -307,8 +305,8 @@ vercel logs [deployment-url]
 #### 2. Runtime Errors
 
 **Error**: `Failed to fetch portfolio data`
-- **Check**: Blob storage token is correct
-- **Verify**: CSV file URL is accessible
+- **Check**: Database connection string is correct
+- **Verify**: Database is accessible and contains data
 - **Test**: API routes locally first
 
 #### 3. Performance Issues

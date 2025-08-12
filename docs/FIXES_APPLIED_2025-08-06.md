@@ -3,7 +3,7 @@
 ## Summary
 Both critical issues identified in the QA analysis have been fixed.
 
-## 1. ✅ Currency Display Fix
+## 1. Currency Display Fix
 
 **File:** `/workspace/lib/financial-calculations.ts`
 **Lines:** 56-57
@@ -24,7 +24,7 @@ maximumFractionDigits: 2,
 - Example: $1,234.56 displays correctly instead of $1,235
 - All portfolio values, gains, and totals show precise amounts
 
-## 2. ✅ Error Logging Fix
+## 2. Error Logging Fix
 
 **File:** `/workspace/app/page.tsx`
 **Lines:** 83-91

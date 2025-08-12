@@ -8,7 +8,7 @@ This guide helps developers understand and extend the Personal Portfolio Tracker
 
 The application is built around several key concepts:
 
-1. **Trade Data Management**: All portfolio data originates from a CSV file stored in Vercel Blob storage
+1. **Trade Data Management**: All portfolio data is stored in a PostgreSQL database via Neon
 2. **Position Calculation**: The system aggregates buy/sell transactions to determine current holdings
 3. **Real-time Valuation**: Current prices are fetched from Yahoo Finance API
 4. **Performance Tracking**: Gains are calculated against cost basis with S&P 500 comparison
@@ -17,8 +17,8 @@ The application is built around several key concepts:
 
 Understanding how data moves through the application:
 
-1. CSV trade data is stored in Vercel Blob storage
-2. Server-side functions parse and process this data
+1. Trade data is stored in PostgreSQL database
+2. Server-side functions query and process this data
 3. Current prices are fetched and cached from external APIs
 4. Calculations happen server-side for security and performance
 5. Processed data is sent to the client for visualization
@@ -39,9 +39,10 @@ Understanding how data moves through the application:
 - `/news` - Fetches AI-powered news analysis using Gemini API
 
 **Data Processing** (`lib/`)
-- `portfolio.ts` - CSV parsing and position calculation
+- `portfolio.ts` - Position calculation and portfolio logic
 - `financial-calculations.ts` - CAGR and performance metrics
-- `blob-utils.ts` - Vercel Blob storage interface
+- `db.ts` - Database connection management
+- `trade-data-cache.ts` - Trade data access layer
 
 ## Development Workflow
 
@@ -49,7 +50,7 @@ Understanding how data moves through the application:
 
 1. Clone the repository and install dependencies
 2. Create `.env.local` with required environment variables
-3. Ensure you have access to properly formatted trade data
+3. Ensure you have access to the PostgreSQL database
 4. Run the development server to verify setup
 
 ### Understanding the Codebase
@@ -99,13 +100,14 @@ The application follows these patterns:
 
 ## Architecture Decisions
 
-### Why CSV Storage?
+### Why PostgreSQL?
 
-The application uses CSV files in Blob storage instead of a database because:
-- Simple to update manually
-- No database maintenance required
-- Easy to backup and version
-- Sufficient for single-user application
+The application uses PostgreSQL database for data storage because:
+- Structured data with ACID compliance
+- Efficient querying and indexing
+- Scalable for growing data needs
+- Real-time updates via web interface
+- Built-in data integrity and validation
 
 ### Caching Strategy
 
@@ -161,8 +163,8 @@ All sensitive calculations happen server-side:
 
 **Data Not Updating**
 - Check cache expiration in constants
-- Verify Blob storage connection
-- Ensure CSV format is correct
+- Verify database connection
+- Ensure database schema is correct
 
 **Calculation Errors**
 - Trace through portfolio.ts processing

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the implementation of a PostgreSQL-based caching system for trade data in the Next.js portfolio application. The system has been migrated from Vercel Blob storage to a Neon database with built-in caching for optimal performance.
+This document describes the implementation of a PostgreSQL-based caching system for trade data in the Next.js portfolio application. The system uses a Neon database with built-in caching for optimal performance.
 
 ## Architecture
 
@@ -223,7 +223,7 @@ Response:
    ```
 
 2. **Import Trade Data**
-   - Use your existing data migration script to import data from CSV to the database
+   - Use your existing data migration script to import data to the database
    - Ensure all trades are properly imported with correct data types
 
 3. **Populate Cache (Optional)**

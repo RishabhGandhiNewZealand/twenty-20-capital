@@ -6,7 +6,7 @@ This document describes the API endpoints available in the Personal Portfolio Tr
 
 The application uses Next.js API routes to provide a backend API that:
 
-- Processes portfolio data from CSV storage
+- Queries portfolio data from PostgreSQL database
 - Fetches real-time market data from external sources
 - Implements caching to optimize performance
 - Handles all sensitive operations server-side
@@ -21,7 +21,7 @@ All API routes are located in `app/api/` and follow RESTful conventions.
 
 Returns complete portfolio data including current holdings and exited positions. This endpoint:
 
-- Reads trade data from Vercel Blob storage
+- Queries trade data from PostgreSQL database
 - Calculates current positions by aggregating transactions
 - Fetches current market prices for each holding
 - Computes gains/losses and performance metrics
@@ -136,7 +136,7 @@ Fetches AI-powered news analysis for portfolio companies using Google's Gemini A
 
 ### Data Sources
 
-- **Portfolio Data**: Vercel Blob storage (CSV file)
+- **Portfolio Data**: PostgreSQL database via Neon
 - **Market Prices**: Yahoo Finance API
 - **Exchange Rates**: Yahoo Finance API
 - **News Analysis**: Google Gemini API

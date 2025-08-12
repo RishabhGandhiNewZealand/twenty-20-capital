@@ -1,71 +1,5 @@
 import { TradeRecord, PortfolioHolding, ExitedPosition } from '@/types/portfolio'
 
-export function parseCSVLine(line: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-    const nextChar = line[i + 1]
-    
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        // Handle escaped quotes
-        current += '"'
-        i++ // Skip next quote
-      } else {
-        // Toggle quote state
-        inQuotes = !inQuotes
-      }
-    } else if (char === ',' && !inQuotes) {
-      // End of field
-      result.push(current.trim())
-      current = ''
-    } else {
-      current += char
-    }
-  }
-  
-  // Add the last field
-  result.push(current.trim())
-  return result
-}
-
-export function parseCSVData(csvContent: string): TradeRecord[] {
-  const lines = csvContent.trim().split('\n')
-  const trades: TradeRecord[] = []
-  
-  // Skip header and last line (Total row)
-  for (let i = 1; i < lines.length - 1; i++) {
-    const line = lines[i].trim()
-    if (!line) continue
-    
-    const fields = parseCSVLine(line)
-    
-    if (fields.length >= 12) {
-      const trade: TradeRecord = {
-        code: fields[0],
-        marketCode: fields[1],
-        name: fields[2],
-        date: fields[3],
-        type: fields[4] as 'Buy' | 'Sell' | 'Reinvestment',
-        qty: parseFloat(fields[5]),
-        price: parseFloat(fields[6]),
-        instrumentCurrency: fields[7],
-        brokerage: parseFloat(fields[8]),
-        brokerageCurrency: fields[9],
-        exchRate: parseFloat(fields[10]),
-        value: parseFloat(fields[11].replace(/[",]/g, ''))
-      }
-      
-      trades.push(trade)
-    }
-  }
-  
-  return trades
-}
-
 export function calculatePortfolioData(trades: TradeRecord[]): { holdings: PortfolioHolding[], exitedPositions: ExitedPosition[] } {
   const holdings = new Map<string, {
     symbol: string
@@ -204,18 +138,4 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
   }
   
   return { holdings: currentHoldings, exitedPositions }
-}
-
-// Keep the old function for backward compatibility
-export function calculateCurrentHoldings(trades: TradeRecord[]): PortfolioHolding[] {
-  return calculatePortfolioData(trades).holdings
-}
-
-export function calculatePortfolioAllocations(holdings: PortfolioHolding[]): PortfolioHolding[] {
-  const totalValue = holdings.reduce((sum, holding) => sum + (holding.currentValueNZD || 0), 0)
-  
-  return holdings.map(holding => ({
-    ...holding,
-    allocation: totalValue > 0 ? (holding.currentValueNZD || 0) / totalValue * 100 : 0
-  }))
 } 
