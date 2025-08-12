@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Environment } from '@/lib/api-protection'
+import { headers } from 'next/headers'
 
 /**
  * Test endpoint to verify API protection middleware
@@ -10,29 +10,52 @@ import { Environment } from '@/lib/api-protection'
  * - API access with proper headers is allowed
  * - Access is allowed in preview and development environments
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const headersList = headers()
+  const url = new URL(request.url)
+  
+  // Get request headers for debugging
+  const requestHeaders: Record<string, string> = {}
+  headersList.forEach((value, key) => {
+    // Only include relevant headers for debugging
+    if (key.startsWith('sec-') || 
+        key.startsWith('x-') || 
+        key === 'accept' || 
+        key === 'user-agent' ||
+        key === 'referer') {
+      requestHeaders[key] = value.substring(0, 100) // Truncate long values
+    }
+  })
+  
   const environment = {
-    isVercel: Environment.isVercel(),
-    isPreview: Environment.isPreview(),
-    isProduction: Environment.isProduction(),
-    isDevelopment: Environment.isDevelopment(),
-    shouldProtectAPIs: Environment.shouldProtectAPIs(),
+    hostname: url.hostname,
     nodeEnv: process.env.NODE_ENV,
     vercelEnv: process.env.VERCEL_ENV,
     vercel: process.env.VERCEL,
+    isProduction: process.env.VERCEL_ENV === 'production',
+    isPreview: process.env.VERCEL_ENV === 'preview',
+    isDevelopment: process.env.NODE_ENV === 'development',
   }
   
   return NextResponse.json({
-    message: 'API Protection Test Endpoint',
+    message: '⚠️ API Protection Test - This endpoint should be blocked in production!',
     status: 'accessible',
-    description: 'If you can see this response, the request was allowed through the middleware',
+    warning: 'If you can see this in a browser on production, the middleware is NOT working correctly',
     environment,
+    requestInfo: {
+      url: url.href,
+      hostname: url.hostname,
+      headers: requestHeaders,
+    },
     timestamp: new Date().toISOString(),
     protection: {
-      active: Environment.shouldProtectAPIs(),
-      info: Environment.shouldProtectAPIs() 
-        ? 'API protection is ACTIVE - browser requests should be blocked'
-        : 'API protection is INACTIVE - all requests are allowed',
+      expectedBehavior: {
+        production: 'Should return 403 Forbidden for browser requests',
+        preview: 'Should allow all requests',
+        development: 'Should allow all requests'
+      },
+      currentEnvironment: environment.isProduction ? 'production' : 
+                         environment.isPreview ? 'preview' : 'development'
     }
   })
 }
