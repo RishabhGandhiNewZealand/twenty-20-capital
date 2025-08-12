@@ -102,9 +102,10 @@ export async function POST(request: NextRequest) {
     
     logger.info(`Batch update completed: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
     
-    // Invalidate cache
-    const { invalidateTradeDataCache } = await import('@/lib/trade-data-cache')
-    await invalidateTradeDataCache()
+    // Invalidate portfolio caches after batch trade updates
+    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+    await invalidatePortfolioCaches()
+    logger.info('Portfolio caches invalidated after batch trade updates')
     
     return NextResponse.json({ 
       success: true,
