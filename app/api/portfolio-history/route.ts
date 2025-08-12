@@ -245,7 +245,8 @@ export async function GET() {
           if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
             currentHoldings.set(trade.code, currentShares + trade.qty)
           } else if (trade.type === 'Sell') {
-            currentHoldings.set(trade.code, currentShares + trade.qty) // qty is negative for sells
+            // qty is positive in database, so we need to subtract for sells
+            currentHoldings.set(trade.code, Math.max(0, currentShares - Math.abs(trade.qty)))
           }
         })
 

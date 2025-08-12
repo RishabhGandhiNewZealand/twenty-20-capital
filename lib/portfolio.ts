@@ -82,6 +82,15 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
   // Sort trades by date to process chronologically
   const sortedTrades = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   
+  // Debug: Log Uber trades
+  const uberTrades = sortedTrades.filter(t => t.code === 'UBER')
+  if (uberTrades.length > 0) {
+    console.log('=== UBER TRADES DEBUG ===')
+    uberTrades.forEach(t => {
+      console.log(`Date: ${t.date}, Type: ${t.type}, Qty: ${t.qty}, Price: ${t.price}, Value: ${t.value}, ID: ${t.id}`)
+    })
+  }
+  
   // Process each trade
   for (const trade of sortedTrades) {
     const key = trade.code
@@ -139,6 +148,15 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
   // Convert to PortfolioHolding array and separate current vs exited positions
   const currentHoldings: PortfolioHolding[] = []
   const exitedPositions: ExitedPosition[] = []
+  
+  // Debug: Check Uber holding after processing
+  const uberHolding = holdings.get('UBER')
+  if (uberHolding) {
+    console.log('=== UBER HOLDING AFTER PROCESSING ===')
+    console.log(`Total Shares: ${uberHolding.totalShares}`)
+    console.log(`Total Cost NZD: ${uberHolding.totalCostNZD}`)
+    console.log(`Number of trades: ${uberHolding.trades.length}`)
+  }
   
   for (const [_, holding] of holdings) {
     if (holding.totalShares > 0.01) {
