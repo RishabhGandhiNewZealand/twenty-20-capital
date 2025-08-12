@@ -70,8 +70,8 @@ The application follows a modern, scalable architecture leveraging Next.js 15's 
 ├─────────────────────────────────────────────────────────────┤
 │                    External Services                         │
 │  ┌──────────┐  ┌──────────────┐  ┌──────────────────┐     │
-│  │Vercel    │  │Yahoo Finance │  │Google Gemini    │     │
-│  │Blob      │  │API           │  │API              │     │
+│  │  Neon    │  │Yahoo Finance │  │Google Gemini    │     │
+│  │ Database │  │API           │  │API              │     │
 │  └──────────┘  └──────────────┘  └──────────────────┘     │
 └─────────────────────────────────────────────────────────────┘
 ```

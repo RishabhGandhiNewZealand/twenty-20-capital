@@ -248,7 +248,7 @@ Sensitive data stored in environment variables:
 
 ```typescript
 // Server-only access
-const blobToken = process.env.BLOB_READ_WRITE_TOKEN
+const databaseUrl = process.env.DATABASE_URL
 
 // Never exposed to client
 ```
@@ -289,7 +289,7 @@ const securityHeaders = [
                                │                          │
                                ▼                          ▼
                         ┌─────────────────┐     ┌─────────────────┐
-                        │  Blob Storage   │     │  Edge Functions │
+                        │    Database     │     │  Edge Functions │
                         └─────────────────┘     └─────────────────┘
 ```
 

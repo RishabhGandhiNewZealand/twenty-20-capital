@@ -100,13 +100,14 @@ The application follows these patterns:
 
 ## Architecture Decisions
 
-### Why CSV Storage?
+### Why PostgreSQL?
 
-The application uses CSV files in Blob storage instead of a database because:
-- Simple to update manually
-- No database maintenance required
-- Easy to backup and version
-- Sufficient for single-user application
+The application uses PostgreSQL database for data storage because:
+- Structured data with ACID compliance
+- Efficient querying and indexing
+- Scalable for growing data needs
+- Real-time updates via web interface
+- Built-in data integrity and validation
 
 ### Caching Strategy
 
@@ -162,8 +163,8 @@ All sensitive calculations happen server-side:
 
 **Data Not Updating**
 - Check cache expiration in constants
-- Verify Blob storage connection
-- Ensure CSV format is correct
+- Verify database connection
+- Ensure database schema is correct
 
 **Calculation Errors**
 - Trace through portfolio.ts processing

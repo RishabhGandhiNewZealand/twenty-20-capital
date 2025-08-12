@@ -103,7 +103,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     if (data.length === 0) return []
     
     // Track the S&P 500 cost basis separately
-    // It should match portfolio cost basis changes (new capital additions)
+    // The S&P 500 investment should mirror the portfolio cost basis
     let sp500CostBasis = 0
     let previousCostBasis = 0
     
@@ -125,10 +125,19 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
         : 0
       
-      // Calculate S&P 500 performance relative to its tracked cost basis
-      const sp500Performance = sp500CostBasis > 0 
-        ? ((point.sp500Value - sp500CostBasis) / sp500CostBasis) * 100 
-        : 0
+      // Calculate S&P 500 performance
+      // If sp500Value is 0 or very small at the start (no shares bought yet), 
+      // and we have a cost basis, assume we just invested and performance is 0%
+      let sp500Performance = 0
+      if (sp500CostBasis > 0) {
+        // If S&P 500 value is essentially 0 but we have cost basis, it means
+        // we just made the investment but haven't bought shares yet (start of day 1)
+        if (point.sp500Value < 1 && index === 0) {
+          sp500Performance = 0  // Starting point, no gain or loss yet
+        } else {
+          sp500Performance = ((point.sp500Value - sp500CostBasis) / sp500CostBasis) * 100
+        }
+      }
       
       return {
         date: point.date,

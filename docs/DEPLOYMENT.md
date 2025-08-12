@@ -182,8 +182,7 @@ module.exports = {
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob access token | `vercel_blob_rw_aBc123...` |
-| `TRADE_DATA_BLOB_URL` | URL to your trade CSV | `https://abc.blob.vercel-storage.com/trades.csv` |
+| `DATABASE_URL` | Neon database connection string | `postgresql://user:pass@host/db?sslmode=require` |
 
 ### Optional Variables
 
@@ -205,7 +204,7 @@ module.exports = {
 ### During Deployment
 
 - [ ] Vercel project created
-- [ ] Blob storage configured
+- [ ] Database configured
 - [ ] Environment variables set
 - [ ] Domain configured (if custom)
 - [ ] Initial deployment successful
@@ -240,8 +239,8 @@ vercel --prod
 
 ### Updating Trade Data
 
-1. **Upload new CSV to Blob storage**
-2. **Update `TRADE_DATA_BLOB_URL` if URL changed**
+1. **Update trade data in database via the Trades page**
+2. **Or use SQL commands to bulk update data**
 3. **No redeployment needed** - changes are immediate
 
 ## Rollback Procedures
@@ -306,8 +305,8 @@ vercel logs [deployment-url]
 #### 2. Runtime Errors
 
 **Error**: `Failed to fetch portfolio data`
-- **Check**: Blob storage token is correct
-- **Verify**: CSV file URL is accessible
+- **Check**: Database connection string is correct
+- **Verify**: Database is accessible and contains data
 - **Test**: API routes locally first
 
 #### 3. Performance Issues
