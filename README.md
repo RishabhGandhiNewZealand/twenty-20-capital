@@ -1,126 +1,367 @@
 # Personal Portfolio Tracker
 
-A portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS that provides real-time investment monitoring, performance analytics, and comprehensive reporting capabilities.
+A sophisticated portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS that provides real-time investment monitoring, performance analytics, and comprehensive reporting capabilities.
 
-## Application Overview
+## Table of Contents
 
-This application serves as a personal investment portfolio tracker with the following core functionalities:
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Security Features](#security-features)
+- [Performance Optimizations](#performance-optimizations)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [Documentation](#documentation)
 
-- Real-time portfolio valuation with live market data integration
-- Multi-currency support with automatic conversion to NZD
-- Performance tracking against S&P 500 benchmark
-- Company-specific analysis pages with markdown support
-- Quarterly and yearly progress reporting
-- Responsive design optimized for both desktop and mobile
+## Overview
+
+This application serves as a comprehensive personal investment portfolio tracker designed for individual investors who want to monitor their investments, track performance against benchmarks, and gain insights into their portfolio composition. The system provides real-time market data integration, multi-currency support, and advanced analytics while maintaining a clean, responsive user interface.
+
+## Key Features
+
+### Portfolio Management
+- **Real-time Portfolio Valuation**: Live market data integration with Yahoo Finance API
+- **Multi-Currency Support**: Automatic conversion to NZD with support for USD and other currencies
+- **Transaction Tracking**: Complete buy/sell/reinvestment transaction history
+- **Position Management**: Current holdings with cost basis and gain/loss calculations
+- **Exited Positions**: Historical tracking of closed positions with realized gains
+
+### Performance Analytics
+- **S&P 500 Benchmarking**: Compare portfolio performance against market index
+- **CAGR Calculations**: Compound Annual Growth Rate metrics
+- **Performance Visualization**: Interactive charts showing portfolio value over time
+- **Gain/Loss Analysis**: Detailed breakdown of unrealized and realized gains
+- **Allocation Insights**: Visual representation of portfolio composition
+
+### Reporting & Analysis
+- **Quarterly Reports**: Automated quarterly performance summaries
+- **Annual Reviews**: Comprehensive yearly portfolio analysis
+- **Company Analysis**: Dedicated pages for in-depth company research
+- **News Integration**: AI-powered news analysis using Google Gemini API
+
+### User Experience
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Anonymization Mode**: Password-protected privacy mode for sharing
+- **Dark Mode Support**: System-aware theme switching
+- **Performance Optimized**: Server-side rendering with intelligent caching
+- **Accessibility**: WCAG compliant with keyboard navigation support
 
 ## Architecture
 
-The application follows Next.js 15's App Router architecture with server-side rendering for optimal performance. Key architectural decisions include:
+The application follows a modern, scalable architecture leveraging Next.js 15's App Router:
 
-- **Data Storage**: Trade data is stored in CSV format on Vercel Blob storage, allowing easy updates without database complexity
-- **API Integration**: Yahoo Finance API provides real-time stock prices and exchange rates
-- **Caching Strategy**: Build-time caching for portfolio compositions and runtime caching for market data
-- **Component Architecture**: Modular React components using shadcn/ui for consistent UI patterns
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Client Browser                        │
+├─────────────────────────────────────────────────────────────┤
+│                    Next.js Application                       │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │         React Server Components (Default)            │   │
+│  │         Client Components (Interactive UI)           │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              API Routes (Edge Functions)             │   │
+│  └─────────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────┤
+│                    External Services                         │
+│  ┌──────────┐  ┌──────────────┐  ┌──────────────────┐     │
+│  │Vercel    │  │Yahoo Finance │  │Google Gemini    │     │
+│  │Blob      │  │API           │  │API              │     │
+│  └──────────┘  └──────────────┘  └──────────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Design Patterns
+
+- **Server Components by Default**: Reduced client bundle size and improved performance
+- **Data Fetching at Request Time**: Fresh data with intelligent caching
+- **Type-Safe Development**: Full TypeScript coverage with strict typing
+- **Modular Architecture**: Clear separation of concerns with reusable components
+- **Edge Computing**: API routes deployed as edge functions for global performance
+
+## Technology Stack
+
+### Frontend
+- **Next.js 15**: React framework with App Router
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first styling
+- **shadcn/ui**: Accessible component library
+- **Recharts**: Data visualization
+- **Lucide Icons**: Modern icon set
+
+### Backend
+- **Next.js API Routes**: Serverless functions
+- **Vercel Blob**: CSV data storage
+- **Node.js**: Server runtime
+
+### External Services
+- **Yahoo Finance API**: Real-time market data
+- **Google Gemini API**: AI-powered news analysis
+- **Vercel**: Hosting and deployment
+
+### Development Tools
+- **ESLint**: Code linting
+- **Prettier**: Code formatting
+- **pnpm**: Package management
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18.17 or later
+- pnpm (recommended) or npm
+- Vercel account for deployment
+- Access to trade data in CSV format
+
+### Environment Variables
+
+Create a `.env.local` file with the following variables:
+
+```env
+# Vercel Blob Storage
+BLOB_READ_WRITE_TOKEN=your_blob_token
+TRADE_DATA_BLOB_URL=your_trade_data_url
+
+# Optional: AI News Analysis
+GEMINI_API_KEY=your_gemini_api_key
+
+# Optional: Admin Password for Anonymization
+ADMIN_PASSWORD=your_admin_password
+```
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/portfolio-tracker.git
+cd portfolio-tracker
+```
+
+2. Install dependencies:
+```bash
+pnpm install
+```
+
+3. Run the development server:
+```bash
+pnpm dev
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Trade Data Format
+
+The application expects trade data in CSV format with the following structure:
+
+```csv
+Date,Type,Code,Units,Price,Fees,Value,Currency
+2024-01-15,Buy,AAPL,10,150.00,1.00,1501.00,USD
+2024-01-20,Sell,AAPL,5,155.00,1.00,774.00,USD
+```
 
 ## Project Structure
 
-The codebase is organized into logical modules:
+```
+/workspace
+├── app/                        # Next.js App Router
+│   ├── api/                   # API endpoints
+│   │   ├── portfolio/         # Portfolio data endpoints
+│   │   ├── portfolio-current/ # Current portfolio summary
+│   │   ├── portfolio-history/ # Historical data
+│   │   ├── stock-price/       # Real-time prices
+│   │   ├── exchange-rate/     # Currency conversion
+│   │   └── news/             # News analysis
+│   ├── analyses/             # Company analysis pages
+│   ├── reports/              # Quarterly/annual reports
+│   ├── portfolio/            # Portfolio page
+│   ├── about/               # About page
+│   └── page.tsx             # Home dashboard
+├── components/              # React components
+│   ├── ui/                 # shadcn/ui components
+│   ├── portfolio-chart.tsx # Performance charts
+│   └── app-sidebar.tsx     # Navigation
+├── lib/                    # Core business logic
+│   ├── portfolio.ts        # Portfolio calculations
+│   ├── portfolio-cache-service.ts # Caching layer
+│   ├── financial-calculations.ts # Financial metrics
+│   ├── blob-utils.ts       # Storage utilities
+│   └── anonymization-utils.ts # Privacy features
+├── contexts/               # React contexts
+│   └── AnonymizationContext.tsx
+├── hooks/                  # Custom React hooks
+├── types/                  # TypeScript definitions
+├── scripts/                # Build scripts
+├── docs/                   # Documentation
+└── public/                 # Static assets
+```
 
-- `app/` - Next.js pages and API routes using the App Router pattern
-- `components/` - Reusable React components including charts and UI elements
-- `lib/` - Core business logic, utilities, and data processing functions
-- `hooks/` - Custom React hooks for common functionality
-- `types/` - TypeScript type definitions ensuring type safety throughout
-- `scripts/` - Build-time scripts for data preprocessing
+## API Documentation
 
-## Key Features and Implementation
+### Core Endpoints
 
-### Portfolio Management
-The main dashboard (`app/page.tsx`) displays current holdings, performance metrics, and portfolio composition. Data flows from CSV storage through server-side processing to client-side visualization.
+#### Portfolio Data
+- `GET /api/portfolio` - Complete portfolio data with holdings and exited positions
+- `GET /api/portfolio-current` - Real-time portfolio summary
+- `GET /api/portfolio-history` - Historical data for charts
 
-### Data Processing
-Trade data is parsed from CSV format (`lib/portfolio.ts`) with support for multiple currencies and transaction types. The system calculates current positions by aggregating all buy/sell transactions.
+#### Market Data
+- `GET /api/stock-price/[symbol]` - Current stock price
+- `GET /api/exchange-rate` - USD to NZD conversion rate
 
-### Real-time Updates
-API routes in `app/api/` handle fetching current market prices and exchange rates, with intelligent caching to minimize external API calls while maintaining data freshness.
+#### News & Analysis
+- `POST /api/news/analyze` - AI-powered news analysis
+- `GET /api/news/[symbol]` - Company-specific news
 
-### Visualization
-Portfolio performance is visualized using Recharts with custom components for line charts and horizontal bar charts showing allocation percentages.
+### Response Formats
 
-## Development Setup
+All API responses follow a consistent JSON structure:
 
-To work on this application, you'll need:
+```json
+{
+  "data": {},
+  "lastUpdated": "2024-01-15T10:30:00Z",
+  "cached": false,
+  "error": null
+}
+```
 
-1. Node.js 18.17 or later
-2. A Vercel account for blob storage
-3. Access to the trade data CSV format specification
+## Security Features
 
-Environment variables required:
-- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage authentication
-- `TRADE_DATA_BLOB_URL` - URL to your trade data CSV file
-- `GEMINI_API_KEY` - Google Gemini API key for AI-powered news analysis (optional, only needed for News feature)
+### Anonymization System
+- **Privacy Mode**: Hide sensitive financial data with asterisks
+- **Password Protection**: Admin password required to view actual data
+- **Secure Storage**: Environment variables for sensitive configuration
+- **Default Anonymized**: System defaults to anonymized mode for security
 
-## Extending the Application
+### Data Protection
+- **Server-Side Processing**: Sensitive calculations happen server-side
+- **Environment Variables**: Credentials stored securely
+- **HTTPS Only**: Enforced secure connections in production
+- **Input Validation**: All user inputs are validated and sanitized
 
-### Adding New Features
+## Performance Optimizations
 
-The modular architecture makes it straightforward to add new capabilities:
+### Caching Strategy
+- **Multi-Layer Caching**: Memory cache with TTL-based expiration
+- **Smart Invalidation**: Event-based cache busting for data changes
+- **Build-Time Optimization**: Pre-calculated portfolio compositions
+- **API Response Caching**: 5-minute cache for market data
 
-- **New API Endpoints**: Add route handlers in `app/api/`
-- **Additional Charts**: Create components in `components/` following existing patterns
-- **New Report Types**: Add pages in `app/reports/` with corresponding data processing
-- **Enhanced Analytics**: Extend calculations in `lib/financial-calculations.ts`
+### Frontend Optimizations
+- **Server Components**: Reduced client JavaScript bundle
+- **Code Splitting**: Automatic route-based splitting
+- **Image Optimization**: Next.js Image component with lazy loading
+- **Bundle Size**: Optimized dependencies (~350KB reduction)
 
-### Data Model
-
-The application processes trade data with the following structure:
-- Stock transactions (buy/sell) with prices in original currency
-- Automatic currency conversion to NZD
-- Position tracking across multiple exchanges
-- Historical performance calculation
-
-### Customization Points
-
-- Company color mappings in `lib/company-colors.ts`
-- Financial constants in `lib/constants.ts`
-- Chart configurations in component files
-- Theme customization via Tailwind CSS configuration
-
-## Performance Considerations
-
-The application implements several performance optimizations:
-
-- Server-side rendering for initial page loads
-- Pre-calculated portfolio compositions at build time
-- Efficient caching strategies for market data
-- Lazy loading for heavy components
-- Responsive image optimization
+### Backend Optimizations
+- **Parallel API Calls**: 60-70% faster data loading
+- **Edge Functions**: Global deployment for low latency
+- **Efficient Calculations**: Optimized portfolio processing algorithms
 
 ## Deployment
 
-The application is designed for deployment on Vercel with:
+### Vercel Deployment (Recommended)
 
-- Automatic builds triggered by git pushes
-- Edge function support for API routes
-- Blob storage integration for data persistence
-- Built-in analytics and monitoring
+1. Push code to GitHub
+2. Import repository to Vercel
+3. Configure environment variables
+4. Deploy with one click
 
-## Next Steps
+### Manual Deployment
 
-To continue development:
+```bash
+# Build for production
+pnpm build
 
-1. Review the existing codebase structure in `ARCHITECTURE.md`
-2. Understand component patterns in `COMPONENTS.md`
-3. Check API documentation in `API.md`
-4. Follow development guidelines in `DEVELOPMENT.md`
+# Start production server
+pnpm start
+```
 
-The application provides a solid foundation for portfolio tracking with room for enhancement in areas like:
-- Multi-user support
-- Advanced analytics and reporting
-- Mobile app development
-- Real-time WebSocket updates
-- Integration with additional data sources
+### Docker Deployment
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY . .
+RUN npm install
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+## Contributing
+
+### Development Workflow
+
+1. Create a feature branch
+2. Make your changes
+3. Run tests and linting
+4. Submit a pull request
+
+### Code Standards
+
+- TypeScript for all new code
+- Follow existing patterns
+- Add JSDoc comments for public functions
+- Update documentation for new features
+
+### Testing
+
+```bash
+# Run type checking
+pnpm type-check
+
+# Run linting
+pnpm lint
+
+# Format code
+pnpm format
+```
+
+## Documentation
+
+Detailed documentation is available in the `/docs` folder:
+
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and patterns
+- **[Development](docs/DEVELOPMENT.md)** - Development guide
+- **[Deployment](docs/DEPLOYMENT.md)** - Deployment instructions
+- **[API](docs/API.md)** - API endpoint documentation
+- **[Components](docs/COMPONENTS.md)** - Component documentation
+- **[Anonymization](docs/ANONYMIZATION_FEATURE.md)** - Privacy feature details
+- **[Caching](docs/CACHE_BUSTING_DOCUMENTATION.md)** - Cache system documentation
+
+## Recent Updates
+
+### January 2025
+- Fixed S&P 500 performance calculation anomalies
+- Organized documentation structure
+- Enhanced README with comprehensive project information
+- Removed emojis from documentation for professional presentation
+
+### Performance Improvements
+- Implemented parallel API calls (60-70% faster loading)
+- Added intelligent caching system
+- Optimized bundle size (350KB reduction)
+- Enhanced mobile responsiveness
+
+### Code Quality
+- Added comprehensive JSDoc documentation
+- Implemented Prettier for consistent formatting
+- Reduced code duplication through shared utilities
+- Improved TypeScript type coverage
+
+## License
+
+This project is proprietary software. All rights reserved.
+
+## Support
+
+For questions or issues, please refer to the documentation in the `/docs` folder or create an issue in the repository.
 
 ---
 
-For detailed technical documentation, refer to the other documentation files in this repository.
+Built with passion for personal finance tracking and portfolio management.

@@ -100,22 +100,32 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
 
   // Calculate percentage performance relative to cost basis
   function calculatePerformanceData(data: PortfolioHistoryData[]): PerformanceData[] {
-    // Find the initial S&P 500 investment amount (should match initial cost basis)
-    let sp500CostBasis = 0
+    if (data.length === 0) return []
     
-    // The S&P 500 cost basis grows with the portfolio cost basis
+    // Track the S&P 500 cost basis separately
+    // It should match portfolio cost basis changes (new capital additions)
+    let sp500CostBasis = 0
+    let previousCostBasis = 0
+    
     return data.map((point, index) => {
-      // Update S&P 500 cost basis when portfolio cost basis increases
-      if (index === 0 || point.costBasis > data[index - 1]?.costBasis) {
-        const costBasisIncrease = index === 0 ? point.costBasis : point.costBasis - data[index - 1].costBasis
-        sp500CostBasis += costBasisIncrease
+      // Track cost basis changes (new capital additions)
+      if (index === 0) {
+        // Initialize with the first cost basis
+        sp500CostBasis = point.costBasis
+        previousCostBasis = point.costBasis
+      } else if (point.costBasis > previousCostBasis) {
+        // Add only the new capital to S&P 500 cost basis
+        const newCapital = point.costBasis - previousCostBasis
+        sp500CostBasis += newCapital
+        previousCostBasis = point.costBasis
       }
       
+      // Calculate portfolio performance
       const portfolioPerformance = point.costBasis > 0 
         ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
         : 0
       
-      // Calculate S&P 500 performance relative to its own cost basis
+      // Calculate S&P 500 performance relative to its tracked cost basis
       const sp500Performance = sp500CostBasis > 0 
         ? ((point.sp500Value - sp500CostBasis) / sp500CostBasis) * 100 
         : 0
