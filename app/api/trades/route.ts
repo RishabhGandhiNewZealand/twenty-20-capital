@@ -63,7 +63,13 @@ export async function GET(request: NextRequest) {
     }))
     
     logger.info(`Fetched ${trades.length} trades for admin view`)
-    return NextResponse.json(trades)
+    return NextResponse.json(trades, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
     
   } catch (error) {
     logger.error('Error fetching trades:', error)

@@ -82,14 +82,15 @@ export default function HomePage() {
   useEffect(() => {
     const fetchPortfolioData = async () => {
       try {
-        // Fetch all data in parallel for better performance
+        // Fetch all data in parallel for better performance (with cache busting)
+        const timestamp = Date.now()
         const [currentResponse, portfolioResponse, historyResponse] = await Promise.all([
-          fetch('/api/portfolio-current'),
-          fetch('/api/portfolio').catch((error) => {
+          fetch(`/api/portfolio-current?t=${timestamp}`, { cache: 'no-store' }),
+          fetch(`/api/portfolio?t=${timestamp}`, { cache: 'no-store' }).catch((error) => {
             console.error('Failed to fetch portfolio data:', error)
             return null
           }),
-          fetch('/api/portfolio-history').catch((error) => {
+          fetch(`/api/portfolio-history?t=${timestamp}`, { cache: 'no-store' }).catch((error) => {
             console.error('Failed to fetch portfolio history:', error)
             return null
           })

@@ -1,11 +1,6 @@
-import { unstable_cache } from 'next/cache'
 import { getDb } from './db'
 import { logger } from './logger'
 import { TradeRecord } from '@/types/portfolio'
-
-// Cache configuration
-const CACHE_REVALIDATE_SECONDS = 3600 // 1 hour
-const CACHE_TAG = 'trade-data'
 
 /**
  * Fetches all trade data from the database
@@ -60,18 +55,10 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
 }
 
 /**
- * Cached version of fetchTradeDataFromDB
- * This function will cache the results for the specified duration
- * and serve from cache on subsequent calls within the same session
+ * Direct version of fetchTradeDataFromDB without caching
+ * Always fetches fresh data from the database
  */
-export const getCachedTradeData = unstable_cache(
-  fetchTradeDataFromDB,
-  [CACHE_TAG], // Cache key
-  {
-    revalidate: CACHE_REVALIDATE_SECONDS,
-    tags: [CACHE_TAG]
-  }
-)
+export const getCachedTradeData = fetchTradeDataFromDB
 
 /**
  * Fetches trade data for a specific symbol
@@ -126,29 +113,17 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
 }
 
 /**
- * Cached version of fetchTradeDataBySymbolFromDB
+ * Direct version of fetchTradeDataBySymbolFromDB without caching
  */
-export const getCachedTradeDataBySymbol = unstable_cache(
-  fetchTradeDataBySymbolFromDB,
-  [`${CACHE_TAG}-symbol`], // Cache key prefix
-  {
-    revalidate: CACHE_REVALIDATE_SECONDS,
-    tags: [CACHE_TAG]
-  }
-)
+export const getCachedTradeDataBySymbol = fetchTradeDataBySymbolFromDB
 
 /**
- * Invalidates the trade data cache
- * This should be called when trade data is updated
+ * No-op function since caching is disabled
+ * Kept for backward compatibility
  */
 export async function invalidateTradeDataCache() {
-  try {
-    const { revalidateTag } = await import('next/cache')
-    await revalidateTag(CACHE_TAG)
-    logger.info('Trade data cache invalidated')
-  } catch (error) {
-    logger.error('Error invalidating trade data cache:', error)
-  }
+  // No caching, so nothing to invalidate
+  logger.info('Cache invalidation called (no-op, caching disabled)')
 }
 
 /**

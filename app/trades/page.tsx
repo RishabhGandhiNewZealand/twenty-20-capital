@@ -220,11 +220,11 @@ export default function TradesPage() {
         body: JSON.stringify(batchData)
       })
       
-      if (!response.ok) {
-        throw new Error('Failed to save changes')
-      }
-      
       const result = await response.json()
+      
+      if (!response.ok || result.error) {
+        throw new Error(result.details || result.error || 'Failed to save changes')
+      }
       
       // Clear staged changes
       setStagedChanges({

@@ -10,6 +10,12 @@ export async function GET() {
       holdings,
       exitedPositions,
       lastUpdated: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     })
   } catch (error) {
     logger.error('Error generating portfolio data:', error)
