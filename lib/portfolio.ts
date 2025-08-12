@@ -138,18 +138,4 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
   }
   
   return { holdings: currentHoldings, exitedPositions }
-}
-
-// Keep the old function for backward compatibility
-export function calculateCurrentHoldings(trades: TradeRecord[]): PortfolioHolding[] {
-  return calculatePortfolioData(trades).holdings
-}
-
-export function calculatePortfolioAllocations(holdings: PortfolioHolding[]): PortfolioHolding[] {
-  const totalValue = holdings.reduce((sum, holding) => sum + (holding.currentValueNZD || 0), 0)
-  
-  return holdings.map(holding => ({
-    ...holding,
-    allocation: totalValue > 0 ? (holding.currentValueNZD || 0) / totalValue * 100 : 0
-  }))
 } 

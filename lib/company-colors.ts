@@ -65,18 +65,3 @@ export function getCompanyColor(symbol: string): string {
   
   return `hsl(${Math.round(hue)}, ${saturation}%, ${lightness}%)`
 }
-
-/**
- * Get colors for a list of companies, ensuring good visual distinction
- * @param symbols - Array of company ticker symbols
- * @returns Map of symbol to color
- */
-export function getCompanyColors(symbols: string[]): Map<string, string> {
-  const colorMap = new Map<string, string>()
-  
-  symbols.forEach(symbol => {
-    colorMap.set(symbol, getCompanyColor(symbol))
-  })
-  
-  return colorMap
-}
