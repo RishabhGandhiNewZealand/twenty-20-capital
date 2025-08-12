@@ -129,9 +129,10 @@ export async function POST(request: NextRequest) {
     
     logger.info(`Created new trade with ID: ${result[0].id}`)
     
-    // Invalidate cache
-    const { invalidateTradeDataCache } = await import('@/lib/trade-data-cache')
-    await invalidateTradeDataCache()
+    // Invalidate portfolio caches after trade creation
+    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+    await invalidatePortfolioCaches()
+    logger.info('Portfolio caches invalidated after trade creation')
     
     return NextResponse.json({ id: result[0].id, success: true })
     

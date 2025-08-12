@@ -52,9 +52,10 @@ export async function PUT(
     
     logger.info(`Updated trade with ID: ${tradeId}`)
     
-    // Invalidate cache
-    const { invalidateTradeDataCache } = await import('@/lib/trade-data-cache')
-    await invalidateTradeDataCache()
+    // Invalidate portfolio caches after trade update
+    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+    await invalidatePortfolioCaches()
+    logger.info('Portfolio caches invalidated after trade update')
     
     return NextResponse.json({ success: true })
     
@@ -104,9 +105,10 @@ export async function DELETE(
     
     logger.info(`Soft deleted trade with ID: ${tradeId}`)
     
-    // Invalidate cache
-    const { invalidateTradeDataCache } = await import('@/lib/trade-data-cache')
-    await invalidateTradeDataCache()
+    // Invalidate portfolio caches after trade deletion
+    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+    await invalidatePortfolioCaches()
+    logger.info('Portfolio caches invalidated after trade deletion')
     
     return NextResponse.json({ success: true })
     
