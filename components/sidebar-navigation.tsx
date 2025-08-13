@@ -41,8 +41,8 @@ function toTitleCase(input: string): string {
     .join(" ")
 }
 
-function normalizeEmail(u: any): string {
-  const raw = (
+function getRawEmail(u: any): string {
+  return (
     u?.primaryEmail ||
     u?.email ||
     u?.primaryEmailAddress?.emailAddress ||
@@ -51,10 +51,6 @@ function normalizeEmail(u: any): string {
   )
   .toString()
   .trim()
-  .toLowerCase()
-
-  // Handle mailto: or mailto. prefixes if present
-  return raw.replace(/^mailto:/, "").replace(/^mailto\./, "")
 }
 
 export default function SidebarNavigation() {
@@ -65,21 +61,22 @@ export default function SidebarNavigation() {
   const user = useUser()
   const stack = useStackApp()
 
-  const userEmail = useMemo(() => normalizeEmail(user), [user])
+  const rawUserEmail = useMemo(() => getRawEmail(user), [user])
+  const userEmail = useMemo(() => rawUserEmail.toLowerCase().replace(/^mailto\./, "").replace(/^mailto:/, ""), [rawUserEmail])
   const displayName = useMemo(() => {
     const base = (user?.displayName || user?.name || user?.username || userEmail.split("@")[0] || "").toString()
     return toTitleCase(base)
   }, [user, userEmail])
 
   const isAdmin = useMemo(() => {
-    // Accept plain email and mailto-prefixed forms
-    const emailForCheck = userEmail
+    // Check against both plain and mailto-prefixed admin emails
+    const e = rawUserEmail
     return (
-      emailForCheck === "rishabhgandhi@gmail.com" ||
-      emailForCheck === "mailto.rishabhgandhi@gmail.com" ||
-      emailForCheck === "mailto:rishabhgandhi@gmail.com"
+      e === "rishabhgandhi@gmail.com" ||
+      e === "mailto.rishabhgandhi@gmail.com" ||
+      e === "mailto:rishabhgandhi@gmail.com"
     )
-  }, [userEmail])
+  }, [rawUserEmail])
 
   useEffect(() => {
     if (isAdmin) {
