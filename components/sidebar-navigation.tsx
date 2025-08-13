@@ -204,15 +204,26 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           {/* Auth control at the bottom */}
           <div className="pt-4 mt-4 border-t border-border">
             {!user ? (
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                size="sm"
-                onClick={() => stack.signInWithOAuth("google").catch(() => stack.redirectToSignIn())}
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                <span>Login</span>
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => stack.signInWithOAuth("google").catch(() => stack.redirectToSignIn())}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  <span>Continue with Google</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => stack.signInWithOAuth("github").catch(() => stack.redirectToSignIn())}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  <span>Continue with GitHub</span>
+                </Button>
+              </div>
             ) : (
               <div className="flex flex-col gap-2">
                 <div className="text-xs text-muted-foreground px-1">
