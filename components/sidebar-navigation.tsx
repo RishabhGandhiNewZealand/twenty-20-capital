@@ -221,7 +221,7 @@ export default function SidebarNavigation() {
                 variant="outline"
                 className="w-full justify-start"
                 size="sm"
-                onClick={() => stack.redirectToSignIn()}
+                onClick={() => stack.signInWithOAuth("google").catch(() => stack.redirectToSignIn())}
               >
                 <Shield className="h-4 w-4 mr-2" />
                 <span>Login</span>
