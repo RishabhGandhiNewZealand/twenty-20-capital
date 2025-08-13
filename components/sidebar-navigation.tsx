@@ -33,6 +33,29 @@ const navItems = [
   { href: "/about", label: "About", icon: User },
 ]
 
+function toTitleCase(input: string): string {
+  return input
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
+}
+
+function normalizeEmail(u: any): string {
+  const raw = (
+    u?.email ||
+    u?.primaryEmailAddress?.emailAddress ||
+    u?.primaryEmailAddress?.email ||
+    ""
+  )
+  .toString()
+  .trim()
+  .toLowerCase()
+
+  // Handle mailto: or mailto. prefixes if present
+  return raw.replace(/^mailto:/, "").replace(/^mailto\./, "")
+}
+
 export default function SidebarNavigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
@@ -41,10 +64,21 @@ export default function SidebarNavigation() {
   const user = useUser()
   const stack = useStackApp()
 
+  const userEmail = useMemo(() => normalizeEmail(user), [user])
+  const displayName = useMemo(() => {
+    const base = (user?.name || user?.username || userEmail.split("@")[0] || "").toString()
+    return toTitleCase(base)
+  }, [user, userEmail])
+
   const isAdmin = useMemo(() => {
-    const email = (user?.email ?? user?.primaryEmailAddress?.emailAddress ?? "").toLowerCase()
-    return email === "mailto.rishabhgandhi@gmail.com" || email === "rishabhgandhi@gmail.com"
-  }, [user])
+    // Accept plain email and mailto-prefixed forms
+    const emailForCheck = userEmail
+    return (
+      emailForCheck === "rishabhgandhi@gmail.com" ||
+      emailForCheck === "mailto.rishabhgandhi@gmail.com" ||
+      emailForCheck === "mailto:rishabhgandhi@gmail.com"
+    )
+  }, [userEmail])
 
   useEffect(() => {
     if (isAdmin) {
@@ -116,9 +150,10 @@ export default function SidebarNavigation() {
             <ThemeToggle />
             {user ? (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  {user.name || user.username || user.email || user.primaryEmailAddress?.emailAddress}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-medium">{displayName}</span>
+                  <span className="text-xs text-muted-foreground">{userEmail}</span>
+                </div>
                 <Button variant="ghost" size="sm" className="gap-1" onClick={() => stack.signOut()}>
                   <LogOutIcon className="h-4 w-4" />
                   Logout
@@ -194,7 +229,10 @@ export default function SidebarNavigation() {
             ) : (
               <div className="flex flex-col gap-2">
                 <div className="text-xs text-muted-foreground px-1">
-                  {isAdmin ? "Showing actual values (Full view)" : "Standard view (values hidden)"}
+                  Logged in as {displayName} ({userEmail})
+                </div>
+                <div className="text-xs text-muted-foreground px-1">
+                  {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
                 </div>
                 <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
                   <LogOutIcon className="h-4 w-4 mr-2" />
