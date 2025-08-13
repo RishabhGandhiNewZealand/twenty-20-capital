@@ -68,10 +68,15 @@ export function middleware(request: NextRequest) {
   }
   
   // Log for debugging
-  console.log('[Middleware] Headers:', {
+  console.log('[Middleware] Request details:', {
+    path: pathname,
+    method: request.method,
     accept: headers.accept.substring(0, 50),
     secFetchMode: headers.secFetchMode,
     secFetchDest: headers.secFetchDest,
+    secFetchSite: headers.secFetchSite,
+    hasReferer: !!headers.referer,
+    refererHost: headers.referer ? new URL(headers.referer).hostname : null,
     hasAuth: !!headers.authorization,
     hasApiKey: !!headers.xApiKey,
   })
@@ -84,30 +89,43 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
   
-  // 2. Allow AJAX/fetch requests that expect JSON
-  if (headers.xRequestedWith === 'XMLHttpRequest' || 
-      (headers.accept.includes('application/json') && !headers.accept.includes('text/html'))) {
-    console.log('[Middleware] ✅ Allowed: AJAX/JSON request')
+  // 2. Allow same-origin fetch requests from the frontend
+  // These are legitimate API calls from your React components
+  if (headers.secFetchSite === 'same-origin' && headers.secFetchMode === 'cors') {
+    console.log('[Middleware] ✅ Allowed: Same-origin CORS request (frontend API call)')
     return NextResponse.next()
   }
   
-  // 3. Allow POST/PUT/DELETE requests with JSON content
+  // 3. Allow requests that explicitly want JSON (not HTML)
+  // This covers fetch() calls with Accept: application/json
+  if (headers.accept && headers.accept.includes('application/json') && !headers.accept.includes('text/html')) {
+    console.log('[Middleware] ✅ Allowed: JSON-only request')
+    return NextResponse.next()
+  }
+  
+  // 4. Allow AJAX requests
+  if (headers.xRequestedWith === 'XMLHttpRequest') {
+    console.log('[Middleware] ✅ Allowed: XMLHttpRequest')
+    return NextResponse.next()
+  }
+  
+  // 5. Allow POST/PUT/DELETE requests with JSON content
   if (request.method !== 'GET' && headers.contentType.includes('application/json')) {
     console.log('[Middleware] ✅ Allowed: Non-GET request with JSON content')
     return NextResponse.next()
   }
   
+  // 6. Allow requests with specific referer from same origin
+  if (headers.referer && headers.referer.includes('rishinvests.xyz') && headers.secFetchSite === 'same-origin') {
+    console.log('[Middleware] ✅ Allowed: Same-origin request with referer')
+    return NextResponse.next()
+  }
+  
   // === BLOCK CONDITIONS ===
   
-  // Block if it's a browser navigation request
-  const isBrowserNavigation = 
-    headers.secFetchMode === 'navigate' ||
-    headers.secFetchDest === 'document' ||
-    headers.secFetchDest === 'iframe' ||
-    headers.secFetchDest === 'frame' ||
-    // Fallback: Check if Accept header prefers HTML
-    (headers.accept.includes('text/html') && 
-     !headers.accept.includes('application/json'))
+  // ONLY block direct browser navigation (typing URL in address bar or clicking links)
+  // This is identified by sec-fetch-mode: navigate
+  const isBrowserNavigation = headers.secFetchMode === 'navigate'
   
   if (isBrowserNavigation) {
     console.log('[Middleware] ❌ Blocked: Browser navigation request')
@@ -174,29 +192,10 @@ export function middleware(request: NextRequest) {
     })
   }
   
-  // Default: In production, block GET requests without proper headers as a safety measure
-  if (request.method === 'GET') {
-    console.log('[Middleware] ❌ Blocked: GET request without API indicators')
-    return new NextResponse(
-      JSON.stringify({
-        error: 'Forbidden',
-        message: 'API access requires proper authentication or JSON headers',
-        status: 403,
-        info: 'Add Accept: application/json header or use authentication',
-      }),
-      {
-        status: 403,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Blocked-Reason': 'missing-api-headers',
-          'Cache-Control': 'no-store',
-        },
-      }
-    )
-  }
-  
-  // Allow other requests by default (POST, PUT, DELETE without JSON content-type)
-  console.log('[Middleware] ✅ Allowed: Default pass-through')
+  // Default: Allow the request
+  // We've already blocked direct browser navigation above
+  // Everything else should be allowed to not break the app
+  console.log('[Middleware] ✅ Allowed: Default pass-through (not browser navigation)')
   return NextResponse.next()
 }
 
