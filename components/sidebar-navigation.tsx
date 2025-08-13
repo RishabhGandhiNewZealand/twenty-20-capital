@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -15,13 +15,14 @@ import {
   User,
   Shield,
   ShieldOff,
-  Database
+  Database,
+  LogOut as LogOutIcon
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { PasswordModal } from "@/components/password-modal"
 import { Button } from "@/components/ui/button"
+import { useStackApp, useUser } from "@stackframe/stack"
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -36,8 +37,22 @@ export default function SidebarNavigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
   const { isAnonymized, setAnonymized } = useAnonymization()
+  const { user } = useUser()
+  const stack = useStackApp()
+
+  const isAdmin = useMemo(() => {
+    const email = (user?.email ?? user?.primaryEmailAddress?.emailAddress ?? "").toLowerCase()
+    return email === "mailto.rishabhgandhi@gmail.com" || email === "rishabhgandhi@gmail.com"
+  }, [user])
+
+  useEffect(() => {
+    if (isAdmin) {
+      setAnonymized(false)
+    } else {
+      setAnonymized(true)
+    }
+  }, [isAdmin, setAnonymized])
 
   // Get current page info
   const currentPage = navItems.find(item => item.href === pathname) || navItems[0]
@@ -45,33 +60,20 @@ export default function SidebarNavigation() {
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
-      // Close sidebar on mobile by default
       if (window.innerWidth < 768) {
         setIsOpen(false)
       }
     }
-    
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Close sidebar when route changes on mobile
   useEffect(() => {
     if (isMobile) {
       setIsOpen(false)
     }
   }, [pathname, isMobile])
-
-  const handleAnonymizationToggle = () => {
-    if (isAnonymized) {
-      // If currently anonymized, show password modal to de-anonymize
-      setShowPasswordModal(true)
-    } else {
-      // If not anonymized, re-enable anonymization
-      setAnonymized(true)
-    }
-  }
 
   return (
     <>
@@ -109,9 +111,20 @@ export default function SidebarNavigation() {
             <span className="text-sm font-medium hidden sm:inline">{currentPage.label}</span>
           </div>
 
-          {/* Theme Toggle - Right side */}
-          <div className="ml-auto">
+          {/* Right side: Theme + User */}
+          <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground hidden sm:inline">
+                  {user.name || user.username || user.email || user.primaryEmailAddress?.emailAddress}
+                </span>
+                <Button variant="ghost" size="sm" className="gap-1" onClick={() => stack.signOut()}>
+                  <LogOutIcon className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
       </header>
@@ -148,7 +161,7 @@ export default function SidebarNavigation() {
             })}
             
             {/* Trades link - only visible for admin users */}
-            {!isAnonymized && (
+            {isAdmin && !isAnonymized && (
               <li>
                 <Link
                   href="/trades"
@@ -166,40 +179,32 @@ export default function SidebarNavigation() {
             )}
           </ul>
           
-          {/* Anonymization Toggle at the bottom */}
+          {/* Auth control at the bottom */}
           <div className="pt-4 mt-4 border-t border-border">
-            <Button
-              onClick={handleAnonymizationToggle}
-              variant="outline"
-              className="w-full justify-start"
-              size="sm"
-            >
-              {isAnonymized ? (
-                <>
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span>Anonymized View</span>
-                </>
-              ) : (
-                <>
-                  <ShieldOff className="h-4 w-4 mr-2" />
-                  <span>Full View</span>
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2 px-1">
-              {isAnonymized 
-                ? "Portfolio values are hidden" 
-                : "Showing actual values"}
-            </p>
+            {!user ? (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+                onClick={() => stack.redirectToSignIn()}
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                <span>Login</span>
+              </Button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="text-xs text-muted-foreground px-1">
+                  {isAdmin ? "Showing actual values (Full view)" : "Standard view (values hidden)"}
+                </div>
+                <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
+                  <LogOutIcon className="h-4 w-4 mr-2" />
+                  <span>Logout</span>
+                </Button>
+              </div>
+            )}
           </div>
         </nav>
       </aside>
-
-      {/* Password Modal */}
-      <PasswordModal 
-        open={showPasswordModal} 
-        onOpenChange={setShowPasswordModal} 
-      />
 
       {/* Overlay for mobile */}
       {isOpen && isMobile && (

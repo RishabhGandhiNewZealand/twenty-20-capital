@@ -6,6 +6,8 @@ import SidebarNavigation from "@/components/sidebar-navigation"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes"
 import { AnonymizationProvider } from "@/contexts/AnonymizationContext"
+import { StackProvider, StackServerApp } from "@stackframe/stack"
+import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -31,18 +33,28 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const stackApp = new StackServerApp({
+    projectId: process.env.NEXT_PUBLIC_STACK_PROJECT_ID || "",
+    secretServerKey: process.env.STACK_SECRET_SERVER_KEY || "",
+    tokenStore: "nextjs-cookie",
+  })
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AnonymizationProvider>
-            <SidebarNavigation />
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <Analytics />
-          </AnonymizationProvider>
-        </ThemeProvider>
+        <StackProvider app={stackApp}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AnonymizationProvider>
+              <Suspense fallback={null}>
+                <SidebarNavigation />
+              </Suspense>
+              <main className="min-h-screen">
+                {children}
+              </main>
+              <Analytics />
+            </AnonymizationProvider>
+          </ThemeProvider>
+        </StackProvider>
       </body>
     </html>
   )
