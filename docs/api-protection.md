@@ -28,14 +28,14 @@ npm run dev
 node scripts/test-api-protection.js http://localhost:3000
 ```
 
-### Vercel Preview
+### Vercel Preview (v0 deployments, etc.)
 ```bash
-node scripts/test-api-protection.js https://your-app-preview.vercel.app
+node scripts/test-api-protection.js https://v0-rish-investing-website-q96l1soe7.vercel.app
 ```
 
-### Vercel Production
+### Production (rishinvests.xyz)
 ```bash
-node scripts/test-api-protection.js https://your-app.vercel.app
+node scripts/test-api-protection.js https://rishinvests.xyz
 ```
 
 ## Customization

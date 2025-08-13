@@ -32,7 +32,8 @@ export async function GET(request: Request) {
     nodeEnv: process.env.NODE_ENV,
     vercelEnv: process.env.VERCEL_ENV,
     vercel: process.env.VERCEL,
-    isProduction: process.env.VERCEL_ENV === 'production',
+    isRealProduction: url.hostname === 'rishinvests.xyz' || url.hostname === 'www.rishinvests.xyz',
+    isVercelProduction: process.env.VERCEL_ENV === 'production',
     isPreview: process.env.VERCEL_ENV === 'preview',
     isDevelopment: process.env.NODE_ENV === 'development',
   }
@@ -54,8 +55,9 @@ export async function GET(request: Request) {
         preview: 'Should allow all requests',
         development: 'Should allow all requests'
       },
-      currentEnvironment: environment.isProduction ? 'production' : 
-                         environment.isPreview ? 'preview' : 'development'
+      currentEnvironment: environment.isRealProduction ? 'PRODUCTION (rishinvests.xyz)' : 
+                         environment.isDevelopment ? 'development' : 
+                         'preview/staging (Vercel deployment)'
     }
   })
 }
