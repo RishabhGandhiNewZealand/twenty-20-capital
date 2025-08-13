@@ -1,11 +1,27 @@
 "use client";
 
-import { useStackApp, useUser } from "@stackframe/stack";
+import { useStackApp as useOriginalStackApp, useUser as useOriginalUser } from "@stackframe/stack";
+import { useEffect, useState } from "react";
 
 export function useStackAuth() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return { 
+      stackApp: null, 
+      user: null, 
+      isConfigured: false,
+      isLoading: true 
+    };
+  }
+
   try {
-    const stackApp = useStackApp();
-    const user = useUser();
+    const stackApp = useOriginalStackApp();
+    const user = useOriginalUser();
     return { 
       stackApp, 
       user, 
@@ -24,17 +40,11 @@ export function useStackAuth() {
 }
 
 export function useStackUser() {
-  try {
-    return useUser();
-  } catch (error) {
-    return null;
-  }
+  const { user } = useStackAuth();
+  return user;
 }
 
 export function useStackApp() {
-  try {
-    return useStackApp();
-  } catch (error) {
-    return null;
-  }
+  const { stackApp } = useStackAuth();
+  return stackApp;
 }
