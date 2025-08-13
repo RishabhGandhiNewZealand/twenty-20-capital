@@ -4,9 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import SidebarNavigation from "@/components/sidebar-navigation"
 import { Analytics } from "@vercel/analytics/next"
-import { ThemeProvider } from "next-themes"
-import { AnonymizationProvider } from "@/contexts/AnonymizationContext"
-import StackProviderWrapper from "@/components/stack-provider"
+import { Providers } from "./providers"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -35,17 +33,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <StackProviderWrapper>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <AnonymizationProvider>
-              <SidebarNavigation />
-              <main className="min-h-screen">
-                {children}
-              </main>
-              <Analytics />
-            </AnonymizationProvider>
-          </ThemeProvider>
-        </StackProviderWrapper>
+        <Providers>
+          <SidebarNavigation />
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <Analytics />
+        </Providers>
       </body>
     </html>
   )

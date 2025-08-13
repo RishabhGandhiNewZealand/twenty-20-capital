@@ -1,59 +1,39 @@
 "use client";
 
-import { useStackApp as useOriginalStackApp, useUser as useOriginalUser } from "@stackframe/stack";
-import { useEffect, useState } from "react";
+import { useStackApp, useUser } from "@stackframe/stack";
 
 export function useStackAuth() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return { stackApp: null, user: null, isConfigured: false };
-  }
-
   try {
-    const stackApp = useOriginalStackApp();
-    const user = useOriginalUser();
-    return { stackApp, user, isConfigured: true };
+    const stackApp = useStackApp();
+    const user = useUser();
+    return { 
+      stackApp, 
+      user, 
+      isConfigured: true,
+      isLoading: false 
+    };
   } catch (error) {
-    return { stackApp: null, user: null, isConfigured: false };
+    // Stack provider not available
+    return { 
+      stackApp: null, 
+      user: null, 
+      isConfigured: false,
+      isLoading: false 
+    };
   }
 }
 
 export function useStackUser() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null;
-  }
-
   try {
-    return useOriginalUser();
+    return useUser();
   } catch (error) {
     return null;
   }
 }
 
 export function useStackApp() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null;
-  }
-
   try {
-    return useOriginalStackApp();
+    return useStackApp();
   } catch (error) {
     return null;
   }

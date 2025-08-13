@@ -4,33 +4,37 @@ import { StackProvider } from "@stackframe/stack";
 import { useEffect, useState } from "react";
 
 export default function StackProviderWrapper({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
   }, []);
 
-  // Don't render Stack provider during SSR
-  if (!mounted) {
+  // Don't render Stack provider on server
+  if (!isClient) {
     return <>{children}</>;
   }
 
-  if (!process.env.NEXT_PUBLIC_STACK_PROJECT_ID || !process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY) {
+  // Check if environment variables are configured
+  const projectId = process.env.NEXT_PUBLIC_STACK_PROJECT_ID;
+  const publishableKey = process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY;
+
+  if (!projectId || !publishableKey) {
     console.warn("Stack authentication environment variables not configured");
     return <>{children}</>;
   }
 
-  return (
-    <StackProvider app={stackApp}>
-      {children}
-    </StackProvider>
-  );
+  try {
+    return (
+      <StackProvider app={{
+        projectId,
+        publishableClientKey: publishableKey,
+      }}>
+        {children}
+      </StackProvider>
+    );
+  } catch (error) {
+    console.error("Error initializing Stack provider:", error);
+    return <>{children}</>;
+  }
 }
-
-const stackApp = {
-  projectId: process.env.NEXT_PUBLIC_STACK_PROJECT_ID || "",
-  publishableClientKey: process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY || "",
-  urls: {
-    handler: "/api/auth/stack",
-  },
-};
