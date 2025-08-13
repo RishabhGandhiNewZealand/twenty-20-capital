@@ -50,7 +50,6 @@ function getRawEmail(u: any): string {
     ""
   )
   .toString()
-  .trim()
 }
 
 export default function SidebarNavigation() {
@@ -62,20 +61,15 @@ export default function SidebarNavigation() {
   const stack = useStackApp()
 
   const rawUserEmail = useMemo(() => getRawEmail(user), [user])
-  const userEmail = useMemo(() => rawUserEmail.toLowerCase().replace(/^mailto\./, "").replace(/^mailto:/, ""), [rawUserEmail])
+  const userEmail = rawUserEmail
   const displayName = useMemo(() => {
     const base = (user?.displayName || user?.name || user?.username || userEmail.split("@")[0] || "").toString()
     return toTitleCase(base)
   }, [user, userEmail])
 
   const isAdmin = useMemo(() => {
-    // Check against both plain and mailto-prefixed admin emails
-    const e = rawUserEmail
-    return (
-      e === "rishabhgandhi@gmail.com" ||
-      e === "mailto.rishabhgandhi@gmail.com" ||
-      e === "mailto:rishabhgandhi@gmail.com"
-    )
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.ADMIN_EMAIL || ""
+    return rawUserEmail === adminEmail
   }, [rawUserEmail])
 
   useEffect(() => {
