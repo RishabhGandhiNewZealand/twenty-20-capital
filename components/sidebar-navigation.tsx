@@ -43,6 +43,7 @@ function toTitleCase(input: string): string {
 
 function normalizeEmail(u: any): string {
   const raw = (
+    u?.primaryEmail ||
     u?.email ||
     u?.primaryEmailAddress?.emailAddress ||
     u?.primaryEmailAddress?.email ||
@@ -66,7 +67,7 @@ export default function SidebarNavigation() {
 
   const userEmail = useMemo(() => normalizeEmail(user), [user])
   const displayName = useMemo(() => {
-    const base = (user?.name || user?.username || userEmail.split("@")[0] || "").toString()
+    const base = (user?.displayName || user?.name || user?.username || userEmail.split("@")[0] || "").toString()
     return toTitleCase(base)
   }, [user, userEmail])
 
