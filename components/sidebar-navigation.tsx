@@ -52,7 +52,9 @@ function getRawEmail(u: any): string {
   .toString()
 }
 
-export default function SidebarNavigation() {
+type Props = { adminEmail?: string }
+
+export default function SidebarNavigation({ adminEmail = "" }: Props) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -67,17 +69,10 @@ export default function SidebarNavigation() {
     return toTitleCase(base)
   }, [user, userEmail])
 
-  const isAdmin = useMemo(() => {
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.ADMIN_EMAIL || ""
-    return rawUserEmail === adminEmail
-  }, [rawUserEmail])
+  const isAdmin = useMemo(() => rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
 
   useEffect(() => {
-    if (isAdmin) {
-      setAnonymized(false)
-    } else {
-      setAnonymized(true)
-    }
+    setAnonymized(!isAdmin)
   }, [isAdmin, setAnonymized])
 
   // Get current page info
