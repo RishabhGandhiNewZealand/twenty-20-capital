@@ -38,7 +38,7 @@ export default function SidebarNavigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const { isAnonymized, setAnonymized } = useAnonymization()
-  const { user } = useUser()
+  const user = useUser()
   const stack = useStackApp()
 
   const isAdmin = useMemo(() => {
