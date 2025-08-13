@@ -204,26 +204,15 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           {/* Auth control at the bottom */}
           <div className="pt-4 mt-4 border-t border-border">
             {!user ? (
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  size="sm"
-                  onClick={() => stack.signInWithOAuth("google").catch(() => stack.redirectToSignIn())}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span>Continue with Google</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  size="sm"
-                  onClick={() => stack.signInWithOAuth("github").catch(() => stack.redirectToSignIn())}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span>Continue with GitHub</span>
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+                onClick={() => stack.redirectToSignIn()}
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                <span>Login / Sign Up</span>
+              </Button>
             ) : (
               <div className="flex flex-col gap-2">
                 <div className="text-xs text-muted-foreground px-1">
@@ -232,10 +221,15 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
                 <div className="text-xs text-muted-foreground px-1">
                   {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
                 </div>
-                <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
-                  <LogOutIcon className="h-4 w-4 mr-2" />
-                  <span>Logout</span>
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
+                    Manage account
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
+                    <LogOutIcon className="h-4 w-4 mr-2" />
+                    <span>Logout</span>
+                  </Button>
+                </div>
               </div>
             )}
           </div>
