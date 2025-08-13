@@ -15,13 +15,15 @@ import {
   User,
   Shield,
   ShieldOff,
-  Database
+  Database,
+  LogIn,
+  LogOut
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { PasswordModal } from "@/components/password-modal"
 import { Button } from "@/components/ui/button"
+import { useStackAuth } from "@/hooks/useStackAuth"
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -36,8 +38,8 @@ export default function SidebarNavigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const { isAnonymized, setAnonymized } = useAnonymization()
+  const { isAnonymized, toggleAnonymization, isAdmin } = useAnonymization()
+  const { stackApp, user, isConfigured } = useStackAuth()
 
   // Get current page info
   const currentPage = navItems.find(item => item.href === pathname) || navItems[0]
@@ -63,14 +65,20 @@ export default function SidebarNavigation() {
     }
   }, [pathname, isMobile])
 
-  const handleAnonymizationToggle = () => {
-    if (isAnonymized) {
-      // If currently anonymized, show password modal to de-anonymize
-      setShowPasswordModal(true)
-    } else {
-      // If not anonymized, re-enable anonymization
-      setAnonymized(true)
+  const handleLogin = () => {
+    if (stackApp) {
+      stackApp.signIn()
     }
+  }
+
+  const handleLogout = () => {
+    if (stackApp) {
+      stackApp.signOut()
+    }
+  }
+
+  const handleAnonymizationToggle = () => {
+    toggleAnonymization()
   }
 
   return (
@@ -109,8 +117,13 @@ export default function SidebarNavigation() {
             <span className="text-sm font-medium hidden sm:inline">{currentPage.label}</span>
           </div>
 
-          {/* Theme Toggle - Right side */}
-          <div className="ml-auto">
+          {/* User info and Theme Toggle - Right side */}
+          <div className="ml-auto flex items-center space-x-4">
+            {user && (
+              <span className="text-sm font-medium">
+                {user.displayName || user.primaryEmail?.split('@')[0]}
+              </span>
+            )}
             <ThemeToggle />
           </div>
         </div>
@@ -148,7 +161,7 @@ export default function SidebarNavigation() {
             })}
             
             {/* Trades link - only visible for admin users */}
-            {!isAnonymized && (
+            {isAdmin && (
               <li>
                 <Link
                   href="/trades"
@@ -166,40 +179,71 @@ export default function SidebarNavigation() {
             )}
           </ul>
           
-          {/* Anonymization Toggle at the bottom */}
-          <div className="pt-4 mt-4 border-t border-border">
-            <Button
-              onClick={handleAnonymizationToggle}
-              variant="outline"
-              className="w-full justify-start"
-              size="sm"
-            >
-              {isAnonymized ? (
-                <>
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span>Anonymized View</span>
-                </>
+          {/* Authentication and View Toggle at the bottom */}
+          <div className="pt-4 mt-4 border-t border-border space-y-2">
+            {/* Login/Logout Button - only show if Stack is configured */}
+            {isConfigured && (
+              user ? (
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Logout</span>
+                </Button>
               ) : (
-                <>
-                  <ShieldOff className="h-4 w-4 mr-2" />
-                  <span>Full View</span>
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2 px-1">
-              {isAnonymized 
-                ? "Portfolio values are hidden" 
-                : "Showing actual values"}
-            </p>
+                <Button
+                  onClick={handleLogin}
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  <span>Login</span>
+                </Button>
+              )
+            )}
+
+            {/* Anonymization Toggle - only visible for admin */}
+            {isAdmin && (
+              <>
+                <Button
+                  onClick={handleAnonymizationToggle}
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                >
+                  {isAnonymized ? (
+                    <>
+                      <Shield className="h-4 w-4 mr-2" />
+                      <span>Anonymized View</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldOff className="h-4 w-4 mr-2" />
+                      <span>Full View</span>
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground px-1">
+                  {isAnonymized 
+                    ? "Portfolio values are hidden" 
+                    : "Showing actual values"}
+                </p>
+              </>
+            )}
+
+            {/* Show login status for non-admin users */}
+            {user && !isAdmin && (
+              <p className="text-xs text-muted-foreground px-1">
+                Standard view (limited access)
+              </p>
+            )}
           </div>
         </nav>
       </aside>
-
-      {/* Password Modal */}
-      <PasswordModal 
-        open={showPasswordModal} 
-        onOpenChange={setShowPasswordModal} 
-      />
 
       {/* Overlay for mobile */}
       {isOpen && isMobile && (

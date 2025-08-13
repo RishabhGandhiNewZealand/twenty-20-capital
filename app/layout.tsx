@@ -6,6 +6,7 @@ import SidebarNavigation from "@/components/sidebar-navigation"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes"
 import { AnonymizationProvider } from "@/contexts/AnonymizationContext"
+import StackProviderWrapper from "@/components/stack-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,15 +35,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AnonymizationProvider>
-            <SidebarNavigation />
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <Analytics />
-          </AnonymizationProvider>
-        </ThemeProvider>
+        <StackProviderWrapper>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AnonymizationProvider>
+              <SidebarNavigation />
+              <main className="min-h-screen">
+                {children}
+              </main>
+              <Analytics />
+            </AnonymizationProvider>
+          </ThemeProvider>
+        </StackProviderWrapper>
       </body>
     </html>
   )
