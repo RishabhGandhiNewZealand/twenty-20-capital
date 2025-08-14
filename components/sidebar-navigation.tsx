@@ -260,16 +260,16 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
                 <div className="text-xs text-muted-foreground px-1 hidden sm:block">
                   {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="w-full justify-start hidden sm:inline-flex" size="sm" onClick={() => stack.redirectToAccountSettings()}>
-                    Manage account
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
-                    <LogOutIcon className="h-4 w-4 mr-2" />
-                    <span>Logout</span>
-                  </Button>
-                </div>
-              </div>
+                                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
+                      Manage account
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
+                      <LogOutIcon className="h-4 w-4 mr-2" />
+                      <span>Logout</span>
+                    </Button>
+                  </div>
+</div>
             )}
           </div>
         </nav>
