@@ -16,6 +16,7 @@ import {
   Shield,
   ShieldOff,
   Database,
+  LogIn,
   LogOut as LogOutIcon
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
@@ -147,24 +148,42 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           {/* Right side: Theme + User */}
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            {!user ? (
-              <Link href="/login">
-                <Button variant="outline" size="sm" className="ml-2">
-                  Login / Sign Up
-                </Button>
-              </Link>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-end">
-                  <span className="text-sm font-medium">{displayName}</span>
-                  <span className="text-xs text-muted-foreground">{userEmail}</span>
+            {/* Desktop auth controls */}
+            <div className="hidden sm:flex items-center gap-2">
+              {!user ? (
+                <Link href="/login">
+                  <Button variant="outline" size="sm" className="ml-2">
+                    Login / Sign Up
+                  </Button>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-medium">{displayName}</span>
+                    <span className="text-xs text-muted-foreground">{userEmail}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" className="gap-1" onClick={() => stack.signOut()}>
+                    <LogOutIcon className="h-4 w-4" />
+                    Logout
+                  </Button>
                 </div>
-                <Button variant="ghost" size="sm" className="gap-1" onClick={() => stack.signOut()}>
-                  <LogOutIcon className="h-4 w-4" />
-                  Logout
+              )}
+            </div>
+
+            {/* Mobile icon-only auth controls */}
+            <div className="flex sm:hidden items-center gap-1">
+              {!user ? (
+                <Link href="/login" aria-label="Login or Sign Up">
+                  <Button variant="ghost" size="icon">
+                    <LogIn className="h-5 w-5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button variant="ghost" size="icon" aria-label="Logout" onClick={() => stack.signOut()}>
+                  <LogOutIcon className="h-5 w-5" />
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -235,14 +254,14 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               </Link>
             ) : (
               <div className="flex flex-col gap-2">
-                <div className="text-xs text-muted-foreground px-1">
+                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
                   Logged in as {displayName} ({userEmail})
                 </div>
-                <div className="text-xs text-muted-foreground px-1">
+                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
                   {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
+                  <Button variant="outline" className="w-full justify-start hidden sm:inline-flex" size="sm" onClick={() => stack.redirectToAccountSettings()}>
                     Manage account
                   </Button>
                   <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
