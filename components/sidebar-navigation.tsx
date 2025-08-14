@@ -58,6 +58,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
   const [isMobile, setIsMobile] = useState(false)
   const [isInsightsOpen, setIsInsightsOpen] = useState(true)
   const [isResearchOpen, setIsResearchOpen] = useState(true)
+  const [isMyPortfolioOpen, setIsMyPortfolioOpen] = useState(true)
   const { isAnonymized, setAnonymized } = useAnonymization()
   const user = useUser()
   const stack = useStackApp()
@@ -80,9 +81,10 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // Portfolio links - only My Portfolio for both admin and non-admin
-  const portfolioItems = user ? [
-    { href: "/portfolio", label: "My Portfolio", icon: Briefcase }
+  // My Portfolio section items - includes trades for admin
+  const myPortfolioItems = user ? [
+    { href: "/portfolio", label: "Portfolio", icon: Briefcase },
+    ...(isAdmin && !isAnonymized ? [{ href: "/trades", label: "Trades", icon: Database }] : [])
   ] : []
 
   // Rish's Insights section items
@@ -104,12 +106,14 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
   ]
 
   // Get current page info for header
-  const allNavItems = [...basicNavItems, ...portfolioItems, ...rishInsightsItems, ...researchItems, ...otherNavItems]
+  const allNavItems = [...basicNavItems, ...myPortfolioItems, ...rishInsightsItems, ...researchItems, ...otherNavItems]
   let currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
   
   // Special handling for renamed/moved pages
   if (pathname === '/investment-thesis') {
     currentPage = { href: '/investment-thesis', label: 'Investment Thesis', icon: BookOpen }
+  } else if (pathname === '/portfolio') {
+    currentPage = { href: '/portfolio', label: 'Portfolio', icon: Briefcase }
   }
 
   useEffect(() => {
@@ -254,28 +258,47 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
 
-            {/* My Portfolio - for all logged-in users */}
-            {portfolioItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              )
-            })}
+            {/* My Portfolio Section - only show if user is logged in */}
+            {user && myPortfolioItems.length > 0 && (
+              <li className="mt-4">
+                <button
+                  onClick={() => setIsMyPortfolioOpen(!isMyPortfolioOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
+                >
+                  <span>My Portfolio</span>
+                  {isMyPortfolioOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                {isMyPortfolioOpen && (
+                  <ul className="mt-1 ml-3 space-y-1">
+                    {myPortfolioItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            )}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </li>
+            )}
 
             {/* Rish's Insights Section - visible for all users */}
             <li className="mt-4">
@@ -379,24 +402,6 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
                 </li>
               )
             })}
-            
-            {/* Trades link - only visible for admin users */}
-            {isAdmin && !isAnonymized && (
-              <li>
-                <Link
-                  href="/trades"
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    pathname === "/trades"
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  )}
-                >
-                  <Database className="h-5 w-5" />
-                  <span>Trades</span>
-                </Link>
-              </li>
-            )}
           </ul>
           
           {/* Auth control at the bottom */}
