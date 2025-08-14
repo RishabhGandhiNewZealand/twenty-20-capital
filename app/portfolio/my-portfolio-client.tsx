@@ -36,7 +36,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
     
     // If admin, redirect to Rish's portfolio
     if (isAdmin) {
-      router.push("/portfolio")
+      router.push("/rishs-portfolio")
       return
     }
   }, [user, isAdmin, router])

@@ -76,14 +76,18 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // My Portfolio - only for logged-in non-admin users
-  const myPortfolioItem = user && !isAdmin ? [
-    { href: "/my-portfolio", label: "My Portfolio", icon: Briefcase }
-  ] : []
+  // Portfolio link - different for admin vs non-admin users
+  const portfolioItem = user ? (
+    isAdmin ? [
+      { href: "/rishs-portfolio", label: "Portfolio", icon: TrendingUp }
+    ] : [
+      { href: "/portfolio", label: "My Portfolio", icon: Briefcase }
+    ]
+  ) : []
 
   // Rish's Insights section items
   const rishInsightsItems = [
-    { href: "/portfolio", label: "Rish's Portfolio", icon: TrendingUp },
+    { href: "/rishs-portfolio", label: "Rish's Portfolio", icon: TrendingUp },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
     { href: "/reports", label: "Reports", icon: FileText },
   ]
@@ -94,9 +98,16 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     { href: "/about", label: "About", icon: User },
   ]
 
-  // Get current page info for header
-  const allNavItems = [...basicNavItems, ...myPortfolioItem, ...rishInsightsItems, ...otherNavItems]
-  const currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
+  // Get current page info for header - handle both /portfolio and /rishs-portfolio
+  const allNavItems = [...basicNavItems, ...portfolioItem, ...rishInsightsItems, ...otherNavItems]
+  let currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
+  
+  // Special handling for portfolio pages
+  if (pathname === '/portfolio' && !isAdmin) {
+    currentPage = { href: '/portfolio', label: 'My Portfolio', icon: Briefcase }
+  } else if (pathname === '/rishs-portfolio') {
+    currentPage = { href: '/rishs-portfolio', label: "Rish's Portfolio", icon: TrendingUp }
+  }
 
   useEffect(() => {
     const checkMobile = () => {
@@ -240,10 +251,10 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
 
-            {/* My Portfolio - only for logged-in non-admin users */}
-            {myPortfolioItem.map((item) => {
+            {/* Portfolio link - different for admin vs non-admin users */}
+            {portfolioItem.map((item) => {
               const Icon = item.icon
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href || (isAdmin && pathname === '/portfolio')
               
               return (
                 <li key={item.href}>
@@ -263,45 +274,81 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
 
-            {/* Rish's Insights Section */}
-            <li className="mt-4">
-              <button
-                onClick={() => setIsInsightsOpen(!isInsightsOpen)}
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
-              >
-                <span>Rish's Insights</span>
-                {isInsightsOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
+            {/* Rish's Insights Section - only show if not admin (admin already has direct Portfolio link) */}
+            {!isAdmin && (
+              <li className="mt-4">
+                <button
+                  onClick={() => setIsInsightsOpen(!isInsightsOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
+                >
+                  <span>Rish's Insights</span>
+                  {isInsightsOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                {isInsightsOpen && (
+                  <ul className="mt-1 ml-3 space-y-1">
+                    {rishInsightsItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            )}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 )}
-              </button>
-              {isInsightsOpen && (
-                <ul className="mt-1 ml-3 space-y-1">
-                  {rishInsightsItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href
-                    
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                          )}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </li>
+              </li>
+            )}
+
+            {/* For admin users, show Analyses and Reports directly (not in a section) */}
+            {isAdmin && (
+              <>
+                <li>
+                  <Link
+                    href="/analyses"
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      pathname === "/analyses"
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <BarChart3 className="h-5 w-5" />
+                    <span>Analyses</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/reports"
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      pathname === "/reports"
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <FileText className="h-5 w-5" />
+                    <span>Reports</span>
+                  </Link>
+                </li>
+              </>
+            )}
 
             {/* Other Nav Items */}
             {otherNavItems.map((item) => {

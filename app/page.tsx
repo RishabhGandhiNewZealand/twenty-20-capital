@@ -60,7 +60,7 @@ export default function LandingPage() {
               One place for all my investments with the metrics that matter.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Link href="/portfolio">
+              <Link href="/rishs-portfolio">
                 <Button size="lg" className="group">
                   See the Portfolio
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -266,7 +266,7 @@ export default function LandingPage() {
             Check out the live portfolio or learn more about how it works.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/portfolio">
+            <Link href="/rishs-portfolio">
               <Button size="lg" variant="secondary" className="group">
                 View Portfolio
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />

@@ -1,4 +1,6 @@
+import { Suspense } from 'react'
 import MyPortfolioClient from './my-portfolio-client'
+import Loading from './loading'
 
 export default function MyPortfolioLayout({
   children,
@@ -7,5 +9,9 @@ export default function MyPortfolioLayout({
 }) {
   const adminEmail = process.env.ADMIN_EMAIL || ""
   
-  return <MyPortfolioClient adminEmail={adminEmail} />
+  return (
+    <Suspense fallback={<Loading />}>
+      <MyPortfolioClient adminEmail={adminEmail} />
+    </Suspense>
+  )
 }
