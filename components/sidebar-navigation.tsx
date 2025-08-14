@@ -96,6 +96,18 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     }
   }, [pathname, isMobile])
 
+  useEffect(() => {
+    function handleGlobalClick(e: MouseEvent) {
+      if (!isOpen) return
+      const sidebar = document.querySelector('[data-sidebar-root]') as HTMLElement | null
+      if (sidebar && !sidebar.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('click', handleGlobalClick)
+    return () => document.removeEventListener('click', handleGlobalClick)
+  }, [isOpen])
+
   return (
     <>
       {/* Header Bar */}
@@ -135,7 +147,13 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           {/* Right side: Theme + User */}
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            {user ? (
+            {!user ? (
+              <Link href="/login">
+                <Button variant="outline" size="sm" className="ml-2">
+                  Login / Sign Up
+                </Button>
+              </Link>
+            ) : (
               <div className="flex items-center gap-3">
                 <div className="flex flex-col items-end">
                   <span className="text-sm font-medium">{displayName}</span>
@@ -146,13 +164,14 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
                   Logout
                 </Button>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </header>
 
       {/* Sidebar */}
       <aside
+        data-sidebar-root
         className={cn(
           "fixed left-0 top-16 bottom-0 z-40 w-64 bg-background/95 backdrop-blur-sm border-r border-border transition-transform duration-300 shadow-xl",
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -204,15 +223,16 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           {/* Auth control at the bottom */}
           <div className="pt-4 mt-4 border-t border-border">
             {!user ? (
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                size="sm"
-                onClick={() => stack.redirectToSignIn()}
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                <span>Login / Sign Up</span>
-              </Button>
+              <Link href="/login" className="w-full">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  <span>Login / Sign Up</span>
+                </Button>
+              </Link>
             ) : (
               <div className="flex flex-col gap-2">
                 <div className="text-xs text-muted-foreground px-1">
