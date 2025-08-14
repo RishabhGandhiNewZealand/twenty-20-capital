@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation"
 import { 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   Home, 
   TrendingUp, 
   FileText, 
@@ -17,22 +19,14 @@ import {
   ShieldOff,
   Database,
   LogIn,
-  LogOut as LogOutIcon
+  LogOut as LogOutIcon,
+  Briefcase
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { Button } from "@/components/ui/button"
 import { useStackApp, useUser } from "@stackframe/stack"
-
-const navItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/portfolio", label: "Portfolio", icon: TrendingUp },
-  { href: "/reports", label: "Reports", icon: FileText },
-  { href: "/analyses", label: "Analyses", icon: BarChart3 },
-  { href: "/news", label: "News", icon: Newspaper },
-  { href: "/about", label: "About", icon: User },
-]
 
 function toTitleCase(input: string): string {
   return input
@@ -59,6 +53,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [isInsightsOpen, setIsInsightsOpen] = useState(true)
   const { isAnonymized, setAnonymized } = useAnonymization()
   const user = useUser()
   const stack = useStackApp()
@@ -76,8 +71,32 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     setAnonymized(!isAdmin)
   }, [isAdmin, setAnonymized])
 
-  // Get current page info
-  const currentPage = navItems.find(item => item.href === pathname) || navItems[0]
+  // Basic nav items that are always visible
+  const basicNavItems = [
+    { href: "/", label: "Home", icon: Home },
+  ]
+
+  // My Portfolio - only for logged-in non-admin users
+  const myPortfolioItem = user && !isAdmin ? [
+    { href: "/my-portfolio", label: "My Portfolio", icon: Briefcase }
+  ] : []
+
+  // Rish's Insights section items
+  const rishInsightsItems = [
+    { href: "/portfolio", label: "Rish's Portfolio", icon: TrendingUp },
+    { href: "/analyses", label: "Analyses", icon: BarChart3 },
+    { href: "/reports", label: "Reports", icon: FileText },
+  ]
+
+  // Other nav items
+  const otherNavItems = [
+    { href: "/news", label: "News", icon: Newspaper },
+    { href: "/about", label: "About", icon: User },
+  ]
+
+  // Get current page info for header
+  const allNavItems = [...basicNavItems, ...myPortfolioItem, ...rishInsightsItems, ...otherNavItems]
+  const currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
 
   useEffect(() => {
     const checkMobile = () => {
@@ -198,12 +217,99 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
       >
         <nav className="h-full flex flex-col overflow-y-auto p-4">
           <ul className="space-y-1 flex-1">
-            {navItems.map((item) => {
+            {/* Home */}
+            {basicNavItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
               
               return (
                 <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+
+            {/* My Portfolio - only for logged-in non-admin users */}
+            {myPortfolioItem.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+
+            {/* Rish's Insights Section */}
+            <li className="mt-4">
+              <button
+                onClick={() => setIsInsightsOpen(!isInsightsOpen)}
+                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
+              >
+                <span>Rish's Insights</span>
+                {isInsightsOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+              {isInsightsOpen && (
+                <ul className="mt-1 ml-3 space-y-1">
+                  {rishInsightsItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = pathname === item.href
+                    
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </li>
+
+            {/* Other Nav Items */}
+            {otherNavItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              
+              return (
+                <li key={item.href} className="mt-1">
                   <Link
                     href={item.href}
                     className={cn(
@@ -260,16 +366,16 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
                 <div className="text-xs text-muted-foreground px-1 hidden sm:block">
                   {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
                 </div>
-                                  <div className="flex flex-col gap-2">
-                    <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
-                      Manage account
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
-                      <LogOutIcon className="h-4 w-4 mr-2" />
-                      <span>Logout</span>
-                    </Button>
-                  </div>
-</div>
+                <div className="flex flex-col gap-2">
+                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
+                    Manage account
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
+                    <LogOutIcon className="h-4 w-4 mr-2" />
+                    <span>Logout</span>
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </nav>
