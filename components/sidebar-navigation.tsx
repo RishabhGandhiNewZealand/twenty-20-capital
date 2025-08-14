@@ -80,17 +80,12 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // Portfolio links - both for admin, just My Portfolio for non-admin
-  const portfolioItems = user ? (
-    isAdmin ? [
-      { href: "/portfolio", label: "My Portfolio", icon: Briefcase },
-      { href: "/rishs-portfolio", label: "Rish's Portfolio", icon: TrendingUp }
-    ] : [
-      { href: "/portfolio", label: "My Portfolio", icon: Briefcase }
-    ]
-  ) : []
+  // Portfolio links - only My Portfolio for both admin and non-admin
+  const portfolioItems = user ? [
+    { href: "/portfolio", label: "My Portfolio", icon: Briefcase }
+  ] : []
 
-  // Rish's Insights section items - now includes Investment Thesis
+  // Rish's Insights section items
   const rishInsightsItems = [
     { href: "/rishs-portfolio", label: "Rish's Portfolio", icon: TrendingUp },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
@@ -259,7 +254,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
 
-            {/* Portfolio links - both for admin, just My Portfolio for non-admin */}
+            {/* My Portfolio - for all logged-in users */}
             {portfolioItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -282,7 +277,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
 
-            {/* Rish's Insights Section - now visible for all users */}
+            {/* Rish's Insights Section - visible for all users */}
             <li className="mt-4">
               <button
                 onClick={() => setIsInsightsOpen(!isInsightsOpen)}
@@ -300,10 +295,6 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
                   {rishInsightsItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href
-                    // Don't show duplicate Rish's Portfolio for admin users
-                    if (isAdmin && item.href === "/rishs-portfolio" && portfolioItems.some(p => p.href === "/rishs-portfolio")) {
-                      return null
-                    }
                     
                     return (
                       <li key={item.href}>
