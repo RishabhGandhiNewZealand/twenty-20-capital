@@ -5,7 +5,8 @@ export const PORTFOLIO_INCEPTION_DATE = new Date('2023-09-01')
 export function getYearsSinceInception(currentDate: Date = new Date()): number {
   const diffMs = currentDate.getTime() - PORTFOLIO_INCEPTION_DATE.getTime()
   const diffYears = diffMs / (1000 * 60 * 60 * 24 * 365.25)
-  return Math.round(diffYears * 100) / 100 // Round to 2 decimal places
+  const result = Math.round(diffYears * 100) / 100 // Round to 2 decimal places
+  return isNaN(result) || result < 0 ? 0 : result
 }
 
 // Cache TTL values (in milliseconds)

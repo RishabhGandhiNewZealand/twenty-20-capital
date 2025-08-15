@@ -78,7 +78,7 @@ export function UserPortfolioAllocation({ holdings, loading = false }: UserPortf
             </div>
             <div className="flex justify-between items-center gap-4">
               <span className="text-gray-600">Allocation:</span>
-              <span className="font-medium">{data.percentage.toFixed(1)}%</span>
+              <span className="font-medium">{(isNaN(data.percentage) ? 0 : data.percentage).toFixed(1)}%</span>
             </div>
           </div>
         </div>
@@ -130,7 +130,7 @@ export function UserPortfolioAllocation({ holdings, loading = false }: UserPortf
                 type="number" 
                 stroke="#6b7280"
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${value.toFixed(0)}%`}
+                tickFormatter={(value) => `${(isNaN(value) ? 0 : value).toFixed(0)}%`}
                 domain={[0, 'dataMax']}
               />
               <YAxis 
@@ -170,7 +170,7 @@ export function UserPortfolioAllocation({ holdings, loading = false }: UserPortf
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium text-gray-900">{holding.percentage.toFixed(1)}%</div>
+                  <div className="font-medium text-gray-900">{(isNaN(holding.percentage) ? 0 : holding.percentage).toFixed(1)}%</div>
                   <div className="text-xs text-gray-500">
                     {isAnonymized ? "NZ$***" : formatCurrency(holding.value)}
                   </div>

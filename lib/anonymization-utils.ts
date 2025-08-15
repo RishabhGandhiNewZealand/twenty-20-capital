@@ -1,27 +1,28 @@
 /**
- * Utility functions for anonymizing sensitive financial data
+ * Utilities for anonymizing sensitive financial data
  */
 
 /**
- * Masks a numeric value with asterisks
- * @param value - The value to mask
- * @param isAnonymized - Whether anonymization is enabled
- * @returns The original value or masked string
+ * Mask a generic value
+ * @param value The value to mask
+ * @param isAnonymized Whether to apply masking
+ * @returns Masked or original value
  */
 export function maskValue(value: number | string | undefined, isAnonymized: boolean): string {
   if (!isAnonymized) {
-    if (value === undefined) return 'N/A'
+    if (value === undefined || value === null) return 'N/A'
+    if (typeof value === 'number' && isNaN(value)) return '0'
     return value.toString()
   }
   return '***'
 }
 
 /**
- * Masks currency values
- * @param value - The currency value to mask
- * @param isAnonymized - Whether anonymization is enabled
- * @param currency - Currency code (default: NZD)
- * @returns Formatted currency or masked string
+ * Mask currency values
+ * @param value The currency value
+ * @param isAnonymized Whether to apply masking
+ * @param currency Currency code
+ * @returns Masked or formatted currency
  */
 export function maskCurrency(
   value: number | undefined, 
@@ -29,7 +30,9 @@ export function maskCurrency(
   currency: string = 'NZD'
 ): string {
   if (!isAnonymized) {
-    if (value === undefined) return 'N/A'
+    if (value === undefined || value === null) return 'N/A'
+    if (isNaN(value)) return `${currency === 'USD' ? 'US' : currency}$0.00`
+    
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
       currency: currency,
@@ -37,17 +40,19 @@ export function maskCurrency(
       maximumFractionDigits: 2,
     }).format(value)
   }
-  return currency === 'USD' ? '$***' : 'NZ$***'
+  return currency === 'USD' ? 'US$***' : 'NZ$***'
 }
 
 /**
- * Masks share counts
- * @param shares - Number of shares
- * @param isAnonymized - Whether anonymization is enabled
- * @returns Formatted shares or masked string
+ * Mask share quantities
+ * @param shares Number of shares
+ * @param isAnonymized Whether to apply masking
+ * @returns Masked or formatted shares
  */
 export function maskShares(shares: number, isAnonymized: boolean): string {
   if (!isAnonymized) {
+    if (shares === undefined || shares === null || isNaN(shares)) return '0.00'
+    
     return new Intl.NumberFormat('en-NZ', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

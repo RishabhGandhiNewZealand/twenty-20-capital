@@ -9,6 +9,11 @@
  * @returns Formatted number string
  */
 export function formatNumber(value: number, decimals: number = 2): string {
+  // Handle invalid values
+  if (value === undefined || value === null || isNaN(value)) {
+    return '0'
+  }
+  
   return new Intl.NumberFormat('en-NZ', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -42,7 +47,9 @@ export function formatCurrencyWithDecimals(
   currency: string = 'NZD',
   decimals: number = 2
 ): string {
-  if (value === undefined) return 'N/A'
+  // Handle invalid values
+  if (value === undefined || value === null) return 'N/A'
+  if (isNaN(value)) return `${currency === 'USD' ? 'US' : currency}$0.00`
   
   return new Intl.NumberFormat('en-NZ', {
     style: 'currency',

@@ -183,7 +183,7 @@ export function PortfolioView({
                             <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
                               {maskCurrency(holding.gainNZD, isAnonymized)}
                               <span className="text-xs ml-1">
-                                ({holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%)
+                                ({holding.gainPercent >= 0 ? '+' : ''}{(isNaN(holding.gainPercent) ? 0 : holding.gainPercent).toFixed(1)}%)
                               </span>
                             </div>
                           </td>
@@ -203,7 +203,7 @@ export function PortfolioView({
                             <div className={summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
                               {maskCurrency(summary.totalGainNZD, isAnonymized)}
                               <span className="text-xs ml-1">
-                                ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
+                                ({summary.totalGainPercent >= 0 ? '+' : ''}{(isNaN(summary.totalGainPercent) ? 0 : summary.totalGainPercent).toFixed(1)}%)
                               </span>
                             </div>
                           </td>
@@ -219,7 +219,7 @@ export function PortfolioView({
                             <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
                               {maskCurrency(summary.sp500GainNZD, isAnonymized)}
                               <span className="text-xs ml-1">
-                                ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
+                                ({summary.sp500GainPercent >= 0 ? '+' : ''}{(isNaN(summary.sp500GainPercent) ? 0 : summary.sp500GainPercent).toFixed(1)}%)
                               </span>
                             </div>
                           </td>
@@ -257,7 +257,7 @@ export function PortfolioView({
                         <div className={`text-2xl font-bold ${
                           holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {holding.gainPercent >= 0 ? '+' : ''}{holding.gainPercent.toFixed(1)}%
+                          {holding.gainPercent >= 0 ? '+' : ''}{(isNaN(holding.gainPercent) ? 0 : holding.gainPercent).toFixed(1)}%
                         </div>
                         <div className={`text-sm font-medium ${
                           holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'
@@ -320,7 +320,7 @@ export function PortfolioView({
                           <div className={`font-bold text-lg ${
                             summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            {maskCurrency(summary.totalGainNZD, isAnonymized)} ({summary.totalGainPercent >= 0 ? '+' : ''}{summary.totalGainPercent.toFixed(1)}%)
+                            {maskCurrency(summary.totalGainNZD, isAnonymized)} ({summary.totalGainPercent >= 0 ? '+' : ''}{(isNaN(summary.totalGainPercent) ? 0 : summary.totalGainPercent).toFixed(1)}%)
                           </div>
                         </div>
                       </div>
@@ -344,7 +344,7 @@ export function PortfolioView({
                           <div className={`font-bold text-lg ${
                             summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            {maskCurrency(summary.sp500GainNZD, isAnonymized)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
+                            {maskCurrency(summary.sp500GainNZD, isAnonymized)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{(isNaN(summary.sp500GainPercent) ? 0 : summary.sp500GainPercent).toFixed(1)}%)
                           </div>
                         </div>
                       </div>

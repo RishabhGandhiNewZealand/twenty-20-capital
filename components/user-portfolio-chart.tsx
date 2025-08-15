@@ -183,13 +183,13 @@ export function UserPortfolioChart({
               <div className="flex justify-between items-center gap-4">
                 <span className="text-gray-600">Portfolio Gain:</span>
                 <span className={`font-medium ${portfolioGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {isAnonymized ? "***" : `${portfolioGain >= 0 ? '+' : ''}${formatCurrency(portfolioGain)} (${portfolioGainPercent >= 0 ? '+' : ''}${portfolioGainPercent.toFixed(1)}%)`}
+                  {isAnonymized ? "***" : `${portfolioGain >= 0 ? '+' : ''}${formatCurrency(portfolioGain)} (${portfolioGainPercent >= 0 ? '+' : ''}${(isNaN(portfolioGainPercent) ? 0 : portfolioGainPercent).toFixed(1)}%)`}
                 </span>
               </div>
               <div className="flex justify-between items-center gap-4">
                 <span className="text-gray-600">S&P 500 Gain:</span>
                 <span className={`font-medium ${sp500Gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {isAnonymized ? "***" : `${sp500Gain >= 0 ? '+' : ''}${formatCurrency(sp500Gain)} (${sp500GainPercent >= 0 ? '+' : ''}${sp500GainPercent.toFixed(1)}%)`}
+                  {isAnonymized ? "***" : `${sp500Gain >= 0 ? '+' : ''}${formatCurrency(sp500Gain)} (${sp500GainPercent >= 0 ? '+' : ''}${(isNaN(sp500GainPercent) ? 0 : sp500GainPercent).toFixed(1)}%)`}
                 </span>
               </div>
             </div>
@@ -208,8 +208,13 @@ export function UserPortfolioChart({
     }, [active])
 
     if (active && payload && payload.length) {
-      const portfolioPerf = payload.find(p => p.dataKey === 'portfolioPerformance')?.value as number
-      const sp500Perf = payload.find(p => p.dataKey === 'sp500Performance')?.value as number
+      const portfolioPerf = payload.find(p => p.dataKey === 'portfolioPerformance')?.value as number || 0
+      const sp500Perf = payload.find(p => p.dataKey === 'sp500Performance')?.value as number || 0
+      
+      // Validate values
+      const validPortfolioPerf = isNaN(portfolioPerf) ? 0 : portfolioPerf
+      const validSp500Perf = isNaN(sp500Perf) ? 0 : sp500Perf
+      const difference = validPortfolioPerf - validSp500Perf
       
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
@@ -217,21 +222,21 @@ export function UserPortfolioChart({
           <div className="space-y-1 text-sm">
             <div className="flex justify-between items-center gap-4">
               <span className="text-gray-600">Portfolio:</span>
-              <span className={`font-medium ${portfolioPerf >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {portfolioPerf >= 0 ? '+' : ''}{portfolioPerf.toFixed(2)}%
+              <span className={`font-medium ${validPortfolioPerf >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {validPortfolioPerf >= 0 ? '+' : ''}{validPortfolioPerf.toFixed(2)}%
               </span>
             </div>
             <div className="flex justify-between items-center gap-4">
               <span className="text-gray-600">S&P 500:</span>
-              <span className={`font-medium ${sp500Perf >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {sp500Perf >= 0 ? '+' : ''}{sp500Perf.toFixed(2)}%
+              <span className={`font-medium ${validSp500Perf >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {validSp500Perf >= 0 ? '+' : ''}{validSp500Perf.toFixed(2)}%
               </span>
             </div>
             <div className="border-t pt-1 mt-1">
               <div className="flex justify-between items-center gap-4">
                 <span className="text-gray-600">Difference:</span>
-                <span className={`font-medium ${portfolioPerf - sp500Perf >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                  {portfolioPerf - sp500Perf >= 0 ? '+' : ''}{(portfolioPerf - sp500Perf).toFixed(2)}%
+                <span className={`font-medium ${difference >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                  {difference >= 0 ? '+' : ''}{difference.toFixed(2)}%
                 </span>
               </div>
             </div>
@@ -329,10 +334,12 @@ export function UserPortfolioChart({
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => {
                   if (showPercentage) {
-                    return `${value >= 0 ? '+' : ''}${value.toFixed(0)}%`
+                    const validValue = isNaN(value) ? 0 : value
+                    return `${validValue >= 0 ? '+' : ''}${validValue.toFixed(0)}%`
                   }
                   if (isAnonymized) return '***'
-                  return `$${(value / 1000).toFixed(0)}k`
+                  const validValue = isNaN(value) ? 0 : value
+                  return `$${(validValue / 1000).toFixed(0)}k`
                 }}
               />
               <Tooltip 
