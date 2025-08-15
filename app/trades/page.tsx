@@ -641,26 +641,25 @@ export default function TradesPage() {
 
       {/* Save Confirmation Dialog */}
       <ConfirmationDialog
-        isOpen={showSaveConfirm}
+        open={showSaveConfirm}
+        onOpenChange={setShowSaveConfirm}
         title="Save Changes"
-        message={`Are you sure you want to save all changes? This will create ${stagedChanges.new.length} new trades, update ${stagedChanges.updated.length} trades, and delete ${stagedChanges.deleted.size} trades.`}
-        confirmLabel="Save All"
-        cancelLabel="Cancel"
+        description={`Are you sure you want to save all changes? This will create ${stagedChanges.new.length} new trades, update ${stagedChanges.updated.length} trades, and delete ${stagedChanges.deleted.size} trades.`}
+        confirmText="Save All"
+        cancelText="Cancel"
         onConfirm={saveChanges}
-        onCancel={() => setShowSaveConfirm(false)}
-        isLoading={saving}
       />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
-        isOpen={showDeleteConfirm}
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
         title="Delete Trade"
-        message={`Are you sure you want to delete this trade? This action will be permanent once you save changes.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        description={`Are you sure you want to delete this trade? This action will be permanent once you save changes.`}
+        confirmText="Delete"
+        cancelText="Cancel"
         onConfirm={confirmDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
-        variant="danger"
+        confirmVariant="destructive"
       />
     </div>
   )
