@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       SELECT 
         id,
         date,
-        action as type,
+        type,
         symbol as code,
         company as name,
         quantity as qty,
