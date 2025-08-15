@@ -168,9 +168,11 @@ export function PortfolioView({
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatCurrencyWithDecimals(
-                              holding.currency === 'NZD' 
-                                ? holding.costBasisNZD / holding.shares
-                                : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), 
+                              holding.shares > 0 
+                                ? (holding.currency === 'NZD' 
+                                    ? holding.costBasisNZD / holding.shares
+                                    : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1))
+                                : 0, 
                               holding.currency
                             )}
                           </td>
@@ -279,9 +281,11 @@ export function PortfolioView({
                           <div className="text-gray-500">Cost Basis (Per Share)</div>
                           <div className="font-medium text-gray-600">
                             {formatCurrencyWithDecimals(
-                              holding.currency === 'NZD' 
-                                ? holding.costBasisNZD / holding.shares
-                                : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), 
+                              holding.shares > 0 
+                                ? (holding.currency === 'NZD' 
+                                    ? holding.costBasisNZD / holding.shares
+                                    : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1))
+                                : 0, 
                               holding.currency
                             )}
                           </div>

@@ -246,22 +246,31 @@ export async function GET(request: NextRequest) {
 
     holdingsBySymbol.forEach((holding, symbol) => {
       const currentPrice = priceMap.get(symbol) || 0
-      const currentValueNZD = holding.shares * currentPrice * (holding.currency === 'USD' ? currentExchangeRate : 1)
-      
+      const exchangeMultiplier = holding.currency === 'USD' ? currentExchangeRate : 1
+      const currentValueNZD = holding.shares * currentPrice * exchangeMultiplier
+
+      // Ensure all values are valid numbers
+      const validShares = isNaN(holding.shares) ? 0 : holding.shares
+      const validCurrentPrice = isNaN(currentPrice) ? 0 : currentPrice
+      const validCurrentValueNZD = isNaN(currentValueNZD) ? 0 : currentValueNZD
+      const validCostBasisNZD = isNaN(holding.totalCostNZD) ? 0 : holding.totalCostNZD
+      const gainNZD = validCurrentValueNZD - validCostBasisNZD
+      const gainPercent = validCostBasisNZD > 0 ? (gainNZD / validCostBasisNZD * 100) : 0
+
       holdings.push({
         symbol,
         name: holding.name,
-        shares: holding.shares,
-        currentPrice,
-        currentValueNZD,
-        costBasisNZD: holding.totalCostNZD,
-        gainNZD: currentValueNZD - holding.totalCostNZD,
-        gainPercent: holding.totalCostNZD > 0 ? ((currentValueNZD - holding.totalCostNZD) / holding.totalCostNZD * 100) : 0,
+        shares: validShares,
+        currentPrice: validCurrentPrice,
+        currentValueNZD: validCurrentValueNZD,
+        costBasisNZD: validCostBasisNZD,
+        gainNZD: isNaN(gainNZD) ? 0 : gainNZD,
+        gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
         allocation: 0, // Will calculate after total
         currency: holding.currency
       })
 
-      totalValueNZD += currentValueNZD
+      totalValueNZD += validCurrentValueNZD
     })
 
     // Calculate allocations
@@ -272,27 +281,33 @@ export async function GET(request: NextRequest) {
     // Sort by allocation descending
     holdings.sort((a, b) => b.allocation - a.allocation)
 
-    // Calculate total gain
-    const totalGainNZD = totalValueNZD - currentCostBasis
-    const totalGainPercent = currentCostBasis > 0 ? (totalGainNZD / currentCostBasis * 100) : 0
+    // Calculate total gain with NaN protection
+    const validTotalValueNZD = isNaN(totalValueNZD) ? 0 : totalValueNZD
+    const validCurrentCostBasis = isNaN(currentCostBasis) ? 0 : currentCostBasis
+    const totalGainNZD = validTotalValueNZD - validCurrentCostBasis
+    const totalGainPercent = validCurrentCostBasis > 0 ? (totalGainNZD / validCurrentCostBasis * 100) : 0
 
-    // Calculate S&P 500 equivalent value
-    const sp500ValueUSD = sp500Shares * currentSpyPrice
-    const sp500Value = sp500ValueUSD * currentExchangeRate
-    const sp500GainNZD = sp500Value - currentCostBasis
-    const sp500GainPercent = currentCostBasis > 0 ? (sp500GainNZD / currentCostBasis * 100) : 0
+    // Calculate S&P 500 equivalent value with NaN protection
+    const validSp500Shares = isNaN(sp500Shares) ? 0 : sp500Shares
+    const validCurrentSpyPrice = isNaN(currentSpyPrice) ? 0 : currentSpyPrice
+    const validCurrentExchangeRate = isNaN(currentExchangeRate) ? 1 : currentExchangeRate
+    const sp500ValueUSD = validSp500Shares * validCurrentSpyPrice
+    const sp500Value = sp500ValueUSD * validCurrentExchangeRate
+    const sp500GainNZD = sp500Value - validCurrentCostBasis
+    const sp500GainPercent = validCurrentCostBasis > 0 ? (sp500GainNZD / validCurrentCostBasis * 100) : 0
 
     return NextResponse.json({
       holdings,
+      exitedPositions: [], // Exited positions are not calculated in this API yet
       summary: {
-        totalValueNZD,
-        totalCostBasisNZD: currentCostBasis,
-        totalGainNZD,
-        totalGainPercent,
-        sp500Value,
-        sp500GainNZD,
-        sp500GainPercent,
-        exchangeRate: currentExchangeRate
+        totalValueNZD: isNaN(validTotalValueNZD) ? 0 : validTotalValueNZD,
+        totalCostBasisNZD: isNaN(validCurrentCostBasis) ? 0 : validCurrentCostBasis,
+        totalGainNZD: isNaN(totalGainNZD) ? 0 : totalGainNZD,
+        totalGainPercent: isNaN(totalGainPercent) ? 0 : totalGainPercent,
+        sp500Value: isNaN(sp500Value) ? 0 : sp500Value,
+        sp500GainNZD: isNaN(sp500GainNZD) ? 0 : sp500GainNZD,
+        sp500GainPercent: isNaN(sp500GainPercent) ? 0 : sp500GainPercent,
+        exchangeRate: validCurrentExchangeRate
       },
       lastUpdated: new Date().toISOString()
     }, {

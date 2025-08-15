@@ -88,20 +88,25 @@ export function UserPortfolioChart({
     if (data.length === 0) return []
     
     return data.map((point) => {
+      // Validate input values
+      const portfolioValue = isNaN(point.portfolioValue) ? 0 : point.portfolioValue
+      const costBasis = isNaN(point.costBasis) ? 0 : point.costBasis
+      const sp500Value = isNaN(point.sp500Value) ? 0 : point.sp500Value
+      
       // Calculate portfolio performance
-      const portfolioPerformance = point.costBasis > 0 
-        ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
+      const portfolioPerformance = costBasis > 0 
+        ? ((portfolioValue - costBasis) / costBasis) * 100 
         : 0
       
       // Calculate S&P 500 performance
-      const sp500Performance = point.costBasis > 0
-        ? ((point.sp500Value - point.costBasis) / point.costBasis) * 100
+      const sp500Performance = costBasis > 0
+        ? ((sp500Value - costBasis) / costBasis) * 100
         : 0
       
       return {
         date: point.date,
-        portfolioPerformance,
-        sp500Performance
+        portfolioPerformance: isNaN(portfolioPerformance) ? 0 : portfolioPerformance,
+        sp500Performance: isNaN(sp500Performance) ? 0 : sp500Performance
       }
     })
   }
@@ -138,14 +143,19 @@ export function UserPortfolioChart({
     }, [active])
 
     if (active && payload && payload.length) {
-      const portfolioValue = payload.find(p => p.dataKey === 'portfolioValue')?.value as number
-      const sp500Value = payload.find(p => p.dataKey === 'sp500Value')?.value as number
-      const costBasis = payload.find(p => p.dataKey === 'costBasis')?.value as number
+      const portfolioValue = payload.find(p => p.dataKey === 'portfolioValue')?.value as number || 0
+      const sp500Value = payload.find(p => p.dataKey === 'sp500Value')?.value as number || 0
+      const costBasis = payload.find(p => p.dataKey === 'costBasis')?.value as number || 0
       
-      const portfolioGain = portfolioValue - costBasis
-      const sp500Gain = sp500Value - costBasis
-      const portfolioGainPercent = costBasis > 0 ? (portfolioGain / costBasis) * 100 : 0
-      const sp500GainPercent = costBasis > 0 ? (sp500Gain / costBasis) * 100 : 0
+      // Validate values
+      const validPortfolioValue = isNaN(portfolioValue) ? 0 : portfolioValue
+      const validSp500Value = isNaN(sp500Value) ? 0 : sp500Value
+      const validCostBasis = isNaN(costBasis) ? 0 : costBasis
+      
+      const portfolioGain = validPortfolioValue - validCostBasis
+      const sp500Gain = validSp500Value - validCostBasis
+      const portfolioGainPercent = validCostBasis > 0 ? (portfolioGain / validCostBasis) * 100 : 0
+      const sp500GainPercent = validCostBasis > 0 ? (sp500Gain / validCostBasis) * 100 : 0
       
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
@@ -154,19 +164,19 @@ export function UserPortfolioChart({
             <div className="flex justify-between items-center gap-4">
               <span className="text-gray-600">Portfolio:</span>
               <span className="font-medium text-blue-600">
-                {isAnonymized ? "NZ$***" : formatCurrency(portfolioValue)}
+                {isAnonymized ? "NZ$***" : formatCurrency(validPortfolioValue)}
               </span>
             </div>
             <div className="flex justify-between items-center gap-4">
               <span className="text-gray-600">S&P 500:</span>
               <span className="font-medium text-orange-600">
-                {isAnonymized ? "NZ$***" : formatCurrency(sp500Value)}
+                {isAnonymized ? "NZ$***" : formatCurrency(validSp500Value)}
               </span>
             </div>
             <div className="flex justify-between items-center gap-4">
               <span className="text-gray-600">Cost Basis:</span>
               <span className="font-medium text-gray-700">
-                {isAnonymized ? "NZ$***" : formatCurrency(costBasis)}
+                {isAnonymized ? "NZ$***" : formatCurrency(validCostBasis)}
               </span>
             </div>
             <div className="border-t pt-1 mt-1">

@@ -32,15 +32,18 @@ export function UserPortfolioAllocation({ holdings, loading = false }: UserPortf
   const { isAnonymized } = useAnonymization()
 
   // Transform holdings to chart data
-  const totalValue = holdings.reduce((sum, holding) => sum + holding.currentValueNZD, 0)
+  const totalValue = holdings.reduce((sum, holding) => {
+    const value = holding.currentValueNZD || 0
+    return sum + (isNaN(value) ? 0 : value)
+  }, 0)
   
   const chartData: ChartData[] = holdings
-    .filter(holding => holding.currentValueNZD > 0)
+    .filter(holding => holding.currentValueNZD > 0 && !isNaN(holding.currentValueNZD))
     .map(holding => ({
       name: holding.name,
       symbol: holding.symbol,
       value: holding.currentValueNZD,
-      percentage: (holding.currentValueNZD / totalValue) * 100,
+      percentage: totalValue > 0 ? (holding.currentValueNZD / totalValue) * 100 : 0,
       color: getCompanyColor(holding.symbol)
     }))
     .sort((a, b) => b.value - a.value)
