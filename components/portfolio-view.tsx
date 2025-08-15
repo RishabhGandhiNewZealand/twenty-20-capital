@@ -5,6 +5,8 @@ import { DollarSign, TrendingUp, ChartLine, Loader2 } from "lucide-react"
 import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
 import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
+import { UserPortfolioChart } from "@/components/user-portfolio-chart"
+import { UserPortfolioAllocation } from "@/components/user-portfolio-allocation"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
@@ -49,6 +51,7 @@ interface PortfolioViewProps {
     icon: any
   }>
   portfolioHistory?: any[] // Add portfolio history data
+  isUserPortfolio?: boolean // Flag to indicate if this is a user portfolio (not admin)
 }
 
 export function PortfolioView({
@@ -58,26 +61,42 @@ export function PortfolioView({
   loading,
   isAnonymized,
   portfolioStats,
-  portfolioHistory = []
+  portfolioHistory = [],
+  isUserPortfolio = false
 }: PortfolioViewProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         {/* Portfolio Performance Chart with integrated stats */}
         <div className="mb-6 sm:mb-8">
-          <PortfolioChart 
-            portfolioStats={portfolioStats}
-            portfolioHistory={portfolioHistory} 
-          />
+          {isUserPortfolio ? (
+            <UserPortfolioChart 
+              portfolioStats={portfolioStats}
+              portfolioHistory={portfolioHistory}
+              loading={loading}
+            />
+          ) : (
+            <PortfolioChart 
+              portfolioStats={portfolioStats}
+              portfolioHistory={portfolioHistory} 
+            />
+          )}
         </div>
 
-        {/* Portfolio Horizontal Bar Chart */}
+        {/* Portfolio Allocation Chart */}
         {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioHorizontalBarChart 
-              holdings={holdings}
-              useCurrentData={true}
-            />
+            {isUserPortfolio ? (
+              <UserPortfolioAllocation 
+                holdings={holdings}
+                loading={loading}
+              />
+            ) : (
+              <PortfolioHorizontalBarChart 
+                holdings={holdings}
+                useCurrentData={true}
+              />
+            )}
           </div>
         )}
 

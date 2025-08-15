@@ -210,6 +210,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
       isAnonymized={false}
       portfolioStats={portfolioStats}
       portfolioHistory={portfolioHistory}
+      isUserPortfolio={true}
     />
   )
 }
