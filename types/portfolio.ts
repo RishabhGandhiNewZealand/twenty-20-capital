@@ -1,5 +1,5 @@
 export interface TradeRecord {
-  id?: number // Optional for new trades that haven't been saved yet
+  id?: number | string // Optional for new trades, can be string for temporary IDs
   code: string
   marketCode: string
   name: string
@@ -16,6 +16,7 @@ export interface TradeRecord {
   deleted_at?: string
   created_at?: string
   updated_at?: string
+  user_id?: string
 }
 
 export interface PortfolioHolding {

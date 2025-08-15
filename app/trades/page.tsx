@@ -296,6 +296,19 @@ export default function TradesPage() {
       // Use email as the user identifier since Stack user.id might not be stable
       const userIdentifier = user.id || getRawEmail(user)
       
+      console.log('Saving changes for user:', userIdentifier, 'isAdmin:', isAdmin)
+      console.log('Changes to save:', {
+        new: stagedChanges.new.length,
+        updated: stagedChanges.updated.length,
+        deleted: stagedChanges.deleted.size
+      })
+      
+      // Clean up the data before sending - remove temporary IDs from new trades
+      const cleanedNewTrades = stagedChanges.new.map(trade => {
+        const { id, ...tradeWithoutId } = trade
+        return tradeWithoutId
+      })
+      
       const response = await fetch('/api/trades/batch', {
         method: 'POST',
         headers: {
@@ -305,21 +318,32 @@ export default function TradesPage() {
           'x-is-admin': isAdmin.toString()
         },
         body: JSON.stringify({
-          new: stagedChanges.new,
+          new: cleanedNewTrades,
           updated: stagedChanges.updated,
           deleted: Array.from(stagedChanges.deleted)
         })
       })
       
+      const result = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Failed to save changes')
+        throw new Error(result.error || result.details || 'Failed to save changes')
       }
       
-      // Clear staged changes and refresh
+      // Check if there were partial errors
+      if (result.errors && result.errors.length > 0) {
+        console.error('Some operations failed:', result.errors)
+        setError(`Saved with errors: ${result.errors.join(', ')}`)
+      } else {
+        console.log('Save successful:', result)
+      }
+      
+      // Clear staged changes and refresh even if there were some errors
       setStagedChanges({ new: [], updated: [], deleted: new Set() })
       await fetchTrades()
       setShowSaveConfirm(false)
     } catch (err) {
+      console.error('Error saving changes:', err)
       setError(err instanceof Error ? err.message : 'Failed to save changes')
     } finally {
       setSaving(false)
