@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import { useUser } from "@stackframe/stack"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { TradeRecord } from "@/types/portfolio"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,7 +21,8 @@ import {
   ChevronDown,
   ChevronRight,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  User
 } from "lucide-react"
 import { formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
 import TradeFormModal from "@/components/trade-form-modal"
@@ -43,8 +45,21 @@ interface GroupedTrades {
   }
 }
 
+// Helper function to get email from Stack user
+function getRawEmail(u: any): string {
+  return (
+    u?.primaryEmail ||
+    u?.email ||
+    u?.primaryEmailAddress?.emailAddress ||
+    u?.primaryEmailAddress?.email ||
+    ""
+  )
+  .toString()
+}
+
 export default function TradesPage() {
   const router = useRouter()
+  const user = useUser()
   const { isAnonymized } = useAnonymization()
   const [trades, setTrades] = useState<TradeRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,20 +82,32 @@ export default function TradesPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [tradeToDelete, setTradeToDelete] = useState<TradeRecord | null>(null)
 
-  // Check if user is admin (full view mode)
+  // Check if user is admin
+  const isAdmin = useMemo(() => {
+    if (!user) return false
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+    const userEmail = getRawEmail(user)
+    return adminEmail && userEmail === adminEmail
+  }, [user])
+
+  // Redirect if not logged in
   useEffect(() => {
-    if (isAnonymized) {
-      router.push('/portfolio')
+    if (!user) {
+      router.push('/login')
     }
-  }, [isAnonymized, router])
+  }, [user, router])
 
   // Fetch trades
   const fetchTrades = useCallback(async () => {
+    if (!user) return
+    
     try {
       setLoading(true)
       const response = await fetch('/api/trades', {
         headers: {
-          'x-admin-auth': 'true'
+          'x-user-id': user.id || '',
+          'x-user-email': getRawEmail(user),
+          'x-is-admin': isAdmin.toString()
         }
       })
       
@@ -95,25 +122,34 @@ export default function TradesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [user, isAdmin])
 
   useEffect(() => {
-    if (!isAnonymized) {
-      fetchTrades()
-    }
-  }, [isAnonymized, fetchTrades])
+    fetchTrades()
+  }, [fetchTrades])
 
   // Group trades by company
   const groupedTrades = useMemo(() => {
-    const filtered = trades.filter(trade => 
-      searchQuery === "" || 
-      trade.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      trade.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    
     const groups: GroupedTrades = {}
     
-    filtered.forEach(trade => {
+    // Filter trades based on search and exclude soft-deleted
+    const filteredTrades = trades.filter(trade => {
+      const isDeleted = trade.deleted_flag || stagedChanges.deleted.has(trade.id!)
+      const matchesSearch = !searchQuery || 
+        trade.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        trade.code.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      return !isDeleted && matchesSearch
+    })
+    
+    // Include staged new trades
+    const allTrades = [...filteredTrades, ...stagedChanges.new.filter(trade => 
+      !searchQuery || 
+      trade.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trade.code.toLowerCase().includes(searchQuery.toLowerCase())
+    )]
+    
+    allTrades.forEach(trade => {
       const key = `${trade.code}-${trade.name}`
       if (!groups[key]) {
         groups[key] = {
@@ -128,7 +164,7 @@ export default function TradesPage() {
       
       groups[key].trades.push(trade)
       
-      // Update aggregates
+      // Update stats
       if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
         groups[key].totalShares += trade.qty
         groups[key].totalValue += trade.value
@@ -137,72 +173,46 @@ export default function TradesPage() {
         groups[key].totalValue -= trade.value
       }
       
-      // Update dates
-      if (trade.date < groups[key].firstDate) {
-        groups[key].firstDate = trade.date
-      }
-      if (trade.date > groups[key].lastDate) {
-        groups[key].lastDate = trade.date
-      }
+      // Update date range
+      if (trade.date < groups[key].firstDate) groups[key].firstDate = trade.date
+      if (trade.date > groups[key].lastDate) groups[key].lastDate = trade.date
     })
     
-    // Calculate average prices and sort trades within groups
+    // Calculate average price and sort trades
     Object.values(groups).forEach(group => {
-      group.avgPrice = group.totalValue / group.totalShares || 0
+      group.avgPrice = group.totalShares > 0 ? group.totalValue / group.totalShares : 0
       group.trades.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     })
     
     return groups
-  }, [trades, searchQuery])
+  }, [trades, searchQuery, stagedChanges])
 
-  // Toggle company expansion
-  const toggleCompany = (company: string) => {
-    const newExpanded = new Set(expandedCompanies)
-    if (newExpanded.has(company)) {
-      newExpanded.delete(company)
-    } else {
-      newExpanded.add(company)
-    }
-    setExpandedCompanies(newExpanded)
-  }
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = stagedChanges.new.length > 0 || 
+    stagedChanges.updated.length > 0 || 
+    stagedChanges.deleted.size > 0
 
-  // Check if there are any staged changes
-  const hasChanges = stagedChanges.new.length > 0 || 
-                     stagedChanges.updated.length > 0 || 
-                     stagedChanges.deleted.size > 0
-
-  // Handle add new trade
-  const handleAddTrade = () => {
-    setEditingTrade(null)
-    setShowTradeForm(true)
-  }
-
-  // Handle edit trade
-  const handleEditTrade = (trade: TradeRecord) => {
-    setEditingTrade(trade)
-    setShowTradeForm(true)
-  }
-
-  // Handle save trade from form
-  const handleSaveTrade = (trade: TradeRecord) => {
-    if (editingTrade?.id) {
+  // Handle trade form submission
+  const handleTradeSubmit = (trade: TradeRecord) => {
+    if (editingTrade) {
       // Update existing trade
-      const updatedTrades = trades.map(t => 
-        t.id === trade.id ? trade : t
-      )
-      setTrades(updatedTrades)
-      
-      // Add to staged updates
-      setStagedChanges(prev => ({
-        ...prev,
-        updated: [...prev.updated.filter(t => t.id !== trade.id), trade]
-      }))
+      if (editingTrade.id) {
+        setStagedChanges(prev => ({
+          ...prev,
+          updated: [...prev.updated.filter(t => t.id !== editingTrade.id), trade]
+        }))
+        setTrades(prev => prev.map(t => t.id === editingTrade.id ? trade : t))
+      } else {
+        // Update staged new trade
+        setStagedChanges(prev => ({
+          ...prev,
+          new: prev.new.map(t => t === editingTrade ? trade : t)
+        }))
+      }
     } else {
-      // Add new trade (with temporary ID)
-      const newTrade = { ...trade, id: -Date.now() } // Negative ID for new trades
-      setTrades([newTrade, ...trades])
-      
-      // Add to staged new trades
+      // Add new trade
+      const tempId = `temp-${Date.now()}`
+      const newTrade = { ...trade, id: tempId as any }
       setStagedChanges(prev => ({
         ...prev,
         new: [...prev.new, newTrade]
@@ -213,113 +223,71 @@ export default function TradesPage() {
     setEditingTrade(null)
   }
 
-  // Handle delete trade
-  const handleDeleteTrade = (trade: TradeRecord) => {
+  // Handle delete
+  const handleDelete = (trade: TradeRecord) => {
     setTradeToDelete(trade)
     setShowDeleteConfirm(true)
   }
 
   const confirmDelete = () => {
-    if (!tradeToDelete) return
-    
-    if (tradeToDelete.id && tradeToDelete.id > 0) {
-      // Mark existing trade as deleted
-      const updatedTrades = trades.map(t => 
-        t.id === tradeToDelete.id 
-          ? { ...t, deleted_flag: true }
-          : t
-      )
-      setTrades(updatedTrades)
-      
-      // Add to staged deletions
-      setStagedChanges(prev => ({
-        ...prev,
-        deleted: new Set([...prev.deleted, tradeToDelete.id!])
-      }))
-    } else {
-      // Remove new trade that hasn't been saved yet
-      setTrades(trades.filter(t => t.id !== tradeToDelete.id))
-      setStagedChanges(prev => ({
-        ...prev,
-        new: prev.new.filter(t => t.id !== tradeToDelete.id)
-      }))
+    if (tradeToDelete) {
+      if (tradeToDelete.id && typeof tradeToDelete.id === 'number') {
+        // Mark existing trade for deletion
+        setStagedChanges(prev => ({
+          ...prev,
+          deleted: new Set([...prev.deleted, tradeToDelete.id as number])
+        }))
+      } else {
+        // Remove staged new trade
+        setStagedChanges(prev => ({
+          ...prev,
+          new: prev.new.filter(t => t !== tradeToDelete)
+        }))
+      }
     }
-    
     setShowDeleteConfirm(false)
     setTradeToDelete(null)
   }
 
-  // Handle restore deleted trade
-  const handleRestoreTrade = (trade: TradeRecord) => {
-    const updatedTrades = trades.map(t => 
-      t.id === trade.id 
-        ? { ...t, deleted_flag: false }
-        : t
-    )
-    setTrades(updatedTrades)
+  // Handle restore
+  const handleRestore = (tradeId: number) => {
+    setStagedChanges(prev => ({
+      ...prev,
+      deleted: new Set([...prev.deleted].filter(id => id !== tradeId))
+    }))
+  }
+
+  // Save all changes
+  const saveChanges = async () => {
+    if (!user) return
     
-    // Remove from staged deletions or add to updates
-    if (stagedChanges.deleted.has(trade.id!)) {
-      setStagedChanges(prev => {
-        const newDeleted = new Set(prev.deleted)
-        newDeleted.delete(trade.id!)
-        return { ...prev, deleted: newDeleted }
-      })
-    } else {
-      setStagedChanges(prev => ({
-        ...prev,
-        updated: [...prev.updated.filter(t => t.id !== trade.id), { ...trade, deleted_flag: false }]
-      }))
-    }
-  }
-
-  // Handle save all changes
-  const handleSaveChanges = () => {
-    setShowSaveConfirm(true)
-  }
-
-  const confirmSaveChanges = async () => {
     try {
       setSaving(true)
-      setShowSaveConfirm(false)
-      
-      // Prepare batch changes
-      const batchData = {
-        new: stagedChanges.new.map(t => {
-          const { id, ...tradeData } = t
-          return tradeData
-        }),
-        updated: stagedChanges.updated,
-        deleted: Array.from(stagedChanges.deleted)
-      }
+      setError(null)
       
       const response = await fetch('/api/trades/batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-auth': 'true'
+          'x-user-id': user.id || '',
+          'x-user-email': getRawEmail(user),
+          'x-is-admin': isAdmin.toString()
         },
-        body: JSON.stringify(batchData)
+        body: JSON.stringify({
+          new: stagedChanges.new,
+          updated: stagedChanges.updated,
+          deleted: Array.from(stagedChanges.deleted)
+        })
       })
       
-      const result = await response.json()
-      
-      if (!response.ok || result.error) {
-        throw new Error(result.details || result.error || 'Failed to save changes')
+      if (!response.ok) {
+        throw new Error('Failed to save changes')
       }
       
-      // Clear staged changes
-      setStagedChanges({
-        new: [],
-        updated: [],
-        deleted: new Set()
-      })
-      
-      // Refresh trades
+      // Clear staged changes and refresh
+      setStagedChanges({ new: [], updated: [], deleted: new Set() })
       await fetchTrades()
-      
-      // Show success message
-      setError(null)
+      setShowSaveConfirm(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save changes')
     } finally {
@@ -327,261 +295,288 @@ export default function TradesPage() {
     }
   }
 
-  // Handle discard changes
-  const handleDiscardChanges = () => {
-    setStagedChanges({
-      new: [],
-      updated: [],
-      deleted: new Set()
-    })
+  // Discard all changes
+  const discardChanges = () => {
+    setStagedChanges({ new: [], updated: [], deleted: new Set() })
     fetchTrades()
   }
 
-  if (isAnonymized) {
-    return null // Will redirect
+  // Toggle company expansion
+  const toggleCompany = (company: string) => {
+    setExpandedCompanies(prev => {
+      const next = new Set(prev)
+      if (next.has(company)) {
+        next.delete(company)
+      } else {
+        next.add(company)
+      }
+      return next
+    })
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Please log in to view your trades</div>
+      </div>
+    )
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading trades...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading trades...</div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Trade Management</h1>
-        <p className="text-muted-foreground">Manage your portfolio trades with full CRUD operations</p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isAdmin ? 'Admin Trade Management' : 'My Trades'}
+            </h1>
+            {isAdmin && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
+                <User className="h-4 w-4" />
+                Admin View
+              </div>
+            )}
+          </div>
+          <p className="text-gray-600">
+            {isAdmin 
+              ? 'Manage all portfolio trades and transactions'
+              : 'Manage your personal trades and transactions'
+            }
+          </p>
+        </div>
 
-      {error && (
-        <Card className="mb-6 border-destructive">
-          <CardContent className="flex items-center gap-2 pt-6">
-            <AlertCircle className="h-5 w-5 text-destructive" />
-            <p className="text-destructive">{error}</p>
-          </CardContent>
-        </Card>
-      )}
+        {/* Error display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+            <AlertCircle className="h-5 w-5" />
+            {error}
+          </div>
+        )}
 
-      {hasChanges && (
-        <Card className="mb-6 border-warning bg-warning/5">
-          <CardContent className="flex items-center justify-between pt-6">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-warning" />
-              <p className="text-sm">
-                You have unsaved changes: {stagedChanges.new.length} new, {stagedChanges.updated.length} updated, {stagedChanges.deleted.size} deleted
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDiscardChanges}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Discard
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSaveChanges}
-                disabled={saving}
-              >
-                <Save className="h-4 w-4 mr-1" />
-                Save Changes
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div className="flex-1">
-              <CardTitle>All Trades ({trades.length})</CardTitle>
-              <div className="mt-3 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Search by company name or symbol..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+        {/* Unsaved changes indicator */}
+        {hasUnsavedChanges && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-yellow-700">
+                <AlertCircle className="h-5 w-5" />
+                <span className="font-medium">You have unsaved changes</span>
+                <span className="text-sm">
+                  ({stagedChanges.new.length} new, {stagedChanges.updated.length} updated, {stagedChanges.deleted.size} deleted)
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={discardChanges}
+                  disabled={saving}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Discard
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowSaveConfirm(true)}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  Save All
+                </Button>
               </div>
             </div>
-            <Button onClick={handleAddTrade} className="self-start">
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Trade
-            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {Object.entries(groupedTrades).map(([companyKey, group]) => {
-              const [code, ...nameParts] = companyKey.split('-')
-              const name = nameParts.join('-')
-              const isExpanded = expandedCompanies.has(companyKey)
-              const hasDeletedTrades = group.trades.some(t => t.deleted_flag)
-              
-              return (
-                <div key={companyKey} className="border rounded-lg overflow-hidden">
-                  {/* Company Header */}
-                  <div
-                    className={`p-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors ${
-                      hasDeletedTrades ? 'opacity-75' : ''
-                    }`}
-                    onClick={() => toggleCompany(companyKey)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <div>
-                          <span className="font-semibold text-lg">{code}</span>
-                          <span className="ml-2 text-muted-foreground">{name}</span>
+        )}
+
+        {/* Controls */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by company name or ticker..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <Button onClick={() => {
+            setEditingTrade(null)
+            setShowTradeForm(true)
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Trade
+          </Button>
+        </div>
+
+        {/* Trades list grouped by company */}
+        <div className="space-y-4">
+          {Object.entries(groupedTrades).length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-gray-500">
+                {searchQuery ? 'No trades found matching your search' : 'No trades yet. Add your first trade to get started.'}
+              </CardContent>
+            </Card>
+          ) : (
+            Object.entries(groupedTrades)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([company, group]) => {
+                const isExpanded = expandedCompanies.has(company)
+                const [code, name] = company.split('-')
+                const isPositive = group.totalValue >= 0
+                
+                return (
+                  <Card key={company} className="overflow-hidden">
+                    <CardHeader 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => toggleCompany(company)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {isExpanded ? (
+                            <ChevronDown className="h-5 w-5 text-gray-400" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-gray-400" />
+                          )}
+                          <div>
+                            <CardTitle className="text-lg">{code}</CardTitle>
+                            <p className="text-sm text-gray-600">{name}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            {isPositive ? (
+                              <TrendingUp className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4 text-red-600" />
+                            )}
+                            <span className={`font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                              {group.totalShares.toFixed(2)} shares
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {group.trades.length} trade{group.trades.length !== 1 ? 's' : ''} • 
+                            {formatDate(group.firstDate)} - {formatDate(group.lastDate)}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="text-right">
-                          <div className="text-muted-foreground">Trades</div>
-                          <div className="font-medium">{group.trades.length}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-muted-foreground">Net Shares</div>
-                          <div className={`font-medium ${
-                            group.totalShares > 0 ? 'text-green-600' : 
-                            group.totalShares < 0 ? 'text-red-600' : 
-                            'text-gray-500'
-                          }`}>
-                            {group.totalShares.toFixed(2)}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-muted-foreground">Total Value</div>
-                          <div className="font-medium">
-                            {formatCurrencyWithDecimals(Math.abs(group.totalValue), 'NZD', 2)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Trades List */}
-                  {isExpanded && (
-                    <div className="divide-y">
-                      {group.trades.map((trade) => (
-                        <div
-                          key={trade.id || `new-${trade.code}-${trade.date}`}
-                          className={`p-3 ${
-                            trade.deleted_flag ? 'bg-destructive/5 opacity-60' : ''
-                          } ${
-                            trade.id && trade.id < 0 ? 'bg-primary/5' : ''
-                          } hover:bg-muted/10 transition-colors`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                              <div className="flex items-center gap-2">
-                                {trade.type === 'Buy' ? (
-                                  <TrendingUp className="h-4 w-4 text-green-600" />
-                                ) : trade.type === 'Sell' ? (
-                                  <TrendingDown className="h-4 w-4 text-red-600" />
-                                ) : (
-                                  <div className="h-4 w-4" />
-                                )}
-                                <span className={`font-medium ${
-                                  trade.type === 'Buy' ? 'text-green-600' : 
-                                  trade.type === 'Sell' ? 'text-red-600' : 
-                                  'text-blue-600'
-                                }`}>
-                                  {trade.type}
-                                </span>
-                                {trade.id && trade.id < 0 && (
-                                  <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">NEW</span>
-                                )}
-                                {trade.deleted_flag && (
-                                  <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">DEL</span>
-                                )}
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Date: </span>
-                                <span className="font-medium">{formatDate(trade.date)}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Qty: </span>
-                                <span className="font-medium">{trade.qty}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Price: </span>
-                                <span className="font-medium">
-                                  {formatCurrencyWithDecimals(trade.price, trade.instrumentCurrency, 2)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Value: </span>
-                                <span className="font-medium">
-                                  {formatCurrencyWithDecimals(trade.value, 'NZD', 2)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1 ml-4">
-                              {trade.deleted_flag ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRestoreTrade(trade)}
-                                  title="Restore"
-                                >
-                                  <RotateCcw className="h-4 w-4" />
-                                </Button>
-                              ) : (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditTrade(trade)}
-                                    title="Edit"
+                    </CardHeader>
+                    
+                    {isExpanded && (
+                      <CardContent className="pt-0">
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b text-sm text-gray-600">
+                                <th className="text-left py-2">Date</th>
+                                <th className="text-left py-2">Type</th>
+                                <th className="text-right py-2">Quantity</th>
+                                <th className="text-right py-2">Price</th>
+                                <th className="text-right py-2">Value</th>
+                                <th className="text-right py-2">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {group.trades.map((trade, index) => {
+                                const isDeleted = trade.id && typeof trade.id === 'number' && stagedChanges.deleted.has(trade.id)
+                                const isNew = !trade.id || typeof trade.id === 'string'
+                                const isUpdated = stagedChanges.updated.some(t => t.id === trade.id)
+                                
+                                return (
+                                  <tr 
+                                    key={trade.id || index} 
+                                    className={`border-b last:border-0 ${
+                                      isDeleted ? 'opacity-50 bg-red-50' : 
+                                      isNew ? 'bg-green-50' : 
+                                      isUpdated ? 'bg-yellow-50' : ''
+                                    }`}
                                   >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteTrade(trade)}
-                                    className="text-destructive hover:bg-destructive/10"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                                    <td className="py-2">{formatDate(trade.date)}</td>
+                                    <td className="py-2">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        trade.type === 'Buy' ? 'bg-blue-100 text-blue-700' :
+                                        trade.type === 'Sell' ? 'bg-red-100 text-red-700' :
+                                        'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {trade.type}
+                                      </span>
+                                    </td>
+                                    <td className="text-right py-2">{trade.qty.toFixed(2)}</td>
+                                    <td className="text-right py-2">
+                                      {formatCurrencyWithDecimals(trade.price, trade.instrumentCurrency)}
+                                    </td>
+                                    <td className="text-right py-2">
+                                      {formatCurrencyWithDecimals(trade.value, trade.instrumentCurrency)}
+                                    </td>
+                                    <td className="text-right py-2">
+                                      <div className="flex justify-end gap-1">
+                                        {isDeleted ? (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleRestore(trade.id as number)}
+                                          >
+                                            <RotateCcw className="h-4 w-4" />
+                                          </Button>
+                                        ) : (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => {
+                                                setEditingTrade(trade)
+                                                setShowTradeForm(true)
+                                              }}
+                                            >
+                                              <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleDelete(trade)}
+                                            >
+                                              <Trash2 className="h-4 w-4 text-red-500" />
+                                            </Button>
+                                          </>
+                                        )}
+                                        {(isNew || isUpdated) && (
+                                          <span className="ml-2">
+                                            {isNew && <span className="text-xs text-green-600">NEW</span>}
+                                            {isUpdated && <span className="text-xs text-yellow-600">EDITED</span>}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                      </CardContent>
+                    )}
+                  </Card>
+                )
+              })
+          )}
+        </div>
+      </div>
 
       {/* Trade Form Modal */}
       {showTradeForm && (
         <TradeFormModal
           trade={editingTrade}
-          onSave={handleSaveTrade}
+          onSubmit={handleTradeSubmit}
           onClose={() => {
             setShowTradeForm(false)
             setEditingTrade(null)
@@ -591,24 +586,26 @@ export default function TradesPage() {
 
       {/* Save Confirmation Dialog */}
       <ConfirmationDialog
-        open={showSaveConfirm}
-        onOpenChange={setShowSaveConfirm}
+        isOpen={showSaveConfirm}
         title="Save Changes"
-        description={`Are you sure you want to save all staged changes? This will add ${stagedChanges.new.length} new trades, update ${stagedChanges.updated.length} trades, and delete ${stagedChanges.deleted.size} trades.`}
-        onConfirm={confirmSaveChanges}
-        confirmText="Save All Changes"
-        confirmVariant="default"
+        message={`Are you sure you want to save all changes? This will create ${stagedChanges.new.length} new trades, update ${stagedChanges.updated.length} trades, and delete ${stagedChanges.deleted.size} trades.`}
+        confirmLabel="Save All"
+        cancelLabel="Cancel"
+        onConfirm={saveChanges}
+        onCancel={() => setShowSaveConfirm(false)}
+        isLoading={saving}
       />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
+        isOpen={showDeleteConfirm}
         title="Delete Trade"
-        description={`Are you sure you want to delete this trade? ${tradeToDelete?.code} - ${tradeToDelete?.name} (${formatDate(tradeToDelete?.date || '')})`}
+        message={`Are you sure you want to delete this trade? This action will be permanent once you save changes.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
         onConfirm={confirmDelete}
-        confirmText="Delete"
-        confirmVariant="destructive"
+        onCancel={() => setShowDeleteConfirm(false)}
+        variant="danger"
       />
     </div>
   )

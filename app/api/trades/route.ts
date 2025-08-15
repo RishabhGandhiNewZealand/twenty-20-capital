@@ -1,25 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getAdminDb, getAdminUserId } from '@/lib/rls-auth'
+import { getAdminDb, getUserDb, getUserIdFromStackUser, isAdminUser } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
+import { cookies } from 'next/headers'
 
-// GET all trades (including soft-deleted for admin view)
+// Helper to get user from Stack session
+async function getUserFromSession() {
+  try {
+    // Get the Stack session from cookies
+    const cookieStore = cookies()
+    const sessionCookie = cookieStore.get('stack-session')
+    
+    if (!sessionCookie) {
+      return null
+    }
+    
+    // Parse the session to get user info
+    // Note: In production, you should verify this with Stack's API
+    const sessionData = JSON.parse(sessionCookie.value)
+    return sessionData.user || null
+  } catch (error) {
+    logger.error('Error getting user from session:', error)
+    return null
+  }
+}
+
+// GET all trades for the authenticated user
 export async function GET(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    // Check for user authentication header (sent from client)
+    const userIdHeader = request.headers.get('x-user-id')
+    const userEmailHeader = request.headers.get('x-user-email')
+    const isAdminHeader = request.headers.get('x-is-admin') === 'true'
+    
+    if (!userIdHeader) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'User authentication required' },
         { status: 401 }
       )
     }
-
-    // Use admin authenticated connection for RLS
-    const sql = getAdminDb()
     
-    // Fetch all trades including soft-deleted ones
+    // Use appropriate database connection based on user type
+    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
+    
+    // Fetch trades - RLS will automatically filter based on user
+    // For regular users, only their trades will be returned
+    // For admin, all trades will be returned
     const results = await sql`
       SELECT 
         id,
@@ -38,8 +65,10 @@ export async function GET(request: NextRequest) {
         deleted_flag,
         deleted_at,
         created_at,
-        updated_at
+        updated_at,
+        user_id
       FROM application.trade_data
+      WHERE deleted_flag = FALSE OR deleted_flag IS NULL
       ORDER BY date DESC, id DESC
     `
     
@@ -61,10 +90,11 @@ export async function GET(request: NextRequest) {
       deleted_flag: row.deleted_flag || false,
       deleted_at: row.deleted_at ? row.deleted_at.toISOString() : undefined,
       created_at: row.created_at ? row.created_at.toISOString() : undefined,
-      updated_at: row.updated_at ? row.updated_at.toISOString() : undefined
+      updated_at: row.updated_at ? row.updated_at.toISOString() : undefined,
+      user_id: row.user_id
     }))
     
-    logger.info(`Fetched ${trades.length} trades for admin view with RLS authentication`)
+    logger.info(`Fetched ${trades.length} trades for user ${userIdHeader} (admin: ${isAdminHeader})`)
     return NextResponse.json(trades, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -86,20 +116,23 @@ export async function GET(request: NextRequest) {
 // POST new trade
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    // Get user authentication from headers
+    const userIdHeader = request.headers.get('x-user-id')
+    const isAdminHeader = request.headers.get('x-is-admin') === 'true'
+    
+    if (!userIdHeader) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'User authentication required' },
         { status: 401 }
       )
     }
 
     const trade: TradeRecord = await request.json()
     
-    // Use admin authenticated connection for RLS
-    const sql = getAdminDb()
+    // Use appropriate database connection based on user type
+    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
     
+    // Insert trade with user_id
     const result = await sql`
       INSERT INTO application.trade_data (
         code,
@@ -113,7 +146,8 @@ export async function POST(request: NextRequest) {
         brokerage,
         brokerage_currency,
         exch_rate,
-        value
+        value,
+        user_id
       ) VALUES (
         ${trade.code},
         ${trade.marketCode},
@@ -126,17 +160,20 @@ export async function POST(request: NextRequest) {
         ${trade.brokerage},
         ${trade.brokerageCurrency},
         ${trade.exchRate},
-        ${trade.value}
+        ${trade.value},
+        ${userIdHeader}
       )
       RETURNING id
     `
     
-    logger.info(`Created new trade with ID: ${result[0].id} using RLS authentication`)
+    logger.info(`Created new trade with ID: ${result[0].id} for user ${userIdHeader}`)
     
-    // Invalidate portfolio caches after trade creation
-    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
-    await invalidatePortfolioCaches()
-    logger.info('Portfolio caches invalidated after trade creation')
+    // Only invalidate caches if admin (affects portfolio pages)
+    if (isAdminHeader) {
+      const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+      await invalidatePortfolioCaches()
+      logger.info('Portfolio caches invalidated after admin trade creation')
+    }
     
     return NextResponse.json({ id: result[0].id, success: true })
     

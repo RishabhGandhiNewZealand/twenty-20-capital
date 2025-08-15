@@ -77,7 +77,8 @@ export function getAdminDb() {
  * @param userId - The user ID to check
  * @returns True if the user is the admin
  */
-export function isAdmin(userId: string): boolean {
+export function isAdmin(userId: string | undefined): boolean {
+  if (!userId) return false
   const adminUserId = getAdminUserId()
   return adminUserId === userId
 }
@@ -95,4 +96,67 @@ export function getUserDb(userId: string) {
   
   logger.info(`Creating user-authenticated DB connection for user: ${userId}`)
   return getAuthenticatedDb(userId)
+}
+
+/**
+ * Extracts user ID from Stack user object
+ * Stack uses different ID fields depending on the auth provider
+ * @param user - The Stack user object
+ * @returns The user ID or undefined
+ */
+export function getUserIdFromStackUser(user: any): string | undefined {
+  if (!user) return undefined
+  
+  // Stack user ID is typically in the 'id' field
+  return user.id || user.userId || undefined
+}
+
+/**
+ * Extracts email from Stack user object
+ * @param user - The Stack user object
+ * @returns The user email or undefined
+ */
+export function getEmailFromStackUser(user: any): string | undefined {
+  if (!user) return undefined
+  
+  return (
+    user?.primaryEmail ||
+    user?.email ||
+    user?.primaryEmailAddress?.emailAddress ||
+    user?.primaryEmailAddress?.email ||
+    undefined
+  )?.toString()
+}
+
+/**
+ * Checks if a Stack user is the admin based on email
+ * @param user - The Stack user object
+ * @returns True if the user is admin
+ */
+export function isAdminUser(user: any): boolean {
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (!adminEmail || !user) return false
+  
+  const userEmail = getEmailFromStackUser(user)
+  return userEmail === adminEmail
+}
+
+/**
+ * Gets the appropriate database connection for a user
+ * Returns admin DB for admin users, user-specific DB for regular users
+ * @param user - The Stack user object
+ * @returns An authenticated database connection
+ */
+export function getDbForUser(user: any) {
+  if (isAdminUser(user)) {
+    logger.info('Using admin database connection')
+    return getAdminDb()
+  }
+  
+  const userId = getUserIdFromStackUser(user)
+  if (!userId) {
+    throw new Error('Unable to extract user ID from user object')
+  }
+  
+  return getUserDb(userId)
 }

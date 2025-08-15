@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getAdminDb } from '@/lib/rls-auth'
+import { getAdminDb, getUserDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -10,11 +10,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    // Get user authentication from headers
+    const userIdHeader = request.headers.get('x-user-id')
+    const isAdminHeader = request.headers.get('x-is-admin') === 'true'
+    
+    if (!userIdHeader) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'User authentication required' },
         { status: 401 }
       )
     }
@@ -22,9 +24,10 @@ export async function PUT(
     const tradeId = parseInt(params.id)
     const trade: TradeRecord = await request.json()
     
-    // Use admin authenticated connection for RLS
-    const sql = getAdminDb()
+    // Use appropriate database connection based on user type
+    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
     
+    // Update trade - RLS will ensure users can only update their own trades
     const result = await sql`
       UPDATE application.trade_data
       SET
@@ -48,17 +51,19 @@ export async function PUT(
     
     if (result.length === 0) {
       return NextResponse.json(
-        { error: 'Trade not found' },
+        { error: 'Trade not found or access denied' },
         { status: 404 }
       )
     }
     
-    logger.info(`Updated trade with ID: ${tradeId} using RLS authentication`)
+    logger.info(`Updated trade with ID: ${tradeId} for user ${userIdHeader}`)
     
-    // Invalidate portfolio caches after trade update
-    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
-    await invalidatePortfolioCaches()
-    logger.info('Portfolio caches invalidated after trade update')
+    // Only invalidate caches if admin (affects portfolio pages)
+    if (isAdminHeader) {
+      const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+      await invalidatePortfolioCaches()
+      logger.info('Portfolio caches invalidated after admin trade update')
+    }
     
     return NextResponse.json({ success: true })
     
@@ -77,21 +82,24 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    // Get user authentication from headers
+    const userIdHeader = request.headers.get('x-user-id')
+    const isAdminHeader = request.headers.get('x-is-admin') === 'true'
+    
+    if (!userIdHeader) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'User authentication required' },
         { status: 401 }
       )
     }
 
     const tradeId = parseInt(params.id)
     
-    // Use admin authenticated connection for RLS
-    const sql = getAdminDb()
+    // Use appropriate database connection based on user type
+    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
     
     // Soft delete by setting deleted_flag and deleted_at
+    // RLS will ensure users can only delete their own trades
     const result = await sql`
       UPDATE application.trade_data
       SET
@@ -103,17 +111,19 @@ export async function DELETE(
     
     if (result.length === 0) {
       return NextResponse.json(
-        { error: 'Trade not found' },
+        { error: 'Trade not found or access denied' },
         { status: 404 }
       )
     }
     
-    logger.info(`Soft deleted trade with ID: ${tradeId} using RLS authentication`)
+    logger.info(`Soft deleted trade with ID: ${tradeId} for user ${userIdHeader}`)
     
-    // Invalidate portfolio caches after trade deletion
-    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
-    await invalidatePortfolioCaches()
-    logger.info('Portfolio caches invalidated after trade deletion')
+    // Only invalidate caches if admin (affects portfolio pages)
+    if (isAdminHeader) {
+      const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+      await invalidatePortfolioCaches()
+      logger.info('Portfolio caches invalidated after admin trade deletion')
+    }
     
     return NextResponse.json({ success: true })
     

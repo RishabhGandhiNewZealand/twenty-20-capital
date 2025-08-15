@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getAdminDb } from '@/lib/rls-auth'
+import { getAdminDb, getUserDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -13,19 +13,21 @@ interface BatchChanges {
 // POST batch update trades
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    // Get user authentication from headers
+    const userIdHeader = request.headers.get('x-user-id')
+    const isAdminHeader = request.headers.get('x-is-admin') === 'true'
+    
+    if (!userIdHeader) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'User authentication required' },
         { status: 401 }
       )
     }
 
     const changes: BatchChanges = await request.json()
     
-    // Use admin authenticated connection for RLS
-    const sql = getAdminDb()
+    // Use appropriate database connection based on user type
+    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
     
     let createdCount = 0
     let updatedCount = 0
@@ -46,7 +48,8 @@ export async function POST(request: NextRequest) {
           brokerage,
           brokerage_currency,
           exch_rate,
-          value
+          value,
+          user_id
         ) VALUES (
           ${trade.code},
           ${trade.marketCode},
@@ -59,17 +62,18 @@ export async function POST(request: NextRequest) {
           ${trade.brokerage},
           ${trade.brokerageCurrency},
           ${trade.exchRate},
-          ${trade.value}
+          ${trade.value},
+          ${userIdHeader}
         )
       `
       createdCount++
     }
     
-    // Process updated trades
+    // Process updated trades - RLS will ensure users can only update their own
     for (const trade of changes.updated) {
       if (!trade.id) continue
       
-      await sql`
+      const result = await sql`
         UPDATE application.trade_data
         SET
           code = ${trade.code},
@@ -87,28 +91,36 @@ export async function POST(request: NextRequest) {
           deleted_flag = ${trade.deleted_flag || false},
           deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
         WHERE id = ${trade.id}
+        RETURNING id
       `
-      updatedCount++
+      if (result.length > 0) {
+        updatedCount++
+      }
     }
     
-    // Process deleted trades (soft delete)
+    // Process deleted trades (soft delete) - RLS will ensure users can only delete their own
     for (const tradeId of changes.deleted) {
-      await sql`
+      const result = await sql`
         UPDATE application.trade_data
         SET
           deleted_flag = TRUE,
           deleted_at = CURRENT_TIMESTAMP
         WHERE id = ${tradeId}
+        RETURNING id
       `
-      deletedCount++
+      if (result.length > 0) {
+        deletedCount++
+      }
     }
     
-    logger.info(`Batch update completed with RLS authentication: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
+    logger.info(`Batch update completed for user ${userIdHeader}: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
     
-    // Invalidate portfolio caches after batch trade updates
-    const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
-    await invalidatePortfolioCaches()
-    logger.info('Portfolio caches invalidated after batch trade updates')
+    // Only invalidate caches if admin (affects portfolio pages)
+    if (isAdminHeader) {
+      const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
+      await invalidatePortfolioCaches()
+      logger.info('Portfolio caches invalidated after admin batch trade updates')
+    }
     
     return NextResponse.json({ 
       success: true,
