@@ -25,20 +25,10 @@ export function getAuthenticatedDb(userId?: string) {
   if (userId) {
     logger.info(`Setting RLS context for user: ${userId}`)
     
-    // Return a wrapper that sets the session context before each query
-    return async (strings: TemplateStringsArray, ...values: any[]) => {
-      try {
-        // Set the session variable that RLS policies can check
-        // Using app.current_user_id as the session variable name
-        await sql`SELECT set_config('app.current_user_id', ${userId}, false)`
-        
-        // Execute the actual query
-        return await sql(strings, ...values)
-      } catch (error) {
-        logger.error(`RLS query error for user ${userId}:`, error)
-        throw error
-      }
-    }
+    // For now, we'll rely on explicit WHERE clauses in queries rather than RLS policies
+    // since setting session variables in serverless functions can be unreliable
+    // The queries will explicitly filter by user_id
+    return sql
   }
   
   return sql

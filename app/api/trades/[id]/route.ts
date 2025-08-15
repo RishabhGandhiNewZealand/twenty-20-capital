@@ -28,7 +28,7 @@ export async function PUT(
     // Admin can only update their own trades, just like regular users
     const sql = getUserDb(userIdHeader)
     
-    // Update trade - RLS will ensure users can only update their own trades
+    // Update trade - explicitly filter by user_id for security
     const result = await sql`
       UPDATE application.trade_data
       SET
@@ -47,6 +47,7 @@ export async function PUT(
         deleted_flag = ${trade.deleted_flag || false},
         deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
       WHERE id = ${tradeId}
+        AND user_id = ${userIdHeader}
       RETURNING id
     `
     
@@ -101,13 +102,14 @@ export async function DELETE(
     const sql = getUserDb(userIdHeader)
     
     // Soft delete by setting deleted_flag and deleted_at
-    // RLS will ensure users can only delete their own trades
+    // Explicitly filter by user_id for security
     const result = await sql`
       UPDATE application.trade_data
       SET
         deleted_flag = TRUE,
         deleted_at = CURRENT_TIMESTAMP
       WHERE id = ${tradeId}
+        AND user_id = ${userIdHeader}
       RETURNING id
     `
     

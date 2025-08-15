@@ -23,11 +23,11 @@ import {
 
 interface TradeFormModalProps {
   trade: TradeRecord | null
-  onSave: (trade: TradeRecord) => void
+  onSubmit: (trade: TradeRecord) => void
   onClose: () => void
 }
 
-export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModalProps) {
+export default function TradeFormModal({ trade, onSubmit, onClose }: TradeFormModalProps) {
   const [formData, setFormData] = useState<TradeRecord>({
     id: trade?.id,
     code: trade?.code || "",
@@ -84,7 +84,7 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validate()) {
-      onSave(formData)
+      onSubmit(formData)
     }
   }
 
@@ -112,95 +112,7 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Company Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="e.g., Apple Inc."
-              />
-              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Trade Date *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleInputChange("date", e.target.value)}
-              />
-              {errors.date && <p className="text-sm text-destructive">{errors.date}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Trade Type *</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => handleInputChange("type", value)}
-              >
-                <SelectTrigger id="type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Buy">Buy</SelectItem>
-                  <SelectItem value="Sell">Sell</SelectItem>
-                  <SelectItem value="Reinvestment">Reinvestment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="qty">Quantity *</Label>
-              <Input
-                id="qty"
-                type="number"
-                step="0.00000001"
-                value={formData.qty}
-                onChange={(e) => handleInputChange("qty", parseFloat(e.target.value) || 0)}
-              />
-              {errors.qty && <p className="text-sm text-destructive">{errors.qty}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price">Price *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.00000001"
-                value={formData.price}
-                onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-              />
-              {errors.price && <p className="text-sm text-destructive">{errors.price}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="instrumentCurrency">Currency *</Label>
-              <Select
-                value={formData.instrumentCurrency}
-                onValueChange={(value) => handleInputChange("instrumentCurrency", value)}
-              >
-                <SelectTrigger id="instrumentCurrency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="NZD">NZD</SelectItem>
-                  <SelectItem value="AUD">AUD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="marketCode">Market Code *</Label>
+              <Label htmlFor="marketCode">Market Code</Label>
               <Select
                 value={formData.marketCode}
                 onValueChange={(value) => handleInputChange("marketCode", value)}
@@ -217,9 +129,97 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Company Name *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              placeholder="e.g., Apple Inc."
+            />
+            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date *</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange("date", e.target.value)}
+              />
+              {errors.date && <p className="text-sm text-destructive">{errors.date}</p>}
+            </div>
 
             <div className="space-y-2">
-              <Label htmlFor="brokerage">Brokerage</Label>
+              <Label htmlFor="type">Type *</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) => handleInputChange("type", value as "Buy" | "Sell" | "Reinvestment")}
+              >
+                <SelectTrigger id="type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Buy">Buy</SelectItem>
+                  <SelectItem value="Sell">Sell</SelectItem>
+                  <SelectItem value="Reinvestment">Reinvestment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="qty">Quantity *</Label>
+              <Input
+                id="qty"
+                type="number"
+                step="0.00000001"
+                value={formData.qty}
+                onChange={(e) => handleInputChange("qty", parseFloat(e.target.value) || 0)}
+              />
+              {errors.qty && <p className="text-sm text-destructive">{errors.qty}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Price per Share *</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.00000001"
+                value={formData.price}
+                onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
+              />
+              {errors.price && <p className="text-sm text-destructive">{errors.price}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="instrumentCurrency">Instrument Currency</Label>
+              <Select
+                value={formData.instrumentCurrency}
+                onValueChange={(value) => handleInputChange("instrumentCurrency", value)}
+              >
+                <SelectTrigger id="instrumentCurrency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="NZD">NZD</SelectItem>
+                  <SelectItem value="AUD">AUD</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brokerage">Brokerage Fee</Label>
               <Input
                 id="brokerage"
                 type="number"
@@ -228,7 +228,9 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
                 onChange={(e) => handleInputChange("brokerage", parseFloat(e.target.value) || 0)}
               />
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="brokerageCurrency">Brokerage Currency</Label>
               <Select
@@ -242,8 +244,8 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
                   <SelectItem value="USD">USD</SelectItem>
                   <SelectItem value="NZD">NZD</SelectItem>
                   <SelectItem value="AUD">AUD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
                   <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
                 </SelectContent>
               </Select>
             </div>

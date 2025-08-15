@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       createdCount++
     }
     
-    // Process updated trades - RLS will ensure users can only update their own
+    // Process updated trades - explicitly filter by user_id for security
     for (const trade of changes.updated) {
       if (!trade.id) continue
       
@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
           deleted_flag = ${trade.deleted_flag || false},
           deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
         WHERE id = ${trade.id}
+          AND user_id = ${userIdHeader}
         RETURNING id
       `
       if (result.length > 0) {
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Process deleted trades (soft delete) - RLS will ensure users can only delete their own
+    // Process deleted trades (soft delete) - explicitly filter by user_id for security
     for (const tradeId of changes.deleted) {
       const result = await sql`
         UPDATE application.trade_data
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
           deleted_flag = TRUE,
           deleted_at = CURRENT_TIMESTAMP
         WHERE id = ${tradeId}
+          AND user_id = ${userIdHeader}
         RETURNING id
       `
       if (result.length > 0) {

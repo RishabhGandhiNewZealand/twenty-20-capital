@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
       )
     }
     
+    logger.info(`Fetching trades for user: ${userIdHeader}, email: ${userEmailHeader}, isAdmin: ${isAdminHeader}`)
+    
     // Always use user-specific database connection
     // Admin will only see their own trades, just like regular users
     const sql = getUserDb(userIdHeader)
@@ -68,7 +70,8 @@ export async function GET(request: NextRequest) {
         updated_at,
         user_id
       FROM application.trade_data
-      WHERE deleted_flag = FALSE OR deleted_flag IS NULL
+      WHERE (deleted_flag = FALSE OR deleted_flag IS NULL)
+        AND user_id = ${userIdHeader}
       ORDER BY date DESC, id DESC
     `
     

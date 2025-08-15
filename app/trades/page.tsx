@@ -122,9 +122,15 @@ export default function TradesPage() {
     
     try {
       setLoading(true)
+      
+      // Use email as the user identifier since Stack user.id might not be stable
+      const userIdentifier = user.id || getRawEmail(user)
+      
+      console.log('Fetching trades for user:', userIdentifier, 'isAdmin:', isAdmin)
+      
       const response = await fetch('/api/trades', {
         headers: {
-          'x-user-id': user.id || '',
+          'x-user-id': userIdentifier,
           'x-user-email': getRawEmail(user),
           'x-is-admin': isAdmin.toString()
         }
@@ -135,6 +141,7 @@ export default function TradesPage() {
       }
       
       const data = await response.json()
+      console.log('Fetched trades count:', data.length)
       setTrades(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch trades')
@@ -286,11 +293,14 @@ export default function TradesPage() {
       setSaving(true)
       setError(null)
       
+      // Use email as the user identifier since Stack user.id might not be stable
+      const userIdentifier = user.id || getRawEmail(user)
+      
       const response = await fetch('/api/trades/batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id || '',
+          'x-user-id': userIdentifier,
           'x-user-email': getRawEmail(user),
           'x-is-admin': isAdmin.toString()
         },
