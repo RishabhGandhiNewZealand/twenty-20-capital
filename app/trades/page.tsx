@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@stackframe/stack"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
@@ -67,6 +67,7 @@ export default function TradesPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set())
+  const [isAdmin, setIsAdmin] = useState(false)
   
   // Staging state
   const [stagedChanges, setStagedChanges] = useState<StagedChanges>({
@@ -82,12 +83,30 @@ export default function TradesPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [tradeToDelete, setTradeToDelete] = useState<TradeRecord | null>(null)
 
-  // Check if user is admin
-  const isAdmin = useMemo(() => {
-    if (!user) return false
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    const userEmail = getRawEmail(user)
-    return adminEmail && userEmail === adminEmail
+  // Check if user is admin via API
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) return
+      
+      try {
+        const response = await fetch('/api/auth/check-admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: getRawEmail(user) })
+        })
+        
+        if (response.ok) {
+          const { isAdmin: adminStatus } = await response.json()
+          setIsAdmin(adminStatus)
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error)
+      }
+    }
+    
+    checkAdminStatus()
   }, [user])
 
   // Redirect if not logged in
@@ -125,11 +144,13 @@ export default function TradesPage() {
   }, [user, isAdmin])
 
   useEffect(() => {
-    fetchTrades()
-  }, [fetchTrades])
+    if (user) {
+      fetchTrades()
+    }
+  }, [user, isAdmin, fetchTrades])
 
   // Group trades by company
-  const groupedTrades = useMemo(() => {
+  const groupedTrades = (() => {
     const groups: GroupedTrades = {}
     
     // Filter trades based on search and exclude soft-deleted
@@ -185,7 +206,7 @@ export default function TradesPage() {
     })
     
     return groups
-  }, [trades, searchQuery, stagedChanges])
+  })()
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = stagedChanges.new.length > 0 || 
