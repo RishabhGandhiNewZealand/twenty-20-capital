@@ -130,7 +130,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
         }
 
         const historyData = await historyResponse.json()
-        setDailyData(historyData.dailyData || [])
+        setDailyData(historyData.history || [])
 
       } catch (err) {
         console.error('Error fetching portfolio:', err)

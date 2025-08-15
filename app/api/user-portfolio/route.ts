@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import { getUserDb } from '@/lib/rls-auth'
 import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
 import yahooFinance from 'yahoo-finance2'
+import { getUserDb } from '@/lib/rls-auth'
 
 interface CurrentHolding {
   symbol: string
@@ -17,18 +17,12 @@ interface CurrentHolding {
   currency: string
 }
 
-interface ExitedPosition {
-  symbol: string
-  name: string
-  exitDate: string
-  totalInvestedNZD: number
-  totalProceedsNZD: number
-  totalGainNZD: number
-  totalReturnPercent: number
-}
-
 /**
  * Fetches the current market price for a given stock ticker
+ * 
+ * @param ticker - Stock ticker symbol (e.g., 'AAPL', 'GOOGL')
+ * @returns Current market price in the stock's native currency
+ * @throws Will return 0 if the price cannot be fetched
  */
 async function getCurrentPrice(ticker: string): Promise<number> {
   try {
@@ -75,11 +69,6 @@ async function getHistoricalPrice(ticker: string, date: Date): Promise<number> {
   }
 }
 
-/**
- * GET /api/user-portfolio
- * 
- * Returns portfolio data for the authenticated user
- */
 export async function GET(request: NextRequest) {
   try {
     // Get user authentication from headers
@@ -100,41 +89,36 @@ export async function GET(request: NextRequest) {
       isAdmin: isAdminHeader 
     })
     
-    const startTime = Date.now()
-    
     // Get user-specific database connection
     const sql = getUserDb(userIdHeader)
     
-    // Fetch user's trades
+    // Fetch user's trades - using exact same structure as getCachedTradeData
     const trades = await sql`
       SELECT 
         id,
+        code,
+        market_code,
+        name,
         date,
         type,
-        code,
-        name,
         qty,
         price,
-        brokerage as fees,
-        instrument_currency as instrumentCurrency,
-        exch_rate as exchRate,
-        user_id
+        instrument_currency,
+        brokerage,
+        brokerage_currency,
+        exch_rate,
+        value
       FROM application.trade_data
       WHERE user_id = ${userIdHeader}
         AND deleted_flag = false
-      ORDER BY date ASC, id ASC
+      ORDER BY date ASC
     `
     
-    logger.info(`Fetched ${trades.length} trades for user ${userIdHeader}`)
-    
-    // Get current exchange rate
-    const currentExchangeRate = await getCurrentUSDNZDRate()
-    
-    // If no trades, return empty portfolio
-    if (trades.length === 0) {
+    // If no trades found, return empty response
+    if (!trades || trades.length === 0) {
+      logger.warn('No trade data found for user')
       return NextResponse.json({
         holdings: [],
-        exitedPositions: [],
         summary: {
           totalValueNZD: 0,
           totalCostBasisNZD: 0,
@@ -143,14 +127,14 @@ export async function GET(request: NextRequest) {
           sp500Value: 0,
           sp500GainNZD: 0,
           sp500GainPercent: 0,
-          exchangeRate: currentExchangeRate
+          exchangeRate: await getCurrentUSDNZDRate()
         },
-        lastUpdated: new Date().toISOString(),
-        userId: userIdHeader,
-        tradeCount: 0,
-        fetchTime: Date.now() - startTime
+        lastUpdated: new Date().toISOString()
       })
     }
+
+    // Sort trades by date
+    trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
     // Get current holdings by symbol
     const holdingsBySymbol = new Map<string, {
@@ -160,26 +144,17 @@ export async function GET(request: NextRequest) {
       currency: string
     }>()
 
-    // Track exited positions
-    const exitedPositions: ExitedPosition[] = []
-    const exitedPositionsBySymbol = new Map<string, {
-      totalInvestedNZD: number
-      totalProceedsNZD: number
-      lastExitDate: string
-      name: string
-    }>()
-
     // Track S&P 500 shares purchased over time
     let sp500Shares = 0
     let currentCostBasis = 0
     let soldCapitalAvailable = 0
 
     // Get all unique trade dates for SPY price fetching
-    const tradeDates = [...new Set(trades.filter((t: any) => t.type === 'Buy').map((t: any) => t.date))]
+    const tradeDates = [...new Set(trades.filter(t => t.type === 'Buy').map(t => t.date))]
     
     // Fetch historical SPY prices for all trade dates
     const spyHistoricalPrices = await Promise.all(
-      tradeDates.map(async (dateStr: any) => {
+      tradeDates.map(async (dateStr) => {
         const date = new Date(dateStr)
         const price = await getHistoricalPrice('SPY', date)
         return { date: dateStr, price }
@@ -187,7 +162,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Create a map for quick lookup
-    const spyPriceMap = new Map(spyHistoricalPrices.map((p: any) => [p.date, p.price]))
+    const spyPriceMap = new Map(spyHistoricalPrices.map(p => [p.date, p.price]))
 
     // Process trades to calculate current holdings and S&P 500 equivalent
     for (const trade of trades) {
@@ -195,10 +170,10 @@ export async function GET(request: NextRequest) {
         shares: 0,
         totalCostNZD: 0,
         name: trade.name,
-        currency: trade.instrumentCurrency
+        currency: trade.instrument_currency
       }
 
-      const exchangeRate = trade.instrumentCurrency === 'USD' ? (1 / trade.exchRate) : 1
+      const exchangeRate = trade.instrument_currency === 'USD' ? (1 / trade.exch_rate) : 1
       const tradeValueNZD = Math.abs(trade.qty * trade.price * exchangeRate)
 
       if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
@@ -230,31 +205,14 @@ export async function GET(request: NextRequest) {
         const sharesBeforeSale = current.shares
         current.shares -= sharesSold
         
-        // Track exited position if all shares sold
-        if (current.shares <= MIN_SHARE_THRESHOLD) {
-          const exitedData = exitedPositionsBySymbol.get(trade.code) || {
-            totalInvestedNZD: 0,
-            totalProceedsNZD: 0,
-            lastExitDate: trade.date,
-            name: trade.name
-          }
-          
-          exitedData.totalInvestedNZD += current.totalCostNZD
-          exitedData.totalProceedsNZD += tradeValueNZD
-          exitedData.lastExitDate = trade.date
-          
-          exitedPositionsBySymbol.set(trade.code, exitedData)
-          
-          // Reset cost basis
-          current.totalCostNZD = 0
+        // Proportionally reduce cost basis only if shares remain
+        if (current.shares > 0 && sharesBeforeSale > 0) {
+          const remainingRatio = current.shares / sharesBeforeSale
+          current.totalCostNZD *= remainingRatio
         } else {
-          // Proportionally reduce cost basis if shares remain
-          if (sharesBeforeSale > 0) {
-            const remainingRatio = current.shares / sharesBeforeSale
-            current.totalCostNZD *= remainingRatio
-          }
+          // All shares sold
+          current.totalCostNZD = 0
         }
-        
         soldCapitalAvailable += tradeValueNZD
       }
 
@@ -265,28 +223,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Convert exited positions map to array
-    exitedPositionsBySymbol.forEach((position, symbol) => {
-      const totalGainNZD = position.totalProceedsNZD - position.totalInvestedNZD
-      const totalReturnPercent = position.totalInvestedNZD > 0 
-        ? (totalGainNZD / position.totalInvestedNZD) * 100 
-        : 0
-
-      exitedPositions.push({
-        symbol,
-        name: position.name,
-        exitDate: position.lastExitDate,
-        totalInvestedNZD: position.totalInvestedNZD,
-        totalProceedsNZD: position.totalProceedsNZD,
-        totalGainNZD,
-        totalReturnPercent
-      })
-    })
-
-    // Sort exited positions by exit date descending
-    exitedPositions.sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
-
-    // Get current prices
+    // Get current prices and exchange rate
+    const currentExchangeRate = await getCurrentUSDNZDRate()
     const tickers = Array.from(holdingsBySymbol.keys())
     
     // Fetch all current prices in parallel, including SPY
@@ -328,7 +266,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate allocations
     holdings.forEach(holding => {
-      holding.allocation = totalValueNZD > 0 ? (holding.currentValueNZD / totalValueNZD) * 100 : 0
+      holding.allocation = (holding.currentValueNZD / totalValueNZD) * 100
     })
 
     // Sort by allocation descending
@@ -343,13 +281,9 @@ export async function GET(request: NextRequest) {
     const sp500Value = sp500ValueUSD * currentExchangeRate
     const sp500GainNZD = sp500Value - currentCostBasis
     const sp500GainPercent = currentCostBasis > 0 ? (sp500GainNZD / currentCostBasis * 100) : 0
-    
-    const duration = Date.now() - startTime
-    logger.info(`User portfolio data generated in ${duration}ms`)
-    
+
     return NextResponse.json({
       holdings,
-      exitedPositions,
       summary: {
         totalValueNZD,
         totalCostBasisNZD: currentCostBasis,
@@ -360,18 +294,18 @@ export async function GET(request: NextRequest) {
         sp500GainPercent,
         exchangeRate: currentExchangeRate
       },
-      lastUpdated: new Date().toISOString(),
-      userId: userIdHeader,
-      tradeCount: trades.length,
-      fetchTime: duration
+      lastUpdated: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     })
   } catch (error) {
-    logger.error('Error fetching user portfolio data:', error)
+    logger.error('Error calculating user portfolio:', error)
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch portfolio data',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to calculate portfolio' },
       { status: 500 }
     )
   }
