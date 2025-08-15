@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { getAdminDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -20,7 +21,9 @@ export async function PUT(
 
     const tradeId = parseInt(params.id)
     const trade: TradeRecord = await request.json()
-    const sql = getDb()
+    
+    // Use admin authenticated connection for RLS
+    const sql = getAdminDb()
     
     const result = await sql`
       UPDATE application.trade_data
@@ -50,7 +53,7 @@ export async function PUT(
       )
     }
     
-    logger.info(`Updated trade with ID: ${tradeId}`)
+    logger.info(`Updated trade with ID: ${tradeId} using RLS authentication`)
     
     // Invalidate portfolio caches after trade update
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
@@ -84,7 +87,9 @@ export async function DELETE(
     }
 
     const tradeId = parseInt(params.id)
-    const sql = getDb()
+    
+    // Use admin authenticated connection for RLS
+    const sql = getAdminDb()
     
     // Soft delete by setting deleted_flag and deleted_at
     const result = await sql`
@@ -103,7 +108,7 @@ export async function DELETE(
       )
     }
     
-    logger.info(`Soft deleted trade with ID: ${tradeId}`)
+    logger.info(`Soft deleted trade with ID: ${tradeId} using RLS authentication`)
     
     // Invalidate portfolio caches after trade deletion
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')

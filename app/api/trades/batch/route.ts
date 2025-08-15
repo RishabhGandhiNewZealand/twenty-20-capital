@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { getAdminDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -22,7 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     const changes: BatchChanges = await request.json()
-    const sql = getDb()
+    
+    // Use admin authenticated connection for RLS
+    const sql = getAdminDb()
     
     let createdCount = 0
     let updatedCount = 0
@@ -100,7 +103,7 @@ export async function POST(request: NextRequest) {
       deletedCount++
     }
     
-    logger.info(`Batch update completed: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
+    logger.info(`Batch update completed with RLS authentication: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
     
     // Invalidate portfolio caches after batch trade updates
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')

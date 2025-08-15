@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { getAdminDb, getAdminUserId } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const sql = getDb()
+    // Use admin authenticated connection for RLS
+    const sql = getAdminDb()
     
     // Fetch all trades including soft-deleted ones
     const results = await sql`
@@ -62,7 +64,7 @@ export async function GET(request: NextRequest) {
       updated_at: row.updated_at ? row.updated_at.toISOString() : undefined
     }))
     
-    logger.info(`Fetched ${trades.length} trades for admin view`)
+    logger.info(`Fetched ${trades.length} trades for admin view with RLS authentication`)
     return NextResponse.json(trades, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -94,7 +96,9 @@ export async function POST(request: NextRequest) {
     }
 
     const trade: TradeRecord = await request.json()
-    const sql = getDb()
+    
+    // Use admin authenticated connection for RLS
+    const sql = getAdminDb()
     
     const result = await sql`
       INSERT INTO application.trade_data (
@@ -127,7 +131,7 @@ export async function POST(request: NextRequest) {
       RETURNING id
     `
     
-    logger.info(`Created new trade with ID: ${result[0].id}`)
+    logger.info(`Created new trade with ID: ${result[0].id} using RLS authentication`)
     
     // Invalidate portfolio caches after trade creation
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')

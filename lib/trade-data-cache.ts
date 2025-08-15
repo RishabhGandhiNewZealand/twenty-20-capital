@@ -1,13 +1,16 @@
 import { getDb } from './db'
+import { getAdminDb } from './rls-auth'
 import { logger } from './logger'
 import { TradeRecord } from '@/types/portfolio'
 
 /**
  * Fetches all trade data from the database
  * This is the raw database query function
+ * Now uses admin authentication for RLS
  */
 async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
-  const sql = getDb()
+  // Use admin authenticated connection for portfolio data access
+  const sql = getAdminDb()
   
   try {
     const results = await sql`
@@ -45,7 +48,7 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
       value: parseFloat(row.value)
     }))
     
-    logger.info(`Fetched ${trades.length} trades from database`)
+    logger.info(`Fetched ${trades.length} trades from database with admin authentication`)
     return trades
     
   } catch (error) {
@@ -63,9 +66,11 @@ export const getCachedTradeData = fetchTradeDataFromDB
 /**
  * Fetches trade data for a specific symbol
  * This is useful for symbol-specific queries
+ * Now uses admin authentication for RLS
  */
 async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord[]> {
-  const sql = getDb()
+  // Use admin authenticated connection for portfolio data access
+  const sql = getAdminDb()
   
   try {
     const results = await sql`
@@ -103,7 +108,7 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
       value: parseFloat(row.value)
     }))
     
-    logger.info(`Fetched ${trades.length} trades for symbol ${symbol} from database`)
+    logger.info(`Fetched ${trades.length} trades for symbol ${symbol} from database with admin authentication`)
     return trades
     
   } catch (error) {
@@ -128,9 +133,11 @@ export async function invalidateTradeDataCache() {
 
 /**
  * Get cache statistics for monitoring
+ * Now uses admin authentication for RLS
  */
 export async function getTradeDataCacheStats() {
-  const sql = getDb()
+  // Use admin authenticated connection for portfolio data access
+  const sql = getAdminDb()
   
   try {
     const stats = await sql`
