@@ -35,6 +35,7 @@ export default function HomePage() {
   const [holdings, setHoldings] = useState<CurrentHolding[]>([])
   const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const [portfolioHistory, setPortfolioHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const { isAnonymized } = useAnonymization()
   const [portfolioStats, setPortfolioStats] = useState(
@@ -77,6 +78,7 @@ export default function HomePage() {
         if (historyResponse && historyResponse.ok) {
           const historyData = await historyResponse.json()
           if (historyData.history && historyData.history.length > 0) {
+            setPortfolioHistory(historyData.history)
             const latestHistory = historyData.history[historyData.history.length - 1]
             
             // Update summary with values from portfolio history (source of truth)
@@ -142,6 +144,7 @@ export default function HomePage() {
       loading={loading}
       isAnonymized={isAnonymized}
       portfolioStats={portfolioStats}
+      portfolioHistory={portfolioHistory}
     />
   )
 }

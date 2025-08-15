@@ -44,9 +44,10 @@ interface PortfolioStat {
 
 interface PortfolioChartProps {
   portfolioStats?: PortfolioStat[]
+  portfolioHistory?: PortfolioHistoryData[]
 }
 
-export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
+export function PortfolioChart({ portfolioStats = [], portfolioHistory = [] }: PortfolioChartProps) {
   const [data, setData] = useState<PortfolioHistoryData[]>([])
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,47 +57,67 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   const { isAnonymized } = useAnonymization()
 
   useEffect(() => {
-    async function fetchPortfolioHistory() {
+    // If portfolioHistory is provided as a prop, use it directly
+    if (portfolioHistory && portfolioHistory.length > 0) {
       try {
-        const timestamp = Date.now()
-        const response = await fetch(`/api/portfolio-history?t=${timestamp}`, { 
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        })
-        if (!response.ok) {
-          throw new Error('Failed to fetch portfolio history')
-        }
-        const result = await response.json()
-        
-        if (!result.history || result.history.length === 0) {
-          setError('No portfolio history data available')
-          return
-        }
-        
-        // Format data for the chart - keep original format for value view
-        const formattedData = result.history
-        
         // Calculate percentage performance data
-        const performanceData = calculatePerformanceData(formattedData)
+        const performanceData = calculatePerformanceData(portfolioHistory)
         
         // Sample data to reduce points for better performance
-        const sampledData = sampleData(formattedData, 200)
+        const sampledData = sampleData(portfolioHistory, 200)
         const sampledPerformanceData = sampleData(performanceData, 200)
         
         setData(sampledData)
         setPerformanceData(sampledPerformanceData)
+        setLoading(false)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
         setLoading(false)
       }
-    }
+    } else {
+      // Fallback to fetching from API if no data provided (for backward compatibility)
+      async function fetchPortfolioHistory() {
+        try {
+          const timestamp = Date.now()
+          const response = await fetch(`/api/portfolio-history?t=${timestamp}`, { 
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          })
+          if (!response.ok) {
+            throw new Error('Failed to fetch portfolio history')
+          }
+          const result = await response.json()
+          
+          if (!result.history || result.history.length === 0) {
+            setError('No portfolio history data available')
+            return
+          }
+          
+          // Format data for the chart - keep original format for value view
+          const formattedData = result.history
+          
+          // Calculate percentage performance data
+          const performanceData = calculatePerformanceData(formattedData)
+          
+          // Sample data to reduce points for better performance
+          const sampledData = sampleData(formattedData, 200)
+          const sampledPerformanceData = sampleData(performanceData, 200)
+          
+          setData(sampledData)
+          setPerformanceData(sampledPerformanceData)
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'An error occurred')
+        } finally {
+          setLoading(false)
+        }
+      }
 
-    fetchPortfolioHistory()
-  }, [])
+      fetchPortfolioHistory()
+    }
+  }, [portfolioHistory])
 
   // Calculate percentage performance relative to cost basis
   function calculatePerformanceData(data: PortfolioHistoryData[]): PerformanceData[] {

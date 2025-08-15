@@ -48,6 +48,7 @@ interface PortfolioViewProps {
     description?: string
     icon: any
   }>
+  portfolioHistory?: any[] // Add portfolio history data
 }
 
 export function PortfolioView({
@@ -56,7 +57,8 @@ export function PortfolioView({
   summary,
   loading,
   isAnonymized,
-  portfolioStats
+  portfolioStats,
+  portfolioHistory = []
 }: PortfolioViewProps) {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,7 +66,8 @@ export function PortfolioView({
         {/* Portfolio Performance Chart with integrated stats */}
         <div className="mb-6 sm:mb-8">
           <PortfolioChart 
-            portfolioStats={portfolioStats} 
+            portfolioStats={portfolioStats}
+            portfolioHistory={portfolioHistory} 
           />
         </div>
 
@@ -72,7 +75,8 @@ export function PortfolioView({
         {!loading && (
           <div className="mb-6 sm:mb-8">
             <PortfolioHorizontalBarChart 
-              holdings={holdings} 
+              holdings={holdings}
+              useCurrentData={true}
             />
           </div>
         )}

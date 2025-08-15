@@ -43,9 +43,10 @@ interface PortfolioHorizontalBarChartProps {
     gainNZD: number
     gainPercent: number
   }>
+  useCurrentData?: boolean
 }
 
-export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: PortfolioHorizontalBarChartProps) {
+export function PortfolioHorizontalBarChart({ holdings: currentHoldings, useCurrentData = false }: PortfolioHorizontalBarChartProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +63,36 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
 
   // Load the pre-cached composition data on mount
   useEffect(() => {
+    // If useCurrentData is true, skip loading historical data
+    if (useCurrentData && currentHoldings && currentHoldings.length > 0) {
+      // Just use current holdings, no historical data needed
+      setAvailableDates([])
+      setSliderValue(0)
+      setLoading(false)
+      
+      // Calculate and set display holdings from current data
+      const totalValue = currentHoldings.reduce((sum, holding) => {
+        const value = holding.currentValueNZD || 0;
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0)
+      
+      if (totalValue > 0) {
+        const transformed: HoldingAtDate[] = currentHoldings
+          .filter(holding => holding.currentValueNZD > 0 && !isNaN(holding.currentValueNZD))
+          .map(holding => ({
+            symbol: holding.symbol,
+            name: holding.name,
+            shares: 0, // Not used in display
+            value: holding.currentValueNZD,
+            percentage: (holding.currentValueNZD / totalValue) * 100,
+            currency: 'NZD'
+          }))
+        setDisplayHoldings(transformed)
+        setDisplayDate(null)
+      }
+      return
+    }
+
     async function loadCompositionData() {
       try {
         // Try the API endpoint first
@@ -122,7 +153,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
     
     loadCompositionData()
-  }, [currentHoldings])
+  }, [currentHoldings, useCurrentData])
 
   // Handle responsive sizing
   useEffect(() => {

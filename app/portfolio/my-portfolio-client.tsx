@@ -56,6 +56,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
   const [holdings, setHoldings] = useState<CurrentHolding[]>([])
   const [exitedPositions, setExitedPositions] = useState<ExitedPosition[]>([])
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const [portfolioHistory, setPortfolioHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [portfolioStats, setPortfolioStats] = useState(
     createPortfolioStats("Loading...", 0, 0, "Calculating your portfolio value", false)
@@ -90,15 +91,21 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
             headers: {
               'x-user-id': userIdentifier,
               'x-user-email': rawUserEmail,
-              'x-is-admin': 'false'
-            }
+              'x-is-admin': 'false',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            },
+            cache: 'no-store'
           }),
           fetch(`/api/user-portfolio-history?t=${timestamp}`, {
             headers: {
               'x-user-id': userIdentifier,
               'x-user-email': rawUserEmail,
-              'x-is-admin': 'false'
-            }
+              'x-is-admin': 'false',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            },
+            cache: 'no-store'
           }).catch((error) => {
             console.error('Failed to fetch portfolio history:', error)
             return null
@@ -121,6 +128,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
         if (historyResponse && historyResponse.ok) {
           const historyData = await historyResponse.json()
           if (historyData.history && historyData.history.length > 0) {
+            setPortfolioHistory(historyData.history)
             const latestHistory = historyData.history[historyData.history.length - 1]
             
             // Update summary with values from portfolio history (source of truth)
@@ -201,6 +209,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
       loading={loading}
       isAnonymized={false}
       portfolioStats={portfolioStats}
+      portfolioHistory={portfolioHistory}
     />
   )
 }
