@@ -111,21 +111,17 @@ export async function GET(request: NextRequest) {
         id,
         date,
         type,
-        symbol as code,
-        company as name,
-        quantity as qty,
+        code,
+        name,
+        qty,
         price,
-        fees,
-        currency as instrumentCurrency,
-        notes,
-        user_id,
-        CASE 
-          WHEN currency = 'USD' THEN ${FALLBACK_NZD_TO_USD_RATE}
-          ELSE 1
-        END as exchRate
+        brokerage as fees,
+        instrument_currency as instrumentCurrency,
+        exch_rate as exchRate,
+        user_id
       FROM application.trade_data
       WHERE user_id = ${userIdHeader}
-        AND deleted = false
+        AND deleted_flag = false
       ORDER BY date ASC, id ASC
     `
     
