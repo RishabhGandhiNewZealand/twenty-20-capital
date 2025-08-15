@@ -1,16 +1,24 @@
 import { getDb } from './db'
-import { getAdminDb } from './rls-auth'
+import { getAdminDb, getAdminUserId, getUserDb } from './rls-auth'
 import { logger } from './logger'
 import { TradeRecord } from '@/types/portfolio'
 
 /**
- * Fetches all trade data from the database
- * This is the raw database query function
- * Now uses admin authentication for RLS
+ * Fetches all trade data from the database for the admin user
+ * This is used for portfolio pages which show admin's portfolio
+ * Now uses admin's user ID to fetch only admin trades
  */
 async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
-  // Use admin authenticated connection for portfolio data access
-  const sql = getAdminDb()
+  // Get admin user ID
+  const adminUserId = getAdminUserId()
+  
+  if (!adminUserId) {
+    logger.warn('ADMIN_USER_ID not set - portfolio pages will show no data')
+    return []
+  }
+  
+  // Use admin's user-specific connection to get only admin trades
+  const sql = getUserDb(adminUserId)
   
   try {
     const results = await sql`
@@ -48,11 +56,11 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
       value: parseFloat(row.value)
     }))
     
-    logger.info(`Fetched ${trades.length} trades from database with admin authentication`)
+    logger.info(`Fetched ${trades.length} admin trades for portfolio from database`)
     return trades
     
   } catch (error) {
-    logger.error('Error fetching trade data from database:', error)
+    logger.error('Error fetching admin trade data from database:', error)
     throw error
   }
 }
@@ -64,13 +72,21 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
 export const getCachedTradeData = fetchTradeDataFromDB
 
 /**
- * Fetches trade data for a specific symbol
- * This is useful for symbol-specific queries
- * Now uses admin authentication for RLS
+ * Fetches trade data for a specific symbol for the admin user
+ * This is useful for symbol-specific queries in portfolio pages
+ * Now uses admin's user ID to fetch only admin trades
  */
 async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord[]> {
-  // Use admin authenticated connection for portfolio data access
-  const sql = getAdminDb()
+  // Get admin user ID
+  const adminUserId = getAdminUserId()
+  
+  if (!adminUserId) {
+    logger.warn('ADMIN_USER_ID not set - portfolio pages will show no data')
+    return []
+  }
+  
+  // Use admin's user-specific connection to get only admin trades
+  const sql = getUserDb(adminUserId)
   
   try {
     const results = await sql`
@@ -108,11 +124,11 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
       value: parseFloat(row.value)
     }))
     
-    logger.info(`Fetched ${trades.length} trades for symbol ${symbol} from database with admin authentication`)
+    logger.info(`Fetched ${trades.length} admin trades for symbol ${symbol} from database`)
     return trades
     
   } catch (error) {
-    logger.error(`Error fetching trade data for symbol ${symbol}:`, error)
+    logger.error(`Error fetching admin trade data for symbol ${symbol}:`, error)
     throw error
   }
 }
@@ -133,11 +149,26 @@ export async function invalidateTradeDataCache() {
 
 /**
  * Get cache statistics for monitoring
- * Now uses admin authentication for RLS
+ * Now uses admin's user ID to get stats for admin trades only
  */
 export async function getTradeDataCacheStats() {
-  // Use admin authenticated connection for portfolio data access
-  const sql = getAdminDb()
+  // Get admin user ID
+  const adminUserId = getAdminUserId()
+  
+  if (!adminUserId) {
+    logger.warn('ADMIN_USER_ID not set - cannot get cache stats')
+    return {
+      totalTrades: 0,
+      uniqueSymbols: 0,
+      earliestTrade: null,
+      latestTrade: null,
+      lastUpdated: null,
+      cacheRevalidateSeconds: 1200
+    }
+  }
+  
+  // Use admin's user-specific connection
+  const sql = getUserDb(adminUserId)
   
   try {
     const stats = await sql`
@@ -148,6 +179,7 @@ export async function getTradeDataCacheStats() {
         MAX(date) as latest_trade,
         MAX(updated_at) as last_updated
       FROM application.trade_data
+      WHERE (deleted_flag = FALSE OR deleted_flag IS NULL)
     `
     
     return {

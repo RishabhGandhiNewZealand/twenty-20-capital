@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getAdminDb, getUserDb, getUserIdFromStackUser, isAdminUser } from '@/lib/rls-auth'
+import { getUserDb, getUserIdFromStackUser, isAdminUser } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 import { cookies } from 'next/headers'
@@ -26,7 +26,7 @@ async function getUserFromSession() {
   }
 }
 
-// GET all trades for the authenticated user
+// GET all trades for the authenticated user (including admin)
 export async function GET(request: NextRequest) {
   try {
     // Check for user authentication header (sent from client)
@@ -41,12 +41,12 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Use appropriate database connection based on user type
-    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
+    // Always use user-specific database connection
+    // Admin will only see their own trades, just like regular users
+    const sql = getUserDb(userIdHeader)
     
     // Fetch trades - RLS will automatically filter based on user
-    // For regular users, only their trades will be returned
-    // For admin, all trades will be returned
+    // Both admin and regular users only see their own trades
     const results = await sql`
       SELECT 
         id,
@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
 
     const trade: TradeRecord = await request.json()
     
-    // Use appropriate database connection based on user type
-    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
+    // Always use user-specific database connection
+    const sql = getUserDb(userIdHeader)
     
     // Insert trade with user_id
     const result = await sql`
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     
     logger.info(`Created new trade with ID: ${result[0].id} for user ${userIdHeader}`)
     
-    // Only invalidate caches if admin (affects portfolio pages)
+    // Invalidate caches if admin (affects portfolio pages which show admin trades)
     if (isAdminHeader) {
       const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
       await invalidatePortfolioCaches()

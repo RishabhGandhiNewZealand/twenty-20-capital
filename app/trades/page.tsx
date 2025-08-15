@@ -337,18 +337,18 @@ export default function TradesPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold text-gray-900">
-              {isAdmin ? 'Admin Trade Management' : 'My Trades'}
+              {isAdmin ? 'Portfolio Trades' : 'My Trades'}
             </h1>
             {isAdmin && (
               <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
                 <User className="h-4 w-4" />
-                Admin View
+                Portfolio Admin
               </div>
             )}
           </div>
           <p className="text-gray-600">
             {isAdmin 
-              ? 'Manage all portfolio trades and transactions'
+              ? 'Manage portfolio trades and transactions'
               : 'Manage your personal trades and transactions'
             }
           </p>

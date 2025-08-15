@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getAdminDb, getUserDb } from '@/lib/rls-auth'
+import { getUserDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -24,8 +24,9 @@ export async function PUT(
     const tradeId = parseInt(params.id)
     const trade: TradeRecord = await request.json()
     
-    // Use appropriate database connection based on user type
-    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
+    // Always use user-specific database connection
+    // Admin can only update their own trades, just like regular users
+    const sql = getUserDb(userIdHeader)
     
     // Update trade - RLS will ensure users can only update their own trades
     const result = await sql`
@@ -58,7 +59,7 @@ export async function PUT(
     
     logger.info(`Updated trade with ID: ${tradeId} for user ${userIdHeader}`)
     
-    // Only invalidate caches if admin (affects portfolio pages)
+    // Invalidate caches if admin (affects portfolio pages which show admin trades)
     if (isAdminHeader) {
       const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
       await invalidatePortfolioCaches()
@@ -95,8 +96,9 @@ export async function DELETE(
 
     const tradeId = parseInt(params.id)
     
-    // Use appropriate database connection based on user type
-    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
+    // Always use user-specific database connection
+    // Admin can only delete their own trades, just like regular users
+    const sql = getUserDb(userIdHeader)
     
     // Soft delete by setting deleted_flag and deleted_at
     // RLS will ensure users can only delete their own trades
@@ -118,7 +120,7 @@ export async function DELETE(
     
     logger.info(`Soft deleted trade with ID: ${tradeId} for user ${userIdHeader}`)
     
-    // Only invalidate caches if admin (affects portfolio pages)
+    // Invalidate caches if admin (affects portfolio pages which show admin trades)
     if (isAdminHeader) {
       const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
       await invalidatePortfolioCaches()

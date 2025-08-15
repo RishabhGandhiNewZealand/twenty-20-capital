@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getAdminDb, getUserDb } from '@/lib/rls-auth'
+import { getUserDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -26,8 +26,9 @@ export async function POST(request: NextRequest) {
 
     const changes: BatchChanges = await request.json()
     
-    // Use appropriate database connection based on user type
-    const sql = isAdminHeader ? getAdminDb() : getUserDb(userIdHeader)
+    // Always use user-specific database connection
+    // Admin can only manage their own trades, just like regular users
+    const sql = getUserDb(userIdHeader)
     
     let createdCount = 0
     let updatedCount = 0
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     
     logger.info(`Batch update completed for user ${userIdHeader}: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
     
-    // Only invalidate caches if admin (affects portfolio pages)
+    // Invalidate caches if admin (affects portfolio pages which show admin trades)
     if (isAdminHeader) {
       const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
       await invalidatePortfolioCaches()
