@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { TradeRecord } from "@/types/portfolio"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,7 +13,6 @@ import {
   Save, 
   RotateCcw,
   AlertCircle,
-  Check,
   X,
   Search,
   ChevronDown,
@@ -63,7 +61,11 @@ export default function TradesPage() {
   const user = useUser()
   const userId = useMemo(() => getUserId(user), [user])
   const userEmail = useMemo(() => getUserEmail(user), [user])
-  const { isAnonymized } = useAnonymization()
+  const isAdmin = useMemo(() => {
+    const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toString()
+    return adminEmail && userEmail && userEmail.toLowerCase() === adminEmail.toLowerCase()
+  }, [userEmail])
+
   const [trades, setTrades] = useState<TradeRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -97,7 +99,7 @@ export default function TradesPage() {
         headers: {
           'x-user-id': userId,
           'x-user-email': userEmail,
-          'x-is-admin': 'false'
+          'x-is-admin': isAdmin ? 'true' : 'false'
         }
       })
       if (!response.ok) throw new Error('Failed to fetch trades')
@@ -108,13 +110,11 @@ export default function TradesPage() {
     } finally {
       setLoading(false)
     }
-  }, [userId, userEmail])
+  }, [userId, userEmail, isAdmin])
 
   useEffect(() => {
-    if (!isAnonymized) {
-      fetchTrades()
-    }
-  }, [isAnonymized, fetchTrades])
+    fetchTrades()
+  }, [fetchTrades])
 
   const groupedTrades = useMemo(() => {
     const filtered = trades.filter(trade => 
@@ -284,7 +284,7 @@ export default function TradesPage() {
           'Content-Type': 'application/json',
           'x-user-id': userId,
           'x-user-email': userEmail,
-          'x-is-admin': 'false'
+          'x-is-admin': isAdmin ? 'true' : 'false'
         },
         body: JSON.stringify(batchData)
       })
@@ -317,10 +317,6 @@ export default function TradesPage() {
       deleted: new Set()
     })
     fetchTrades()
-  }
-
-  if (isAnonymized) {
-    return null
   }
 
   if (loading) {
