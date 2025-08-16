@@ -1,36 +1,11 @@
-import { StackServerApp } from "@stackframe/stack"
+import { auth, currentUser } from "@clerk/nextjs/server"
 import { NextRequest, NextResponse } from "next/server"
 import { logger } from "./logger"
 
-// Initialize Stack app
-let stackApp: StackServerApp | null = null
-
-export function getStackApp() {
-  if (!stackApp) {
-    const projectId = process.env.NEXT_PUBLIC_STACK_PROJECT_ID
-    const publishableKey = process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY
-    const secretKey = process.env.STACK_SECRET_SERVER_KEY
-
-    if (!projectId || !publishableKey || !secretKey) {
-      throw new Error("Stack authentication environment variables are not configured")
-    }
-
-    stackApp = new StackServerApp({
-      projectId,
-      publishableClientKey: publishableKey,
-      secretServerKey: secretKey,
-      tokenStore: "nextjs-cookie",
-    })
-  }
-
-  return stackApp
-}
-
-// Get the current user from the request
-export async function getCurrentUser(request: NextRequest) {
+// Get the current user from Clerk
+export async function getCurrentUser() {
   try {
-    const app = getStackApp()
-    const user = await app.getUser({ request })
+    const user = await currentUser()
     return user
   } catch (error) {
     logger.error("Error getting current user:", error)
@@ -38,18 +13,29 @@ export async function getCurrentUser(request: NextRequest) {
   }
 }
 
+// Get the current user ID
+export async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const { userId } = await auth()
+    return userId
+  } catch (error) {
+    logger.error("Error getting current user ID:", error)
+    return null
+  }
+}
+
 // Middleware to require authentication
-export async function requireAuth(request: NextRequest) {
-  const user = await getCurrentUser(request)
+export async function requireAuth() {
+  const userId = await getCurrentUserId()
   
-  if (!user) {
+  if (!userId) {
     return NextResponse.json(
       { error: "Authentication required" },
       { status: 401 }
     )
   }
   
-  return user
+  return { id: userId }
 }
 
 // Check if the current user is an admin
@@ -82,22 +68,4 @@ export async function verifyUserAccess(
   // Users can only access their own resources
   // Admin can only access their own resources (not other users')
   return userId === resourceUserId
-}
-
-// Get user ID from various sources (for backward compatibility)
-export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
-  // First try to get from Stack authentication
-  const user = await getCurrentUser(request)
-  if (user) {
-    return user.id
-  }
-  
-  // Fallback to header-based auth (for migration period)
-  const authHeader = request.headers.get('x-user-id')
-  if (authHeader) {
-    logger.warn('Using legacy x-user-id header - should migrate to Stack auth')
-    return authHeader
-  }
-  
-  return null
 }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, ChartLine, User } from "lucide-react"
 import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useUser } from "@stackframe/stack"
+import { useUser } from "@clerk/nextjs"
 
 function getRawEmail(u: any): string {
   return (

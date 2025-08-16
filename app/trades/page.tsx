@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useUser } from "@stackframe/stack"
+import { useUser } from "@clerk/nextjs"
 import { TradeRecord } from "@/types/portfolio"
 
 // Force dynamic rendering to prevent SSR issues with authentication
@@ -73,7 +73,7 @@ export default function TradesPage() {
   // Check if user is authenticated
   useEffect(() => {
     if (!user) {
-      router.push('/login')
+      router.push('/sign-in')
     }
   }, [user, router])
 
@@ -87,7 +87,7 @@ export default function TradesPage() {
       
       if (!response.ok) {
         if (response.status === 401) {
-          router.push('/login')
+          router.push('/sign-in')
           return
         }
         throw new Error('Failed to fetch trades')

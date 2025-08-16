@@ -8,7 +8,7 @@ import { requireAuth, createAuthenticatedResponse } from '@/lib/auth'
 export async function GET(request: NextRequest) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request)
+    const authResult = await requireAuth()
     if (authResult instanceof NextResponse) {
       return authResult
     }
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Require authentication
-    const authResult = await requireAuth(request)
+    const authResult = await requireAuth()
     if (authResult instanceof NextResponse) {
       return authResult
     }
