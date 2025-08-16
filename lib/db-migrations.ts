@@ -204,3 +204,125 @@ export async function addSoftDeleteToTradeData() {
     throw error
   }
 }
+
+// Function to add user_id column and enable RLS for multi-user support
+export async function addMultiUserSupport() {
+  const sql = getDb()
+  
+  try {
+    logger.info('Starting multi-user support migration...')
+    
+    // Add user_id column if it doesn't exist
+    await sql`
+      ALTER TABLE application.trade_data 
+      ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)
+    `
+    
+    // Create index on user_id for fast filtering
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_trade_data_user_id 
+      ON application.trade_data(user_id)
+    `
+    
+    // Create composite index for common query patterns
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_trade_data_user_date 
+      ON application.trade_data(user_id, date DESC)
+    `
+    
+    // Create composite index for user and deleted flag
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_trade_data_user_not_deleted 
+      ON application.trade_data(user_id, deleted_flag, date DESC)
+      WHERE deleted_flag = FALSE
+    `
+    
+    logger.info('User ID column and indexes added successfully')
+    
+    // Enable Row Level Security
+    await sql`
+      ALTER TABLE application.trade_data ENABLE ROW LEVEL SECURITY
+    `
+    
+    logger.info('Row Level Security enabled on trade_data table')
+    
+    // Create RLS policies
+    // Policy for SELECT operations
+    await sql`
+      CREATE POLICY IF NOT EXISTS trade_data_select_policy 
+      ON application.trade_data 
+      FOR SELECT 
+      USING (user_id = current_setting('app.user_id', true))
+    `
+    
+    // Policy for INSERT operations
+    await sql`
+      CREATE POLICY IF NOT EXISTS trade_data_insert_policy 
+      ON application.trade_data 
+      FOR INSERT 
+      WITH CHECK (user_id = current_setting('app.user_id', true))
+    `
+    
+    // Policy for UPDATE operations
+    await sql`
+      CREATE POLICY IF NOT EXISTS trade_data_update_policy 
+      ON application.trade_data 
+      FOR UPDATE 
+      USING (user_id = current_setting('app.user_id', true))
+      WITH CHECK (user_id = current_setting('app.user_id', true))
+    `
+    
+    // Policy for DELETE operations
+    await sql`
+      CREATE POLICY IF NOT EXISTS trade_data_delete_policy 
+      ON application.trade_data 
+      FOR DELETE 
+      USING (user_id = current_setting('app.user_id', true))
+    `
+    
+    logger.info('RLS policies created successfully')
+    
+    // Create a service role that bypasses RLS for migrations and admin operations
+    await sql`
+      CREATE ROLE IF NOT EXISTS service_role NOLOGIN
+    `
+    
+    await sql`
+      GRANT ALL ON application.trade_data TO service_role
+    `
+    
+    await sql`
+      ALTER TABLE application.trade_data OWNER TO service_role
+    `
+    
+    logger.info('Service role created for admin operations')
+    
+    logger.info('Multi-user support migration completed successfully!')
+    
+  } catch (error) {
+    logger.error('Error adding multi-user support:', error)
+    throw error
+  }
+}
+
+// Function to migrate existing data to a specific user (for initial migration)
+export async function migrateExistingDataToUser(userId: string) {
+  const sql = getDb()
+  
+  try {
+    // Update all existing records that don't have a user_id
+    const result = await sql`
+      UPDATE application.trade_data 
+      SET user_id = ${userId}
+      WHERE user_id IS NULL
+      RETURNING id
+    `
+    
+    logger.info(`Migrated ${result.length} existing trades to user ${userId}`)
+    return result.length
+    
+  } catch (error) {
+    logger.error('Error migrating existing data to user:', error)
+    throw error
+  }
+}

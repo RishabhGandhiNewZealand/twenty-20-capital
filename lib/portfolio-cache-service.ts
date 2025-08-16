@@ -395,6 +395,25 @@ export async function invalidatePortfolioCaches(): Promise<void> {
 }
 
 /**
+ * Invalidate portfolio caches for a specific user
+ */
+export async function invalidateUserPortfolioCaches(userId: string): Promise<void> {
+  // Invalidate user-specific cache keys
+  const userCacheKeys = [
+    `portfolio-history-${userId}`,
+    `portfolio-current-${userId}`,
+    `portfolio-composition-${userId}`,
+    `trade-data-${userId}`
+  ]
+  
+  for (const key of userCacheKeys) {
+    await cacheManager.invalidate(key as CacheKey)
+  }
+  
+  logger.info(`Invalidated portfolio caches for user ${userId}`)
+}
+
+/**
  * Warm up portfolio caches by pre-fetching data
  */
 export async function warmUpPortfolioCaches(): Promise<void> {
@@ -432,6 +451,7 @@ export default {
   getCachedPortfolioCurrentData,
   getCachedPortfolioComposition,
   invalidatePortfolioCaches,
+  invalidateUserPortfolioCaches,
   warmUpPortfolioCaches,
   registerPortfolioCacheRefreshCallbacks
 }

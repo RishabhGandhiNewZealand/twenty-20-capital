@@ -1,40 +1,43 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import { getCachedPortfolioHistory } from '@/lib/portfolio-cache-service'
+import { getCachedUserPortfolioHistory } from '@/lib/portfolio-cache-service-user'
+import { requireAuth, createAuthenticatedResponse } from '@/lib/auth'
 
 /**
  * GET /api/portfolio-history
  * 
- * Returns cached portfolio history data with automatic cache busting:
+ * Returns cached portfolio history data for the authenticated user with automatic cache busting:
  * - Time-based: Cache expires after 20 minutes
  * - Event-based: Cache is invalidated when trades are updated
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    logger.info('Fetching portfolio history from cache...')
+    // Require authentication
+    const authResult = await requireAuth(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
+    }
+    const user = authResult
+    
+    logger.info(`Fetching portfolio history for user ${user.id} from cache...`)
     const startTime = Date.now()
     
-    // Get cached portfolio history data
-    const history = await getCachedPortfolioHistory()
+    // Get cached portfolio history for the specific user
+    const data = await getCachedUserPortfolioHistory(user.id)
     
     const duration = Date.now() - startTime
-    logger.info(`Portfolio history fetched in ${duration}ms`)
+    logger.info(`Portfolio history fetched for user ${user.id} in ${duration}ms (${data.length} data points)`)
     
-    // Return the cached data
-    return NextResponse.json({
-      history,
-      lastUpdated: new Date().toISOString(),
+    return createAuthenticatedResponse({
+      history: data,
+      count: data.length,
       cached: true,
       cacheInfo: {
-        fetchTime: duration,
-        dataPoints: history.length
+        fetchTime: duration
       }
     })
-    
   } catch (error) {
     logger.error('Error fetching portfolio history:', error)
-    
-    // Return error response
     return NextResponse.json(
       { 
         error: 'Failed to fetch portfolio history',

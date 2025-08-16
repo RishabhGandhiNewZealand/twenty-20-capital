@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
+import { useUser } from "@stackframe/stack"
 import { TradeRecord } from "@/types/portfolio"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,7 @@ interface GroupedTrades {
 
 export default function TradesPage() {
   const router = useRouter()
-  const { isAnonymized } = useAnonymization()
+  const user = useUser()
   const [trades, setTrades] = useState<TradeRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -67,24 +67,26 @@ export default function TradesPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [tradeToDelete, setTradeToDelete] = useState<TradeRecord | null>(null)
 
-  // Check if user is admin (full view mode)
+  // Check if user is authenticated
   useEffect(() => {
-    if (isAnonymized) {
-      router.push('/portfolio')
+    if (!user) {
+      router.push('/login')
     }
-  }, [isAnonymized, router])
+  }, [user, router])
 
   // Fetch trades
   const fetchTrades = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/trades', {
-        headers: {
-          'x-admin-auth': 'true'
-        }
+        credentials: 'include'
       })
       
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/login')
+          return
+        }
         throw new Error('Failed to fetch trades')
       }
       
@@ -95,13 +97,13 @@ export default function TradesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [router])
 
   useEffect(() => {
-    if (!isAnonymized) {
+    if (user) {
       fetchTrades()
     }
-  }, [isAnonymized, fetchTrades])
+  }, [user, fetchTrades])
 
   // Group trades by company
   const groupedTrades = useMemo(() => {
@@ -283,22 +285,29 @@ export default function TradesPage() {
       setSaving(true)
       setShowSaveConfirm(false)
       
-      // Prepare batch changes
-      const batchData = {
-        new: stagedChanges.new.map(t => {
+      // Prepare batch changes - combine all trades into a single array
+      const allTrades = [
+        ...stagedChanges.new.map(t => {
           const { id, ...tradeData } = t
-          return tradeData
+          return tradeData // New trades without ID
         }),
-        updated: stagedChanges.updated,
-        deleted: Array.from(stagedChanges.deleted)
+        ...stagedChanges.updated,
+        ...Array.from(stagedChanges.deleted).map(id => ({
+          id,
+          deleted_flag: true
+        } as TradeRecord))
+      ]
+      
+      const batchData = {
+        trades: allTrades
       }
       
       const response = await fetch('/api/trades/batch', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-auth': 'true'
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(batchData)
       })
       
@@ -337,8 +346,8 @@ export default function TradesPage() {
     fetchTrades()
   }
 
-  if (isAnonymized) {
-    return null // Will redirect
+  if (!user) {
+    return null // Will redirect to login
   }
 
   if (loading) {
