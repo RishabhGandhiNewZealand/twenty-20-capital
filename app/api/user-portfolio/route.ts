@@ -1,72 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
 import yahooFinance from 'yahoo-finance2'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
 
-interface CurrentHolding {
-  symbol: string
-  name: string
-  shares: number
-  currentPrice: number
-  currentValueNZD: number
-  costBasisNZD: number
-  gainNZD: number
-  gainPercent: number
-  allocation: number
-  currency: string
-}
-
-async function getCurrentPrice(ticker: string): Promise<number> {
+export async function GET(request: NextRequest) {
   try {
-    let yfinanceTicker = ticker
-    if (ticker === 'MFT') {
-      yfinanceTicker = 'MFT.NZ'
-    }
+    const userId = request.headers.get('x-user-id') || ''
+    const userEmail = request.headers.get('x-user-email') || ''
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const quote = await yahooFinance.quote(yfinanceTicker)
-    return quote.regularMarketPrice || 0
-  } catch (error) {
-    logger.error(`Error fetching current price for ${ticker}:`, error)
-    return 0
-  }
-}
-
-async function getCurrentUSDNZDRate(): Promise<number> {
-  try {
-    const quote = await yahooFinance.quote('NZDUSD=X')
-    return 1 / (quote.regularMarketPrice || FALLBACK_NZD_TO_USD_RATE)
-  } catch (error) {
-    logger.error('Error fetching USD/NZD rate:', error)
-    return FALLBACK_USD_TO_NZD_RATE
-  }
-}
-
-async function getHistoricalPrice(ticker: string, date: Date): Promise<number> {
-  try {
-    const endDate = new Date(date)
-    endDate.setDate(endDate.getDate() + 1)
-    
-    const quotes = await yahooFinance.historical(ticker, {
-      period1: date,
-      period2: endDate,
-      interval: '1d'
-    })
-
-    return quotes.length > 0 ? quotes[0].close : 0
-  } catch (error) {
-    logger.error(`Error fetching historical price for ${ticker} on ${date}:`, error)
-    return 0
-  }
-}
-
-export async function GET() {
-  try {
-    const adminUserId = process.env.ADMIN_USER_ID || ''
-    const trades = await getCachedTradeData(adminUserId)
-    
+    const trades = await getCachedTradeData(userId)
     if (!trades || trades.length === 0) {
-      logger.warn('No trade data found in database')
       return NextResponse.json({
         holdings: [],
         summary: {
@@ -77,50 +22,66 @@ export async function GET() {
           sp500Value: 0,
           sp500GainNZD: 0,
           sp500GainPercent: 0,
-          exchangeRate: await getCurrentUSDNZDRate()
+          exchangeRate: FALLBACK_USD_TO_NZD_RATE
         },
         lastUpdated: new Date().toISOString()
       }, {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
           'Pragma': 'no-cache',
-          'Expires': '0',
+          'Expires': '0'
         }
       })
     }
 
+    const getCurrentPrice = async (ticker: string): Promise<number> => {
+      try {
+        let yfinanceTicker = ticker
+        if (ticker === 'MFT') yfinanceTicker = 'MFT.NZ'
+        const quote = await yahooFinance.quote(yfinanceTicker)
+        return quote.regularMarketPrice || 0
+      } catch {
+        return 0
+      }
+    }
+
+    const getHistoricalPrice = async (ticker: string, date: Date): Promise<number> => {
+      try {
+        const endDate = new Date(date)
+        endDate.setDate(endDate.getDate() + 1)
+        const quotes = await yahooFinance.historical(ticker, { period1: date, period2: endDate, interval: '1d' })
+        return quotes.length > 0 ? quotes[0].close : 0
+      } catch {
+        return 0
+      }
+    }
+
+    const getCurrentUSDNZDRate = async (): Promise<number> => {
+      try {
+        const quote = await yahooFinance.quote('NZDUSD=X')
+        return 1 / (quote.regularMarketPrice || FALLBACK_NZD_TO_USD_RATE)
+      } catch {
+        return FALLBACK_USD_TO_NZD_RATE
+      }
+    }
+
     trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-    const holdingsBySymbol = new Map<string, {
-      shares: number
-      totalCostNZD: number
-      name: string
-      currency: string
-    }>()
-
+    const holdingsBySymbol = new Map<string, { shares: number, totalCostNZD: number, name: string, currency: string }>()
     let sp500Shares = 0
     let currentCostBasis = 0
     let soldCapitalAvailable = 0
 
     const tradeDates = [...new Set(trades.filter(t => t.type === 'Buy').map(t => t.date))]
-    
-    const spyHistoricalPrices = await Promise.all(
-      tradeDates.map(async (dateStr) => {
-        const date = new Date(dateStr)
-        const price = await getHistoricalPrice('SPY', date)
-        return { date: dateStr, price }
-      })
-    )
+    const spyHistoricalPrices = await Promise.all(tradeDates.map(async (dateStr) => {
+      const date = new Date(dateStr)
+      const price = await getHistoricalPrice('SPY', date)
+      return { date: dateStr, price }
+    }))
     const spyPriceMap = new Map(spyHistoricalPrices.map(p => [p.date, p.price]))
 
     for (const trade of trades) {
-      const current = holdingsBySymbol.get(trade.code) || {
-        shares: 0,
-        totalCostNZD: 0,
-        name: trade.name,
-        currency: trade.instrumentCurrency
-      }
-
+      const current = holdingsBySymbol.get(trade.code) || { shares: 0, totalCostNZD: 0, name: trade.name, currency: trade.instrumentCurrency }
       const exchangeRate = trade.instrumentCurrency === 'USD' ? (1 / trade.exchRate) : 1
       const qty = isNaN(trade.qty) ? 0 : trade.qty
       const price = isNaN(trade.price) ? 0 : trade.price
@@ -130,14 +91,12 @@ export async function GET() {
         current.shares += qty
         if (trade.type === 'Buy') {
           current.totalCostNZD += tradeValueNZD
-
           if (soldCapitalAvailable >= tradeValueNZD) {
             soldCapitalAvailable -= tradeValueNZD
           } else {
             const newCapital = tradeValueNZD - soldCapitalAvailable
             currentCostBasis += newCapital
             soldCapitalAvailable = 0
-
             const spyPrice = spyPriceMap.get(trade.date) || 0
             if (spyPrice > 0) {
               const spyPriceNZD = spyPrice * exchangeRate
@@ -149,7 +108,6 @@ export async function GET() {
         const sharesSold = Math.abs(qty)
         const sharesBeforeSale = current.shares
         current.shares -= sharesSold
-        
         if (current.shares > 0 && sharesBeforeSale > 0) {
           const remainingRatio = current.shares / sharesBeforeSale
           current.totalCostNZD *= remainingRatio
@@ -168,7 +126,7 @@ export async function GET() {
 
     const currentExchangeRate = await getCurrentUSDNZDRate()
     const tickers = Array.from(holdingsBySymbol.keys())
-    
+
     const prices = await Promise.all([
       ...tickers.map(ticker => getCurrentPrice(ticker)),
       getCurrentPrice('SPY')
@@ -180,7 +138,7 @@ export async function GET() {
     })
     const currentSpyPrice = prices[prices.length - 1]
 
-    const holdings: CurrentHolding[] = []
+    const holdings: Array<{ symbol: string, name: string, shares: number, currentPrice: number, currentValueNZD: number, costBasisNZD: number, gainNZD: number, gainPercent: number, allocation: number, currency: string }> = []
     let totalValueNZD = 0
 
     holdingsBySymbol.forEach((holding, symbol) => {
@@ -188,7 +146,6 @@ export async function GET() {
       const currentValueNZD = holding.shares * currentPrice * (holding.currency === 'USD' ? currentExchangeRate : 1)
       const gainNZD = currentValueNZD - holding.totalCostNZD
       const gainPercent = holding.totalCostNZD > 0 ? ((gainNZD / holding.totalCostNZD) * 100) : 0
-      
       holdings.push({
         symbol,
         name: holding.name,
@@ -201,14 +158,10 @@ export async function GET() {
         allocation: 0,
         currency: holding.currency
       })
-
       totalValueNZD += currentValueNZD
     })
 
-    holdings.forEach(holding => {
-      holding.allocation = totalValueNZD > 0 ? ((holding.currentValueNZD / totalValueNZD) * 100) : 0
-    })
-
+    holdings.forEach(h => { h.allocation = totalValueNZD > 0 ? ((h.currentValueNZD / totalValueNZD) * 100) : 0 })
     holdings.sort((a, b) => b.allocation - a.allocation)
 
     const totalGainNZD = totalValueNZD - currentCostBasis
@@ -236,14 +189,11 @@ export async function GET() {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
-        'Expires': '0',
+        'Expires': '0'
       }
     })
   } catch (error) {
-    logger.error('Error calculating current portfolio:', error)
-    return NextResponse.json(
-      { error: 'Failed to calculate current portfolio' },
-      { status: 500 }
-    )
+    logger.error('Error fetching user portfolio current data:', error)
+    return NextResponse.json({ error: 'Failed to fetch portfolio data' }, { status: 500 })
   }
 }

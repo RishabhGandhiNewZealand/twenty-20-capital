@@ -7,7 +7,7 @@ export default function MyPortfolioLayout({
 }: {
   children: React.ReactNode
 }) {
-  const adminEmail = process.env.ADMIN_EMAIL || ""
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ""
   
   return (
     <Suspense fallback={<Loading />}>

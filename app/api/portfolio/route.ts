@@ -1,33 +1,38 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import { getCachedPortfolioCurrentData } from '@/lib/portfolio-cache-service'
+import { getCachedTradeData } from '@/lib/trade-data-cache'
+import { calculatePortfolioData } from '@/lib/portfolio'
 
 /**
- * GET /api/portfolio
- * 
- * Returns cached portfolio data with automatic cache busting:
- * - Time-based: Cache expires after 20 minutes
- * - Event-based: Cache is invalidated when trades are updated
+ * GET /api/portfolio - user-scoped current holdings and exited positions summary
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    logger.info('Fetching portfolio data from cache...')
-    const startTime = Date.now()
-    
-    // Get cached portfolio data
-    const data = await getCachedPortfolioCurrentData()
-    
-    const duration = Date.now() - startTime
-    logger.info(`Portfolio data fetched in ${duration}ms`)
-    
+    const userId = request.headers.get('x-user-id') || ''
+    const userEmail = request.headers.get('x-user-email') || ''
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const trades = await getCachedTradeData(userId)
+    const { holdings, exitedPositions } = calculatePortfolioData(trades)
+
+    const totalValue = holdings.reduce((sum, h) => sum + (isNaN(h.avgPriceNZD * h.totalShares) ? 0 : h.avgPriceNZD * h.totalShares), 0)
+    const summary = {
+      totalValueNZD: isNaN(totalValue) ? 0 : totalValue,
+      lastUpdated: new Date().toISOString()
+    }
+
     return NextResponse.json({
-      holdings: data.holdings,
-      exitedPositions: data.exitedPositions,
-      summary: data.summary,
-      lastUpdated: data.lastUpdated,
-      cached: true,
-      cacheInfo: {
-        fetchTime: duration
+      holdings,
+      exitedPositions,
+      summary,
+      lastUpdated: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       }
     })
   } catch (error) {

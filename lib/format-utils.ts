@@ -9,10 +9,11 @@
  * @returns Formatted number string
  */
 export function formatNumber(value: number, decimals: number = 2): string {
+  const safe = isNaN(value) ? 0 : value
   return new Intl.NumberFormat('en-NZ', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(value)
+  }).format(safe)
 }
 
 /**
@@ -21,7 +22,9 @@ export function formatNumber(value: number, decimals: number = 2): string {
  * @returns Formatted date string
  */
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-NZ', {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-NZ', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -43,11 +46,12 @@ export function formatCurrencyWithDecimals(
   decimals: number = 2
 ): string {
   if (value === undefined) return 'N/A'
+  const safe = isNaN(value) ? 0 : value
   
   return new Intl.NumberFormat('en-NZ', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(value)
+  }).format(safe)
 }

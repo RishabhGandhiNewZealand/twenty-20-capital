@@ -377,3 +377,23 @@ For questions or issues, please refer to the documentation in the `/docs` folder
 ---
 
 Built with passion for personal finance tracking and portfolio management.
+
+## Environment Variables
+
+Set these in your environment:
+
+- `DATABASE_URL`=postgres://...
+- `ADMIN_USER_ID`=<admin_user_id>
+- `ADMIN_EMAIL`=<admin@email.com>
+- `NEXT_PUBLIC_ADMIN_EMAIL`=<admin@email.com>
+
+Client requests to user-scoped API endpoints must include headers:
+
+- `x-user-id`: authenticated user ID
+- `x-user-email`: authenticated user email
+- `x-is-admin`: boolean string ("true" or "false")
+
+These are derived from `@stackframe/stack` user object:
+
+- user ID: `user.id || user.userId`
+- email: `user.primaryEmail || user.email || user.primaryEmailAddress?.emailAddress`

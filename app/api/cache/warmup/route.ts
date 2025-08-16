@@ -10,9 +10,9 @@ import { logger } from '@/lib/logger'
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    const userEmail = request.headers.get('x-user-email') || ''
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
+    if (!userEmail || userEmail !== adminEmail) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -22,10 +22,7 @@ export async function POST(request: NextRequest) {
     logger.info('Cache warmup requested')
     const startTime = Date.now()
     
-    // Register refresh callbacks if not already registered
     registerPortfolioCacheRefreshCallbacks()
-    
-    // Warm up portfolio caches
     await warmUpPortfolioCaches()
     
     const duration = Date.now() - startTime

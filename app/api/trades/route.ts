@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getUserDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
-// GET all trades (including soft-deleted for admin view)
+// GET trades for the current user (including soft-deleted if requested)
 export async function GET(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    const userId = request.headers.get('x-user-id') || ''
+    const userEmail = request.headers.get('x-user-email') || ''
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const sql = getDb()
+    const sql = getUserDb(userId)
     
-    // Fetch all trades including soft-deleted ones
+    const includeDeleted = request.nextUrl.searchParams.get('includeDeleted') === 'true'
+
     const results = await sql`
       SELECT 
         id,
@@ -33,15 +34,17 @@ export async function GET(request: NextRequest) {
         brokerage_currency,
         exch_rate,
         value,
+        user_id,
         deleted_flag,
         deleted_at,
         created_at,
         updated_at
       FROM application.trade_data
+      WHERE user_id = ${userId}
+        ${includeDeleted ? sql`` : sql`AND (deleted_flag = FALSE OR deleted_flag IS NULL)`}
       ORDER BY date DESC, id DESC
     `
     
-    // Transform database results to match TradeRecord interface
     const trades: TradeRecord[] = results.map(row => ({
       id: row.id,
       code: row.code,
@@ -56,13 +59,14 @@ export async function GET(request: NextRequest) {
       brokerageCurrency: row.brokerage_currency,
       exchRate: parseFloat(row.exch_rate),
       value: parseFloat(row.value),
+      user_id: row.user_id,
       deleted_flag: row.deleted_flag || false,
       deleted_at: row.deleted_at ? row.deleted_at.toISOString() : undefined,
       created_at: row.created_at ? row.created_at.toISOString() : undefined,
       updated_at: row.updated_at ? row.updated_at.toISOString() : undefined
     }))
     
-    logger.info(`Fetched ${trades.length} trades for admin view`)
+    logger.info(`Fetched ${trades.length} trades for user ${userEmail}`)
     return NextResponse.json(trades, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -81,12 +85,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST new trade
+// POST new trade for current user
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    const userId = request.headers.get('x-user-id') || ''
+    const userEmail = request.headers.get('x-user-email') || ''
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -94,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     const trade: TradeRecord = await request.json()
-    const sql = getDb()
+    const sql = getUserDb(userId)
     
     const result = await sql`
       INSERT INTO application.trade_data (
@@ -109,7 +113,8 @@ export async function POST(request: NextRequest) {
         brokerage,
         brokerage_currency,
         exch_rate,
-        value
+        value,
+        user_id
       ) VALUES (
         ${trade.code},
         ${trade.marketCode},
@@ -122,19 +127,25 @@ export async function POST(request: NextRequest) {
         ${trade.brokerage},
         ${trade.brokerageCurrency},
         ${trade.exchRate},
-        ${trade.value}
+        ${trade.value},
+        ${userId}
       )
       RETURNING id
     `
     
-    logger.info(`Created new trade with ID: ${result[0].id}`)
+    logger.info(`Created new trade with ID: ${result[0].id} for user ${userEmail}`)
     
-    // Invalidate portfolio caches after trade creation
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
     await invalidatePortfolioCaches()
     logger.info('Portfolio caches invalidated after trade creation')
     
-    return NextResponse.json({ id: result[0].id, success: true })
+    return NextResponse.json({ id: result[0].id, success: true }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
     
   } catch (error) {
     logger.error('Error creating trade:', error)

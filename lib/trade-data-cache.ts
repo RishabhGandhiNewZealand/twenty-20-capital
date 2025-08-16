@@ -3,15 +3,16 @@ import { logger } from './logger'
 import { TradeRecord } from '@/types/portfolio'
 
 /**
- * Fetches all trade data from the database
+ * Fetches all trade data from the database for a specific user
  * This is the raw database query function
  */
-async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
+async function fetchTradeDataFromDB(userId?: string): Promise<TradeRecord[]> {
   const sql = getDb()
   
   try {
     const results = await sql`
       SELECT 
+        id,
         code,
         market_code,
         name,
@@ -23,14 +24,21 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
         brokerage,
         brokerage_currency,
         exch_rate,
-        value
+        value,
+        user_id,
+        deleted_flag,
+        deleted_at,
+        created_at,
+        updated_at
       FROM application.trade_data
-      WHERE deleted_flag = FALSE OR deleted_flag IS NULL
+      WHERE (deleted_flag = FALSE OR deleted_flag IS NULL)
+      ${userId ? sql`AND user_id = ${userId}` : sql``}
       ORDER BY date ASC, id ASC
     `
     
     // Transform database results to match TradeRecord interface
     const trades: TradeRecord[] = results.map(row => ({
+      id: row.id,
       code: row.code,
       marketCode: row.market_code,
       name: row.name,
@@ -42,10 +50,15 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
       brokerage: parseFloat(row.brokerage),
       brokerageCurrency: row.brokerage_currency,
       exchRate: parseFloat(row.exch_rate),
-      value: parseFloat(row.value)
+      value: parseFloat(row.value),
+      deleted_flag: row.deleted_flag || false,
+      deleted_at: row.deleted_at ? row.deleted_at.toISOString() : undefined,
+      created_at: row.created_at ? row.created_at.toISOString() : undefined,
+      updated_at: row.updated_at ? row.updated_at.toISOString() : undefined,
+      user_id: row.user_id
     }))
     
-    logger.info(`Fetched ${trades.length} trades from database`)
+    logger.info(`Fetched ${trades.length} trades from database for user scope`)
     return trades
     
   } catch (error) {
@@ -61,15 +74,16 @@ async function fetchTradeDataFromDB(): Promise<TradeRecord[]> {
 export const getCachedTradeData = fetchTradeDataFromDB
 
 /**
- * Fetches trade data for a specific symbol
+ * Fetches trade data for a specific symbol (scoped to user)
  * This is useful for symbol-specific queries
  */
-async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord[]> {
+async function fetchTradeDataBySymbolFromDB(symbol: string, userId?: string): Promise<TradeRecord[]> {
   const sql = getDb()
   
   try {
     const results = await sql`
       SELECT 
+        id,
         code,
         market_code,
         name,
@@ -81,14 +95,22 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
         brokerage,
         brokerage_currency,
         exch_rate,
-        value
+        value,
+        user_id,
+        deleted_flag,
+        deleted_at,
+        created_at,
+        updated_at
       FROM application.trade_data
-      WHERE code = ${symbol} AND (deleted_flag = FALSE OR deleted_flag IS NULL)
+      WHERE code = ${symbol} 
+        AND (deleted_flag = FALSE OR deleted_flag IS NULL)
+        ${userId ? sql`AND user_id = ${userId}` : sql``}
       ORDER BY date ASC, id ASC
     `
     
     // Transform database results to match TradeRecord interface
     const trades: TradeRecord[] = results.map(row => ({
+      id: row.id,
       code: row.code,
       marketCode: row.market_code,
       name: row.name,
@@ -100,10 +122,15 @@ async function fetchTradeDataBySymbolFromDB(symbol: string): Promise<TradeRecord
       brokerage: parseFloat(row.brokerage),
       brokerageCurrency: row.brokerage_currency,
       exchRate: parseFloat(row.exch_rate),
-      value: parseFloat(row.value)
+      value: parseFloat(row.value),
+      deleted_flag: row.deleted_flag || false,
+      deleted_at: row.deleted_at ? row.deleted_at.toISOString() : undefined,
+      created_at: row.created_at ? row.created_at.toISOString() : undefined,
+      updated_at: row.updated_at ? row.updated_at.toISOString() : undefined,
+      user_id: row.user_id
     }))
     
-    logger.info(`Fetched ${trades.length} trades for symbol ${symbol} from database`)
+    logger.info(`Fetched ${trades.length} trades for symbol ${symbol} (user scoped) from database`)
     return trades
     
   } catch (error) {

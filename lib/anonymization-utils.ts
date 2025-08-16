@@ -30,12 +30,13 @@ export function maskCurrency(
 ): string {
   if (!isAnonymized) {
     if (value === undefined) return 'N/A'
+    const safe = isNaN(value) ? 0 : value
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value)
+    }).format(safe)
   }
   return currency === 'USD' ? '$***' : 'NZ$***'
 }
@@ -48,10 +49,11 @@ export function maskCurrency(
  */
 export function maskShares(shares: number, isAnonymized: boolean): string {
   if (!isAnonymized) {
+    const safe = isNaN(shares) ? 0 : shares
     return new Intl.NumberFormat('en-NZ', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(shares)
+    }).format(safe)
   }
   return '***'
 }

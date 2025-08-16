@@ -47,7 +47,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <AnonymizationProvider>
               <Suspense fallback={null}>
-                <SidebarNavigation adminEmail={process.env.ADMIN_EMAIL || ""} />
+                <SidebarNavigation adminEmail={process.env.NEXT_PUBLIC_ADMIN_EMAIL || ""} />
               </Suspense>
               <main className="min-h-screen">
                 {children}

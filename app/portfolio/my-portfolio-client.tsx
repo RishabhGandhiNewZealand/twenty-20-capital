@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, ChartLine, User } from "lucide-react"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@stackframe/stack"
 
@@ -17,6 +17,10 @@ function getRawEmail(u: any): string {
   .toString()
 }
 
+function getUserId(u: any): string {
+  return (u?.id || u?.userId || "").toString()
+}
+
 interface Props {
   adminEmail: string
 }
@@ -25,28 +29,26 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
   const router = useRouter()
   const user = useUser()
   const rawUserEmail = useMemo(() => getRawEmail(user), [user])
+  const userId = useMemo(() => getUserId(user), [user])
   const isAdmin = useMemo(() => rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
 
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
-    // Redirect to login if not authenticated
     if (!user) {
       router.push("/login")
       return
     }
-    
-    // If admin, redirect to Rish's portfolio
     if (isAdmin) {
       router.push("/rishs-portfolio")
       return
     }
   }, [user, isAdmin, router])
 
-  // Don't render anything for admin users
   if (isAdmin) {
     return null
   }
 
-  // Show loading state while checking authentication
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -55,7 +57,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
     )
   }
 
-  const portfolioStats = [
+  const [portfolioStats] = useState([
     {
       title: "Portfolio Value",
       value: "Coming Soon",
@@ -74,18 +76,36 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
       description: "Your portfolio performance",
       icon: ChartLine,
     },
-  ]
+  ])
+
+  useEffect(() => {
+    async function warm() {
+      // Warm up user endpoints with no-store headers
+      const headers = {
+        'x-user-id': userId,
+        'x-user-email': rawUserEmail,
+        'x-is-admin': 'false',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+      const t = Date.now()
+      await Promise.all([
+        fetch(`/api/user-portfolio?t=${t}`, { headers, cache: 'no-store' }).catch(() => {}),
+        fetch(`/api/user-portfolio-history?t=${t}`, { headers, cache: 'no-store' }).catch(() => {})
+      ])
+      setLoading(false)
+    }
+    if (userId) warm()
+  }, [userId, rawUserEmail])
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
-        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">My Portfolio</h1>
           <p className="text-gray-600">Track your personal investment portfolio</p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 sm:mb-8">
           {portfolioStats.map((stat, index) => (
             <Card key={index} className="border-blue-100">
@@ -108,7 +128,6 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
           ))}
         </div>
 
-        {/* Portfolio Content Placeholder */}
         <Card className="border-blue-100">
           <CardHeader className="px-4 sm:px-6">
             <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Holdings</CardTitle>

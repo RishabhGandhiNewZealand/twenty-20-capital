@@ -44,9 +44,11 @@ interface PortfolioStat {
 
 interface PortfolioChartProps {
   portfolioStats?: PortfolioStat[]
+  historyPath?: string
+  historyHeaders?: Record<string, string>
 }
 
-export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
+export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfolio-history", historyHeaders }: PortfolioChartProps) {
   const [data, setData] = useState<PortfolioHistoryData[]>([])
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,12 +61,13 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     async function fetchPortfolioHistory() {
       try {
         const timestamp = Date.now()
-        const response = await fetch(`/api/portfolio-history?t=${timestamp}`, { 
+        const response = await fetch(`${historyPath}?t=${timestamp}`, { 
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
+            'Pragma': 'no-cache',
+            ...(historyHeaders || {})
+          } as HeadersInit
         })
         if (!response.ok) {
           throw new Error('Failed to fetch portfolio history')
@@ -76,13 +79,10 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
           return
         }
         
-        // Format data for the chart - keep original format for value view
         const formattedData = result.history
         
-        // Calculate percentage performance data
         const performanceData = calculatePerformanceData(formattedData)
         
-        // Sample data to reduce points for better performance
         const sampledData = sampleData(formattedData, 200)
         const sampledPerformanceData = sampleData(performanceData, 200)
         
@@ -96,69 +96,55 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     }
 
     fetchPortfolioHistory()
-  }, [])
+  }, [historyPath, historyHeaders])
 
-  // Calculate percentage performance relative to cost basis
   function calculatePerformanceData(data: PortfolioHistoryData[]): PerformanceData[] {
     if (data.length === 0) return []
     
-    // Track the S&P 500 cost basis separately
-    // The S&P 500 investment should mirror the portfolio cost basis
     let sp500CostBasis = 0
     let previousCostBasis = 0
     
     return data.map((point, index) => {
-      // Track cost basis changes (new capital additions)
       if (index === 0) {
-        // Initialize with the first cost basis
         sp500CostBasis = point.costBasis
         previousCostBasis = point.costBasis
       } else if (point.costBasis > previousCostBasis) {
-        // Add only the new capital to S&P 500 cost basis
         const newCapital = point.costBasis - previousCostBasis
         sp500CostBasis += newCapital
         previousCostBasis = point.costBasis
       }
       
-      // Calculate portfolio performance
       const portfolioPerformance = point.costBasis > 0 
-        ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
+        ? (((point.portfolioValue - point.costBasis) / point.costBasis) * 100) 
         : 0
       
-      // Calculate S&P 500 performance
-      // If sp500Value is 0 or very small at the start (no shares bought yet), 
-      // and we have a cost basis, assume we just invested and performance is 0%
       let sp500Performance = 0
       if (sp500CostBasis > 0) {
-        // If S&P 500 value is essentially 0 but we have cost basis, it means
-        // we just made the investment but haven't bought shares yet (start of day 1)
         if (point.sp500Value < 1 && index === 0) {
-          sp500Performance = 0  // Starting point, no gain or loss yet
+          sp500Performance = 0
         } else {
-          sp500Performance = ((point.sp500Value - sp500CostBasis) / sp500CostBasis) * 100
+          sp500Performance = (((point.sp500Value - sp500CostBasis) / sp500CostBasis) * 100)
         }
       }
       
       return {
         date: point.date,
-        portfolioPerformance,
-        sp500Performance
+        portfolioPerformance: isNaN(portfolioPerformance) ? 0 : portfolioPerformance,
+        sp500Performance: isNaN(sp500Performance) ? 0 : sp500Performance
       }
     })
   }
 
-  // Sample data to reduce the number of points
   function sampleData<T>(data: T[], maxPoints: number): T[] {
     if (data.length <= maxPoints) return data
     
     const step = Math.ceil(data.length / maxPoints)
-    const sampled = []
+    const sampled = [] as T[]
     
     for (let i = 0; i < data.length; i += step) {
       sampled.push(data[i])
     }
     
-    // Always include the last point
     if (sampled[sampled.length - 1] !== data[data.length - 1]) {
       sampled.push(data[data.length - 1])
     }
@@ -166,22 +152,20 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return sampled
   }
 
-  // Format percentage for tooltips (adapting from base function)
   const formatPercentage = (value: number) => {
-    return formatPercentageBase(value / 100, 2)
+    const safe = isNaN(value) ? 0 : value
+    return formatPercentageBase(safe / 100, 2)
   }
 
-  // Custom tooltip for value view
   const CustomTooltipValue = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-    // Hide stats when tooltip is active
     useEffect(() => {
       setHideStats(active || false)
     }, [active])
 
     if (active && payload && payload.length) {
-      const portfolioValue = payload.find((p) => p.dataKey === 'portfolioValue')?.value as number
-      const costBasis = payload.find((p) => p.dataKey === 'costBasis')?.value as number
-      const sp500Value = payload.find((p) => p.dataKey === 'sp500Value')?.value as number
+      const portfolioValue = Number(payload.find((p) => p.dataKey === 'portfolioValue')?.value) || 0
+      const costBasis = Number(payload.find((p) => p.dataKey === 'costBasis')?.value) || 0
+      const sp500Value = Number(payload.find((p) => p.dataKey === 'sp500Value')?.value) || 0
       const gain = portfolioValue - costBasis
       const gainPercent = costBasis > 0 ? ((gain / costBasis) * 100) : 0
       const sp500Gain = sp500Value - costBasis
@@ -217,13 +201,13 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
               <div className="flex justify-between items-center gap-4">
                 <span className="text-sm text-gray-600">Portfolio Gain:</span>
                 <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {!isAnonymized && `${maskCurrency(gain, isAnonymized)} `}({gainPercent.toFixed(1)}%)
+                  {!isAnonymized && `${maskCurrency(gain, isAnonymized)} `}({(isNaN(gainPercent) ? 0 : gainPercent).toFixed(1)}%)
                 </span>
               </div>
               <div className="flex justify-between items-center gap-4">
                 <span className="text-sm text-gray-600">S&P 500 Gain:</span>
                 <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {!isAnonymized && `${maskCurrency(sp500Gain, isAnonymized)} `}({sp500GainPercent.toFixed(1)}%)
+                  {!isAnonymized && `${maskCurrency(sp500Gain, isAnonymized)} `}({(isNaN(sp500GainPercent) ? 0 : sp500GainPercent).toFixed(1)}%)
                 </span>
               </div>
             </div>
@@ -234,16 +218,14 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return null
   }
 
-  // Custom tooltip for percentage view
   const CustomTooltipPercentage = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-    // Hide stats when tooltip is active
     useEffect(() => {
       setHideStats(active || false)
     }, [active])
 
     if (active && payload && payload.length) {
-      const portfolioPerformance = payload.find((p) => p.dataKey === 'portfolioPerformance')?.value as number
-      const sp500Performance = payload.find((p) => p.dataKey === 'sp500Performance')?.value as number
+      const portfolioPerformance = Number(payload.find((p) => p.dataKey === 'portfolioPerformance')?.value) || 0
+      const sp500Performance = Number(payload.find((p) => p.dataKey === 'sp500Performance')?.value) || 0
       const outperformance = portfolioPerformance - sp500Performance
 
       return (
@@ -349,7 +331,6 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
         <div className="h-[300px] sm:h-[400px] w-full relative">
-          {/* Portfolio Stats Overlay - Mobile Responsive */}
           {portfolioStats.length > 0 && !hideStats && (
             <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${
               isAnonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
@@ -388,7 +369,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 />
                 <YAxis 
                   tick={isAnonymized ? false : { fontSize: 10 }}
-                  tickFormatter={(value) => `${value.toFixed(0)}%`}
+                  tickFormatter={(value) => `${(isNaN(value) ? 0 : value).toFixed(0)}%`}
                   domain={['dataMin - 10', 'dataMax + 10']}
                   width={isAnonymized ? 10 : 40}
                   axisLine={true}
@@ -417,7 +398,6 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                   dot={false}
                   activeDot={{ r: 4 }}
                 />
-                {/* Zero line for reference */}
                 <Line 
                   type="monotone" 
                   dataKey={() => 0} 
@@ -450,7 +430,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
                 />
                 <YAxis 
                   tick={isAnonymized ? false : { fontSize: 10 }}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) => `$${((isNaN(value) ? 0 : value) / 1000).toFixed(0)}k`}
                   width={isAnonymized ? 10 : 45}
                   axisLine={true}
                   tickLine={!isAnonymized}
