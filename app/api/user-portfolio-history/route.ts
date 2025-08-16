@@ -4,6 +4,23 @@ import { calculateDailyReturns } from '@/lib/portfolioCalculations'
 import yahooFinance from 'yahoo-finance2'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
+function fillMissingDates(priceMap: Map<string, number>, startDate: Date, endDate: Date): Map<string, number> {
+  const filled = new Map<string, number>()
+  let last: number | null = null
+  const cur = new Date(startDate)
+  while (cur <= endDate) {
+    const ds = cur.toISOString().split('T')[0]
+    if (priceMap.has(ds)) {
+      last = priceMap.get(ds)!
+      filled.set(ds, last)
+    } else if (last !== null) {
+      filled.set(ds, last)
+    }
+    cur.setDate(cur.getDate() + 1)
+  }
+  return filled
+}
+
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id') || ''
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -54,16 +71,19 @@ export async function GET(request: NextRequest) {
       return priceMap
     }).catch(() => new Map<string, number>())
 
-  const [priceDataArray, exchangeRates, spyPrices] = await Promise.all([
+  const [priceDataArray, exchangeRatesRaw, spyPricesRaw] = await Promise.all([
     Promise.all(priceDataPromises),
     exchangeRatesPromise,
     spyPromise
   ])
 
+  // Fill forward missing dates for consistency
   const tickerPriceMap = new Map<string, Map<string, number>>()
   priceDataArray.forEach(({ ticker, priceMap }) => {
-    tickerPriceMap.set(ticker, priceMap)
+    tickerPriceMap.set(ticker, fillMissingDates(priceMap, startDate, endDate))
   })
+  const exchangeRates = fillMissingDates(exchangeRatesRaw, startDate, endDate)
+  const spyPrices = fillMissingDates(spyPricesRaw, startDate, endDate)
 
   const history = calculateDailyReturns(sorted, tickerPriceMap, exchangeRates, spyPrices, startDate, endDate)
 

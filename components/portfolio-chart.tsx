@@ -101,10 +101,13 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
   function calculatePerformanceData(data: PortfolioHistoryData[]): PerformanceData[] {
     if (data.length === 0) return []
     
+    // Ensure chronological order
+    const ordered = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    
     let sp500CostBasis = 0
     let previousCostBasis = 0
     
-    return data.map((point, index) => {
+    return ordered.map((point, index) => {
       if (index === 0) {
         sp500CostBasis = point.costBasis
         previousCostBasis = point.costBasis

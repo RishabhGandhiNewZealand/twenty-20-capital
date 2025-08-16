@@ -60,59 +60,38 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const { isAnonymized } = useAnonymization()
 
-  // Load the pre-cached composition data on mount
+  // Load composition data. If currentHoldings provided (user view), prefer current holdings and skip admin cache
   useEffect(() => {
     async function loadCompositionData() {
       try {
-        // Try the API endpoint first
+        if (currentHoldings && currentHoldings.length > 0) {
+          // Use current holdings only; set slider to "Today"
+          setCompositionData(null)
+          setAvailableDates([])
+          setSliderValue(0)
+          setDisplayDate(null)
+          setLoading(false)
+          return
+        }
+        // Admin view fallback: load historical compositions
         const response = await fetch('/api/portfolio-compositions')
         if (!response.ok) {
-          // Fallback to static file if API fails
           const staticResponse = await fetch('/data/portfolio-compositions.json')
-          if (!staticResponse.ok) {
-            throw new Error('Failed to load composition data')
-          }
+          if (!staticResponse.ok) throw new Error('Failed to load composition data')
           const data = await staticResponse.json()
           setCompositionData(data)
-          
-          // Get available dates and sort them
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          
-          // Set initial slider to today's date if current holdings exist, otherwise latest historical date
-          if (dates.length > 0) {
-            // Check if we have current holdings passed as props
-            if (currentHoldings && currentHoldings.length > 0) {
-              // Set to max value to show today's data
-              setSliderValue(dates.length)
-            } else {
-              // Set to latest historical date
-              setSliderValue(dates.length - 1)
-              setDisplayDate(dates[dates.length - 1])
-            }
-          }
+          setSliderValue(dates.length - 1)
+          setDisplayDate(dates[dates.length - 1])
         } else {
           const data = await response.json()
           setCompositionData(data)
-          
-          // Get available dates and sort them
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          
-          // Set initial slider to today's date if current holdings exist, otherwise latest historical date
-          if (dates.length > 0) {
-            // Check if we have current holdings passed as props
-            if (currentHoldings && currentHoldings.length > 0) {
-              // Set to max value to show today's data
-              setSliderValue(dates.length)
-            } else {
-              // Set to latest historical date
-              setSliderValue(dates.length - 1)
-              setDisplayDate(dates[dates.length - 1])
-            }
-          }
+          setSliderValue(dates.length - 1)
+          setDisplayDate(dates[dates.length - 1])
         }
-        
         setLoading(false)
       } catch (error) {
         console.error('Error loading composition data:', error)
@@ -120,7 +99,6 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         setLoading(false)
       }
     }
-    
     loadCompositionData()
   }, [currentHoldings])
 
@@ -137,56 +115,19 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
 
   // Update display when slider value changes
   useEffect(() => {
-    if (availableDates.length > 0 && sliderValue >= 0 && sliderValue < availableDates.length) {
-      const selectedDate = availableDates[sliderValue]
-      setDisplayDate(selectedDate)
-      
-      // Check cache first
-      if (cacheRef.current.has(selectedDate)) {
-        setDisplayHoldings(cacheRef.current.get(selectedDate)!)
-        return
-      }
-
-      // Check pre-cached data
-      if (compositionData && compositionData[selectedDate]) {
-        const holdings = compositionData[selectedDate]
-        cacheRef.current.set(selectedDate, holdings)
-        setDisplayHoldings(holdings)
-        return
-      }
-
-      // If not in pre-cached data, fetch from API
-      async function fetchComposition() {
-        try {
-          const response = await fetch(`/api/portfolio-composition/${selectedDate}`)
-          if (!response.ok) {
-            throw new Error('Failed to fetch composition')
-          }
-          const data = await response.json()
-          if (data.holdings) {
-            cacheRef.current.set(selectedDate, data.holdings)
-            setDisplayHoldings(data.holdings)
-          }
-        } catch (err) {
-          console.error('Error fetching composition:', err)
-        }
-      }
-
-      fetchComposition()
-    } else if (sliderValue === availableDates.length && currentHoldings) {
-      // Use current holdings when slider is at the end
+    // If we have currentHoldings (user view), display current holdings regardless of slider
+    if (currentHoldings && currentHoldings.length > 0) {
       const totalValue = currentHoldings.reduce((sum, holding) => {
         const value = holding.currentValueNZD || 0;
         return sum + (isNaN(value) ? 0 : value);
       }, 0)
-      
       if (totalValue > 0) {
         const transformed: HoldingAtDate[] = currentHoldings
           .filter(holding => holding.currentValueNZD > 0 && !isNaN(holding.currentValueNZD))
           .map(holding => ({
             symbol: holding.symbol,
             name: holding.name,
-            shares: 0, // Not used in display
+            shares: 0,
             value: holding.currentValueNZD,
             percentage: (holding.currentValueNZD / totalValue) * 100,
             currency: 'NZD'
@@ -197,6 +138,36 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         setDisplayHoldings([])
         setDisplayDate(null)
       }
+      return
+    }
+
+    if (availableDates.length > 0 && sliderValue >= 0 && sliderValue < availableDates.length) {
+      const selectedDate = availableDates[sliderValue]
+      setDisplayDate(selectedDate)
+      if (cacheRef.current.has(selectedDate)) {
+        setDisplayHoldings(cacheRef.current.get(selectedDate)!)
+        return
+      }
+      if (compositionData && compositionData[selectedDate]) {
+        const holdings = compositionData[selectedDate]
+        cacheRef.current.set(selectedDate, holdings)
+        setDisplayHoldings(holdings)
+        return
+      }
+      async function fetchComposition() {
+        try {
+          const response = await fetch(`/api/portfolio-composition/${selectedDate}`)
+          if (!response.ok) throw new Error('Failed to fetch composition')
+          const data = await response.json()
+          if (data.holdings) {
+            cacheRef.current.set(selectedDate, data.holdings)
+            setDisplayHoldings(data.holdings)
+          }
+        } catch (err) {
+          console.error('Error fetching composition:', err)
+        }
+      }
+      fetchComposition()
     }
   }, [sliderValue, availableDates, compositionData, currentHoldings])
 
