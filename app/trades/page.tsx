@@ -4,6 +4,9 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@stackframe/stack"
 import { TradeRecord } from "@/types/portfolio"
+
+// Force dynamic rendering to prevent SSR issues with authentication
+export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
