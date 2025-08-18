@@ -46,9 +46,10 @@ interface PortfolioChartProps {
   portfolioStats?: PortfolioStat[]
   historyPath?: string
   historyHeaders?: Record<string, string>
+  anonymizeOverride?: boolean
 }
 
-export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfolio-history", historyHeaders }: PortfolioChartProps) {
+export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfolio-history", historyHeaders, anonymizeOverride }: PortfolioChartProps) {
   const [data, setData] = useState<PortfolioHistoryData[]>([])
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,6 +57,7 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
   const [showPercentage, setShowPercentage] = useState(false)
   const [hideStats, setHideStats] = useState(false)
   const { isAnonymized } = useAnonymization()
+  const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : isAnonymized
 
   useEffect(() => {
     async function fetchPortfolioHistory() {
@@ -336,7 +338,7 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
         <div className="h-[300px] sm:h-[400px] w-full relative">
           {portfolioStats.length > 0 && !hideStats && (
             <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${
-              isAnonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
+              anonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
             }`}>
               {portfolioStats.map((stat) => {
                 return (
@@ -371,12 +373,12 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
                   }}
                 />
                 <YAxis 
-                  tick={isAnonymized ? false : { fontSize: 10 }}
+                  tick={anonymized ? false : { fontSize: 10 }}
                   tickFormatter={(value) => `${(isNaN(value) ? 0 : value).toFixed(0)}%`}
                   domain={['dataMin - 10', 'dataMax + 10']}
-                  width={isAnonymized ? 10 : 40}
+                  width={anonymized ? 10 : 40}
                   axisLine={true}
-                  tickLine={!isAnonymized}
+                  tickLine={!anonymized}
                 />
                 <Tooltip content={<CustomTooltipPercentage />} />
                 <Legend 
@@ -432,11 +434,11 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
                   }}
                 />
                 <YAxis 
-                  tick={isAnonymized ? false : { fontSize: 10 }}
+                  tick={anonymized ? false : { fontSize: 10 }}
                   tickFormatter={(value) => `$${((isNaN(value) ? 0 : value) / 1000).toFixed(0)}k`}
-                  width={isAnonymized ? 10 : 45}
+                  width={anonymized ? 10 : 45}
                   axisLine={true}
-                  tickLine={!isAnonymized}
+                  tickLine={!anonymized}
                 />
                 <Tooltip content={<CustomTooltipValue />} />
                 <Legend 

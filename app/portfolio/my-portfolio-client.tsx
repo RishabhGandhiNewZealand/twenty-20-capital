@@ -126,12 +126,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
     }
   }, [user, isAdmin, router])
 
-  useEffect(() => {
-    // Show real values on the user's own portfolio page
-    setAnonymized(false)
-    // Restore anonymization based on admin status on unmount/navigation away
-    return () => setAnonymized(!isAdmin)
-  }, [setAnonymized, isAdmin])
+  // Do not modify anonymization globally on this page.
 
   useEffect(() => {
     async function fetchPortfolioData() {
@@ -214,6 +209,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
             portfolioStats={portfolioStats}
             historyPath="/api/user-portfolio-history"
             historyHeaders={{ 'x-user-id': userId, 'x-user-email': rawUserEmail, 'x-is-admin': 'false' }}
+            anonymizeOverride={false}
           />
         </div>
 
@@ -224,6 +220,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
               compositionPath="/api/user-portfolio-compositions"
               compositionDatePath="/api/user-portfolio-composition"
               compositionHeaders={{ 'x-user-id': userId, 'x-user-email': rawUserEmail, 'x-is-admin': 'false' }}
+              anonymizeOverride={false}
             />
           </div>
         )}

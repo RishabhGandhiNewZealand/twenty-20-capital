@@ -46,9 +46,10 @@ interface PortfolioHorizontalBarChartProps {
   compositionPath?: string
   compositionDatePath?: string
   compositionHeaders?: Record<string, string>
+  anonymizeOverride?: boolean
 }
 
-export function PortfolioHorizontalBarChart({ holdings: currentHoldings, compositionPath, compositionDatePath, compositionHeaders }: PortfolioHorizontalBarChartProps) {
+export function PortfolioHorizontalBarChart({ holdings: currentHoldings, compositionPath, compositionDatePath, compositionHeaders, anonymizeOverride }: PortfolioHorizontalBarChartProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +63,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const { isAnonymized } = useAnonymization()
+  const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : isAnonymized
 
   useEffect(() => {
     async function loadCompositionData() {
@@ -272,7 +274,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           rx={4} 
           ry={4}
         />
-        {showValue && !isAnonymized && (
+        {showValue && !anonymized && (
           <text 
             x={x + (isMobile ? 5 : 10)} 
             y={y + height / 2} 
@@ -309,7 +311,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           <p className="font-semibold text-[hsl(var(--card-foreground))]">{data.symbol}</p>
           <p className="text-sm text-gray-600 mb-2">{holding?.name}</p>
           <div className="space-y-1">
-            {!isAnonymized && (
+            {!anonymized && (
               <p className="text-sm">
                 <span className="text-gray-500">Value:</span>
                 <span className="font-medium ml-1">{formatCurrency(data.value)}</span>
@@ -327,7 +329,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   }
 
   const formatTickValue = (value: number) => {
-    if (isAnonymized) return '';
+    if (anonymized) return '';
     if (!value || isNaN(value)) return '$0';
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`
@@ -502,9 +504,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
                 <XAxis 
                   type="number" 
                   tickFormatter={formatTickValue}
-                  tick={isAnonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
+                  tick={anonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
                   domain={[0, 'dataMax']}
-                  axisLine={!isAnonymized}
+                  axisLine={!anonymized}
                 />
                 <YAxis 
                   type="category" 
