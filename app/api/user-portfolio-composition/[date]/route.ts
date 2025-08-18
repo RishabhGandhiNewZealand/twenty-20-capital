@@ -21,9 +21,16 @@ export async function GET(request: NextRequest, { params }: { params: { date: st
     for (const trade of trades) {
       if (new Date(trade.date) > new Date(targetDate)) break
       const current = holdings.get(trade.code) || { symbol: trade.code, name: trade.name, shares: 0, currency: trade.instrumentCurrency }
-      if (trade.type === 'Buy' || trade.type === 'Reinvestment') current.shares += trade.qty
-      else if (trade.type === 'Sell') current.shares += trade.qty
-      if (current.shares > 0) holdings.set(trade.code, current) else holdings.delete(trade.code)
+      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+        current.shares += trade.qty
+      } else if (trade.type === 'Sell') {
+        current.shares += trade.qty
+      }
+      if (current.shares > 0) {
+        holdings.set(trade.code, current)
+      } else {
+        holdings.delete(trade.code)
+      }
     }
 
     const targetDateObj = new Date(targetDate)

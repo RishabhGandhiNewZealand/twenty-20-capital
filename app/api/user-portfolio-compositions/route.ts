@@ -74,9 +74,9 @@ export async function GET(request: NextRequest) {
       const todaysTrades = trades.filter(t => t.date === dateStr)
       todaysTrades.forEach(trade => {
         const cur = holdings.get(trade.code) || { symbol: trade.code, name: trade.name, shares: 0, currency: trade.instrumentCurrency }
-        if (trade.type === 'Buy' || trade.type === 'Reinvestment') cur.shares += trade.qty
-        else if (trade.type === 'Sell') cur.shares += trade.qty
-        if (cur.shares > 0.001) holdings.set(trade.code, cur) else holdings.delete(trade.code)
+        if (trade.type === 'Buy' || trade.type === 'Reinvestment') { cur.shares += trade.qty }
+        else if (trade.type === 'Sell') { cur.shares += trade.qty }
+        if (cur.shares > 0.001) { holdings.set(trade.code, cur) } else { holdings.delete(trade.code) }
       })
 
       let totalValue = 0
