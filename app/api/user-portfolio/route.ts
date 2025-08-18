@@ -3,12 +3,15 @@ import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
 import yahooFinance from 'yahoo-finance2'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
+import { calculatePortfolioData } from '@/lib/portfolio'
 
 export async function GET(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id') || ''
     const userEmail = request.headers.get('x-user-email') || ''
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const trades = await getCachedTradeData(userId)
     if (!trades || trades.length === 0) {
@@ -67,6 +70,7 @@ export async function GET(request: NextRequest) {
 
     trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
+    // Build holdings up to today (NZD basis and shares) for current values
     const holdingsBySymbol = new Map<string, { shares: number, totalCostNZD: number, name: string, currency: string }>()
     let sp500Shares = 0
     let currentCostBasis = 0
@@ -133,12 +137,10 @@ export async function GET(request: NextRequest) {
     ])
 
     const priceMap = new Map<string, number>()
-    tickers.forEach((ticker, index) => {
-      priceMap.set(ticker, prices[index])
-    })
+    tickers.forEach((ticker, index) => { priceMap.set(ticker, prices[index]) })
     const currentSpyPrice = prices[prices.length - 1]
 
-    const holdings: Array<{ symbol: string, name: string, shares: number, currentPrice: number, currentValueNZD: number, costBasisNZD: number, gainNZD: number, gainPercent: number, allocation: number, currency: string }> = []
+    const holdings: Array<{ symbol: string, name: string, shares: number, currentPrice: number, currentValueNZD: number, costBasisNZD: number, gainNZD: number, gainPercent: number, allocation: number, currency: string, avgPriceInstrument?: number }> = []
     let totalValueNZD = 0
 
     holdingsBySymbol.forEach((holding, symbol) => {
@@ -163,6 +165,16 @@ export async function GET(request: NextRequest) {
 
     holdings.forEach(h => { h.allocation = totalValueNZD > 0 ? ((h.currentValueNZD / totalValueNZD) * 100) : 0 })
     holdings.sort((a, b) => b.allocation - a.allocation)
+
+    // Compute avg price per instrument currency via calculatePortfolioData
+    const { holdings: baseHoldings } = calculatePortfolioData(trades)
+    const avgMap = new Map<string, { avgPriceNZD: number, avgPriceUSD?: number }>()
+    baseHoldings.forEach(h => { avgMap.set(h.symbol, { avgPriceNZD: h.avgPriceNZD, avgPriceUSD: h.avgPriceUSD }) })
+    holdings.forEach(h => {
+      const avg = avgMap.get(h.symbol)
+      if (h.currency === 'USD') h.avgPriceInstrument = avg?.avgPriceUSD ?? 0
+      else h.avgPriceInstrument = avg?.avgPriceNZD ?? 0
+    })
 
     const totalGainNZD = totalValueNZD - currentCostBasis
     const totalGainPercent = currentCostBasis > 0 ? ((totalGainNZD / currentCostBasis) * 100) : 0
