@@ -29,9 +29,7 @@ function getUserId(u: any): string {
   return (u?.id || u?.userId || "").toString()
 }
 
-interface Props {
-  adminEmail: string
-}
+interface Props { adminEmail: string }
 
 interface CurrentHolding {
   symbol: string
@@ -104,7 +102,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
   const user = useUser()
   const rawUserEmail = useMemo(() => getRawEmail(user), [user])
   const userId = useMemo(() => getUserId(user), [user])
-  const isAdmin = useMemo(() => rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
+  const isAdmin = useMemo(() => !!rawUserEmail && !!adminEmail && rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
   const { isAnonymized, setAnonymized } = useAnonymization()
 
   const [holdings, setHoldings] = useState<CurrentHolding[]>([])

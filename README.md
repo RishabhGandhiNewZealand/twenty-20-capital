@@ -385,7 +385,6 @@ Set these in your environment:
 - `DATABASE_URL`=postgres://...
 - `ADMIN_USER_ID`=<admin_user_id>
 - `ADMIN_EMAIL`=<admin@email.com>
-- `NEXT_PUBLIC_ADMIN_EMAIL`=<admin@email.com>
 
 Client requests to user-scoped API endpoints must include headers:
 

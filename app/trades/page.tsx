@@ -62,7 +62,7 @@ export default function TradesPage() {
   const userId = useMemo(() => getUserId(user), [user])
   const userEmail = useMemo(() => getUserEmail(user), [user])
   const isAdmin = useMemo(() => {
-    const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toString()
+    const adminEmail = (process.env.ADMIN_EMAIL || "").toString()
     return adminEmail && userEmail && userEmail.toLowerCase() === adminEmail.toLowerCase()
   }, [userEmail])
 

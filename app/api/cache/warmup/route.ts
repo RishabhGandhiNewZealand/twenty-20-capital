@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger'
 export async function POST(request: NextRequest) {
   try {
     const userEmail = request.headers.get('x-user-email') || ''
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
+    const adminEmail = process.env.ADMIN_EMAIL || ''
     if (!userEmail || userEmail !== adminEmail) {
       return NextResponse.json(
         { error: 'Unauthorized' },
