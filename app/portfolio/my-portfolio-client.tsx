@@ -276,7 +276,9 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrencyWithDecimals(holding.currentPrice, holding.currency)}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatCurrencyWithDecimals(
-                              holding.shares > 0 ? (holding.costBasisNZD / holding.shares) : 0,
+                              holding.currency === 'NZD'
+                                ? (holding.shares > 0 ? (holding.costBasisNZD / holding.shares) : 0)
+                                : (holding.shares > 0 ? (holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)) : 0),
                               holding.currency
                             )}
                           </td>
@@ -356,7 +358,12 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                         <div>
                           <div className="text-gray-500">Cost Basis (Per Share)</div>
                           <div className="font-medium text-gray-600">
-                            {formatCurrencyWithDecimals(holding.shares > 0 ? (holding.costBasisNZD / holding.shares) : 0, holding.currency)}
+                            {formatCurrencyWithDecimals(
+                              holding.currency === 'NZD'
+                                ? (holding.shares > 0 ? (holding.costBasisNZD / holding.shares) : 0)
+                                : (holding.shares > 0 ? (holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)) : 0),
+                              holding.currency
+                            )}
                           </div>
                         </div>
                         <div>
