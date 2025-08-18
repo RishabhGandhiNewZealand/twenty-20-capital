@@ -70,7 +70,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     return toTitleCase(base)
   }, [user, userEmail])
 
-  const isAdmin = useMemo(() => rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
+  const isAdmin = useMemo(() => !!rawUserEmail && !!adminEmail && rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
 
   useEffect(() => {
     setAnonymized(!isAdmin)
