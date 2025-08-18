@@ -219,7 +219,12 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
 
         {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioHorizontalBarChart holdings={holdings} />
+            <PortfolioHorizontalBarChart 
+              holdings={holdings}
+              compositionPath="/api/user-portfolio-compositions"
+              compositionDatePath="/api/user-portfolio-composition"
+              compositionHeaders={{ 'x-user-id': userId, 'x-user-email': rawUserEmail, 'x-is-admin': 'false' }}
+            />
           </div>
         )}
 

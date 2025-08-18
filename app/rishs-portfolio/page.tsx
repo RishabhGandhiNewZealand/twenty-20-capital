@@ -172,6 +172,8 @@ export default function HomePage() {
           <div className="mb-6 sm:mb-8">
             <PortfolioHorizontalBarChart 
               holdings={holdings} 
+              compositionPath="/api/portfolio-compositions"
+              compositionDatePath="/api/portfolio-composition"
             />
           </div>
         )}

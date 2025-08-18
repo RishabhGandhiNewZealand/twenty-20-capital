@@ -43,9 +43,12 @@ interface PortfolioHorizontalBarChartProps {
     gainNZD: number
     gainPercent: number
   }>
+  compositionPath?: string
+  compositionDatePath?: string
+  compositionHeaders?: Record<string, string>
 }
 
-export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: PortfolioHorizontalBarChartProps) {
+export function PortfolioHorizontalBarChart({ holdings: currentHoldings, compositionPath, compositionDatePath, compositionHeaders }: PortfolioHorizontalBarChartProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,22 +63,22 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const { isAnonymized } = useAnonymization()
 
-  // Load composition data. If currentHoldings provided (user view), prefer current holdings and skip admin cache
   useEffect(() => {
     async function loadCompositionData() {
       try {
-        if (currentHoldings && currentHoldings.length > 0) {
-          // Use current holdings only; set slider to "Today"
-          setCompositionData(null)
-          setAvailableDates([])
-          setSliderValue(0)
-          setDisplayDate(null)
-          setLoading(false)
-          return
-        }
-        // Admin view fallback: load historical compositions
-        const response = await fetch('/api/portfolio-compositions')
+        // Prefer historical compositions if a path is provided (user or admin)
+        const path = compositionPath || '/api/portfolio-compositions'
+        const response = await fetch(path, { headers: compositionHeaders as HeadersInit })
         if (!response.ok) {
+          // Fallback: if no valid endpoint, but we have current holdings, show current only
+          if (currentHoldings && currentHoldings.length > 0) {
+            setCompositionData(null)
+            setAvailableDates([])
+            setSliderValue(0)
+            setDisplayDate(null)
+            setLoading(false)
+            return
+          }
           const staticResponse = await fetch('/data/portfolio-compositions.json')
           if (!staticResponse.ok) throw new Error('Failed to load composition data')
           const data = await staticResponse.json()
@@ -89,6 +92,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           setCompositionData(data)
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
+          // Start slider at latest date; min corresponds to first trade date
           setSliderValue(dates.length - 1)
           setDisplayDate(dates[dates.length - 1])
         }
@@ -100,63 +104,39 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       }
     }
     loadCompositionData()
-  }, [currentHoldings])
+  }, [currentHoldings, compositionPath, compositionHeaders])
 
-  // Handle responsive sizing
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 640)
     }
-    
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Update display when slider value changes
   useEffect(() => {
-    // If we have currentHoldings (user view), display current holdings regardless of slider
-    if (currentHoldings && currentHoldings.length > 0) {
-      const totalValue = currentHoldings.reduce((sum, holding) => {
-        const value = holding.currentValueNZD || 0;
-        return sum + (isNaN(value) ? 0 : value);
-      }, 0)
-      if (totalValue > 0) {
-        const transformed: HoldingAtDate[] = currentHoldings
-          .filter(holding => holding.currentValueNZD > 0 && !isNaN(holding.currentValueNZD))
-          .map(holding => ({
-            symbol: holding.symbol,
-            name: holding.name,
-            shares: 0,
-            value: holding.currentValueNZD,
-            percentage: (holding.currentValueNZD / totalValue) * 100,
-            currency: 'NZD'
-          }))
-        setDisplayHoldings(transformed)
-        setDisplayDate(null)
-      } else {
-        setDisplayHoldings([])
-        setDisplayDate(null)
-      }
-      return
-    }
+    const dateBasePath = compositionDatePath || '/api/portfolio-composition'
 
     if (availableDates.length > 0 && sliderValue >= 0 && sliderValue < availableDates.length) {
       const selectedDate = availableDates[sliderValue]
       setDisplayDate(selectedDate)
+
       if (cacheRef.current.has(selectedDate)) {
         setDisplayHoldings(cacheRef.current.get(selectedDate)!)
         return
       }
+
       if (compositionData && compositionData[selectedDate]) {
         const holdings = compositionData[selectedDate]
         cacheRef.current.set(selectedDate, holdings)
         setDisplayHoldings(holdings)
         return
       }
+
       async function fetchComposition() {
         try {
-          const response = await fetch(`/api/portfolio-composition/${selectedDate}`)
+          const response = await fetch(`${dateBasePath}/${selectedDate}`, { headers: compositionHeaders as HeadersInit })
           if (!response.ok) throw new Error('Failed to fetch composition')
           const data = await response.json()
           if (data.holdings) {
@@ -169,7 +149,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
       }
       fetchComposition()
     }
-  }, [sliderValue, availableDates, compositionData, currentHoldings])
+  }, [sliderValue, availableDates, compositionData, compositionHeaders, compositionDatePath])
 
   // Play/pause functionality
   const togglePlay = useCallback(() => {
