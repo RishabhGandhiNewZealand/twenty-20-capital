@@ -10,7 +10,7 @@ import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-b
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception } from "@/lib/constants"
-import { formatCurrencyWithDecimals, formatDate } from "@/lib/format-utils"
+import { formatCurrencyWithDecimals, formatDate, formatNumber } from "@/lib/format-utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { maskCurrency, maskShares } from "@/lib/anonymization-utils"
 
