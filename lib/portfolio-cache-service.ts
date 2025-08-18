@@ -166,8 +166,9 @@ function fillMissingDates(
  */
 async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
   try {
-    // Fetch cached trade data
-    const trades = await getCachedTradeData()
+    // Fetch cached trade data - ADMIN ONLY
+    const adminUserId = process.env.ADMIN_USER_ID || ''
+    const trades = await getCachedTradeData(adminUserId)
     
     if (!trades || trades.length === 0) {
       logger.warn('No trade data found for portfolio history')
