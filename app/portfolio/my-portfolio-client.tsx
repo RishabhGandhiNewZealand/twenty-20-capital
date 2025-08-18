@@ -127,9 +127,11 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
   }, [user, isAdmin, router])
 
   useEffect(() => {
-    // Ensure user sees real values on their own page
+    // Show real values on the user's own portfolio page
     setAnonymized(false)
-  }, [setAnonymized])
+    // Restore anonymization based on admin status on unmount/navigation away
+    return () => setAnonymized(!isAdmin)
+  }, [setAnonymized, isAdmin])
 
   useEffect(() => {
     async function fetchPortfolioData() {
