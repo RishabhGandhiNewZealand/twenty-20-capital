@@ -406,6 +406,135 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
             )}
           </CardContent>
         </Card>
+
+        {/* Exited Positions (user) */}
+        {!loading && exitedPositions.length > 0 && (
+          <Card className="border-blue-100">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-gray-900 text-lg sm:text-xl">Exited Positions</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 sm:px-6">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-600">Stock</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Entry Date</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Exit Date</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Holding Period</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Invested (NZD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Total Return (NZD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (NZD)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">Profit/Loss (%)</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-600">CAGR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exitedPositions
+                      .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
+                      .map((position, index) => {
+                        const entryDate = new Date(position.entryDate)
+                        const exitDate = new Date(position.exitDate)
+                        const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                        const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                        const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                        const holdingPeriod = `${totalDays} days`
+                        return (
+                          <tr key={position.symbol + position.exitDate} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                            <td className="py-3 px-2">
+                              <div className="flex items-center">
+                                <img 
+                                  src={getLogoUrl(position.symbol)} 
+                                  alt={`${position.symbol} logo`}
+                                  className="w-8 h-8 rounded-full mr-3"
+                                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5` }}
+                                />
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{position.symbol}</div>
+                                  <div className="text-sm text-gray-500">{position.name}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 text-right"><span className="text-sm text-gray-600">{formatDate(position.entryDate)}</span></td>
+                            <td className="py-3 px-2 text-right"><span className="text-sm text-gray-600">{formatDate(position.exitDate)}</span></td>
+                            <td className="py-3 px-2 text-right"><span className="text-sm text-gray-600">{holdingPeriod}</span></td>
+                            <td className="py-3 px-2 text-right"><span className="text-gray-700">{maskCurrency(position.totalInvestedNZD, false, 'NZD')}</span></td>
+                            <td className="py-3 px-2 text-right"><span className="text-gray-700">{maskCurrency(position.totalReturnNZD, false, 'NZD')}</span></td>
+                            <td className="py-3 px-2 text-right"><span className={`font-medium ${position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>{maskCurrency(position.profitLossNZD, false, 'NZD')}</span></td>
+                            <td className="py-3 px-2 text-right"><span className={`font-medium ${position.profitLossPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>{position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%</span></td>
+                            <td className="py-3 px-2 text-right"><span className={`font-medium ${cagr >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatPercentage(cagr)}</span></td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4 px-4">
+                {exitedPositions
+                  .sort((a, b) => new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime())
+                  .map((position) => {
+                    const entryDate = new Date(position.entryDate)
+                    const exitDate = new Date(position.exitDate)
+                    const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                    const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                    const totalDays = Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                    const holdingPeriod = `${totalDays} days`
+                    return (
+                      <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center">
+                            <img 
+                              src={getLogoUrl(position.symbol)} 
+                              alt={`${position.symbol} logo`}
+                              className="w-8 h-8 rounded-full mr-2"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5` }}
+                            />
+                            <div>
+                              <div className="font-semibold text-gray-900">{position.symbol}</div>
+                              <div className="text-sm text-gray-500 line-clamp-1">{position.name}</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`text-center py-3 mb-3 rounded-lg ${position.profitLossNZD >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                          <div className={`text-2xl font-bold ${position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>{position.profitLossPercentage >= 0 ? '+' : ''}{formatNumber(position.profitLossPercentage, 1)}%</div>
+                          <div className={`text-sm font-medium ${position.profitLossNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>{maskCurrency(position.profitLossNZD, false, 'NZD')}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-gray-500">Entry Date</div>
+                            <div className="font-medium">{formatDate(position.entryDate)}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Exit Date</div>
+                            <div className="font-medium">{formatDate(position.exitDate)}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Holding Period</div>
+                            <div className="font-medium">{holdingPeriod}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Total Invested</div>
+                            <div className="font-medium text-gray-600">{maskCurrency(position.totalInvestedNZD, false, 'NZD')}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Total Return</div>
+                            <div className="font-medium text-gray-900">{maskCurrency(position.totalReturnNZD, false, 'NZD')}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">CAGR</div>
+                            <div className="font-medium text-gray-600">{formatPercentage(cagr)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

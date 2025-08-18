@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
     holdings.sort((a, b) => b.allocation - a.allocation)
 
     // Compute avg price per instrument currency via calculatePortfolioData
-    const { holdings: baseHoldings } = calculatePortfolioData(trades)
+    const { holdings: baseHoldings, exitedPositions } = calculatePortfolioData(trades)
     const avgMap = new Map<string, { avgPriceNZD: number, avgPriceUSD?: number }>()
     baseHoldings.forEach(h => { avgMap.set(h.symbol, { avgPriceNZD: h.avgPriceNZD, avgPriceUSD: h.avgPriceUSD }) })
     holdings.forEach(h => {
@@ -186,6 +186,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       holdings,
+      exitedPositions,
       summary: {
         totalValueNZD: isNaN(totalValueNZD) ? 0 : totalValueNZD,
         totalCostBasisNZD: isNaN(currentCostBasis) ? 0 : currentCostBasis,
