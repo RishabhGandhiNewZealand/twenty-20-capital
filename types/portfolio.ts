@@ -12,6 +12,7 @@ export interface TradeRecord {
   brokerageCurrency: string
   exchRate: number
   value: number
+  user_id?: string
   deleted_flag?: boolean
   deleted_at?: string
   created_at?: string

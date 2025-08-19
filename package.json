@@ -11,7 +11,8 @@
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "setup:trade-data-table": "tsx scripts/setup-trade-data-table.ts",
-    "populate-cache": "tsx scripts/populate-portfolio-cache.ts"
+    "populate-cache": "tsx scripts/populate-portfolio-cache.ts",
+    "migrate:add-user-id": "tsx scripts/add-user-id-to-trades.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

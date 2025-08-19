@@ -14,9 +14,9 @@ import { logger } from '@/lib/logger'
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    const userEmail = request.headers.get('x-user-email') || ''
+    const adminEmail = process.env.ADMIN_EMAIL || ''
+    if (!userEmail || userEmail !== adminEmail) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
     logger.info('Manual cache bust requested', { keys, all })
     
     if (all) {
-      // Clear all caches
       await cacheManager.clear()
       logger.info('All caches cleared')
       
@@ -39,7 +38,6 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       })
     } else if (keys && Array.isArray(keys)) {
-      // Bust specific cache keys
       await cacheManager.bust(keys)
       logger.info(`Specific cache keys busted: ${keys.join(', ')}`)
       
@@ -50,7 +48,6 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       })
     } else {
-      // Default: Bust all portfolio-related caches
       await invalidatePortfolioCaches()
       logger.info('Portfolio caches invalidated via manual bust')
       

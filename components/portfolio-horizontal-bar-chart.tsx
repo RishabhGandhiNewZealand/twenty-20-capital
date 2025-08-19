@@ -43,9 +43,13 @@ interface PortfolioHorizontalBarChartProps {
     gainNZD: number
     gainPercent: number
   }>
+  compositionPath?: string
+  compositionDatePath?: string
+  compositionHeaders?: Record<string, string>
+  anonymizeOverride?: boolean
 }
 
-export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: PortfolioHorizontalBarChartProps) {
+export function PortfolioHorizontalBarChart({ holdings: currentHoldings, compositionPath, compositionDatePath, compositionHeaders, anonymizeOverride }: PortfolioHorizontalBarChartProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,60 +63,41 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const { isAnonymized } = useAnonymization()
+  const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : isAnonymized
 
-  // Load the pre-cached composition data on mount
   useEffect(() => {
     async function loadCompositionData() {
       try {
-        // Try the API endpoint first
-        const response = await fetch('/api/portfolio-compositions')
+        // Prefer historical compositions if a path is provided (user or admin)
+        const path = compositionPath || '/api/portfolio-compositions'
+        const response = await fetch(path, { headers: compositionHeaders as HeadersInit })
         if (!response.ok) {
-          // Fallback to static file if API fails
-          const staticResponse = await fetch('/data/portfolio-compositions.json')
-          if (!staticResponse.ok) {
-            throw new Error('Failed to load composition data')
+          // Fallback: if no valid endpoint, but we have current holdings, show current only
+          if (currentHoldings && currentHoldings.length > 0) {
+            setCompositionData(null)
+            setAvailableDates([])
+            setSliderValue(0)
+            setDisplayDate(null)
+            setLoading(false)
+            return
           }
+          const staticResponse = await fetch('/data/portfolio-compositions.json')
+          if (!staticResponse.ok) throw new Error('Failed to load composition data')
           const data = await staticResponse.json()
           setCompositionData(data)
-          
-          // Get available dates and sort them
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          
-          // Set initial slider to today's date if current holdings exist, otherwise latest historical date
-          if (dates.length > 0) {
-            // Check if we have current holdings passed as props
-            if (currentHoldings && currentHoldings.length > 0) {
-              // Set to max value to show today's data
-              setSliderValue(dates.length)
-            } else {
-              // Set to latest historical date
-              setSliderValue(dates.length - 1)
-              setDisplayDate(dates[dates.length - 1])
-            }
-          }
+          setSliderValue(dates.length - 1)
+          setDisplayDate(dates[dates.length - 1])
         } else {
           const data = await response.json()
           setCompositionData(data)
-          
-          // Get available dates and sort them
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          
-          // Set initial slider to today's date if current holdings exist, otherwise latest historical date
-          if (dates.length > 0) {
-            // Check if we have current holdings passed as props
-            if (currentHoldings && currentHoldings.length > 0) {
-              // Set to max value to show today's data
-              setSliderValue(dates.length)
-            } else {
-              // Set to latest historical date
-              setSliderValue(dates.length - 1)
-              setDisplayDate(dates[dates.length - 1])
-            }
-          }
+          // Start slider at latest date; min corresponds to first trade date
+          setSliderValue(dates.length - 1)
+          setDisplayDate(dates[dates.length - 1])
         }
-        
         setLoading(false)
       } catch (error) {
         console.error('Error loading composition data:', error)
@@ -120,34 +105,30 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         setLoading(false)
       }
     }
-    
     loadCompositionData()
-  }, [currentHoldings])
+  }, [currentHoldings, compositionPath, compositionHeaders])
 
-  // Handle responsive sizing
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 640)
     }
-    
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Update display when slider value changes
   useEffect(() => {
+    const dateBasePath = compositionDatePath || '/api/portfolio-composition'
+
     if (availableDates.length > 0 && sliderValue >= 0 && sliderValue < availableDates.length) {
       const selectedDate = availableDates[sliderValue]
       setDisplayDate(selectedDate)
-      
-      // Check cache first
+
       if (cacheRef.current.has(selectedDate)) {
         setDisplayHoldings(cacheRef.current.get(selectedDate)!)
         return
       }
 
-      // Check pre-cached data
       if (compositionData && compositionData[selectedDate]) {
         const holdings = compositionData[selectedDate]
         cacheRef.current.set(selectedDate, holdings)
@@ -155,13 +136,10 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
         return
       }
 
-      // If not in pre-cached data, fetch from API
       async function fetchComposition() {
         try {
-          const response = await fetch(`/api/portfolio-composition/${selectedDate}`)
-          if (!response.ok) {
-            throw new Error('Failed to fetch composition')
-          }
+          const response = await fetch(`${dateBasePath}/${selectedDate}`, { headers: compositionHeaders as HeadersInit })
+          if (!response.ok) throw new Error('Failed to fetch composition')
           const data = await response.json()
           if (data.holdings) {
             cacheRef.current.set(selectedDate, data.holdings)
@@ -171,34 +149,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           console.error('Error fetching composition:', err)
         }
       }
-
       fetchComposition()
-    } else if (sliderValue === availableDates.length && currentHoldings) {
-      // Use current holdings when slider is at the end
-      const totalValue = currentHoldings.reduce((sum, holding) => {
-        const value = holding.currentValueNZD || 0;
-        return sum + (isNaN(value) ? 0 : value);
-      }, 0)
-      
-      if (totalValue > 0) {
-        const transformed: HoldingAtDate[] = currentHoldings
-          .filter(holding => holding.currentValueNZD > 0 && !isNaN(holding.currentValueNZD))
-          .map(holding => ({
-            symbol: holding.symbol,
-            name: holding.name,
-            shares: 0, // Not used in display
-            value: holding.currentValueNZD,
-            percentage: (holding.currentValueNZD / totalValue) * 100,
-            currency: 'NZD'
-          }))
-        setDisplayHoldings(transformed)
-        setDisplayDate(null)
-      } else {
-        setDisplayHoldings([])
-        setDisplayDate(null)
-      }
     }
-  }, [sliderValue, availableDates, compositionData, currentHoldings])
+  }, [sliderValue, availableDates, compositionData, compositionHeaders, compositionDatePath])
 
   // Play/pause functionality
   const togglePlay = useCallback(() => {
@@ -321,7 +274,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           rx={4} 
           ry={4}
         />
-        {showValue && !isAnonymized && (
+        {showValue && !anonymized && (
           <text 
             x={x + (isMobile ? 5 : 10)} 
             y={y + height / 2} 
@@ -358,7 +311,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           <p className="font-semibold text-[hsl(var(--card-foreground))]">{data.symbol}</p>
           <p className="text-sm text-gray-600 mb-2">{holding?.name}</p>
           <div className="space-y-1">
-            {!isAnonymized && (
+            {!anonymized && (
               <p className="text-sm">
                 <span className="text-gray-500">Value:</span>
                 <span className="font-medium ml-1">{formatCurrency(data.value)}</span>
@@ -376,7 +329,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   }
 
   const formatTickValue = (value: number) => {
-    if (isAnonymized) return '';
+    if (anonymized) return '';
     if (!value || isNaN(value)) return '$0';
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`
@@ -551,9 +504,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 <XAxis 
                   type="number" 
                   tickFormatter={formatTickValue}
-                  tick={isAnonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
+                  tick={anonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
                   domain={[0, 'dataMax']}
-                  axisLine={!isAnonymized}
+                  axisLine={!anonymized}
                 />
                 <YAxis 
                   type="category" 

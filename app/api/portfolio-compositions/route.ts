@@ -18,41 +18,28 @@ interface CompositionData {
   [date: string]: HoldingAtDate[]
 }
 
-// Cache configuration
-const CACHE_REVALIDATE_SECONDS = 1200 // 20 minutes for Yahoo Finance data
+const CACHE_REVALIDATE_SECONDS = 1200
 const CACHE_TAG = 'portfolio-compositions'
 
-/**
- * Calculate portfolio compositions for historical dates with actual prices
- * This is the raw calculation function that will be cached
- */
 async function calculatePortfolioCompositions(): Promise<CompositionData> {
   try {
     logger.info('Starting portfolio composition calculation...')
     
-    // Fetch cached trade data from database
-    const trades = await getCachedTradeData()
+    const adminUserId = process.env.ADMIN_USER_ID || ''
+    const trades = await getCachedTradeData(adminUserId)
     
     if (!trades || trades.length === 0) {
       logger.warn('No trade data found for portfolio compositions')
       return {}
     }
     
-    // Sort trades by date
     trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     
-    // Get date range
     const startDate = new Date(trades[0].date)
     const endDate = new Date()
     
-    logger.info(`Processing dates from ${startDate.toISOString()} to ${endDate.toISOString()}`)
-    
-    // Get unique tickers
     const tickers = [...new Set(trades.map(t => t.code))]
-    logger.info('Tickers found:', tickers)
     
-    // Fetch all historical prices in parallel
-    logger.info('Fetching historical prices...')
     const priceDataPromises = tickers.map(async (ticker) => {
       try {
         let yfinanceTicker = ticker
@@ -79,8 +66,6 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
       }
     })
     
-    // Fetch exchange rates
-    logger.info('Fetching exchange rates...')
     const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', {
       period1: startDate,
       period2: endDate,
@@ -89,7 +74,7 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
       const rateMap = new Map<string, number>()
       quotes.forEach(quote => {
         const dateStr = quote.date.toISOString().split('T')[0]
-        rateMap.set(dateStr, 1 / quote.close) // Convert NZD/USD to USD/NZD
+        rateMap.set(dateStr, 1 / quote.close)
       })
       return rateMap
     }).catch(() => new Map<string, number>())
@@ -99,13 +84,11 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
       exchangeRatePromise
     ])
     
-    // Create ticker price map
     const tickerPriceMap = new Map<string, Map<string, number>>()
     priceDataArray.forEach(({ ticker, priceMap }) => {
       tickerPriceMap.set(ticker, priceMap)
     })
     
-    // Fill forward missing prices
     const filledPriceMap = new Map<string, Map<string, number>>()
     tickers.forEach(ticker => {
       const priceMap = tickerPriceMap.get(ticker) || new Map()
@@ -129,7 +112,6 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
       filledPriceMap.set(ticker, filledMap)
     })
     
-    // Fill forward exchange rates
     const filledExchangeRates = new Map<string, number>()
     let lastRate = FALLBACK_USD_TO_NZD_RATE
     const currentDate = new Date(startDate)
@@ -147,8 +129,6 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
       currentDate.setDate(currentDate.getDate() + 1)
     }
     
-    // Calculate compositions for each date
-    logger.info('Calculating daily compositions...')
     const compositions: CompositionData = {}
     const holdings = new Map<string, {
       symbol: string
@@ -161,7 +141,6 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
     while (processDate <= endDate) {
       const dateStr = processDate.toISOString().split('T')[0]
       
-      // Process trades for this day
       const todaysTrades = trades.filter(t => t.date === dateStr)
       todaysTrades.forEach(trade => {
         const current = holdings.get(trade.code) || {
@@ -174,17 +153,16 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
         if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
           current.shares += trade.qty
         } else if (trade.type === 'Sell') {
-          current.shares += trade.qty // qty is negative for sells
+          current.shares += trade.qty
         }
         
-        if (current.shares > 0.001) { // Small threshold to handle floating point
+        if (current.shares > 0.001) {
           holdings.set(trade.code, current)
         } else {
           holdings.delete(trade.code)
         }
       })
       
-      // Calculate portfolio values for this date
       let totalValue = 0
       const holdingsWithValues: HoldingAtDate[] = []
       
@@ -211,13 +189,11 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
         }
       })
       
-      // Calculate percentages and sort
       holdingsWithValues.forEach(holding => {
-        holding.percentage = (holding.value / totalValue) * 100
+        holding.percentage = totalValue > 0 ? ((holding.value / totalValue) * 100) : 0
       })
       holdingsWithValues.sort((a, b) => b.value - a.value)
       
-      // Only store if there are holdings
       if (holdingsWithValues.length > 0) {
         compositions[dateStr] = holdingsWithValues
       }
@@ -234,10 +210,6 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
   }
 }
 
-/**
- * Cached version of calculatePortfolioCompositions
- * This function will cache the results for the specified duration
- */
 const getCachedPortfolioCompositions = unstable_cache(
   calculatePortfolioCompositions,
   [CACHE_TAG],
@@ -249,10 +221,8 @@ const getCachedPortfolioCompositions = unstable_cache(
 
 export async function GET() {
   try {
-    // Fetch cached portfolio compositions
     const compositions = await getCachedPortfolioCompositions()
     
-    // Set cache headers for client-side caching
     return NextResponse.json(compositions, {
       headers: {
         'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',

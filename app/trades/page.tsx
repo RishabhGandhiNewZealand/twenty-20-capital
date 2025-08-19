@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { TradeRecord } from "@/types/portfolio"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,7 +13,6 @@ import {
   Save, 
   RotateCcw,
   AlertCircle,
-  Check,
   X,
   Search,
   ChevronDown,
@@ -25,6 +23,21 @@ import {
 import { formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
 import TradeFormModal from "@/components/trade-form-modal"
 import ConfirmationDialog from "@/components/confirmation-dialog"
+import { useUser } from "@stackframe/stack"
+
+function getUserId(u: any): string {
+  return (u?.id || u?.userId || "").toString()
+}
+
+function getUserEmail(u: any): string {
+  return (
+    u?.primaryEmail ||
+    u?.email ||
+    u?.primaryEmailAddress?.emailAddress ||
+    u?.primaryEmailAddress?.email ||
+    ""
+  ).toString()
+}
 
 interface StagedChanges {
   new: TradeRecord[]
@@ -45,7 +58,14 @@ interface GroupedTrades {
 
 export default function TradesPage() {
   const router = useRouter()
-  const { isAnonymized } = useAnonymization()
+  const user = useUser()
+  const userId = useMemo(() => getUserId(user), [user])
+  const userEmail = useMemo(() => getUserEmail(user), [user])
+  const isAdmin = useMemo(() => {
+    const adminEmail = (process.env.ADMIN_EMAIL || "").toString()
+    return adminEmail && userEmail && userEmail.toLowerCase() === adminEmail.toLowerCase()
+  }, [userEmail])
+
   const [trades, setTrades] = useState<TradeRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -53,57 +73,49 @@ export default function TradesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set())
   
-  // Staging state
   const [stagedChanges, setStagedChanges] = useState<StagedChanges>({
     new: [],
     updated: [],
     deleted: new Set()
   })
   
-  // Modal states
   const [showTradeForm, setShowTradeForm] = useState(false)
   const [editingTrade, setEditingTrade] = useState<TradeRecord | null>(null)
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [tradeToDelete, setTradeToDelete] = useState<TradeRecord | null>(null)
 
-  // Check if user is admin (full view mode)
   useEffect(() => {
-    if (isAnonymized) {
-      router.push('/portfolio')
+    if (!user) {
+      router.push('/login')
     }
-  }, [isAnonymized, router])
+  }, [user, router])
 
-  // Fetch trades
   const fetchTrades = useCallback(async () => {
     try {
+      if (!userId) return
       setLoading(true)
       const response = await fetch('/api/trades', {
         headers: {
-          'x-admin-auth': 'true'
+          'x-user-id': userId,
+          'x-user-email': userEmail,
+          'x-is-admin': isAdmin ? 'true' : 'false'
         }
       })
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch trades')
-      }
-      
+      if (!response.ok) throw new Error('Failed to fetch trades')
       const data = await response.json()
-      setTrades(data)
+      setTrades(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch trades')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [userId, userEmail, isAdmin])
 
   useEffect(() => {
-    if (!isAnonymized) {
-      fetchTrades()
-    }
-  }, [isAnonymized, fetchTrades])
+    fetchTrades()
+  }, [fetchTrades])
 
-  // Group trades by company
   const groupedTrades = useMemo(() => {
     const filtered = trades.filter(trade => 
       searchQuery === "" || 
@@ -128,81 +140,63 @@ export default function TradesPage() {
       
       groups[key].trades.push(trade)
       
-      // Update aggregates
       if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
-        groups[key].totalShares += trade.qty
-        groups[key].totalValue += trade.value
+        const qty = isNaN(trade.qty) ? 0 : trade.qty
+        const val = isNaN(trade.value) ? 0 : trade.value
+        groups[key].totalShares += qty
+        groups[key].totalValue += val
       } else if (trade.type === 'Sell') {
-        groups[key].totalShares -= trade.qty
-        groups[key].totalValue -= trade.value
+        const qty = isNaN(trade.qty) ? 0 : trade.qty
+        const val = isNaN(trade.value) ? 0 : trade.value
+        groups[key].totalShares -= qty
+        groups[key].totalValue -= val
       }
       
-      // Update dates
-      if (trade.date < groups[key].firstDate) {
-        groups[key].firstDate = trade.date
-      }
-      if (trade.date > groups[key].lastDate) {
-        groups[key].lastDate = trade.date
-      }
+      if (trade.date < groups[key].firstDate) groups[key].firstDate = trade.date
+      if (trade.date > groups[key].lastDate) groups[key].lastDate = trade.date
     })
     
-    // Calculate average prices and sort trades within groups
     Object.values(groups).forEach(group => {
-      group.avgPrice = group.totalValue / group.totalShares || 0
-      group.trades.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      group.avgPrice = group.totalShares > 0 ? (group.totalValue / group.totalShares) : 0
     })
     
     return groups
   }, [trades, searchQuery])
 
-  // Toggle company expansion
   const toggleCompany = (company: string) => {
     const newExpanded = new Set(expandedCompanies)
-    if (newExpanded.has(company)) {
-      newExpanded.delete(company)
-    } else {
-      newExpanded.add(company)
-    }
+    if (newExpanded.has(company)) newExpanded.delete(company)
+    else newExpanded.add(company)
     setExpandedCompanies(newExpanded)
   }
 
-  // Check if there are any staged changes
   const hasChanges = stagedChanges.new.length > 0 || 
                      stagedChanges.updated.length > 0 || 
                      stagedChanges.deleted.size > 0
 
-  // Handle add new trade
   const handleAddTrade = () => {
     setEditingTrade(null)
     setShowTradeForm(true)
   }
 
-  // Handle edit trade
   const handleEditTrade = (trade: TradeRecord) => {
     setEditingTrade(trade)
     setShowTradeForm(true)
   }
 
-  // Handle save trade from form
   const handleSaveTrade = (trade: TradeRecord) => {
     if (editingTrade?.id) {
-      // Update existing trade
       const updatedTrades = trades.map(t => 
         t.id === trade.id ? trade : t
       )
       setTrades(updatedTrades)
-      
-      // Add to staged updates
       setStagedChanges(prev => ({
         ...prev,
         updated: [...prev.updated.filter(t => t.id !== trade.id), trade]
       }))
     } else {
-      // Add new trade (with temporary ID)
-      const newTrade = { ...trade, id: -Date.now() } // Negative ID for new trades
+      const newTrade = { ...trade, id: -Date.now() }
       setTrades([newTrade, ...trades])
-      
-      // Add to staged new trades
       setStagedChanges(prev => ({
         ...prev,
         new: [...prev.new, newTrade]
@@ -213,7 +207,6 @@ export default function TradesPage() {
     setEditingTrade(null)
   }
 
-  // Handle delete trade
   const handleDeleteTrade = (trade: TradeRecord) => {
     setTradeToDelete(trade)
     setShowDeleteConfirm(true)
@@ -223,21 +216,17 @@ export default function TradesPage() {
     if (!tradeToDelete) return
     
     if (tradeToDelete.id && tradeToDelete.id > 0) {
-      // Mark existing trade as deleted
       const updatedTrades = trades.map(t => 
         t.id === tradeToDelete.id 
           ? { ...t, deleted_flag: true }
           : t
       )
       setTrades(updatedTrades)
-      
-      // Add to staged deletions
       setStagedChanges(prev => ({
         ...prev,
         deleted: new Set([...prev.deleted, tradeToDelete.id!])
       }))
     } else {
-      // Remove new trade that hasn't been saved yet
       setTrades(trades.filter(t => t.id !== tradeToDelete.id))
       setStagedChanges(prev => ({
         ...prev,
@@ -249,7 +238,6 @@ export default function TradesPage() {
     setTradeToDelete(null)
   }
 
-  // Handle restore deleted trade
   const handleRestoreTrade = (trade: TradeRecord) => {
     const updatedTrades = trades.map(t => 
       t.id === trade.id 
@@ -258,7 +246,6 @@ export default function TradesPage() {
     )
     setTrades(updatedTrades)
     
-    // Remove from staged deletions or add to updates
     if (stagedChanges.deleted.has(trade.id!)) {
       setStagedChanges(prev => {
         const newDeleted = new Set(prev.deleted)
@@ -273,7 +260,6 @@ export default function TradesPage() {
     }
   }
 
-  // Handle save all changes
   const handleSaveChanges = () => {
     setShowSaveConfirm(true)
   }
@@ -283,7 +269,6 @@ export default function TradesPage() {
       setSaving(true)
       setShowSaveConfirm(false)
       
-      // Prepare batch changes
       const batchData = {
         new: stagedChanges.new.map(t => {
           const { id, ...tradeData } = t
@@ -297,7 +282,9 @@ export default function TradesPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-auth': 'true'
+          'x-user-id': userId,
+          'x-user-email': userEmail,
+          'x-is-admin': isAdmin ? 'true' : 'false'
         },
         body: JSON.stringify(batchData)
       })
@@ -308,17 +295,13 @@ export default function TradesPage() {
         throw new Error(result.details || result.error || 'Failed to save changes')
       }
       
-      // Clear staged changes
       setStagedChanges({
         new: [],
         updated: [],
         deleted: new Set()
       })
       
-      // Refresh trades
       await fetchTrades()
-      
-      // Show success message
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save changes')
@@ -327,7 +310,6 @@ export default function TradesPage() {
     }
   }
 
-  // Handle discard changes
   const handleDiscardChanges = () => {
     setStagedChanges({
       new: [],
@@ -335,10 +317,6 @@ export default function TradesPage() {
       deleted: new Set()
     })
     fetchTrades()
-  }
-
-  if (isAnonymized) {
-    return null // Will redirect
   }
 
   if (loading) {
@@ -432,7 +410,6 @@ export default function TradesPage() {
               
               return (
                 <div key={companyKey} className="border rounded-lg overflow-hidden">
-                  {/* Company Header */}
                   <div
                     className={`p-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors ${
                       hasDeletedTrades ? 'opacity-75' : ''
@@ -463,20 +440,19 @@ export default function TradesPage() {
                             group.totalShares < 0 ? 'text-red-600' : 
                             'text-gray-500'
                           }`}>
-                            {group.totalShares.toFixed(2)}
+                            {Number.isFinite(group.totalShares) ? group.totalShares.toFixed(2) : '0.00'}
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-muted-foreground">Total Value</div>
                           <div className="font-medium">
-                            {formatCurrencyWithDecimals(Math.abs(group.totalValue), 'NZD', 2)}
+                            {formatCurrencyWithDecimals(Math.abs(isNaN(group.totalValue) ? 0 : group.totalValue), 'NZD', 2)}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Trades List */}
                   {isExpanded && (
                     <div className="divide-y">
                       {group.trades.map((trade) => (
@@ -518,18 +494,18 @@ export default function TradesPage() {
                               </div>
                               <div>
                                 <span className="text-muted-foreground">Qty: </span>
-                                <span className="font-medium">{trade.qty}</span>
+                                <span className="font-medium">{isNaN(trade.qty) ? 0 : trade.qty}</span>
                               </div>
                               <div>
                                 <span className="text-muted-foreground">Price: </span>
                                 <span className="font-medium">
-                                  {formatCurrencyWithDecimals(trade.price, trade.instrumentCurrency, 2)}
+                                  {formatCurrencyWithDecimals(isNaN(trade.price) ? 0 : trade.price, trade.instrumentCurrency, 2)}
                                 </span>
                               </div>
                               <div>
                                 <span className="text-muted-foreground">Value: </span>
                                 <span className="font-medium">
-                                  {formatCurrencyWithDecimals(trade.value, 'NZD', 2)}
+                                  {formatCurrencyWithDecimals(isNaN(trade.value) ? 0 : trade.value, 'NZD', 2)}
                                 </span>
                               </div>
                             </div>
@@ -577,7 +553,6 @@ export default function TradesPage() {
         </CardContent>
       </Card>
 
-      {/* Trade Form Modal */}
       {showTradeForm && (
         <TradeFormModal
           trade={editingTrade}
@@ -589,7 +564,6 @@ export default function TradesPage() {
         />
       )}
 
-      {/* Save Confirmation Dialog */}
       <ConfirmationDialog
         open={showSaveConfirm}
         onOpenChange={setShowSaveConfirm}
@@ -600,7 +574,6 @@ export default function TradesPage() {
         confirmVariant="default"
       />
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}

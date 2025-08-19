@@ -70,7 +70,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     return toTitleCase(base)
   }, [user, userEmail])
 
-  const isAdmin = useMemo(() => rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
+  const isAdmin = useMemo(() => !!rawUserEmail && !!adminEmail && rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
 
   useEffect(() => {
     setAnonymized(!isAdmin)
@@ -81,10 +81,10 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // My Portfolio section items - includes trades for admin
+  // My Portfolio section items - includes trades for all users
   const myPortfolioItems = user ? [
     { href: "/portfolio", label: "Portfolio", icon: Briefcase },
-    ...(isAdmin && !isAnonymized ? [{ href: "/trades", label: "Trades", icon: Database }] : [])
+    { href: "/trades", label: "Trades", icon: Database }
   ] : []
 
   // Rish's Insights section items
