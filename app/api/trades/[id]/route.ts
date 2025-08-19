@@ -35,8 +35,8 @@ export async function PUT(
         instrument_currency = ${trade.instrumentCurrency},
         brokerage = ${trade.brokerage},
         brokerage_currency = ${trade.brokerageCurrency},
-        exch_rate = ${trade.exchRate},
-        value = ${trade.value},
+        base_value = ${trade.baseValue},
+        base_currency = ${trade.baseCurrency},
         deleted_flag = ${trade.deleted_flag || false},
         deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
       WHERE id = ${tradeId} AND user_id = ${userId}

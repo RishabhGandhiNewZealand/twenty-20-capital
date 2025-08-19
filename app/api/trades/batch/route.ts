@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
           instrument_currency,
           brokerage,
           brokerage_currency,
-          exch_rate,
-          value,
+          base_value,
+          base_currency,
           user_id
         ) VALUES (
           ${trade.code},
@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
           ${trade.instrumentCurrency},
           ${trade.brokerage},
           ${trade.brokerageCurrency},
-          ${trade.exchRate},
-          ${trade.value},
+          ${trade.baseValue},
+          ${trade.baseCurrency},
           ${userId}
         )
       `
@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
           instrument_currency = ${trade.instrumentCurrency},
           brokerage = ${trade.brokerage},
           brokerage_currency = ${trade.brokerageCurrency},
-          exch_rate = ${trade.exchRate},
-          value = ${trade.value},
+          base_value = ${trade.baseValue},
+          base_currency = ${trade.baseCurrency},
           deleted_flag = ${trade.deleted_flag || false},
           deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
         WHERE id = ${trade.id} AND user_id = ${userId}

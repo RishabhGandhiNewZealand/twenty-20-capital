@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
         instrument_currency,
         brokerage,
         brokerage_currency,
-        exch_rate,
-        value,
+        base_value,
+        base_currency,
         user_id,
         deleted_flag,
         deleted_at,
@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
       instrumentCurrency: row.instrument_currency,
       brokerage: parseFloat(row.brokerage),
       brokerageCurrency: row.brokerage_currency,
-      exchRate: parseFloat(row.exch_rate),
-      value: parseFloat(row.value),
+      baseValue: parseFloat(row.base_value),
+      baseCurrency: row.base_currency,
       user_id: row.user_id,
       deleted_flag: row.deleted_flag || false,
       deleted_at: row.deleted_at ? row.deleted_at.toISOString() : undefined,
@@ -112,8 +112,8 @@ export async function POST(request: NextRequest) {
         instrument_currency,
         brokerage,
         brokerage_currency,
-        exch_rate,
-        value,
+        base_value,
+        base_currency,
         user_id
       ) VALUES (
         ${trade.code},
@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
         ${trade.instrumentCurrency},
         ${trade.brokerage},
         ${trade.brokerageCurrency},
-        ${trade.exchRate},
-        ${trade.value},
+        ${trade.baseValue},
+        ${trade.baseCurrency},
         ${userId}
       )
       RETURNING id

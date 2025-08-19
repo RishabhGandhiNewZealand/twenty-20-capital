@@ -119,8 +119,13 @@ export async function createTradeDataTable() {
         instrument_currency VARCHAR(3) NOT NULL,
         brokerage DECIMAL(18, 8) NOT NULL,
         brokerage_currency VARCHAR(3) NOT NULL,
-        exch_rate DECIMAL(18, 8) NOT NULL,
-        value DECIMAL(18, 8) NOT NULL,
+        
+        -- Removed exch_rate; introduce base_value and base_currency
+        base_value DECIMAL(18, 8) NOT NULL,
+        base_currency VARCHAR(3) NOT NULL,
+
+        -- For backward compatibility during migration, keep value/exch_rate if exist
+        -- but new code will not use them
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
@@ -145,6 +150,12 @@ export async function createTradeDataTable() {
     await sql`
       CREATE INDEX IF NOT EXISTS idx_trade_data_code_date 
       ON application.trade_data(code, date)
+    `
+
+    // Helpful indexes for base currency access
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_trade_data_base_currency 
+      ON application.trade_data(base_currency)
     `
     
     // Create trigger to automatically update updated_at

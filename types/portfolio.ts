@@ -10,8 +10,9 @@ export interface TradeRecord {
   instrumentCurrency: string
   brokerage: number
   brokerageCurrency: string
-  exchRate: number
-  value: number
+  // Stored amounts in base currency
+  baseValue: number // qty * price (+ brokerage) in baseCurrency at trade date
+  baseCurrency: string // e.g., 'USD', 'NZD', 'EUR'
   user_id?: string
   deleted_flag?: boolean
   deleted_at?: string
