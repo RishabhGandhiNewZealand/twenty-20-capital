@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 
 const UPSTREAM_ORIGIN = "https://www.qualtrim.com"
 
@@ -27,25 +28,35 @@ function filterHeaders(original: Headers): Headers {
     ) {
       return
     }
-    // Prevent upstream from setting HSTS for our domain via proxy
     if (lower === "strict-transport-security") return
     headers.set(key, value)
   })
   return headers
 }
 
+function rewriteHtmlForProxy(html: string): string {
+  // Normalize or inject <base>
+  if (/<base[^>]*>/i.test(html)) {
+    html = html.replace(/<base[^>]*>/i, '<base href="/qualtrim-proxy/">')
+  } else {
+    html = html.replace(/<head(\s*>)/i, '<head$1<base href="/qualtrim-proxy/">')
+  }
+  // Inject a small script early to prevent service worker registration within the iframe scope
+  html = html.replace(
+    /<head(\s*>)/i,
+    '<head$1<script>(function(){try{if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});try{navigator.serviceWorker.register=function(){return Promise.resolve({})}}catch(e){}}}catch(e){}})();</script>'
+  )
+  // Prefix absolute root URLs that are not already prefixed with /qualtrim-proxy/
+  html = html.replace(/href=\"\/(?!qualtrim-proxy\/|\/)/g, 'href="/qualtrim-proxy/')
+  html = html.replace(/src=\"\/(?!qualtrim-proxy\/|\/)/g, 'src="/qualtrim-proxy/')
+  return html
+}
+
 async function proxyRequest(req: NextRequest, context: { params: { path?: string[] } }) {
   const upstreamUrl = buildUpstreamUrl(req, context.params.path)
 
   const upstreamHeaders: HeadersInit = {}
-  // Pass essential headers; avoid passing host
-  const passThroughHeaders = [
-    "accept",
-    "accept-language",
-    "user-agent",
-    "cache-control",
-    "pragma",
-  ]
+  const passThroughHeaders = ["accept","accept-language","user-agent","cache-control","pragma"]
   passThroughHeaders.forEach((h) => {
     const v = req.headers.get(h)
     if (v) upstreamHeaders[h] = v
@@ -55,11 +66,8 @@ async function proxyRequest(req: NextRequest, context: { params: { path?: string
     method: req.method,
     headers: upstreamHeaders,
     redirect: "follow",
-    // Stream request body for non-GET/HEAD
     body: req.method === "GET" || req.method === "HEAD" ? undefined : req.body,
-    // Do not send credentials cross-origin to upstream
     credentials: "omit",
-    // Revalidate frequently; upstream assets are cacheable by CF/S3
     cache: "no-store",
   })
 
@@ -67,30 +75,14 @@ async function proxyRequest(req: NextRequest, context: { params: { path?: string
   const headers = filterHeaders(upstreamRes.headers)
 
   if (contentType.includes("text/html")) {
-    let html = await upstreamRes.text()
-    // Ensure all relative links stay within the proxy by updating base href
-    // If a <base> tag exists with href="/", rewrite it; otherwise inject one
-    if (html.includes("<base href=\"/\"")) {
-      html = html.replace("<base href=\"/\"", "<base href=\"/qualtrim-proxy/\"")
-    } else {
-      html = html.replace(
-        /<head(\s*>)/i,
-        "<head$1<base href=\"/qualtrim-proxy/\">"
-      )
-    }
-    // Also make sure any absolute root links like href="/..." use the proxy root
-    html = html.replace(/href=\"\/(?!\/)/g, "href=\"/qualtrim-proxy/")
-    html = html.replace(/src=\"\/(?!\/)/g, "src=\"/qualtrim-proxy/")
-
+    const originalHtml = await upstreamRes.text()
+    const html = rewriteHtmlForProxy(originalHtml)
     headers.set("content-type", "text/html; charset=utf-8")
     return new NextResponse(html, { status: upstreamRes.status, headers })
   }
 
   const body = await upstreamRes.arrayBuffer()
-  return new NextResponse(body, {
-    status: upstreamRes.status,
-    headers,
-  })
+  return new NextResponse(body, { status: upstreamRes.status, headers })
 }
 
 export async function GET(req: NextRequest, context: { params: { path?: string[] } }) {
