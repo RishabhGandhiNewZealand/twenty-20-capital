@@ -5,7 +5,7 @@ export const metadata: Metadata = {
 }
 
 export default function QualtrimEmbedPage() {
-  const src = "https://www.qualtrim.com/"
+  const src = "/qualtrim-proxy/"
   return (
     <div className="w-full" style={{ height: "calc(100vh - 4rem)" }}>
       <iframe
