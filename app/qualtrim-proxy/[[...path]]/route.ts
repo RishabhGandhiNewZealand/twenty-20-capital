@@ -29,23 +29,29 @@ function filterHeaders(original: Headers): Headers {
       return
     }
     if (lower === "strict-transport-security") return
+    // Drop compression-related headers; we may transform content
+    if (lower === "content-encoding") return
+    if (lower === "content-length") return
+    if (lower === "transfer-encoding") return
     headers.set(key, value)
   })
   return headers
 }
 
 function rewriteHtmlForProxy(html: string): string {
-  // Normalize or inject <base>
-  if (/<base[^>]*>/i.test(html)) {
-    html = html.replace(/<base[^>]*>/i, '<base href="/qualtrim-proxy/">')
-  } else {
-    html = html.replace(/<head(\s*>)/i, '<head$1<base href="/qualtrim-proxy/">')
+  const headOpenTag = html.match(/<head(\s*>)/i)
+  const hasBase = /<base[^>]*>/i.test(html)
+  const baseTag = '<base href="/qualtrim-proxy/">'
+  const disableSwScript = '<script>(function(){try{if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});try{navigator.serviceWorker.register=function(){return Promise.resolve({})}}catch(e){}}}catch(e){}})();</script>'
+
+  if (hasBase) {
+    html = html.replace(/<base[^>]*>/i, baseTag)
+    // Insert script right after the (now updated) base tag if not present
+    html = html.replace(baseTag, baseTag + disableSwScript)
+  } else if (headOpenTag) {
+    // Insert both after <head>
+    html = html.replace(/<head(\s*>)/i, `<head$1${baseTag}${disableSwScript}`)
   }
-  // Inject a small script early to prevent service worker registration within the iframe scope
-  html = html.replace(
-    /<head(\s*>)/i,
-    '<head$1<script>(function(){try{if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});try{navigator.serviceWorker.register=function(){return Promise.resolve({})}}catch(e){}}}catch(e){}})();</script>'
-  )
   // Prefix absolute root URLs that are not already prefixed with /qualtrim-proxy/
   html = html.replace(/href=\"\/(?!qualtrim-proxy\/|\/)/g, 'href="/qualtrim-proxy/')
   html = html.replace(/src=\"\/(?!qualtrim-proxy\/|\/)/g, 'src="/qualtrim-proxy/')
@@ -64,7 +70,7 @@ async function proxyRequest(req: NextRequest, context: { params: { path?: string
 
   const upstreamRes = await fetch(upstreamUrl.toString(), {
     method: req.method,
-    headers: upstreamHeaders,
+    headers: { ...upstreamHeaders, 'accept-encoding': 'identity' },
     redirect: "follow",
     body: req.method === "GET" || req.method === "HEAD" ? undefined : req.body,
     credentials: "omit",
