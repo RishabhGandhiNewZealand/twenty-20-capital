@@ -4,44 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { maskShares } from "@/lib/anonymization-utils"
+import { getLogoUrl } from "@/lib/company-utils"
 
 export default function Review2024Page() {
   const { isAnonymized } = useAnonymization()
-  // Function to get company logo URL
-  const getLogoUrl = (symbol: string) => {
-    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
-  }
-
-  const getCompanyDomain = (symbol: string) => {
-    const domains: { [key: string]: string } = {
-      'UBER': 'uber.com',
-      'GOOGL': 'google.com',
-      'AMZN': 'amazon.com',
-      'META': 'meta.com',
-      'NFLX': 'netflix.com',
-      'MA': 'mastercard.com',
-      'ASML': 'asml.com',
-      'SPGI': 'spglobal.com',
-      'MFT': 'mainfreight.com',
-      'CRM': 'salesforce.com',
-      'UNH': 'unitedhealthgroup.com',
-      'ANET': 'arista.com',
-      'CP': 'cpr.ca',
-      'MSCI': 'msci.com',
-      'FTNT': 'fortinet.com',
-      'SNOW': 'snowflake.com',
-      'MSFT': 'microsoft.com',
-      'TXRH': 'texasroadhouse.com',
-      'COST': 'costco.com',
-      'TSM': 'tsmc.com',
-      'V': 'visa.inc',
-      'FICO': 'fairisaac.com',
-      'NOW': 'servicenow.com',
-      'VICI': 'viciproperties.com',
-      'FDS': 'factset.com'
-    }
-    return domains[symbol] || `${symbol.toLowerCase()}.com`
-  }
+  // getLogoUrl imported from lib/company-utils
 
   const yearStats = [
     { label: "Portfolio Return", value: "+16.6%", icon: TrendingUp, positive: true },
