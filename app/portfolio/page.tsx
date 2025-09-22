@@ -245,9 +245,7 @@ export default function HomePage() {
                                 src={getLogoUrl(holding.symbol)} 
                                 alt={holding.symbol}
                                 className="h-8 w-8 rounded-full mr-3"
-                                onError={(e) => {
-                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=0a1a16&color=f5f5f5`
-                                }}
+                                onError={(e) => { e.currentTarget.style.display = 'none' }}
                               />
                               <div>
                                 <div className="text-sm font-medium text-gray-900">{holding.symbol}</div>
@@ -332,9 +330,7 @@ export default function HomePage() {
                             src={getLogoUrl(holding.symbol)} 
                             alt={holding.symbol}
                             className="h-10 w-10 rounded-full mr-3"
-                            onError={(e) => {
-                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=0a1a16&color=f5f5f5`
-                            }}
+                            onError={(e) => { e.currentTarget.style.display = 'none' }}
                           />
                           <div>
                             <div className="font-semibold text-gray-900">{holding.symbol}</div>
@@ -492,9 +488,7 @@ export default function HomePage() {
                               src={getLogoUrl(position.symbol)} 
                               alt={`${position.symbol} logo`}
                               className="w-8 h-8 rounded-full mr-3"
-                              onError={(e) => {
-                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5`
-                              }}
+                              onError={(e) => { e.currentTarget.style.display = 'none' }}
                             />
                             <div>
                               <div className="text-sm font-medium text-gray-900">{position.symbol}</div>
@@ -562,9 +556,7 @@ export default function HomePage() {
                           src={getLogoUrl(position.symbol)} 
                           alt={`${position.symbol} logo`}
                           className="w-8 h-8 rounded-full mr-2"
-                          onError={(e) => {
-                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5`
-                          }}
+                          onError={(e) => { e.currentTarget.style.display = 'none' }}
                         />
                         <div>
                           <div className="font-semibold text-gray-900">{position.symbol}</div>
