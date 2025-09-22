@@ -15,7 +15,8 @@ import {
   User,
   Shield,
   ShieldOff,
-  Database
+  Database,
+  Globe
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/analyses", label: "Analyses", icon: BarChart3 },
   { href: "/news", label: "News", icon: Newspaper },
+  { href: "/qualtrim", label: "Qualtrim", icon: Globe },
   { href: "/about", label: "About", icon: User },
 ]
 
@@ -127,7 +129,9 @@ export default function SidebarNavigation() {
           <ul className="space-y-1 flex-1">
             {navItems.map((item) => {
               const Icon = item.icon
-              const isActive = pathname === item.href
+              const isActive = item.href === "/"
+                ? pathname === "/"
+                : pathname === item.href || pathname.startsWith(item.href + "/")
               
               return (
                 <li key={item.href}>
