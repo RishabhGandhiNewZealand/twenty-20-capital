@@ -4,44 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase } from "lucide-react"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { maskShares } from "@/lib/anonymization-utils"
+import { getLogoUrl } from "@/lib/company-utils"
 
 export default function Review2024Page() {
   const { isAnonymized } = useAnonymization()
-  // Function to get company logo URL
-  const getLogoUrl = (symbol: string) => {
-    return `https://logo.clearbit.com/${getCompanyDomain(symbol)}`
-  }
-
-  const getCompanyDomain = (symbol: string) => {
-    const domains: { [key: string]: string } = {
-      'UBER': 'uber.com',
-      'GOOGL': 'google.com',
-      'AMZN': 'amazon.com',
-      'META': 'meta.com',
-      'NFLX': 'netflix.com',
-      'MA': 'mastercard.com',
-      'ASML': 'asml.com',
-      'SPGI': 'spglobal.com',
-      'MFT': 'mainfreight.com',
-      'CRM': 'salesforce.com',
-      'UNH': 'unitedhealthgroup.com',
-      'ANET': 'arista.com',
-      'CP': 'cpr.ca',
-      'MSCI': 'msci.com',
-      'FTNT': 'fortinet.com',
-      'SNOW': 'snowflake.com',
-      'MSFT': 'microsoft.com',
-      'TXRH': 'texasroadhouse.com',
-      'COST': 'costco.com',
-      'TSM': 'tsmc.com',
-      'V': 'visa.inc',
-      'FICO': 'fairisaac.com',
-      'NOW': 'servicenow.com',
-      'VICI': 'viciproperties.com',
-      'FDS': 'factset.com'
-    }
-    return domains[symbol] || `${symbol.toLowerCase()}.com`
-  }
+  // getLogoUrl imported from lib/company-utils
 
   const yearStats = [
     { label: "Portfolio Return", value: "+16.6%", icon: TrendingUp, positive: true },
@@ -150,14 +117,11 @@ export default function Review2024Page() {
           <Card className="border-blue-100">
             <CardHeader>
               <div className="flex items-center gap-4 mb-4">
-                <img 
-                  src={getLogoUrl('MFT')} 
-                  alt="MFT logo"
-                  className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  <img 
+                    src={getLogoUrl('MFT')} 
+                    alt="MFT logo"
+                    className="w-8 h-8 rounded flex-shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Mainfreight (MFT: NZE)</CardTitle>
@@ -200,14 +164,11 @@ export default function Review2024Page() {
           <Card className="border-blue-100">
             <CardHeader>
               <div className="flex items-center gap-4 mb-4">
-                <img 
-                  src={getLogoUrl('CP')} 
-                  alt="CP logo"
-                  className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                    <img 
+                      src={getLogoUrl('CP')} 
+                      alt="CP logo"
+                      className="w-8 h-8 rounded flex-shrink-0"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Canadian Pacific Kansas City Railways (CP: NYSE)</CardTitle>
@@ -261,10 +222,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('UNH')} 
                   alt="UNH logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">United Healthcare Group (UNH: NYSE)</CardTitle>
@@ -311,10 +269,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('META')} 
                   alt="META logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Meta (META: NASDAQ)</CardTitle>
@@ -370,10 +325,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('CRM')} 
                   alt="CRM logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Salesforce (CRM: NYSE)</CardTitle>
@@ -429,10 +381,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('MA')} 
                   alt="MA logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Mastercard (MA: NYSE)</CardTitle>
@@ -488,10 +437,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('MSCI')} 
                   alt="MSCI logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Morgan Stanley Capital (MSCI: NYSE)</CardTitle>
@@ -536,10 +482,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('AMZN')} 
                   alt="AMZN logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Amazon (AMZN: NASDAQ)</CardTitle>
@@ -586,10 +529,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('NFLX')} 
                   alt="NFLX logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Netflix (NFLX: NASDAQ)</CardTitle>
@@ -634,10 +574,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('UBER')} 
                   alt="UBER logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Uber (UBER: NYSE)</CardTitle>
@@ -686,10 +623,7 @@ export default function Review2024Page() {
                   src={getLogoUrl('SPGI')} 
                   alt="SPGI logo"
                   className="w-8 h-8 rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="flex-1 flex items-center">
                   <CardTitle className="text-gray-900">Standard and Poor Global (SPGI: NYSE)</CardTitle>
