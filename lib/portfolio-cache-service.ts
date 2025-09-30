@@ -7,19 +7,14 @@
 
 import cacheManager, { CacheKey, CacheEvent } from './cache-manager'
 import { getCachedTradeData } from './trade-data-cache'
-import { calculateDailyReturns } from './portfolioCalculations'
+import { calculateDailyReturns, DailyPortfolioData } from './portfolioCalculations_v2'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from './logger'
 import { FALLBACK_USD_TO_NZD_RATE } from './constants'
 import { generatePortfolioData } from './portfolioServerData'
 
-// Types
-interface DailyPortfolioData {
-  date: string
-  portfolioValue: number
-  costBasis: number
-  sp500Value: number
-}
+// Re-export the type for backwards compatibility
+export type { DailyPortfolioData } from './portfolioCalculations_v2'
 
 interface PortfolioCurrentData {
   holdings: any[]
