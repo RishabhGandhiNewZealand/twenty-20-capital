@@ -50,17 +50,20 @@ This endpoint is optimized for the main dashboard display and includes all calcu
 Returns historical portfolio data for charting purposes. This endpoint:
 
 - Generates daily portfolio values over time
-- Calculates historical cost basis progression
-- Provides S&P 500 comparison data
-- Includes daily gain/loss calculations
+- Calculates time-weighted returns (TWR) 
+- Provides S&P 500 comparison data using TWR
+- Includes daily cash flows and cumulative invested capital
 
 The data is structured for direct consumption by the portfolio chart component.
 
-**Cost Basis Calculation:**
-- "Buy" transactions always increase cost basis (represent new capital)
-- "Sell" transactions reduce holdings but don't affect cost basis of future buys
-- "Reinvestment" transactions (dividends) don't affect cost basis
-- S&P 500 comparison uses equivalent shares purchased with new capital only
+**Time-Weighted Return Calculation:**
+- Eliminates the impact of cash flow timing on returns
+- Daily returns are calculated as: (End Value - Start Value - Cash Flow) / Start Value
+- Returns are linked multiplicatively: (1 + R₁) × (1 + R₂) × ... - 1
+- "Buy" transactions add capital but don't distort returns
+- "Sell" transactions withdraw capital but don't distort returns
+- "Reinvestment" transactions (dividends) increase shares but don't change invested capital
+- S&P 500 benchmark buys/sells SPY shares on the same dates as portfolio cash flows
 
 ### Portfolio Composition
 

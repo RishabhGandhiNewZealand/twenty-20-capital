@@ -116,27 +116,33 @@ export default function HomePage() {
           const historyData = await historyResponse.json()
           if (historyData.history && historyData.history.length > 0) {
             const latestHistory = historyData.history[historyData.history.length - 1]
+            const firstHistory = historyData.history[0]
             
             // Update summary with values from portfolio history (source of truth)
+            // Using time-weighted returns from the history data
             const updatedSummary = {
               ...currentData.summary,
               totalValueNZD: latestHistory.portfolioValue,
-              totalCostBasisNZD: latestHistory.costBasis,
-              totalGainNZD: latestHistory.portfolioValue - latestHistory.costBasis,
-              totalGainPercent: ((latestHistory.portfolioValue - latestHistory.costBasis) / latestHistory.costBasis * 100),
+              totalCostBasisNZD: latestHistory.totalInvested,
+              totalGainNZD: latestHistory.portfolioValue - latestHistory.totalInvested,
+              totalGainPercent: latestHistory.portfolioReturn, // This is already the TWR percentage
               sp500Value: latestHistory.sp500Value,
-              sp500GainNZD: latestHistory.sp500Value - latestHistory.costBasis,
-              sp500GainPercent: ((latestHistory.sp500Value - latestHistory.costBasis) / latestHistory.costBasis * 100)
+              sp500GainNZD: latestHistory.sp500Value - latestHistory.totalInvested,
+              sp500GainPercent: latestHistory.sp500Return // This is already the TWR percentage
             }
             setSummary(updatedSummary)
 
             // Update portfolio stats with the accurate data
             const formattedValue = formatCurrency(latestHistory.portfolioValue)
 
-            // Calculate CAGR from the gain percentages
-            const yearsSinceInception = getYearsSinceInception()
-            const portfolioCAGR = calculateCAGRFromGainPercent(updatedSummary.totalGainPercent, yearsSinceInception)
-            const sp500CAGR = calculateCAGRFromGainPercent(updatedSummary.sp500GainPercent, yearsSinceInception)
+            // Calculate CAGR from the time-weighted returns
+            const startDate = new Date(firstHistory.date)
+            const endDate = new Date(latestHistory.date)
+            const yearsSinceInception = (endDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+            
+            // Convert TWR percentage to CAGR: CAGR = (1 + TWR)^(1/years) - 1
+            const portfolioCAGR = Math.pow(1 + latestHistory.portfolioReturn / 100, 1 / yearsSinceInception) - 1
+            const sp500CAGR = Math.pow(1 + latestHistory.sp500Return / 100, 1 / yearsSinceInception) - 1
 
             setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
           }
@@ -396,7 +402,7 @@ export default function HomePage() {
                             <div className="font-medium text-lg">{maskCurrency(summary.totalValueNZD, isAnonymized)}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500">Cost Basis</div>
+                            <div className="text-gray-500">Total Invested</div>
                             <div className="font-medium">{maskCurrency(summary.totalCostBasisNZD, isAnonymized)}</div>
                           </div>
                         </div>
@@ -420,7 +426,7 @@ export default function HomePage() {
                             <div className="font-medium text-lg">{maskCurrency(summary.sp500Value, isAnonymized)}</div>
                           </div>
                           <div>
-                            <div className="text-gray-600">Cost Basis</div>
+                            <div className="text-gray-600">Total Invested</div>
                             <div className="font-medium">{maskCurrency(summary.totalCostBasisNZD, isAnonymized)}</div>
                           </div>
                         </div>

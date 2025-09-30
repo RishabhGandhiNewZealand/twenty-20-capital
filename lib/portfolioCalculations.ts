@@ -1,19 +1,67 @@
 /**
  * Portfolio Calculations Module
  * 
- * This module contains the core calculation logic for portfolio metrics
- * including daily returns, portfolio values, and performance comparisons.
+ * This module implements Time-Weighted Return (TWR) calculations for accurate 
+ * portfolio performance measurement that eliminates the impact of cash flow timing.
+ * 
+ * Key Concepts:
+ * - Time-Weighted Return (TWR): Measures portfolio manager/strategy performance
+ *   by eliminating the impact of when you added or withdrew money
+ * - Calculated by linking sub-period returns between cash flows
+ * - Formula: (1 + R1) × (1 + R2) × ... × (1 + Rn) - 1
+ * 
+ * This is the industry standard for comparing investment performance.
  */
 
 import { TradeRecord } from '@/types/portfolio'
 import { logger } from './logger'
 import { FALLBACK_USD_TO_NZD_RATE } from './constants'
 
-interface DailyPortfolioData {
+/**
+ * Calculate CAGR (Compound Annual Growth Rate) from time-weighted returns
+ * 
+ * @param totalReturn - Total return as a decimal (e.g., 0.25 for 25%)
+ * @param startDate - Start date of the investment period
+ * @param endDate - End date of the investment period
+ * @returns CAGR as a decimal (e.g., 0.15 for 15% CAGR)
+ */
+export function calculateCAGRFromTWR(
+  totalReturn: number,
+  startDate: Date,
+  endDate: Date
+): number {
+  const yearsElapsed = (endDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+  
+  if (yearsElapsed <= 0) {
+    return 0
+  }
+  
+  // CAGR = (1 + Total Return)^(1/years) - 1
+  const cagr = Math.pow(1 + totalReturn, 1 / yearsElapsed) - 1
+  
+  return cagr
+}
+
+/**
+ * Daily portfolio data for charting
+ */
+export interface DailyPortfolioData {
   date: string
   portfolioValue: number
-  costBasis: number
+  portfolioReturn: number // Cumulative time-weighted return % from inception
   sp500Value: number
+  sp500Return: number // Cumulative time-weighted return % from inception
+  cashFlows: number // Net cash flow on this date (buys - sells)
+  totalInvested: number // Total capital invested to date
+}
+
+/**
+ * Cash flow event
+ */
+interface CashFlow {
+  date: string
+  amount: number // Positive for buys, negative for sells
+  type: 'Buy' | 'Sell' | 'Reinvestment'
 }
 
 /**
@@ -24,14 +72,20 @@ function getNearestPrice(
   priceMap: Map<string, number>,
   lookbackDays: number = 5
 ): number {
-  // First try the exact date
   if (priceMap.has(dateStr)) {
     return priceMap.get(dateStr)!
   }
   
-  // Look for the nearest price within lookback days
   const targetDate = new Date(dateStr)
   for (let i = 1; i <= lookbackDays; i++) {
+    // Try past dates first (more conservative)
+    const pastDate = new Date(targetDate)
+    pastDate.setDate(pastDate.getDate() - i)
+    const pastDateStr = pastDate.toISOString().split('T')[0]
+    if (priceMap.has(pastDateStr)) {
+      return priceMap.get(pastDateStr)!
+    }
+    
     // Try future dates
     const futureDate = new Date(targetDate)
     futureDate.setDate(futureDate.getDate() + i)
@@ -39,21 +93,112 @@ function getNearestPrice(
     if (priceMap.has(futureDateStr)) {
       return priceMap.get(futureDateStr)!
     }
-    
-    // Try past dates
-    const pastDate = new Date(targetDate)
-    pastDate.setDate(pastDate.getDate() - i)
-    const pastDateStr = pastDate.toISOString().split('T')[0]
-    if (priceMap.has(pastDateStr)) {
-      return priceMap.get(pastDateStr)!
-    }
   }
   
   return 0
 }
 
 /**
- * Calculate daily portfolio returns and values
+ * Calculate portfolio holdings for each day
+ */
+function calculateDailyHoldings(
+  trades: TradeRecord[],
+  startDate: Date,
+  endDate: Date
+): Map<string, Map<string, number>> {
+  const dailyHoldings = new Map<string, Map<string, number>>()
+  const currentHoldings = new Map<string, number>()
+  
+  // Get unique tickers and initialize
+  const tickers = [...new Set(trades.map(t => t.code))]
+  tickers.forEach(ticker => currentHoldings.set(ticker, 0))
+  
+  // Sort trades by date and type (Sells before Buys on same day)
+  const sortedTrades = [...trades].sort((a, b) => {
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime()
+    if (dateCompare !== 0) return dateCompare
+    const typeOrder = { 'Sell': 0, 'Buy': 1, 'Reinvestment': 2 }
+    return typeOrder[a.type] - typeOrder[b.type]
+  })
+  
+  // Process each day
+  const currentDate = new Date(startDate)
+  while (currentDate <= endDate) {
+    const dateStr = currentDate.toISOString().split('T')[0]
+    
+    // Apply trades for this day
+    const todaysTrades = sortedTrades.filter(t => t.date === dateStr)
+    todaysTrades.forEach(trade => {
+      const currentShares = currentHoldings.get(trade.code) || 0
+      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+        currentHoldings.set(trade.code, currentShares + trade.qty)
+      } else if (trade.type === 'Sell') {
+        currentHoldings.set(trade.code, Math.max(0, currentShares - Math.abs(trade.qty)))
+      }
+    })
+    
+    // Snapshot holdings for this day
+    dailyHoldings.set(dateStr, new Map(currentHoldings))
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
+  
+  return dailyHoldings
+}
+
+/**
+ * Extract cash flows from trades
+ */
+function extractCashFlows(trades: TradeRecord[]): CashFlow[] {
+  return trades.map(trade => {
+    const amount = Math.abs(trade.value)
+    return {
+      date: trade.date,
+      amount: trade.type === 'Sell' ? -amount : (trade.type === 'Buy' ? amount : 0),
+      type: trade.type
+    }
+  }).filter(cf => cf.amount !== 0) // Exclude reinvestments (they don't change invested capital)
+}
+
+/**
+ * Calculate portfolio value for a given date
+ */
+function calculatePortfolioValue(
+  holdings: Map<string, number>,
+  tickerPrices: Map<string, Map<string, number>>,
+  exchangeRate: number,
+  dateStr: string,
+  trades: TradeRecord[]
+): number {
+  let value = 0
+  
+  holdings.forEach((shares, ticker) => {
+    if (shares > 0) {
+      const priceMap = tickerPrices.get(ticker)
+      if (priceMap) {
+        const price = getNearestPrice(dateStr, priceMap)
+        if (price > 0) {
+          const isUSD = trades.find(t => t.code === ticker)?.instrumentCurrency === 'USD'
+          const valueNZD = isUSD ? shares * price * exchangeRate : shares * price
+          value += valueNZD
+        }
+      }
+    }
+  })
+  
+  return value
+}
+
+/**
+ * Calculate Time-Weighted Returns (TWR)
+ * 
+ * TWR eliminates the impact of cash flows by calculating returns for each sub-period
+ * between cash flows, then linking them together.
+ * 
+ * Method:
+ * 1. For each day, calculate the daily return: (EndValue - StartValue - CashFlow) / StartValue
+ * 2. Link the returns: CumulativeReturn = (1 + R1) × (1 + R2) × ... × (1 + Rn) - 1
+ * 
+ * This gives the true performance of the portfolio, independent of when money was added.
  */
 export function calculateDailyReturns(
   trades: TradeRecord[],
@@ -64,165 +209,122 @@ export function calculateDailyReturns(
   endDate: Date
 ): DailyPortfolioData[] {
   
-  // Sort trades by date, and within the same date: Sells first, then Buys, then Reinvestments
-  const sortedTrades = [...trades].sort((a, b) => {
-    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime()
-    if (dateCompare !== 0) return dateCompare
-    
-    // Same date - sort by type: Sell -> Buy -> Reinvestment
-    const typeOrder = { 'Sell': 0, 'Buy': 1, 'Reinvestment': 2 }
-    return typeOrder[a.type] - typeOrder[b.type]
-  })
-
-  // Get unique tickers
-  const tickers = [...new Set(trades.map(t => t.code))]
-
+  logger.info('Starting Time-Weighted Return (TWR) calculation...')
+  
   // Calculate daily holdings
-  const dailyHoldings = new Map<string, Map<string, number>>() // date -> ticker -> shares
-  const currentHoldings = new Map<string, number>() // ticker -> shares
-
-  // Initialize holdings for all tickers
-  tickers.forEach(ticker => currentHoldings.set(ticker, 0))
-
-  // Process each day to build holdings
+  const dailyHoldings = calculateDailyHoldings(trades, startDate, endDate)
+  
+  // Extract cash flows
+  const cashFlows = extractCashFlows(trades)
+  const cashFlowsByDate = new Map<string, number>()
+  cashFlows.forEach(cf => {
+    cashFlowsByDate.set(cf.date, (cashFlowsByDate.get(cf.date) || 0) + cf.amount)
+  })
+  
+  logger.debug(`Total cash flow events: ${cashFlows.length}`)
+  
+  // Track values
+  let previousPortfolioValue = 0
+  let cumulativeInvested = 0
+  let portfolioReturnMultiplier = 1.0 // Tracks (1 + R1) × (1 + R2) × ...
+  
+  // S&P 500 benchmark tracking
+  let sp500Shares = 0
+  let previousSp500Value = 0
+  let sp500ReturnMultiplier = 1.0
+  
+  const portfolioHistory: DailyPortfolioData[] = []
+  
+  // Process each day
   const currentDate = new Date(startDate)
   while (currentDate <= endDate) {
     const dateStr = currentDate.toISOString().split('T')[0]
-
-    // Process trades for this day
-    const todaysTrades = sortedTrades.filter(t => t.date === dateStr)
-    todaysTrades.forEach(trade => {
-      const currentShares = currentHoldings.get(trade.code) || 0
-      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
-        currentHoldings.set(trade.code, currentShares + trade.qty)
-      } else if (trade.type === 'Sell') {
-        // qty is positive in database, so we need to subtract for sells
-        currentHoldings.set(trade.code, Math.max(0, currentShares - Math.abs(trade.qty)))
-      }
-    })
-
-    // Save holdings for this day
-    const holdingsSnapshot = new Map(currentHoldings)
-    dailyHoldings.set(dateStr, holdingsSnapshot)
-
-    currentDate.setDate(currentDate.getDate() + 1)
-  }
-
-  // Calculate capital flow and S&P 500 equivalent
-  let runningCostBasis = 0
-  let runningSp500Shares = 0
-  let runningSp500CostBasis = 0
-  
-  // Maps to store the state at each date
-  const costBasisByDate = new Map<string, number>()
-  const sp500SharesByDate = new Map<string, number>()
-  const sp500CostBasisByDate = new Map<string, number>()
-  
-  // Process all trades in chronological order to build up the capital flow
-  logger.debug('Processing trades to calculate capital flow...')
-  sortedTrades.forEach(trade => {
-    const dateStr = trade.date
-    
-    // Use the actual NZD value from the trade
-    const tradeValueNZD = Math.abs(trade.value)
-    
-    if (trade.type === 'Buy') {
-      // Buy transactions represent NEW capital - always increase cost basis
-      // If the user wants to track reinvestment of sold capital, they should use type 'Reinvestment'
-      runningCostBasis += tradeValueNZD
-      
-      // Buy S&P 500 shares with the new capital
-      const spyPrice = getNearestPrice(dateStr, spyPrices)
-      if (spyPrice > 0) {
-        const spyExchangeRate = exchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
-        const spyPriceNZD = spyPrice * spyExchangeRate
-        const newSp500Shares = tradeValueNZD / spyPriceNZD
-        runningSp500Shares += newSp500Shares
-        runningSp500CostBasis += tradeValueNZD
-        logger.debug(`Trade ${dateStr}: Buy ${trade.code} with NEW capital`, {
-          newCapital: tradeValueNZD.toFixed(2),
-          totalCostBasis: runningCostBasis.toFixed(2),
-          newSp500Shares: newSp500Shares.toFixed(4)
-        })
-      }
-    } else if (trade.type === 'Sell') {
-      // Sells reduce holdings but don't affect cost basis calculation
-      logger.debug(`Trade ${dateStr}: Sell ${trade.code}`, {
-        sellValue: tradeValueNZD.toFixed(2)
-      })
-    } else if (trade.type === 'Reinvestment') {
-      // Reinvestment doesn't affect cost basis or S&P 500 purchases
-      logger.debug(`Trade ${dateStr}: Reinvestment ${trade.code} - no cost basis change`)
-    }
-    
-    // Store the state after this trade
-    costBasisByDate.set(dateStr, runningCostBasis)
-    sp500SharesByDate.set(dateStr, runningSp500Shares)
-    sp500CostBasisByDate.set(dateStr, runningSp500CostBasis)
-  })
-  
-  logger.info('Capital flow calculation complete', {
-    finalCostBasis: runningCostBasis.toFixed(2),
-    finalSp500Shares: runningSp500Shares.toFixed(4)
-  })
-  
-  // Generate daily portfolio values
-  const portfolioHistory: DailyPortfolioData[] = []
-  const processDate = new Date(startDate)
-  let lastCostBasis = 0
-  let lastSp500Shares = 0
-  let lastSp500CostBasis = 0
-  
-  while (processDate <= endDate) {
-    const dateStr = processDate.toISOString().split('T')[0]
     const holdings = dailyHoldings.get(dateStr) || new Map()
-    
-    // Update cost basis and S&P 500 shares if there were trades on this date
-    if (costBasisByDate.has(dateStr)) {
-      lastCostBasis = costBasisByDate.get(dateStr)!
-    }
-    if (sp500SharesByDate.has(dateStr)) {
-      lastSp500Shares = sp500SharesByDate.get(dateStr)!
-    }
-    if (sp500CostBasisByDate.has(dateStr)) {
-      lastSp500CostBasis = sp500CostBasisByDate.get(dateStr)!
-    }
-    
-    // Calculate portfolio value for this day
-    let portfolioValue = 0
     const exchangeRate = exchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
     
-    holdings.forEach((shares, ticker) => {
-      if (shares > 0) {
-        const priceMap = tickerPrices.get(ticker)
-        if (priceMap) {
-          const price = priceMap.get(dateStr) || 0
-          if (price > 0) {
-            // Determine if this is a USD stock
-            const isUSD = sortedTrades.find(t => t.code === ticker)?.instrumentCurrency === 'USD'
-            const valueNZD = isUSD ? shares * price * exchangeRate : shares * price
-            portfolioValue += valueNZD
-          }
-        }
+    // Get cash flow for this date (positive = buy, negative = sell)
+    const dailyCashFlow = cashFlowsByDate.get(dateStr) || 0
+    
+    // Calculate portfolio value at end of day
+    const portfolioValue = calculatePortfolioValue(
+      holdings,
+      tickerPrices,
+      exchangeRate,
+      dateStr,
+      trades
+    )
+    
+    // For S&P 500: buy/sell shares with cash flows at the price on that day
+    const spyPrice = getNearestPrice(dateStr, spyPrices)
+    if (dailyCashFlow !== 0 && spyPrice > 0) {
+      const spyPriceNZD = spyPrice * exchangeRate
+      const sharesToBuySell = dailyCashFlow / spyPriceNZD
+      sp500Shares += sharesToBuySell
+      
+      logger.debug(`${dateStr}: Cash flow ${dailyCashFlow.toFixed(2)}, SPY shares ${sharesToBuySell.toFixed(4)}`)
+    }
+    
+    // Calculate S&P 500 value
+    const sp500Value = sp500Shares * spyPrice * exchangeRate
+    
+    // Calculate daily returns (Time-Weighted)
+    // Daily return = (End Value - Start Value - Cash Flow) / Start Value
+    if (previousPortfolioValue > 0) {
+      const dailyReturn = (portfolioValue - previousPortfolioValue - dailyCashFlow) / previousPortfolioValue
+      portfolioReturnMultiplier *= (1 + dailyReturn)
+      
+      // Log significant daily changes
+      if (Math.abs(dailyReturn) > 0.05) {
+        logger.debug(`${dateStr}: Large daily return ${(dailyReturn * 100).toFixed(2)}%`)
       }
-    })
+    } else if (dailyCashFlow > 0) {
+      // First investment - no return yet, just starting
+      portfolioReturnMultiplier = 1.0
+    }
     
-    // Calculate S&P 500 value for this day
-    const spyPrice = spyPrices.get(dateStr) || 0
-    const sp500Value = lastSp500Shares * spyPrice * exchangeRate
+    // Calculate S&P 500 daily returns
+    if (previousSp500Value > 0) {
+      const sp500DailyReturn = (sp500Value - previousSp500Value - dailyCashFlow) / previousSp500Value
+      sp500ReturnMultiplier *= (1 + sp500DailyReturn)
+    } else if (dailyCashFlow > 0) {
+      sp500ReturnMultiplier = 1.0
+    }
     
-    // Only add to history if we have valid data
-    if (portfolioValue > 0 || lastCostBasis > 0) {
+    // Update cumulative invested capital (for reference)
+    cumulativeInvested += dailyCashFlow
+    
+    // Calculate cumulative returns as percentage
+    const portfolioReturn = (portfolioReturnMultiplier - 1) * 100
+    const sp500Return = (sp500ReturnMultiplier - 1) * 100
+    
+    // Save to history if we have data
+    if (portfolioValue > 0 || cumulativeInvested > 0) {
       portfolioHistory.push({
         date: dateStr,
         portfolioValue: Math.round(portfolioValue * 100) / 100,
-        costBasis: Math.round(lastCostBasis * 100) / 100,
-        sp500Value: Math.round(sp500Value * 100) / 100
+        portfolioReturn: Math.round(portfolioReturn * 100) / 100,
+        sp500Value: Math.round(sp500Value * 100) / 100,
+        sp500Return: Math.round(sp500Return * 100) / 100,
+        cashFlows: Math.round(dailyCashFlow * 100) / 100,
+        totalInvested: Math.round(cumulativeInvested * 100) / 100
       })
     }
     
-    processDate.setDate(processDate.getDate() + 1)
+    // Update for next iteration
+    previousPortfolioValue = portfolioValue
+    previousSp500Value = sp500Value
+    currentDate.setDate(currentDate.getDate() + 1)
   }
+  
+  const finalData = portfolioHistory[portfolioHistory.length - 1]
+  logger.info('Time-Weighted Return calculation complete', {
+    dataPoints: portfolioHistory.length,
+    totalInvested: finalData?.totalInvested?.toFixed(2),
+    finalPortfolioValue: finalData?.portfolioValue?.toFixed(2),
+    finalPortfolioReturn: finalData?.portfolioReturn?.toFixed(2) + '%',
+    finalSP500Return: finalData?.sp500Return?.toFixed(2) + '%',
+    outperformance: (finalData ? finalData.portfolioReturn - finalData.sp500Return : 0).toFixed(2) + '%'
+  })
   
   return portfolioHistory
 }
