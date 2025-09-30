@@ -107,7 +107,6 @@ export async function GET() {
     // Track S&P 500 shares purchased over time
     let sp500Shares = 0
     let currentCostBasis = 0
-    let soldCapitalAvailable = 0
 
     // Get all unique trade dates for SPY price fetching
     const tradeDates = [...new Set(trades.filter(t => t.type === 'Buy').map(t => t.date))]
@@ -139,24 +138,16 @@ export async function GET() {
       if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
         current.shares += trade.qty
         if (trade.type === 'Buy') {
-          // Only count buys in cost basis, not reinvestments
+          // Buy transactions represent NEW capital - always increase cost basis
           current.totalCostNZD += tradeValueNZD
+          currentCostBasis += tradeValueNZD
 
-          // Calculate S&P 500 shares that could have been bought
-          if (soldCapitalAvailable >= tradeValueNZD) {
-            soldCapitalAvailable -= tradeValueNZD
-          } else {
-            const newCapital = tradeValueNZD - soldCapitalAvailable
-            currentCostBasis += newCapital
-            soldCapitalAvailable = 0
-
-            // Calculate SPY shares with this new capital
-            const spyPrice = spyPriceMap.get(trade.date) || 0
-            if (spyPrice > 0) {
-              // Get historical exchange rate for this date
-              const spyPriceNZD = spyPrice * exchangeRate
-              sp500Shares += newCapital / spyPriceNZD
-            }
+          // Calculate SPY shares with this new capital
+          const spyPrice = spyPriceMap.get(trade.date) || 0
+          if (spyPrice > 0) {
+            // Get historical exchange rate for this date
+            const spyPriceNZD = spyPrice * exchangeRate
+            sp500Shares += tradeValueNZD / spyPriceNZD
           }
         }
       } else if (trade.type === 'Sell') {
@@ -173,7 +164,6 @@ export async function GET() {
           // All shares sold
           current.totalCostNZD = 0
         }
-        soldCapitalAvailable += tradeValueNZD
       }
 
       if (current.shares > MIN_SHARE_THRESHOLD) { // Only keep positions with shares

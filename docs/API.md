@@ -56,6 +56,12 @@ Returns historical portfolio data for charting purposes. This endpoint:
 
 The data is structured for direct consumption by the portfolio chart component.
 
+**Cost Basis Calculation:**
+- "Buy" transactions always increase cost basis (represent new capital)
+- "Sell" transactions reduce holdings but don't affect cost basis of future buys
+- "Reinvestment" transactions (dividends) don't affect cost basis
+- S&P 500 comparison uses equivalent shares purchased with new capital only
+
 ### Portfolio Composition
 
 #### GET `/api/portfolio-composition`

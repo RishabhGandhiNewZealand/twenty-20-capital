@@ -110,7 +110,6 @@ export function calculateDailyReturns(
 
   // Calculate capital flow and S&P 500 equivalent
   let runningCostBasis = 0
-  let runningSoldCapital = 0
   let runningSp500Shares = 0
   let runningSp500CostBasis = 0
   
@@ -128,41 +127,28 @@ export function calculateDailyReturns(
     const tradeValueNZD = Math.abs(trade.value)
     
     if (trade.type === 'Buy') {
-      // Check if this buy is using sold capital or new capital
-      if (runningSoldCapital >= tradeValueNZD) {
-        // This buy is fully covered by previous sells - not new capital
-        runningSoldCapital -= tradeValueNZD
-        logger.debug(`Trade ${dateStr}: Buy ${trade.code} using sold capital`, {
-          tradeValue: tradeValueNZD.toFixed(2),
-          remainingSoldCapital: runningSoldCapital.toFixed(2)
+      // Buy transactions represent NEW capital - always increase cost basis
+      // If the user wants to track reinvestment of sold capital, they should use type 'Reinvestment'
+      runningCostBasis += tradeValueNZD
+      
+      // Buy S&P 500 shares with the new capital
+      const spyPrice = getNearestPrice(dateStr, spyPrices)
+      if (spyPrice > 0) {
+        const spyExchangeRate = exchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
+        const spyPriceNZD = spyPrice * spyExchangeRate
+        const newSp500Shares = tradeValueNZD / spyPriceNZD
+        runningSp500Shares += newSp500Shares
+        runningSp500CostBasis += tradeValueNZD
+        logger.debug(`Trade ${dateStr}: Buy ${trade.code} with NEW capital`, {
+          newCapital: tradeValueNZD.toFixed(2),
+          totalCostBasis: runningCostBasis.toFixed(2),
+          newSp500Shares: newSp500Shares.toFixed(4)
         })
-      } else {
-        // This buy requires new capital (partially or fully)
-        const newCapital = tradeValueNZD - runningSoldCapital
-        runningCostBasis += newCapital
-        runningSoldCapital = 0
-        
-        // Only buy S&P 500 shares with truly new capital
-        const spyPrice = getNearestPrice(dateStr, spyPrices)
-        if (spyPrice > 0) {
-          const spyExchangeRate = exchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
-          const spyPriceNZD = spyPrice * spyExchangeRate
-          const newSp500Shares = newCapital / spyPriceNZD
-          runningSp500Shares += newSp500Shares
-          runningSp500CostBasis += newCapital
-          logger.debug(`Trade ${dateStr}: Buy ${trade.code} with NEW capital`, {
-            newCapital: newCapital.toFixed(2),
-            totalCostBasis: runningCostBasis.toFixed(2),
-            newSp500Shares: newSp500Shares.toFixed(4)
-          })
-        }
       }
     } else if (trade.type === 'Sell') {
-      // Add sold capital to available pool for re-investment
-      runningSoldCapital += tradeValueNZD
+      // Sells reduce holdings but don't affect cost basis calculation
       logger.debug(`Trade ${dateStr}: Sell ${trade.code}`, {
-        sellValue: tradeValueNZD.toFixed(2),
-        totalSoldCapital: runningSoldCapital.toFixed(2)
+        sellValue: tradeValueNZD.toFixed(2)
       })
     } else if (trade.type === 'Reinvestment') {
       // Reinvestment doesn't affect cost basis or S&P 500 purchases
