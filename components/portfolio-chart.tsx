@@ -22,14 +22,17 @@ import {
 import { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent"
 
 /**
- * Portfolio history data with money-weighted returns
+ * Portfolio history data with time-weighted returns (TWR)
+ * 
+ * TWR measures portfolio performance independent of cash flow timing,
+ * showing how well your investment selections performed.
  */
 interface PortfolioHistoryData {
   date: string
   portfolioValue: number
-  portfolioReturn: number
+  portfolioReturn: number // Time-weighted cumulative return %
   sp500Value: number
-  sp500Return: number
+  sp500Return: number // Time-weighted cumulative return %
   cashFlows: number
   totalInvested: number
 }
@@ -238,7 +241,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             <div className="text-center">
               <p className="font-medium">Loading portfolio history...</p>
-              <p className="text-sm text-gray-500 mt-1">Calculating money-weighted returns</p>
+              <p className="text-sm text-gray-500 mt-1">Calculating time-weighted returns</p>
               <p className="text-xs text-gray-400 mt-2">This may take a moment on first load</p>
             </div>
           </div>
@@ -277,7 +280,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Performance</CardTitle>
-            <p className="text-xs text-gray-500 mt-1">Money-weighted returns vs S&P 500</p>
+            <p className="text-xs text-gray-500 mt-1">Time-weighted returns vs S&P 500</p>
           </div>
           <div className="flex items-center space-x-2">
             <Label htmlFor="view-toggle" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">

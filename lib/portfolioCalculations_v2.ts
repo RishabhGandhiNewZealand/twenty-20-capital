@@ -1,13 +1,16 @@
 /**
  * Portfolio Calculations Module V2
  * 
- * This module implements money-weighted (time-weighted) return calculations
- * for accurate portfolio performance measurement with cash flows.
+ * This module implements Time-Weighted Return (TWR) calculations for accurate 
+ * portfolio performance measurement that eliminates the impact of cash flow timing.
  * 
  * Key Concepts:
- * - Time-Weighted Return (TWR): Eliminates the impact of cash flows timing
- * - Money-Weighted Return: Accounts for the timing and size of cash flows
- * - We use a hybrid approach: track cumulative returns while properly handling cash flows
+ * - Time-Weighted Return (TWR): Measures portfolio manager/strategy performance
+ *   by eliminating the impact of when you added or withdrew money
+ * - Calculated by linking sub-period returns between cash flows
+ * - Formula: (1 + R1) × (1 + R2) × ... × (1 + Rn) - 1
+ * 
+ * This is the industry standard for comparing investment performance.
  */
 
 import { TradeRecord } from '@/types/portfolio'
@@ -20,9 +23,9 @@ import { FALLBACK_USD_TO_NZD_RATE } from './constants'
 export interface DailyPortfolioData {
   date: string
   portfolioValue: number
-  portfolioReturn: number // Cumulative return % from inception
+  portfolioReturn: number // Cumulative time-weighted return % from inception
   sp500Value: number
-  sp500Return: number // Cumulative return % from inception
+  sp500Return: number // Cumulative time-weighted return % from inception
   cashFlows: number // Net cash flow on this date (buys - sells)
   totalInvested: number // Total capital invested to date
 }
@@ -128,7 +131,7 @@ function extractCashFlows(trades: TradeRecord[]): CashFlow[] {
       amount: trade.type === 'Sell' ? -amount : (trade.type === 'Buy' ? amount : 0),
       type: trade.type
     }
-  }).filter(cf => cf.amount !== 0) // Exclude reinvestments
+  }).filter(cf => cf.amount !== 0) // Exclude reinvestments (they don't change invested capital)
 }
 
 /**
@@ -161,16 +164,16 @@ function calculatePortfolioValue(
 }
 
 /**
- * Calculate money-weighted returns with proper cash flow handling
+ * Calculate Time-Weighted Returns (TWR)
  * 
- * This uses a simple approach:
- * 1. Track portfolio value daily
- * 2. Track cash flows (buys/sells)
- * 3. Calculate returns as: (Current Value - Total Invested) / Total Invested
- * 4. For S&P 500, buy equivalent shares with each cash inflow
+ * TWR eliminates the impact of cash flows by calculating returns for each sub-period
+ * between cash flows, then linking them together.
  * 
- * This gives a true money-weighted return that shows actual performance
- * accounting for when money was invested.
+ * Method:
+ * 1. For each day, calculate the daily return: (EndValue - StartValue - CashFlow) / StartValue
+ * 2. Link the returns: CumulativeReturn = (1 + R1) × (1 + R2) × ... × (1 + Rn) - 1
+ * 
+ * This gives the true performance of the portfolio, independent of when money was added.
  */
 export function calculateDailyReturns(
   trades: TradeRecord[],
@@ -181,7 +184,7 @@ export function calculateDailyReturns(
   endDate: Date
 ): DailyPortfolioData[] {
   
-  logger.info('Starting money-weighted return calculation...')
+  logger.info('Starting Time-Weighted Return (TWR) calculation...')
   
   // Calculate daily holdings
   const dailyHoldings = calculateDailyHoldings(trades, startDate, endDate)
@@ -193,13 +196,17 @@ export function calculateDailyReturns(
     cashFlowsByDate.set(cf.date, (cashFlowsByDate.get(cf.date) || 0) + cf.amount)
   })
   
-  logger.debug(`Total cash flows: ${cashFlows.length}`)
+  logger.debug(`Total cash flow events: ${cashFlows.length}`)
   
-  // Track cumulative invested capital
+  // Track values
+  let previousPortfolioValue = 0
   let cumulativeInvested = 0
+  let portfolioReturnMultiplier = 1.0 // Tracks (1 + R1) × (1 + R2) × ...
   
-  // S&P 500 benchmark tracking - buy shares with each cash inflow
+  // S&P 500 benchmark tracking
   let sp500Shares = 0
+  let previousSp500Value = 0
+  let sp500ReturnMultiplier = 1.0
   
   const portfolioHistory: DailyPortfolioData[] = []
   
@@ -213,22 +220,7 @@ export function calculateDailyReturns(
     // Get cash flow for this date (positive = buy, negative = sell)
     const dailyCashFlow = cashFlowsByDate.get(dateStr) || 0
     
-    // Update cumulative invested capital
-    cumulativeInvested += dailyCashFlow
-    
-    // For S&P 500: buy/sell shares with cash flows
-    if (dailyCashFlow !== 0) {
-      const spyPrice = getNearestPrice(dateStr, spyPrices)
-      if (spyPrice > 0) {
-        const spyPriceNZD = spyPrice * exchangeRate
-        const sharesToBuySell = dailyCashFlow / spyPriceNZD
-        sp500Shares += sharesToBuySell
-        
-        logger.debug(`${dateStr}: Cash flow ${dailyCashFlow.toFixed(2)}, SPY shares ${sharesToBuySell.toFixed(4)}, total ${sp500Shares.toFixed(4)}`)
-      }
-    }
-    
-    // Calculate portfolio value
+    // Calculate portfolio value at end of day
     const portfolioValue = calculatePortfolioValue(
       holdings,
       tickerPrices,
@@ -237,19 +229,48 @@ export function calculateDailyReturns(
       trades
     )
     
-    // Calculate S&P 500 value
+    // For S&P 500: buy/sell shares with cash flows at the price on that day
     const spyPrice = getNearestPrice(dateStr, spyPrices)
+    if (dailyCashFlow !== 0 && spyPrice > 0) {
+      const spyPriceNZD = spyPrice * exchangeRate
+      const sharesToBuySell = dailyCashFlow / spyPriceNZD
+      sp500Shares += sharesToBuySell
+      
+      logger.debug(`${dateStr}: Cash flow ${dailyCashFlow.toFixed(2)}, SPY shares ${sharesToBuySell.toFixed(4)}`)
+    }
+    
+    // Calculate S&P 500 value
     const sp500Value = sp500Shares * spyPrice * exchangeRate
     
-    // Calculate returns as simple gain/loss percentage
-    // Return = (Current Value - Total Invested) / Total Invested * 100
-    const portfolioReturn = cumulativeInvested > 0 
-      ? ((portfolioValue - cumulativeInvested) / cumulativeInvested) * 100
-      : 0
+    // Calculate daily returns (Time-Weighted)
+    // Daily return = (End Value - Start Value - Cash Flow) / Start Value
+    if (previousPortfolioValue > 0) {
+      const dailyReturn = (portfolioValue - previousPortfolioValue - dailyCashFlow) / previousPortfolioValue
+      portfolioReturnMultiplier *= (1 + dailyReturn)
+      
+      // Log significant daily changes
+      if (Math.abs(dailyReturn) > 0.05) {
+        logger.debug(`${dateStr}: Large daily return ${(dailyReturn * 100).toFixed(2)}%`)
+      }
+    } else if (dailyCashFlow > 0) {
+      // First investment - no return yet, just starting
+      portfolioReturnMultiplier = 1.0
+    }
     
-    const sp500Return = cumulativeInvested > 0
-      ? ((sp500Value - cumulativeInvested) / cumulativeInvested) * 100
-      : 0
+    // Calculate S&P 500 daily returns
+    if (previousSp500Value > 0) {
+      const sp500DailyReturn = (sp500Value - previousSp500Value - dailyCashFlow) / previousSp500Value
+      sp500ReturnMultiplier *= (1 + sp500DailyReturn)
+    } else if (dailyCashFlow > 0) {
+      sp500ReturnMultiplier = 1.0
+    }
+    
+    // Update cumulative invested capital (for reference)
+    cumulativeInvested += dailyCashFlow
+    
+    // Calculate cumulative returns as percentage
+    const portfolioReturn = (portfolioReturnMultiplier - 1) * 100
+    const sp500Return = (sp500ReturnMultiplier - 1) * 100
     
     // Save to history if we have data
     if (portfolioValue > 0 || cumulativeInvested > 0) {
@@ -264,11 +285,14 @@ export function calculateDailyReturns(
       })
     }
     
+    // Update for next iteration
+    previousPortfolioValue = portfolioValue
+    previousSp500Value = sp500Value
     currentDate.setDate(currentDate.getDate() + 1)
   }
   
   const finalData = portfolioHistory[portfolioHistory.length - 1]
-  logger.info('Money-weighted return calculation complete', {
+  logger.info('Time-Weighted Return calculation complete', {
     dataPoints: portfolioHistory.length,
     totalInvested: finalData?.totalInvested?.toFixed(2),
     finalPortfolioValue: finalData?.portfolioValue?.toFixed(2),
