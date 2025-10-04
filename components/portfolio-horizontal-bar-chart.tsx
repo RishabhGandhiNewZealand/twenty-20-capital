@@ -9,10 +9,7 @@ import { getLogoUrl } from "@/lib/company-utils"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
-import { formatCurrency } from "@/lib/financial-calculations"
 import { formatDate } from "@/lib/format-utils"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { maskCurrency } from "@/lib/anonymization-utils"
 
 interface ChartData {
   name: string
@@ -58,7 +55,6 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   const [playbackSpeed, setPlaybackSpeed] = useState(1) // 0.5, 1, or 2
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const { isAnonymized } = useAnonymization()
 
   // Load the pre-cached composition data on mount
   useEffect(() => {
@@ -304,11 +300,10 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
     }
   }, [chartData.length]) // Only depend on length to avoid infinite loops
 
-  // Custom bar shape to include value text inside
+  // Custom bar shape to include percentage text
   const CustomBar = (props: any) => {
-    const { x, y, width, height, fill, value, index } = props
+    const { x, y, width, height, fill, index } = props
     const data = chartData[index]
-    const showValue = width > (isMobile ? 50 : 60)
     
     return (
       <g>
@@ -321,19 +316,6 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           rx={4} 
           ry={4}
         />
-        {showValue && !isAnonymized && (
-          <text 
-            x={x + (isMobile ? 5 : 10)} 
-            y={y + height / 2} 
-            fill="#f5f5f5" 
-            textAnchor="start" 
-            dominantBaseline="middle"
-            fontSize={isMobile ? "10" : "11"}
-            fontWeight="500"
-          >
-            {formatCurrency(value)}
-          </text>
-        )}
         <text 
           x={x + width + 5} 
           y={y + height / 2} 
@@ -358,12 +340,6 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
           <p className="font-semibold text-[hsl(var(--card-foreground))]">{data.symbol}</p>
           <p className="text-sm text-gray-600 mb-2">{holding?.name}</p>
           <div className="space-y-1">
-            {!isAnonymized && (
-              <p className="text-sm">
-                <span className="text-gray-500">Value:</span>
-                <span className="font-medium ml-1">{formatCurrency(data.value)}</span>
-              </p>
-            )}
             <p className="text-sm">
               <span className="text-gray-500">Allocation:</span>
               <span className="font-medium ml-1">{data.percentage.toFixed(1)}%</span>
@@ -376,14 +352,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
   }
 
   const formatTickValue = (value: number) => {
-    if (isAnonymized) return '';
-    if (!value || isNaN(value)) return '$0';
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}K`
-    }
-    return `$${Math.round(value)}`
+    // Hide dollar values on X-axis
+    return '';
   }
 
   // Custom Y-axis tick component to render company logos
@@ -551,9 +521,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings }: Portf
                 <XAxis 
                   type="number" 
                   tickFormatter={formatTickValue}
-                  tick={isAnonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
+                  tick={false}
                   domain={[0, 'dataMax']}
-                  axisLine={!isAnonymized}
+                  axisLine={false}
                 />
                 <YAxis 
                   type="category" 
