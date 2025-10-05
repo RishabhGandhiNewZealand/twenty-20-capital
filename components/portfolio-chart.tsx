@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Loader2, TrendingUp, DollarSign } from "lucide-react"
-import { formatCurrency, formatPercentage as formatPercentageBase } from "@/lib/financial-calculations"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { maskCurrency } from "@/lib/anonymization-utils"
 import {
@@ -21,17 +20,17 @@ import {
 } from "recharts"
 import { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent"
 
-interface PortfolioHistoryData {
+interface HistoryDataPoint {
   date: string
   portfolioValue: number
   costBasis: number
   sp500Value: number
 }
 
-interface PerformanceData {
+interface ReturnDataPoint {
   date: string
-  portfolioPerformance: number
-  sp500Performance: number
+  portfolioReturn: number
+  sp500Return: number
 }
 
 interface PortfolioStat {
@@ -47,8 +46,7 @@ interface PortfolioChartProps {
 }
 
 export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
-  const [data, setData] = useState<PortfolioHistoryData[]>([])
-  const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
+  const [historyData, setHistoryData] = useState<HistoryDataPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showPercentage, setShowPercentage] = useState(false)
@@ -56,7 +54,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   const { isAnonymized } = useAnonymization()
 
   useEffect(() => {
-    async function fetchPortfolioHistory() {
+    async function fetchData() {
       try {
         const timestamp = Date.now()
         const response = await fetch(`/api/portfolio-history?t=${timestamp}`, { 
@@ -66,9 +64,11 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             'Pragma': 'no-cache'
           }
         })
+        
         if (!response.ok) {
           throw new Error('Failed to fetch portfolio history')
         }
+        
         const result = await response.json()
         
         if (!result.history || result.history.length === 0) {
@@ -76,18 +76,10 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
           return
         }
         
-        // Format data for the chart - keep original format for value view
-        const formattedData = result.history
+        // Sample data to max 200 points for performance
+        const sampledData = sampleData(result.history, 200)
+        setHistoryData(sampledData)
         
-        // Calculate percentage performance data
-        const performanceData = calculatePerformanceData(formattedData)
-        
-        // Sample data to reduce points for better performance
-        const sampledData = sampleData(formattedData, 200)
-        const sampledPerformanceData = sampleData(performanceData, 200)
-        
-        setData(sampledData)
-        setPerformanceData(sampledPerformanceData)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
@@ -95,59 +87,10 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
       }
     }
 
-    fetchPortfolioHistory()
+    fetchData()
   }, [])
 
-  // Calculate percentage performance relative to cost basis
-  function calculatePerformanceData(data: PortfolioHistoryData[]): PerformanceData[] {
-    if (data.length === 0) return []
-    
-    // Track the S&P 500 cost basis separately
-    // The S&P 500 investment should mirror the portfolio cost basis
-    let sp500CostBasis = 0
-    let previousCostBasis = 0
-    
-    return data.map((point, index) => {
-      // Track cost basis changes (new capital additions)
-      if (index === 0) {
-        // Initialize with the first cost basis
-        sp500CostBasis = point.costBasis
-        previousCostBasis = point.costBasis
-      } else if (point.costBasis > previousCostBasis) {
-        // Add only the new capital to S&P 500 cost basis
-        const newCapital = point.costBasis - previousCostBasis
-        sp500CostBasis += newCapital
-        previousCostBasis = point.costBasis
-      }
-      
-      // Calculate portfolio performance
-      const portfolioPerformance = point.costBasis > 0 
-        ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
-        : 0
-      
-      // Calculate S&P 500 performance
-      // If sp500Value is 0 or very small at the start (no shares bought yet), 
-      // and we have a cost basis, assume we just invested and performance is 0%
-      let sp500Performance = 0
-      if (sp500CostBasis > 0) {
-        // If S&P 500 value is essentially 0 but we have cost basis, it means
-        // we just made the investment but haven't bought shares yet (start of day 1)
-        if (point.sp500Value < 1 && index === 0) {
-          sp500Performance = 0  // Starting point, no gain or loss yet
-        } else {
-          sp500Performance = ((point.sp500Value - sp500CostBasis) / sp500CostBasis) * 100
-        }
-      }
-      
-      return {
-        date: point.date,
-        portfolioPerformance,
-        sp500Performance
-      }
-    })
-  }
-
-  // Sample data to reduce the number of points
+  // Sample data to reduce number of points
   function sampleData<T>(data: T[], maxPoints: number): T[] {
     if (data.length <= maxPoints) return data
     
@@ -158,7 +101,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
       sampled.push(data[i])
     }
     
-    // Always include the last point
+    // Always include last point
     if (sampled[sampled.length - 1] !== data[data.length - 1]) {
       sampled.push(data[data.length - 1])
     }
@@ -166,30 +109,54 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     return sampled
   }
 
-  // Format percentage for tooltips (adapting from base function)
-  const formatPercentage = (value: number) => {
-    return formatPercentageBase(value / 100, 2)
+  // Calculate return data in dollar terms
+  function calculateDollarReturns(): ReturnDataPoint[] {
+    return historyData.map(point => ({
+      date: point.date,
+      portfolioReturn: point.portfolioValue - point.costBasis,
+      sp500Return: point.sp500Value - point.costBasis
+    }))
   }
 
-  // Custom tooltip for value view
-  const CustomTooltipValue = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-    // Hide stats when tooltip is active
+  // Calculate return data in percentage terms
+  function calculatePercentageReturns(): ReturnDataPoint[] {
+    return historyData.map(point => {
+      const portfolioReturn = point.costBasis > 0 
+        ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
+        : 0
+      
+      const sp500Return = point.costBasis > 0 
+        ? ((point.sp500Value - point.costBasis) / point.costBasis) * 100 
+        : 0
+      
+      return {
+        date: point.date,
+        portfolioReturn,
+        sp500Return
+      }
+    })
+  }
+
+  // Get the data to display based on view mode
+  const displayData = showPercentage ? calculatePercentageReturns() : calculateDollarReturns()
+
+  // Custom tooltip for dollar view
+  const DollarTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
     useEffect(() => {
       setHideStats(active || false)
     }, [active])
 
     if (active && payload && payload.length) {
-      const portfolioValue = payload.find((p) => p.dataKey === 'portfolioValue')?.value as number
-      const costBasis = payload.find((p) => p.dataKey === 'costBasis')?.value as number
-      const sp500Value = payload.find((p) => p.dataKey === 'sp500Value')?.value as number
-      const gain = portfolioValue - costBasis
-      const gainPercent = costBasis > 0 ? ((gain / costBasis) * 100) : 0
-      const sp500Gain = sp500Value - costBasis
-      const sp500GainPercent = costBasis > 0 ? ((sp500Gain / costBasis) * 100) : 0
+      const portfolioReturn = payload.find(p => p.dataKey === 'portfolioReturn')?.value as number
+      const sp500Return = payload.find(p => p.dataKey === 'sp500Return')?.value as number
+      const outperformance = portfolioReturn - sp500Return
+      const portfolioReturnPercent = historyData.find(d => d.date === label)?.costBasis || 0
+      const portfolioReturnPct = portfolioReturnPercent > 0 ? (portfolioReturn / portfolioReturnPercent) * 100 : 0
+      const sp500ReturnPct = portfolioReturnPercent > 0 ? (sp500Return / portfolioReturnPercent) * 100 : 0
 
       return (
-        <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
-          <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
+        <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+          <p className="text-sm font-medium text-gray-900 mb-2">
             {new Date(label).toLocaleDateString('en-NZ', { 
               year: 'numeric', 
               month: 'short',
@@ -197,33 +164,23 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             })}
           </p>
           <div className="space-y-1">
-            {!isAnonymized && (
-              <>
-                <div className="flex justify-between items-center gap-4">
-                  <span className="text-sm text-blue-600">Portfolio Value:</span>
-                  <span className="text-sm font-medium">{formatCurrency(portfolioValue)}</span>
-                </div>
-                <div className="flex justify-between items-center gap-4">
-                  <span className="text-sm text-green-600">S&P 500 Value:</span>
-                  <span className="text-sm font-medium">{formatCurrency(sp500Value)}</span>
-                </div>
-                <div className="flex justify-between items-center gap-4">
-                  <span className="text-sm text-red-600">Cost Basis:</span>
-                  <span className="text-sm font-medium">{formatCurrency(costBasis)}</span>
-                </div>
-              </>
-            )}
-            <div className={!isAnonymized ? "pt-2 mt-2 border-t border-[hsl(var(--border))]" : ""}>
+            <div className="flex justify-between items-center gap-4">
+              <span className="text-sm text-blue-600">Portfolio Return:</span>
+              <span className={`text-sm font-medium ${portfolioReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {maskCurrency(portfolioReturn, isAnonymized)} ({portfolioReturn >= 0 ? '+' : ''}{portfolioReturnPct.toFixed(1)}%)
+              </span>
+            </div>
+            <div className="flex justify-between items-center gap-4">
+              <span className="text-sm text-gray-600">S&P 500 Return:</span>
+              <span className={`text-sm font-medium ${sp500Return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {maskCurrency(sp500Return, isAnonymized)} ({sp500Return >= 0 ? '+' : ''}{sp500ReturnPct.toFixed(1)}%)
+              </span>
+            </div>
+            <div className="pt-2 mt-2 border-t border-gray-200">
               <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600">Portfolio Gain:</span>
-                <span className={`text-sm font-medium ${gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {!isAnonymized && `${maskCurrency(gain, isAnonymized)} `}({gainPercent.toFixed(1)}%)
-                </span>
-              </div>
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600">S&P 500 Gain:</span>
-                <span className={`text-sm font-medium ${sp500Gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {!isAnonymized && `${maskCurrency(sp500Gain, isAnonymized)} `}({sp500GainPercent.toFixed(1)}%)
+                <span className="text-sm text-gray-600">Outperformance:</span>
+                <span className={`text-sm font-medium ${outperformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {maskCurrency(outperformance, isAnonymized)}
                 </span>
               </div>
             </div>
@@ -235,20 +192,19 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   }
 
   // Custom tooltip for percentage view
-  const CustomTooltipPercentage = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-    // Hide stats when tooltip is active
+  const PercentageTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
     useEffect(() => {
       setHideStats(active || false)
     }, [active])
 
     if (active && payload && payload.length) {
-      const portfolioPerformance = payload.find((p) => p.dataKey === 'portfolioPerformance')?.value as number
-      const sp500Performance = payload.find((p) => p.dataKey === 'sp500Performance')?.value as number
-      const outperformance = portfolioPerformance - sp500Performance
+      const portfolioReturn = payload.find(p => p.dataKey === 'portfolioReturn')?.value as number
+      const sp500Return = payload.find(p => p.dataKey === 'sp500Return')?.value as number
+      const outperformance = portfolioReturn - sp500Return
 
       return (
-        <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
-          <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
+        <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+          <p className="text-sm font-medium text-gray-900 mb-2">
             {new Date(label).toLocaleDateString('en-NZ', { 
               year: 'numeric', 
               month: 'short',
@@ -257,22 +213,22 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
           </p>
           <div className="space-y-1">
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-blue-600">Portfolio:</span>
-              <span className={`text-sm font-medium ${portfolioPerformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatPercentage(portfolioPerformance)}
+              <span className="text-sm text-blue-600">Portfolio Return:</span>
+              <span className={`text-sm font-medium ${portfolioReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {portfolioReturn >= 0 ? '+' : ''}{portfolioReturn.toFixed(2)}%
               </span>
             </div>
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600">S&P 500:</span>
-              <span className={`text-sm font-medium ${sp500Performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatPercentage(sp500Performance)}
+              <span className="text-sm text-gray-600">S&P 500 Return:</span>
+              <span className={`text-sm font-medium ${sp500Return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {sp500Return >= 0 ? '+' : ''}{sp500Return.toFixed(2)}%
               </span>
             </div>
-            <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
+            <div className="pt-2 mt-2 border-t border-gray-200">
               <div className="flex justify-between items-center gap-4">
                 <span className="text-sm text-gray-600">Outperformance:</span>
                 <span className={`text-sm font-medium ${outperformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatPercentage(outperformance)}
+                  {outperformance >= 0 ? '+' : ''}{outperformance.toFixed(2)}%
                 </span>
               </div>
             </div>
@@ -291,8 +247,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             <div className="text-center">
               <p className="font-medium">Loading portfolio history...</p>
-              <p className="text-sm text-gray-500 mt-1">Fetching historical data from Yahoo Finance</p>
-              <p className="text-xs text-gray-400 mt-2">This may take a moment on first load</p>
+              <p className="text-sm text-gray-500 mt-1">Fetching historical data</p>
             </div>
           </div>
         </CardContent>
@@ -312,7 +267,7 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     )
   }
 
-  if (data.length === 0) {
+  if (historyData.length === 0) {
     return (
       <Card className="border-blue-100">
         <CardContent className="h-[450px] flex items-center justify-center">
@@ -328,168 +283,116 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     <Card className="border-blue-100">
       <CardHeader className="pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Performance</CardTitle>
+          <CardTitle className="text-gray-900 text-lg sm:text-xl">
+            Time-Weighted Returns
+          </CardTitle>
           <div className="flex items-center space-x-2">
             <Label htmlFor="view-toggle" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
               <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Value</span>
+              <span className="hidden sm:inline">Dollar</span>
             </Label>
             <Switch
               id="view-toggle"
               checked={showPercentage}
               onCheckedChange={setShowPercentage}
-              className="data-[state=checked]:bg-[hsl(var(--primary))] scale-75 sm:scale-100"
+              className="data-[state=checked]:bg-blue-600 scale-75 sm:scale-100"
             />
             <Label htmlFor="view-toggle" className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Percentage</span>
+              <span className="hidden sm:inline">Percent</span>
             </Label>
           </div>
         </div>
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
         <div className="h-[300px] sm:h-[400px] w-full relative">
-          {/* Portfolio Stats Overlay - Mobile Responsive */}
+          {/* Portfolio Stats Overlay */}
           {portfolioStats.length > 0 && !hideStats && (
             <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${
               isAnonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
             }`}>
-              {portfolioStats.map((stat) => {
-                return (
-                  <div key={stat.title} className="bg-[hsl(var(--card))]/95 backdrop-blur-sm border border-[hsl(var(--border))] rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
-                    <div>
-                      <p className="text-[8px] sm:text-[10px] text-muted-foreground leading-tight">{stat.title}</p>
-                      <p className="text-xs sm:text-sm font-semibold text-[hsl(var(--card-foreground))] leading-tight">{stat.value}</p>
-                    </div>
+              {portfolioStats.map((stat) => (
+                <div key={stat.title} className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
+                  <div>
+                    <p className="text-[8px] sm:text-[10px] text-gray-500 leading-tight">{stat.title}</p>
+                    <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
           )}
+          
           <ResponsiveContainer width="100%" height="100%">
-            {showPercentage ? (
-              <LineChart
-                data={performanceData}
-                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 10 }}
-                  interval="preserveStartEnd"
-                  minTickGap={30}
-                  tickFormatter={(value) => {
-                    const date = new Date(value)
-                    return date.toLocaleDateString('en-NZ', { 
-                      month: 'short',
-                      year: '2-digit'
-                    })
-                  }}
-                />
-                <YAxis 
-                  tick={isAnonymized ? false : { fontSize: 10 }}
-                  tickFormatter={(value) => `${value.toFixed(0)}%`}
-                  domain={['dataMin - 10', 'dataMax + 10']}
-                  width={isAnonymized ? 10 : 40}
-                  axisLine={true}
-                  tickLine={!isAnonymized}
-                />
-                <Tooltip content={<CustomTooltipPercentage />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
-                  iconType="line"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="portfolioPerformance" 
-                  stroke="#00a37a"
-                  strokeWidth={2}
-                  name="Portfolio Performance"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="sp500Performance" 
-                  stroke="#b1b1b1"
-                  strokeWidth={2}
-                  name="S&P 500 Performance"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                {/* Zero line for reference */}
-                <Line 
-                  type="monotone" 
-                  dataKey={() => 0} 
-                  stroke="#4b4b4b"
-                  strokeWidth={1}
-                  strokeDasharray="3 3"
-                  name="Break Even"
-                  dot={false}
-                  legendType="none"
-                />
-              </LineChart>
-            ) : (
-              <LineChart
-                data={data}
-                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 10 }}
-                  interval="preserveStartEnd"
-                  minTickGap={30}
-                  tickFormatter={(value) => {
-                    const date = new Date(value)
-                    return date.toLocaleDateString('en-NZ', { 
-                      month: 'short',
-                      year: '2-digit'
-                    })
-                  }}
-                />
-                <YAxis 
-                  tick={isAnonymized ? false : { fontSize: 10 }}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  width={isAnonymized ? 10 : 45}
-                  axisLine={true}
-                  tickLine={!isAnonymized}
-                />
-                <Tooltip content={<CustomTooltipValue />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
-                  iconType="line"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="portfolioValue" 
-                  stroke="#00a37a"
-                  strokeWidth={2}
-                  name="Portfolio Value"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="sp500Value" 
-                  stroke="#b1b1b1"
-                  strokeWidth={2}
-                  name="S&P 500 Value"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="costBasis" 
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  name="Cost Basis"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  strokeDasharray="5 5"
-                />
-              </LineChart>
-            )}
+            <LineChart
+              data={displayData}
+              margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 10 }}
+                interval="preserveStartEnd"
+                minTickGap={30}
+                tickFormatter={(value) => {
+                  const date = new Date(value)
+                  return date.toLocaleDateString('en-NZ', { 
+                    month: 'short',
+                    year: '2-digit'
+                  })
+                }}
+              />
+              <YAxis 
+                tick={showPercentage || !isAnonymized ? { fontSize: 10 } : false}
+                tickFormatter={(value) => 
+                  showPercentage 
+                    ? `${value.toFixed(0)}%` 
+                    : `$${(value / 1000).toFixed(0)}k`
+                }
+                width={showPercentage || !isAnonymized ? 45 : 10}
+                axisLine={true}
+                tickLine={showPercentage || !isAnonymized}
+                domain={['dataMin - 5', 'dataMax + 5']}
+              />
+              <Tooltip content={showPercentage ? <PercentageTooltip /> : <DollarTooltip />} />
+              <Legend 
+                wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
+                iconType="line"
+              />
+              
+              {/* Zero reference line */}
+              <Line 
+                type="monotone" 
+                dataKey={() => 0} 
+                stroke="#9ca3af"
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                name="Break Even"
+                dot={false}
+                legendType="none"
+              />
+              
+              {/* Portfolio returns */}
+              <Line 
+                type="monotone" 
+                dataKey="portfolioReturn" 
+                stroke="#3b82f6"
+                strokeWidth={2.5}
+                name="Portfolio Return"
+                dot={false}
+                activeDot={{ r: 5 }}
+              />
+              
+              {/* S&P 500 returns */}
+              <Line 
+                type="monotone" 
+                dataKey="sp500Return" 
+                stroke="#94a3b8"
+                strokeWidth={2}
+                name="S&P 500 Return"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
