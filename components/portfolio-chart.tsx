@@ -121,13 +121,22 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
   // Calculate return data in percentage terms
   function calculatePercentageReturns(): ReturnDataPoint[] {
     return historyData.map(point => {
-      const portfolioReturn = point.costBasis > 0 
-        ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
-        : 0
+      // Handle initial data points where portfolio value might not be initialized yet
+      // If portfolio value is very small (< 1% of cost basis), treat it as 0% return
+      // to avoid skewing the graph with -100% values
+      const isInitialPoint = point.portfolioValue < (point.costBasis * 0.01)
       
-      const sp500Return = point.costBasis > 0 
-        ? ((point.sp500Value - point.costBasis) / point.costBasis) * 100 
-        : 0
+      const portfolioReturn = isInitialPoint ? 0 : (
+        point.costBasis > 0 
+          ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
+          : 0
+      )
+      
+      const sp500Return = isInitialPoint ? 0 : (
+        point.costBasis > 0 
+          ? ((point.sp500Value - point.costBasis) / point.costBasis) * 100 
+          : 0
+      )
       
       return {
         date: point.date,
@@ -312,10 +321,10 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
               isAnonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
             }`}>
               {portfolioStats.map((stat) => (
-                <div key={stat.title} className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
+                <div key={stat.title} className="bg-[hsl(var(--card))]/95 backdrop-blur-sm border border-[hsl(var(--border))] rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
                   <div>
-                    <p className="text-[8px] sm:text-[10px] text-gray-500 leading-tight">{stat.title}</p>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">{stat.value}</p>
+                    <p className="text-[8px] sm:text-[10px] text-muted-foreground leading-tight">{stat.title}</p>
+                    <p className="text-xs sm:text-sm font-semibold text-[hsl(var(--card-foreground))] leading-tight">{stat.value}</p>
                   </div>
                 </div>
               ))}
