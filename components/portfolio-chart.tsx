@@ -88,53 +88,80 @@ export function PortfolioChart({ portfolioStats = [] }: PortfolioChartProps) {
     fetchPortfolioHistory()
   }, [])
 
-  // Calculate percentage performance relative to cost basis
+  // Calculate time-weighted returns
+  // TWR removes the impact of cash flows and measures pure investment performance
   function calculatePerformanceData(data: PortfolioHistoryData[]): PerformanceData[] {
     if (data.length === 0) return []
     
-    // Track the S&P 500 cost basis separately
-    // The S&P 500 investment should mirror the portfolio cost basis
-    let sp500CostBasis = 0
-    let previousCostBasis = 0
+    // Initialize cumulative return multipliers (start at 1.0 = 0% return)
+    let portfolioCumulativeReturn = 1.0
+    let sp500CumulativeReturn = 1.0
     
-    return data.map((point, index) => {
-      // Track cost basis changes (new capital additions)
-      if (index === 0) {
-        // Initialize with the first cost basis
-        sp500CostBasis = point.costBasis
-        previousCostBasis = point.costBasis
-      } else if (point.costBasis > previousCostBasis) {
-        // Add only the new capital to S&P 500 cost basis
-        const newCapital = point.costBasis - previousCostBasis
-        sp500CostBasis += newCapital
-        previousCostBasis = point.costBasis
-      }
+    // Track previous values for calculating period returns
+    let previousPortfolioValue = data[0].portfolioValue
+    let previousSp500Value = data[0].sp500Value
+    let previousCostBasis = data[0].costBasis
+    
+    const results: PerformanceData[] = []
+    
+    // First data point starts at 0% return
+    results.push({
+      date: data[0].date,
+      portfolioPerformance: 0,
+      sp500Performance: 0
+    })
+    
+    // Calculate TWR for each subsequent period
+    for (let i = 1; i < data.length; i++) {
+      const point = data[i]
+      const cashFlow = point.costBasis - previousCostBasis
       
-      // Calculate portfolio performance
-      const portfolioPerformance = point.costBasis > 0 
-        ? ((point.portfolioValue - point.costBasis) / point.costBasis) * 100 
-        : 0
-      
-      // Calculate S&P 500 performance
-      // If sp500Value is 0 or very small at the start (no shares bought yet), 
-      // and we have a cost basis, assume we just invested and performance is 0%
-      let sp500Performance = 0
-      if (sp500CostBasis > 0) {
-        // If S&P 500 value is essentially 0 but we have cost basis, it means
-        // we just made the investment but haven't bought shares yet (start of day 1)
-        if (point.sp500Value < 1 && index === 0) {
-          sp500Performance = 0  // Starting point, no gain or loss yet
+      // Calculate period return for portfolio
+      // If there's a cash flow, we need to account for it
+      let portfolioPeriodReturn = 0
+      if (previousPortfolioValue > 0) {
+        if (cashFlow > 0) {
+          // Cash was added: Return = (Ending Value - Cash Flow) / Beginning Value - 1
+          portfolioPeriodReturn = (point.portfolioValue - cashFlow) / previousPortfolioValue - 1
         } else {
-          sp500Performance = ((point.sp500Value - sp500CostBasis) / sp500CostBasis) * 100
+          // No cash flow: Return = Ending Value / Beginning Value - 1
+          portfolioPeriodReturn = point.portfolioValue / previousPortfolioValue - 1
         }
       }
       
-      return {
+      // Calculate period return for S&P 500
+      let sp500PeriodReturn = 0
+      if (previousSp500Value > 0) {
+        if (cashFlow > 0) {
+          // Cash was added: Return = (Ending Value - Cash Flow) / Beginning Value - 1
+          sp500PeriodReturn = (point.sp500Value - cashFlow) / previousSp500Value - 1
+        } else {
+          // No cash flow: Return = Ending Value / Beginning Value - 1
+          sp500PeriodReturn = point.sp500Value / previousSp500Value - 1
+        }
+      }
+      
+      // Compound the returns
+      portfolioCumulativeReturn *= (1 + portfolioPeriodReturn)
+      sp500CumulativeReturn *= (1 + sp500PeriodReturn)
+      
+      // Convert cumulative returns to percentages
+      const portfolioPerformance = (portfolioCumulativeReturn - 1) * 100
+      const sp500Performance = (sp500CumulativeReturn - 1) * 100
+      
+      results.push({
         date: point.date,
         portfolioPerformance,
         sp500Performance
-      }
-    })
+      })
+      
+      // Update previous values
+      previousPortfolioValue = point.portfolioValue
+      previousSp500Value = point.sp500Value
+      previousCostBasis = point.costBasis
+    }
+    
+    return results
   }
 
   // Sample data to reduce the number of points
