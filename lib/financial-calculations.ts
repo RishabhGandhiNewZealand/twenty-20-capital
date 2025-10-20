@@ -27,7 +27,8 @@ export function calculateCAGR(initialValue: number, finalValue: number, years: n
  */
 export function calculateCAGRFromGainPercent(gainPercent: number, years: number): number {
   if (years <= 0) return 0
-  return Math.pow(1 + gainPercent / 100, 1 / years) - 1
+  const base = 1 + ((isNaN(gainPercent) ? 0 : gainPercent) / 100)
+  return Math.pow(base, 1 / years) - 1
 }
 
 /**
@@ -37,7 +38,8 @@ export function calculateCAGRFromGainPercent(gainPercent: number, years: number)
  * @returns Formatted percentage string with sign
  */
 export function formatPercentage(value: number, decimals: number = 1): string {
-  const percentage = value * 100
+  const safe = isNaN(value) ? 0 : value
+  const percentage = safe * 100
   const sign = percentage >= 0 ? '+' : ''
   return `${sign}${percentage.toFixed(decimals)}%`
 }
@@ -50,10 +52,11 @@ export function formatPercentage(value: number, decimals: number = 1): string {
  * @returns Formatted currency string
  */
 export function formatCurrency(value: number, currency: string = 'NZD', locale: string = 'en-NZ'): string {
+  const safe = isNaN(value) ? 0 : value
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value)
+  }).format(safe)
 }

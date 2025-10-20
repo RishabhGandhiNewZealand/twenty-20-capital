@@ -1,9 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getTradeDataCacheStats } from '@/lib/trade-data-cache'
 import { logger } from '@/lib/logger'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const userEmail = request.headers.get('x-user-email') || ''
+    const adminEmail = process.env.ADMIN_EMAIL || ''
+    if (!userEmail || userEmail !== adminEmail) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const stats = await getTradeDataCacheStats()
     
     return NextResponse.json({

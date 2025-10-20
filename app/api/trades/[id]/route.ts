@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getUserDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
-// PUT update trade
+// PUT update trade (only if owned by user)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    const userId = request.headers.get('x-user-id') || ''
+    const userEmail = request.headers.get('x-user-email') || ''
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -20,7 +20,7 @@ export async function PUT(
 
     const tradeId = parseInt(params.id)
     const trade: TradeRecord = await request.json()
-    const sql = getDb()
+    const sql = getUserDb(userId)
     
     const result = await sql`
       UPDATE application.trade_data
@@ -39,7 +39,7 @@ export async function PUT(
         value = ${trade.value},
         deleted_flag = ${trade.deleted_flag || false},
         deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
-      WHERE id = ${tradeId}
+      WHERE id = ${tradeId} AND user_id = ${userId}
       RETURNING id
     `
     
@@ -50,14 +50,19 @@ export async function PUT(
       )
     }
     
-    logger.info(`Updated trade with ID: ${tradeId}`)
+    logger.info(`Updated trade with ID: ${tradeId} for user ${userEmail}`)
     
-    // Invalidate portfolio caches after trade update
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
     await invalidatePortfolioCaches()
     logger.info('Portfolio caches invalidated after trade update')
     
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
     
   } catch (error) {
     logger.error('Error updating trade:', error)
@@ -68,15 +73,15 @@ export async function PUT(
   }
 }
 
-// DELETE soft delete trade
+// DELETE soft delete trade (only if owned by user)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    const userId = request.headers.get('x-user-id') || ''
+    const userEmail = request.headers.get('x-user-email') || ''
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -84,15 +89,14 @@ export async function DELETE(
     }
 
     const tradeId = parseInt(params.id)
-    const sql = getDb()
+    const sql = getUserDb(userId)
     
-    // Soft delete by setting deleted_flag and deleted_at
     const result = await sql`
       UPDATE application.trade_data
       SET
         deleted_flag = TRUE,
         deleted_at = CURRENT_TIMESTAMP
-      WHERE id = ${tradeId}
+      WHERE id = ${tradeId} AND user_id = ${userId}
       RETURNING id
     `
     
@@ -103,14 +107,19 @@ export async function DELETE(
       )
     }
     
-    logger.info(`Soft deleted trade with ID: ${tradeId}`)
+    logger.info(`Soft deleted trade with ID: ${tradeId} for user ${userEmail}`)
     
-    // Invalidate portfolio caches after trade deletion
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
     await invalidatePortfolioCaches()
     logger.info('Portfolio caches invalidated after trade deletion')
     
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
     
   } catch (error) {
     logger.error('Error deleting trade:', error)

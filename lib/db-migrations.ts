@@ -204,3 +204,33 @@ export async function addSoftDeleteToTradeData() {
     throw error
   }
 }
+
+export async function addUserIdToTradeData() {
+	const sql = getDb()
+	try {
+		await sql`
+			ALTER TABLE application.trade_data 
+			ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)
+		`
+		await sql`
+			CREATE INDEX IF NOT EXISTS idx_trade_data_user_id 
+			ON application.trade_data(user_id)
+		`
+		await sql`
+			CREATE INDEX IF NOT EXISTS idx_trade_data_user_id_date 
+			ON application.trade_data(user_id, date)
+		`
+		const adminUserId = process.env.ADMIN_USER_ID || ''
+		if (adminUserId) {
+			await sql`
+				UPDATE application.trade_data 
+				SET user_id = ${adminUserId}
+				WHERE user_id IS NULL
+			`
+		}
+		logger.info('user_id column and indexes added to trade_data, existing rows backfilled')
+	} catch (error) {
+		logger.error('Error adding user_id to trade_data:', error)
+		throw error
+	}
+}

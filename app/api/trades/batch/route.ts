@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getUserDb } from '@/lib/rls-auth'
 import { logger } from '@/lib/logger'
 import { TradeRecord } from '@/types/portfolio'
 
@@ -9,12 +9,11 @@ interface BatchChanges {
   deleted: number[]
 }
 
-// POST batch update trades
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin authentication
-    const authHeader = request.headers.get('x-admin-auth')
-    if (authHeader !== 'true') {
+    const userId = request.headers.get('x-user-id') || ''
+    const userEmail = request.headers.get('x-user-email') || ''
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -22,13 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     const changes: BatchChanges = await request.json()
-    const sql = getDb()
+    const sql = getUserDb(userId)
     
     let createdCount = 0
     let updatedCount = 0
     let deletedCount = 0
     
-    // Process new trades
     for (const trade of changes.new) {
       await sql`
         INSERT INTO application.trade_data (
@@ -43,7 +41,8 @@ export async function POST(request: NextRequest) {
           brokerage,
           brokerage_currency,
           exch_rate,
-          value
+          value,
+          user_id
         ) VALUES (
           ${trade.code},
           ${trade.marketCode},
@@ -56,13 +55,13 @@ export async function POST(request: NextRequest) {
           ${trade.brokerage},
           ${trade.brokerageCurrency},
           ${trade.exchRate},
-          ${trade.value}
+          ${trade.value},
+          ${userId}
         )
       `
       createdCount++
     }
     
-    // Process updated trades
     for (const trade of changes.updated) {
       if (!trade.id) continue
       
@@ -83,26 +82,25 @@ export async function POST(request: NextRequest) {
           value = ${trade.value},
           deleted_flag = ${trade.deleted_flag || false},
           deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
-        WHERE id = ${trade.id}
+        WHERE id = ${trade.id} AND user_id = ${userId}
       `
       updatedCount++
     }
     
-    // Process deleted trades (soft delete)
     for (const tradeId of changes.deleted) {
-      await sql`
+      const result = await sql`
         UPDATE application.trade_data
         SET
           deleted_flag = TRUE,
           deleted_at = CURRENT_TIMESTAMP
-        WHERE id = ${tradeId}
+        WHERE id = ${tradeId} AND user_id = ${userId}
+        RETURNING id
       `
-      deletedCount++
+      if (result.length > 0) deletedCount++
     }
     
-    logger.info(`Batch update completed: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
+    logger.info(`Batch update completed for ${userEmail}: ${createdCount} created, ${updatedCount} updated, ${deletedCount} deleted`)
     
-    // Invalidate portfolio caches after batch trade updates
     const { invalidatePortfolioCaches } = await import('@/lib/portfolio-cache-service')
     await invalidatePortfolioCaches()
     logger.info('Portfolio caches invalidated after batch trade updates')
@@ -112,6 +110,12 @@ export async function POST(request: NextRequest) {
       created: createdCount,
       updated: updatedCount,
       deleted: deletedCount
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     })
     
   } catch (error) {

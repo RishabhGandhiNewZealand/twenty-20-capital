@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Target, TrendingUp, BookOpen, Shield, Zap, Building, Brain, DollarSign, Users } from "lucide-react"
 
-export default function AboutPage() {
+export default function InvestmentThesisPage() {
   const qualityFactors = [
     {
       title: "Wide Moat",

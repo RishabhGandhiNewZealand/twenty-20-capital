@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   Home, 
   TrendingUp, 
   FileText, 
@@ -15,63 +17,134 @@ import {
   User,
   Shield,
   ShieldOff,
-  Database
+  Database,
+  LogIn,
+  LogOut as LogOutIcon,
+  Briefcase,
+  BookOpen,
+  Search,
+  Users
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { PasswordModal } from "@/components/password-modal"
 import { Button } from "@/components/ui/button"
+import { useStackApp, useUser } from "@stackframe/stack"
 
-const navItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/portfolio", label: "Portfolio", icon: TrendingUp },
-  { href: "/reports", label: "Reports", icon: FileText },
-  { href: "/analyses", label: "Analyses", icon: BarChart3 },
-  { href: "/news", label: "News", icon: Newspaper },
-  { href: "/about", label: "About", icon: User },
-]
+function toTitleCase(input: string): string {
+  return input
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
+}
 
-export default function SidebarNavigation() {
+function getRawEmail(u: any): string {
+  return (
+    u?.primaryEmail ||
+    u?.email ||
+    u?.primaryEmailAddress?.emailAddress ||
+    u?.primaryEmailAddress?.email ||
+    ""
+  )
+  .toString()
+}
+
+type Props = { adminEmail?: string }
+
+export default function SidebarNavigation({ adminEmail = "" }: Props) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [isInsightsOpen, setIsInsightsOpen] = useState(true)
+  const [isResearchOpen, setIsResearchOpen] = useState(true)
+  const [isMyPortfolioOpen, setIsMyPortfolioOpen] = useState(true)
   const { isAnonymized, setAnonymized } = useAnonymization()
+  const user = useUser()
+  const stack = useStackApp()
 
-  // Get current page info
-  const currentPage = navItems.find(item => item.href === pathname) || navItems[0]
+  const rawUserEmail = useMemo(() => getRawEmail(user), [user])
+  const userEmail = rawUserEmail
+  const displayName = useMemo(() => {
+    const base = (user?.displayName || user?.name || user?.username || userEmail.split("@")[0] || "").toString()
+    return toTitleCase(base)
+  }, [user, userEmail])
+
+  const isAdmin = useMemo(() => !!rawUserEmail && !!adminEmail && rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
+
+  useEffect(() => {
+    setAnonymized(!isAdmin)
+  }, [isAdmin, setAnonymized])
+
+  // Basic nav items that are always visible
+  const basicNavItems = [
+    { href: "/", label: "Home", icon: Home },
+  ]
+
+  // My Portfolio section items - includes trades for all users
+  const myPortfolioItems = user ? [
+    { href: "/portfolio", label: "Portfolio", icon: Briefcase },
+    { href: "/trades", label: "Trades", icon: Database }
+  ] : []
+
+  // Rish's Insights section items
+  const rishInsightsItems = [
+    { href: "/rishs-portfolio", label: "Rish's Portfolio", icon: TrendingUp },
+    { href: "/analyses", label: "Analyses", icon: BarChart3 },
+    { href: "/reports", label: "Reports", icon: FileText },
+    { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
+  ]
+
+  // Research section items
+  const researchItems = [
+    { href: "/news", label: "News", icon: Newspaper },
+  ]
+
+  // Other nav items
+  const otherNavItems = [
+    { href: "/about-us", label: "About Us", icon: Users },
+  ]
+
+  // Get current page info for header
+  const allNavItems = [...basicNavItems, ...myPortfolioItems, ...rishInsightsItems, ...researchItems, ...otherNavItems]
+  let currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
+  
+  // Special handling for renamed/moved pages
+  if (pathname === '/investment-thesis') {
+    currentPage = { href: '/investment-thesis', label: 'Investment Thesis', icon: BookOpen }
+  } else if (pathname === '/portfolio') {
+    currentPage = { href: '/portfolio', label: 'Portfolio', icon: Briefcase }
+  }
 
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
-      // Close sidebar on mobile by default
       if (window.innerWidth < 768) {
         setIsOpen(false)
       }
     }
-    
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Close sidebar when route changes on mobile
   useEffect(() => {
     if (isMobile) {
       setIsOpen(false)
     }
   }, [pathname, isMobile])
 
-  const handleAnonymizationToggle = () => {
-    if (isAnonymized) {
-      // If currently anonymized, show password modal to de-anonymize
-      setShowPasswordModal(true)
-    } else {
-      // If not anonymized, re-enable anonymization
-      setAnonymized(true)
+  useEffect(() => {
+    function handleGlobalClick(e: MouseEvent) {
+      if (!isOpen) return
+      const sidebar = document.querySelector('[data-sidebar-root]') as HTMLElement | null
+      if (sidebar && !sidebar.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
     }
-  }
+    document.addEventListener('click', handleGlobalClick)
+    return () => document.removeEventListener('click', handleGlobalClick)
+  }, [isOpen])
 
   return (
     <>
@@ -109,15 +182,52 @@ export default function SidebarNavigation() {
             <span className="text-sm font-medium hidden sm:inline">{currentPage.label}</span>
           </div>
 
-          {/* Theme Toggle - Right side */}
-          <div className="ml-auto">
+          {/* Right side: Theme + User */}
+          <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
+            {/* Desktop auth controls */}
+            <div className="hidden sm:flex items-center gap-2">
+              {!user ? (
+                <Link href="/login">
+                  <Button variant="outline" size="sm" className="ml-2">
+                    Login / Sign Up
+                  </Button>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-medium">{displayName}</span>
+                    <span className="text-xs text-muted-foreground">{userEmail}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" className="gap-1" onClick={() => stack.signOut()}>
+                    <LogOutIcon className="h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile icon-only auth controls */}
+            <div className="flex sm:hidden items-center gap-1">
+              {!user ? (
+                <Link href="/login" aria-label="Login or Sign Up">
+                  <Button variant="ghost" size="icon">
+                    <LogIn className="h-5 w-5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button variant="ghost" size="icon" aria-label="Logout" onClick={() => stack.signOut()}>
+                  <LogOutIcon className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Sidebar */}
       <aside
+        data-sidebar-root
         className={cn(
           "fixed left-0 top-16 bottom-0 z-40 w-64 bg-background/95 backdrop-blur-sm border-r border-border transition-transform duration-300 shadow-xl",
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -125,7 +235,8 @@ export default function SidebarNavigation() {
       >
         <nav className="h-full flex flex-col overflow-y-auto p-4">
           <ul className="space-y-1 flex-1">
-            {navItems.map((item) => {
+            {/* Home */}
+            {basicNavItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
               
@@ -146,60 +257,188 @@ export default function SidebarNavigation() {
                 </li>
               )
             })}
-            
-            {/* Trades link - only visible for admin users */}
-            {!isAnonymized && (
-              <li>
-                <Link
-                  href="/trades"
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    pathname === "/trades"
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  )}
+
+            {/* My Portfolio Section - only show if user is logged in */}
+            {user && myPortfolioItems.length > 0 && (
+              <li className="mt-4">
+                <button
+                  onClick={() => setIsMyPortfolioOpen(!isMyPortfolioOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
                 >
-                  <Database className="h-5 w-5" />
-                  <span>Trades</span>
-                </Link>
+                  <span>My Portfolio</span>
+                  {isMyPortfolioOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                {isMyPortfolioOpen && (
+                  <ul className="mt-1 ml-3 space-y-1">
+                    {myPortfolioItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            )}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
               </li>
             )}
+
+            {/* Rish's Insights Section - visible for all users */}
+            <li className="mt-4">
+              <button
+                onClick={() => setIsInsightsOpen(!isInsightsOpen)}
+                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
+              >
+                <span>Rish's Insights</span>
+                {isInsightsOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+              {isInsightsOpen && (
+                <ul className="mt-1 ml-3 space-y-1">
+                  {rishInsightsItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = pathname === item.href
+                    
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </li>
+
+            {/* Research Section */}
+            <li className="mt-4">
+              <button
+                onClick={() => setIsResearchOpen(!isResearchOpen)}
+                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
+              >
+                <span>Research</span>
+                {isResearchOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+              {isResearchOpen && (
+                <ul className="mt-1 ml-3 space-y-1">
+                  {researchItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = pathname === item.href
+                    
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </li>
+
+            {/* Other Nav Items */}
+            {otherNavItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              
+              return (
+                <li key={item.href} className="mt-1">
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
           
-          {/* Anonymization Toggle at the bottom */}
+          {/* Auth control at the bottom */}
           <div className="pt-4 mt-4 border-t border-border">
-            <Button
-              onClick={handleAnonymizationToggle}
-              variant="outline"
-              className="w-full justify-start"
-              size="sm"
-            >
-              {isAnonymized ? (
-                <>
+            {!user ? (
+              <Link href="/login" className="w-full">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                >
                   <Shield className="h-4 w-4 mr-2" />
-                  <span>Anonymized View</span>
-                </>
-              ) : (
-                <>
-                  <ShieldOff className="h-4 w-4 mr-2" />
-                  <span>Full View</span>
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2 px-1">
-              {isAnonymized 
-                ? "Portfolio values are hidden" 
-                : "Showing actual values"}
-            </p>
+                  <span>Login / Sign Up</span>
+                </Button>
+              </Link>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
+                  Logged in as {displayName} ({userEmail})
+                </div>
+                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
+                  {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
+                    Manage account
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
+                    <LogOutIcon className="h-4 w-4 mr-2" />
+                    <span>Logout</span>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </nav>
       </aside>
-
-      {/* Password Modal */}
-      <PasswordModal 
-        open={showPasswordModal} 
-        onOpenChange={setShowPasswordModal} 
-      />
 
       {/* Overlay for mobile */}
       {isOpen && isMobile && (
