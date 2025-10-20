@@ -176,10 +176,7 @@ export default function Q2Report2025Page() {
                             src={getLogoUrl(holding.symbol)} 
                             alt={`${holding.symbol} logo`}
                             className="w-5 h-5 rounded mr-2"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                           />
                           <span className="text-xs font-medium text-gray-600">{holding.symbol}</span>
                         </div>
@@ -294,10 +291,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('GOOGL')} 
                       alt="GOOGL logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Google (GOOGL: NASDAQ) (A tier)</h3>
                   </div>
@@ -319,10 +313,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('MFT')} 
                       alt="MFT logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Mainfreight (MFT: NZE) (A tier)</h3>
                   </div>
@@ -357,10 +348,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('MA')} 
                       alt="MA logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Mastercard (MA: NYSE) (S tier)</h3>
                   </div>
@@ -382,10 +370,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('META')} 
                       alt="META logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Meta (META: NASDAQ) (S tier)</h3>
                   </div>
@@ -407,10 +392,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('NFLX')} 
                       alt="NFLX logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Netflix (NFLX: NASDAQ) (S tier)</h3>
                   </div>
@@ -432,10 +414,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('SPGI')} 
                       alt="SPGI logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Standard and Poor Global (SPGI: NYSE) (S tier)</h3>
                   </div>
@@ -457,10 +436,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('AMZN')} 
                       alt="AMZN logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Amazon (AMZN: NASDAQ) (S tier)</h3>
                   </div>
@@ -482,10 +458,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('UBER')} 
                       alt="UBER logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">UBER (UBER: NYSE) (A tier)</h3>
                   </div>
@@ -507,10 +480,7 @@ export default function Q2Report2025Page() {
                       src={getLogoUrl('ASML')} 
                       alt="ASML logo"
                       className="w-6 h-6 rounded mr-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <h3 className="font-bold text-gray-900">Advanced Semiconductor Materials Lithography (ASML: NYSE) (S tier)</h3>
                   </div>

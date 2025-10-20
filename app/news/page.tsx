@@ -406,12 +406,8 @@ export default function NewsPage() {
                     className="object-contain p-1"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden')
                     }}
                   />
-                  <div className="hidden absolute inset-0 flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-gray-400" />
-                  </div>
                 </div>
               )}
               {!symbol && <Building2 className="h-6 w-6 text-gray-400 mb-1" />}
@@ -485,14 +481,9 @@ export default function NewsPage() {
                           height={40}
                           className="object-contain p-1"
                           onError={(e) => {
-                            // Fallback to Building2 icon if logo fails to load
                             e.currentTarget.style.display = 'none'
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden')
                           }}
                         />
-                        <div className="hidden absolute inset-0 flex items-center justify-center">
-                          <Building2 className="h-5 w-5 text-blue-600" />
-                        </div>
                       </div>
                     )}
                     {!symbol && <Building2 className="h-5 w-5 text-blue-600" />}
