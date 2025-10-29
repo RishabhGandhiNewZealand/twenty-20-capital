@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, AlertTriangle, Target, Plus, Minus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
@@ -23,7 +25,7 @@ export default function Q3Report2025Page() {
       usdValue: 1168,
       nzdValue: 1946,
       stockCurrency: "USD",
-      tier: "B",
+      tier: "A",
     },
     {
       symbol: "SE",
@@ -33,7 +35,7 @@ export default function Q3Report2025Page() {
       usdValue: 1253,
       nzdValue: 2088,
       stockCurrency: "USD",
-      tier: "B",
+      tier: "A",
     },
     {
       symbol: "ZETA",
@@ -43,7 +45,7 @@ export default function Q3Report2025Page() {
       usdValue: 1627,
       nzdValue: 2712,
       stockCurrency: "USD",
-      tier: "C",
+      tier: "B",
     },
     {
       symbol: "UBER",
@@ -120,8 +122,8 @@ export default function Q3Report2025Page() {
       name: "ASML Holding N.V.",
       return: "N/A",
       shares: 4,
-      usdValue: 3992, // Placeholder, will calculate later
-      nzdValue: 6653, // Placeholder, will calculate later
+      usdValue: 3872,
+      nzdValue: 6689, 
       stockCurrency: "USD",
       tier: "S",
     },
@@ -404,14 +406,14 @@ export default function Q3Report2025Page() {
                     I will likely think of these companies as a single position, adding to whichever one is a better value and doing better for the time being. While trying to keep them roughly equal in weight around 4-8%. As my conviction grows, this may change. Over the last 5 years, their revenues have grown manyfold. while the share price has not followed due to high valuations in the past.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value (MELI):</strong> {maskCurrency(3000, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis (MELI):</strong> {maskCurrency(2475, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value (MELI):</strong> $3000 USD</p>
+                    <p><strong>Cost Basis (MELI):</strong> $2475 USD</p>
                     <p><strong>Final Position (MELI):</strong> {maskShares(0.5, isAnonymized)} shares</p>
-                    <p><strong>Price@30/09/2025 (MELI):</strong> {maskCurrency(2336, isAnonymized, 'USD')}</p>
-                    <p><strong>Intrinsic value (SE):</strong> {maskCurrency(250, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis (SE):</strong> {maskCurrency(194, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/09/2025 (MELI):</strong> $2336 USD</p>
+                    <p><strong>Intrinsic value (SE):</strong> $250 USD</p>
+                    <p><strong>Cost Basis (SE):</strong> $194 USD</p>
                     <p><strong>Final Position (SE):</strong> {maskShares(7, isAnonymized)} shares</p>
-                    <p><strong>Price@30/09/2025 (SE):</strong> {maskCurrency(179, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/09/2025 (SE):</strong> $179 USD</p>
                   </div>
                 </div>
 
@@ -444,10 +446,10 @@ export default function Q3Report2025Page() {
                     Currently, Zeta trades at approximately 4x price-to-sales, growing at 30%+ annually, and has the potential to achieve 30%+ operating margins within the next five to ten years. If the company sustains its current growth rate over the next five years, I believe there is a realistic path for the stock to increase tenfold from current levels. Artificial intelligence is a significant tailwind, simplifying customer onboarding and enabling even more effective, customised marketing solutions. The market appears to underestimate both the strength and stickiness of Zeta’s business model. Provided management’s claims about customer ROI hold true, the company’s future looks promising—despite the recent erosion of market confidence due to the short report and lawsuit.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(50, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(16.8, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $50 USD</p>
+                    <p><strong>Cost Basis:</strong> $16.8 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(97, isAnonymized)} shares</p>
-                    <p><strong>Price@30/09/2025:</strong> {maskCurrency(16.78, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/09/2025:</strong> $16.78 USD</p>
                   </div>
                 </div>
               </div>
@@ -484,8 +486,8 @@ export default function Q3Report2025Page() {
                     Given these concerns, I exited my position in Meta for a solid profit. If the company’s direction meaningfully changes, I may consider re-entering in the future. Zuckerberg has positioned Meta as a leader in AI, and the company will likely remain at the forefront of this technology; however, if AI is leveraged to intensify the existing societal problems caused by Meta’s platforms, I believe the company will continue to be a net negative for society.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(750, isAnonymized, 'USD')}</p>
-                    <p><strong>Price@30/09/2025:</strong> {maskCurrency(734, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $750 USD</p>
+                    <p><strong>Price@30/09/2025:</strong> $734 USD</p>
                   </div>
                 </div>
               </div>
@@ -519,10 +521,10 @@ export default function Q3Report2025Page() {
                     Uber continues to perform well, executing effectively on its strategic initiatives. This quarter, revenue grew by 18%, accompanied by further gains in profitability. Notably, the Uber One loyalty program is delivering significant value to users and is proving to be a robust customer acquisition tool—membership is growing at 50% year-over-year, and there is a realistic path to {maskShares(100000000, isAnonymized)} subscribers over the next five years. In addition, Uber is steadily expanding its partnerships with a range of autonomous vehicle players, including WeRide, AvRide, Cruise, May Mobility, Nuro/Lucid, and Volkswagen, among others. The company’s strategy is to foster a fragmented AV market with multiple participants, positioning itself as the leading aggregator. While Waymo has rapidly scaled and represents the largest competitive threat to Uber’s U.S. business, Uber’s strong execution thus far gives me continued confidence. I remain bullish on Uber’s prospects and took advantage of minor share price dips to add slightly to my position. Although the stock has appreciated, I believe there remains substantial upside ahead.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(120, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(69, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $120 USD</p>
+                    <p><strong>Cost Basis:</strong> $69 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(41, isAnonymized)} shares</p>
-                    <p><strong>Price@30/09/2025:</strong> {maskCurrency(98, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/09/2025:</strong> $98 USD</p>
                   </div>
                 </div>
 
@@ -543,10 +545,10 @@ export default function Q3Report2025Page() {
                     My confidence in Amazon continues to grow, as the company maintains its leadership across various sectors and, in my view, remains undervalued by the market. Amazon Web Services (AWS) stands as the backbone of the internet, underscored by the recent outage—which, while likely causing a short-term financial impact, ultimately serves to highlight just how vital AWS is for investors. AWS’s momentum is picking up again, fuelled by strong AI-driven demand, and the company is increasingly winning business from smaller enterprises—a more impactful growth strategy, I believe, than simply pursuing large AI contracts as Microsoft has. The cloud backlog at AWS is now up over 20%, surpassing the {maskCurrency(200000000000, isAnonymized, 'USD')} mark. After sentiment dipped following Andy Jassy’s earnings call, I took advantage of the market’s reaction to add to my position. With AI adoption accelerating the need for cloud services, I expect AWS’s growth trajectory to strengthen further. This quarter, I had a key insight into AWS’s enduring advantage: once data is stored at scale in a particular cloud, it becomes effectively immovable between providers, locking in long-term demand for compute within that ecosystem. Given AWS’s unmatched data volume, it is best positioned to capture this enduring demand over the long haul.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(300, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(203, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $300 USD</p>
+                    <p><strong>Cost Basis:</strong> $203 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(19, isAnonymized)} shares</p>
-                    <p><strong>Price@30/09/2025:</strong> {maskCurrency(220, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/09/2025:</strong> $220 USD</p>
                   </div>
                 </div>
               </div>
@@ -589,10 +591,10 @@ export default function Q3Report2025Page() {
                     My conviction in Google has only increased this quarter, mirroring the growing confidence of the broader market. Given the company’s deep moats and ongoing innovation, I view Google as one of the most compelling AI investments available.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(300, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(173, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $300 USD</p>
+                    <p><strong>Cost Basis:</strong> $173 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(18, isAnonymized)} shares</p>
-                    <p><strong>Price@30/09/2025:</strong> {maskCurrency(243, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/09/2025:</strong> $243 USD</p>
                   </div>
                 </div>
 
@@ -613,10 +615,10 @@ export default function Q3Report2025Page() {
                     Mainfreight’s last quarter was uneventful, with shares down a little bit as New Zealand’s economy lagged. Despite this, the company continues to invest and expand its market share. I’ve held MFT for over two years with no gains, which has limited my portfolio’s growth, but I remain confident in its long-term prospects.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(90, isAnonymized, 'NZD')}-{maskCurrency(100, isAnonymized, 'NZD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(64.20, isAnonymized, 'NZD')}</p>
+                    <p><strong>Intrinsic value:</strong> $95 NZD</p>
+                    <p><strong>Cost Basis:</strong> $64.20 NZD</p>
                     <p><strong>Final Position:</strong> {maskShares(67, isAnonymized)} shares</p>
-                    <p><strong>Price@30/06/2025:</strong> {maskCurrency(62.9, isAnonymized, 'NZD')}</p>
+                    <p><strong>Price@30/06/2025:</strong> 62.9 NZD</p>
                   </div>
                 </div>
 
@@ -637,10 +639,10 @@ export default function Q3Report2025Page() {
                     Mastercard delivered strong results, with revenues up 16% and net income rising 14%. Its competitive moat remains secure, and management drives innovation in stablecoin, security, and B2B payments, which offer significant growth potential. The company’s fees and exceptional security create real pricing power, especially for large transactions, yet Mastercard focuses on expanding volumes—a key advantage as B2B payments scale. Operating leverage improves with growth, and my confidence in Mastercard continues to rise. Despite a flat stock, 15% annual returns over the next decade seem achievable. The company’s story remains as robust as ever.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(600, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(449, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $600 USD</p>
+                    <p><strong>Cost Basis:</strong> $449 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
-                    <p><strong>Price@30/06/2025:</strong> {maskCurrency(568, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/06/2025:</strong> $568 USD</p>
                   </div>
                 </div>
 
@@ -658,13 +660,13 @@ export default function Q3Report2025Page() {
                     <h3 className="font-bold text-gray-900">Netflix (NFLX: NASDAQ) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    There aren’t many new updates this month; the company continues to deliver on its main growth metrics. Organic growth remains strong, and the potential for expansion is still significant. Reaching {maskShares(500000000, isAnonymized)} subscribers by the end of 2030 appears attainable. Aside from telecommunications companies, no one else has that many paying subscribers. Recently, Netflix has demonstrated some pricing power, but there’s still room to grow. Within five years, Netflix could potentially charge {maskCurrency(50, isAnonymized, 'USD')} a month while still offering good value.
+                    There aren’t many new updates this month; the company continues to deliver on its main growth metrics. Organic growth remains strong, and the potential for expansion is still significant. Reaching 500 million subscribers by the end of 2030 appears attainable. Aside from telecommunications companies, no one else has that many paying subscribers. Recently, Netflix has demonstrated some pricing power, but there’s still room to grow. Within five years, Netflix could potentially charge $50 a month while still offering good value.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(1150, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(769, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $1150</p>
+                    <p><strong>Cost Basis:</strong> $769 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(2, isAnonymized)} shares</p>
-                    <p><strong>Price@30/06/2025:</strong> {maskCurrency(1199, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/06/2025:</strong> $1199 USD</p>
                   </div>
                 </div>
 
@@ -685,10 +687,10 @@ export default function Q3Report2025Page() {
                     SPGI is separating its mobility division, but I don't think this move will have much impact. I'm planning to offload those shares right away and put the money into MSCI or add more SPGI. The stock has been trailing the tech companies since it's not seen as an AI-focused company, but I’m still confident in its long-term prospects. Eventually, I think companies like SPGI, which aren’t pure AI plays, could gain more from AI’s growth than the AI-first firms, especially as AI turns into more of a commodity.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(650, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(510, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $650 USD</p>
+                    <p><strong>Cost Basis:</strong> $510 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(5, isAnonymized)} shares</p>
-                    <p><strong>Price@30/06/2025:</strong> {maskCurrency(486, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/06/2025:</strong> $486 USD</p>
                   </div>
                 </div>
 
@@ -709,10 +711,10 @@ export default function Q3Report2025Page() {
                     ASML stock initially declined after unclear statements about 2026 growth despite solid revenue 15% and operating income growth, but market recognition of its machines' value and announcements of increased AI spend led to a rebound near all-time highs. Customers are investing in new fabs, and all AI funding is expected to benefit ASML. The company's technological edge should sustain its lead; significant threats like Chinese replication or paradigm shifts seem unlikely in the near term. I think the biggest challenge for ASML is securing and strengthening its supply chain.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p><strong>Intrinsic value:</strong> {maskCurrency(900, isAnonymized, 'USD')}-{maskCurrency(1000, isAnonymized, 'USD')}</p>
-                    <p><strong>Cost Basis:</strong> {maskCurrency(713, isAnonymized, 'USD')}</p>
+                    <p><strong>Intrinsic value:</strong> $1000 USD</p>
+                    <p><strong>Cost Basis:</strong> $713 USD</p>
                     <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
-                    <p><strong>Price@30/06/2025:</strong> {maskCurrency(998, isAnonymized, 'USD')}</p>
+                    <p><strong>Price@30/06/2025:</strong> $968 USD</p>
                   </div>
                 </div>
               </div>
