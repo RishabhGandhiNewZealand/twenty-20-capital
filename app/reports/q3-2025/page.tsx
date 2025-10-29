@@ -12,7 +12,7 @@ export default function Q3Report2025Page() {
   const quarterStats = [
     { label: "Q3 Return", value: "+10%", icon: TrendingUp },
     { label: "S&P 500 Return Unhedged", value: "+10%", icon: DollarSign },
-    { label: "Portfolio Value", value: 47000, icon: Target, isCurrency: true }, // Placeholder, will be calculated later
+    { label: "Portfolio Value", value: 60100, icon: Target, isCurrency: true },
     { label: "Portfolio Additions", value: 5000, icon: Plus, isCurrency: true },
   ]
 
@@ -83,7 +83,7 @@ export default function Q3Report2025Page() {
       return: "N/A",
       shares: 67,
       usdValue: 2470,
-      nzdValue: 4000, // Placeholder, will calculate later
+      nzdValue: 4214, 
       stockCurrency: "NZD",
       tier: "A",
     },
