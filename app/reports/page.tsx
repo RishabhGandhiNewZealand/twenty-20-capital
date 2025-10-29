@@ -41,6 +41,16 @@ export default function ReportsPage() {
       portfolioValue: 42098,
       additions: 2000,
     },
+    {
+      title: "Q3 2025 Report",
+      description: "Third quarter analysis and portfolio adjustments",
+      date: "September 30, 2025",
+      href: "/reports/q3-2025",
+      type: "Quarterly",
+      performance: "+10%", // Placeholder
+      portfolioValue: 47000, // Placeholder
+      additions: 5000, // Placeholder
+    },
   ]
 
   return (
