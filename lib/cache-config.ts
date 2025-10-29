@@ -15,7 +15,7 @@ export const CACHE_DURATIONS = {
   EXCHANGE_RATES: 1200, // 20 minutes
   
   // Other API data
-  NEWS_ANALYSIS: 3600, // 1 hour (Gemini API calls are expensive)
+  NEWS_ANALYSIS: 604800, // 7 days (Gemini API calls are expensive)
 } as const
 
 // Cache tags for invalidation

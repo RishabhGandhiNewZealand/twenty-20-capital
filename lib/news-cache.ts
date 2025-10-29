@@ -97,26 +97,26 @@ export class NewsCache {
       logger.info(`Looking for cache entry for ${company}`)
       
       // Look for cache entries for this company that are:
-      // 1. Less than 1 month old
-      // 2. Cover a recent period (end_date within last 45 days)
+      // 1. Less than 7 days old
+      // 2. Cover a recent period (end_date within last 15 days)
       // This allows us to reuse cache even if date ranges don't match exactly
-      const oneMonthAgo = new Date()
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
       
-      const fortyFiveDaysAgo = new Date()
-      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
+      const fifteenDaysAgo = new Date()
+      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15)
       
       const results = await sql<CacheEntry[]>`
         SELECT * FROM application.news_cache 
         WHERE company_name = ${company}
-        AND created_at > ${oneMonthAgo}
-        AND end_date >= ${fortyFiveDaysAgo.toISOString().split('T')[0]}
+        AND created_at > ${sevenDaysAgo}
+        AND end_date >= ${fifteenDaysAgo.toISOString().split('T')[0]}
         ORDER BY created_at DESC
         LIMIT 1
       `
       
       if (results.length === 0) {
-        logger.info(`No fresh cache found for ${company} (must be less than 1 month old)`)
+        logger.info(`No fresh cache found for ${company} (must be less than 7 days old)`)
         return null
       }
       

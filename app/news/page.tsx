@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, ExternalLink, Calendar, Building2, AlertCircle, TrendingUp, Link2, CheckCircle2, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { useUser } from "@stackframe/stack"
+import { useToast } from "@/hooks/use-toast"
 import {
   Sheet,
   SheetContent,
@@ -205,19 +207,61 @@ export default function NewsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio News</h1>
         {companiesData && (
-          <div className="mt-3 text-sm text-gray-500">
-            <p>Report date: {(() => {
-              try {
-                const date = new Date(companiesData.report_generated_date)
-                if (isNaN(date.getTime())) {
+          <div className="mt-3 text-sm text-gray-500 flex items-center gap-4">
+            <div>
+              <p>Report date: {(() => {
+                try {
+                  const date = new Date(companiesData.report_generated_date)
+                  if (isNaN(date.getTime())) {
+                    return companiesData.report_generated_date
+                  }
+                  return format(date, "MMMM d, yyyy")
+                } catch {
                   return companiesData.report_generated_date
                 }
-                return format(date, "MMMM d, yyyy")
-              } catch {
-                return companiesData.report_generated_date
-              }
-            })()}</p>
-            <p>Analysis period: 30 days ({companiesData.analysis_period.start_date} to {companiesData.analysis_period.end_date})</p>
+              })()}</p>
+              <p>Analysis period: 30 days ({companiesData.analysis_period.start_date} to {companiesData.analysis_period.end_date})</p>
+            </div>
+            {/* Temporary User Status Indicator */}
+            {/* {process.env.NODE_ENV === 'development' && (
+              <div className="text-xs text-gray-400">
+                User Status: {user ? user.primaryEmailAddress?.emailAddress : 'Not Logged In'}
+                <br />
+                Admin Status: {isAdmin ? 'True' : 'False'}
+              </div>
+            )} */}
+            {/* {isAdmin && (
+              <Button
+                onClick={async () => {
+                  try {
+                    const response = await fetch("/api/revalidate-news-cache", { method: 'GET' });
+                    if (response.ok) {
+                      toast({
+                        title: "Cache Cleared",
+                        description: "News cache revalidation initiated.",
+                      });
+                    } else {
+                      const errorData = await response.json();
+                      toast({
+                        title: "Cache Clear Failed",
+                        description: errorData.error || "Failed to revalidate cache.",
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (err) {
+                    toast({
+                      title: "Cache Clear Error",
+                      description: err instanceof Error ? err.message : "An unexpected error occurred.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                variant="outline"
+                className="ml-auto"
+              >
+                Clear News Cache (Admin)
+              </Button>
+            )} */}
           </div>
         )}
       </div>
