@@ -142,18 +142,48 @@ Note: If the company name includes a stock ticker in parentheses, use it to ensu
       .trim()
     
     logger.info(`[${company}] Cleaned text length: ${cleanedText.length} characters`)
-    
+
     // Find JSON boundaries
     const jsonStart = cleanedText.indexOf('{')
     const jsonEnd = cleanedText.lastIndexOf('}')
-    
+
     if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
       logger.info(`[${company}] JSON boundaries found - start: ${jsonStart}, end: ${jsonEnd}`)
       cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1)
     } else {
       logger.error(`[${company}] WARNING: Could not find JSON boundaries. jsonStart: ${jsonStart}, jsonEnd: ${jsonEnd}`)
     }
-    
+
+    // Helper function to balance brackets in potentially truncated JSON
+    const balanceJson = (jsonString: string): string => {
+      const stack: string[] = [];
+      let balancedString = jsonString;
+
+      for (let i = 0; i < jsonString.length; i++) {
+        const char = jsonString[i];
+        if (char === '{') {
+          stack.push('}');
+        } else if (char === '[') {
+          stack.push(']');
+        } else if (char === '}' || char === ']') {
+          if (stack.length > 0 && stack[stack.length - 1] === char) {
+            stack.pop();
+          } else {
+            // Mismatched closing bracket, potentially an error or part of string content
+          }
+        }
+      }
+
+      // Append any remaining closing brackets from the stack
+      while (stack.length > 0) {
+        balancedString += stack.pop();
+      }
+      return balancedString;
+    };
+
+    cleanedText = balanceJson(cleanedText);
+    logger.info(`[${company}] Balanced JSON text length: ${cleanedText.length} characters (after balancing)`)
+
     // Try to parse the JSON
     let companyData: any
     try {
