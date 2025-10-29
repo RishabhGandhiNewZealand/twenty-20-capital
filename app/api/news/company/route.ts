@@ -5,6 +5,25 @@ import { newsCache } from '@/lib/news-cache'
 import { unstable_cache } from 'next/cache'
 import { CACHE_DURATIONS, CACHE_TAGS } from '@/lib/cache-config'
 
+const NEWS_SCHEMA_JSON = `
+{
+  "company_name": "Company Name",
+  "status": "news_found" or "no_significant_news_found",
+  "summary_points": [
+    "• Comprehensive bullet point with context and implications [1][3]"
+  ],
+  "references": [
+    {
+      "title": "Article headline",
+      "source_name": "Publication",
+      "url": "Direct URL",
+      "publication_date": "YYYY-MM-DD",
+      "relevance": "direct" or "indirect"
+    }
+  ]
+}
+`;
+
 // Analyze news for a single company
 async function analyzeCompanyNews(
   company: string, 
@@ -142,18 +161,48 @@ Note: If the company name includes a stock ticker in parentheses, use it to ensu
       .trim()
     
     logger.info(`[${company}] Cleaned text length: ${cleanedText.length} characters`)
-    
+
     // Find JSON boundaries
     const jsonStart = cleanedText.indexOf('{')
     const jsonEnd = cleanedText.lastIndexOf('}')
-    
+
     if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
       logger.info(`[${company}] JSON boundaries found - start: ${jsonStart}, end: ${jsonEnd}`)
       cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1)
     } else {
       logger.error(`[${company}] WARNING: Could not find JSON boundaries. jsonStart: ${jsonStart}, jsonEnd: ${jsonEnd}`)
     }
-    
+
+    // Helper function to balance brackets in potentially truncated JSON
+    const balanceJson = (jsonString: string): string => {
+      const stack: string[] = [];
+      let balancedString = jsonString;
+
+      for (let i = 0; i < jsonString.length; i++) {
+        const char = jsonString[i];
+        if (char === '{') {
+          stack.push('}');
+        } else if (char === '[') {
+          stack.push(']');
+        } else if (char === '}' || char === ']') {
+          if (stack.length > 0 && stack[stack.length - 1] === char) {
+            stack.pop();
+          } else {
+            // Mismatched closing bracket, potentially an error or part of string content
+          }
+        }
+      }
+
+      // Append any remaining closing brackets from the stack
+      while (stack.length > 0) {
+        balancedString += stack.pop();
+      }
+      return balancedString;
+    };
+
+    cleanedText = balanceJson(cleanedText);
+    logger.info(`[${company}] Balanced JSON text length: ${cleanedText.length} characters (after balancing)`)
+
     // Try to parse the JSON
     let companyData: any
     try {
@@ -203,24 +252,35 @@ Note: If the company name includes a stock ticker in parentheses, use it to ensu
         companyData.references = companyData.references || []
         logger.info(`[${company}] Successfully parsed fixed JSON with ${companyData.summary_points?.length || 0} summaries`)
       } catch (secondParseError: any) {
-        // If we still can't parse it, return a no news found response
-        companyData = {
-          company_name: company,
-          status: 'no_significant_news_found',
-          summary_points: [],
-          references: [],
-          error: `Failed to parse AI response: ${secondParseError.message}`
-        }
-        
-        logger.error(`[${company}] Failed to fix JSON:`, {
+        logger.error(`[${company}] Failed to fix JSON with regex attempts:`, {
           error: secondParseError.message,
           fixedTextPreview: fixedText.substring(0, 500)
         })
+
+        // --- NEW: Attempt LLM-based cleanup as a last resort ---
+        try {
+          companyData = await cleanJsonResponseWithLLM(cleanedText, model, company) // Pass original cleanedText
+          companyData.company_name = companyData.company_name || company;
+          companyData.summary_points = companyData.summary_points || [];
+          companyData.references = companyData.references || [];
+          logger.info(`[${company}] Successfully parsed LLM-cleaned JSON with ${companyData.summary_points?.length || 0} summaries`);
+        } catch (llmCleanupError: any) {
+          logger.error(`[${company}] Final LLM-based JSON cleanup failed:`, llmCleanupError);
+          // If we still can't parse it, return a no news found response
+          companyData = {
+            company_name: company,
+            status: 'no_significant_news_found',
+            summary_points: [],
+            references: [],
+            error: `Failed to parse AI response after all attempts: ${llmCleanupError.message}`
+          }
+        }
+        // --- END NEW ---
       }
     }
     
     return companyData
-    
+  
   } catch (error: any) {
     logger.error(`[${company}] Full error in analyzeCompanyNews:`, {
       error: error.message,

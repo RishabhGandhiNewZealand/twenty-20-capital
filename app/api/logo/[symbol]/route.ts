@@ -57,8 +57,9 @@ async function resolveDomainWithCache(symbolUpper: string): Promise<string | nul
   return domain
 }
 
-export async function GET(req: Request, { params }: { params: { symbol: string } }) {
-	const symbolParam = params.symbol
+export async function GET(req: Request, context: { params: Promise<{ symbol: string }> }) {
+	const { symbol } = await context.params
+	const symbolParam = symbol
 	if (!symbolParam || typeof symbolParam !== 'string') {
 		return NextResponse.json({ error: 'Missing symbol' }, { status: 400 })
 	}
