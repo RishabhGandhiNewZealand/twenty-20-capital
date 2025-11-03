@@ -192,7 +192,7 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
     )
   }
 
-  if (data.length === 0) {
+  if (performanceData.length === 0) {
     return (
       <Card className="border-blue-100">
         <CardContent className="h-[450px] flex items-center justify-center">
