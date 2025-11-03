@@ -8,7 +8,7 @@ import { PortfolioChart } from "@/components/portfolio-chart"
 import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
-import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
+import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency, calculateTimeWeightedReturn, calculateCAGRFromTotalReturn } from "@/lib/financial-calculations"
 import { formatNumber, formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { maskCurrency, maskShares, maskValue } from "@/lib/anonymization-utils"
@@ -133,10 +133,21 @@ export default function HomePage() {
             // Update portfolio stats with the accurate data
             const formattedValue = formatCurrency(latestHistory.portfolioValue)
 
-            // Calculate CAGR from the gain percentages
+            // Calculate CAGR using Time-Weighted Return (TWR)
             const yearsSinceInception = getYearsSinceInception()
-            const portfolioCAGR = calculateCAGRFromGainPercent(updatedSummary.totalGainPercent, yearsSinceInception)
-            const sp500CAGR = calculateCAGRFromGainPercent(updatedSummary.sp500GainPercent, yearsSinceInception)
+            
+            // Calculate TWR for portfolio
+            const portfolioTWR = calculateTimeWeightedReturn(historyData.history)
+            const portfolioCAGR = calculateCAGRFromTotalReturn(portfolioTWR, yearsSinceInception)
+            
+            // Calculate TWR for S&P 500 (using sp500Value as portfolio value)
+            const sp500History = historyData.history.map((h: any) => ({
+              date: h.date,
+              portfolioValue: h.sp500Value,
+              costBasis: h.costBasis
+            }))
+            const sp500TWR = calculateTimeWeightedReturn(sp500History)
+            const sp500CAGR = calculateCAGRFromTotalReturn(sp500TWR, yearsSinceInception)
 
             setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
           }
@@ -146,7 +157,7 @@ export default function HomePage() {
           
           const formattedValue = formatCurrency(totalValueNZD)
 
-          // Calculate CAGR from the gain percentages
+          // Calculate CAGR from the gain percentages (fallback method)
           const yearsSinceInception = getYearsSinceInception()
           const portfolioCAGR = calculateCAGRFromGainPercent(totalGainPercent, yearsSinceInception)
           const sp500CAGR = calculateCAGRFromGainPercent(sp500GainPercent, yearsSinceInception)
