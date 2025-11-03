@@ -454,6 +454,86 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
+        {/* Exited Positions Returns Summary */}
+        {!loading && exitedPositions.length > 0 && (
+          <Card className="border-blue-100 mb-6 sm:mb-8">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-gray-900 text-lg sm:text-xl">Exited Positions Returns</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 sm:px-6">
+              {(() => {
+                // Calculate aggregate statistics for exited positions
+                const totalInvested = exitedPositions.reduce((sum, p) => sum + p.totalInvestedNZD, 0)
+                const totalReturned = exitedPositions.reduce((sum, p) => sum + p.totalReturnNZD, 0)
+                const totalProfitLoss = exitedPositions.reduce((sum, p) => sum + p.profitLossNZD, 0)
+                const totalReturnPercent = totalInvested > 0 ? ((totalProfitLoss / totalInvested) * 100) : 0
+                
+                // Calculate weighted average CAGR
+                const weightedCAGRSum = exitedPositions.reduce((sum, position) => {
+                  const entryDate = new Date(position.entryDate)
+                  const exitDate = new Date(position.exitDate)
+                  const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                  const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                  return sum + (cagr * position.totalInvestedNZD)
+                }, 0)
+                const weightedAvgCAGR = totalInvested > 0 ? weightedCAGRSum / totalInvested : 0
+
+                // Calculate average holding period
+                const totalDays = exitedPositions.reduce((sum, position) => {
+                  const entryDate = new Date(position.entryDate)
+                  const exitDate = new Date(position.exitDate)
+                  return sum + Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                }, 0)
+                const avgHoldingDays = Math.floor(totalDays / exitedPositions.length)
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Total Invested</div>
+                      <div className="text-xl font-bold text-gray-900">
+                        {maskCurrency(totalInvested, isAnonymized)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {exitedPositions.length} position{exitedPositions.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Total Returned</div>
+                      <div className="text-xl font-bold text-gray-900">
+                        {maskCurrency(totalReturned, isAnonymized)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Including gains/losses
+                      </div>
+                    </div>
+
+                    <div className={`rounded-lg p-4 border ${totalProfitLoss >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                      <div className="text-sm text-gray-600 mb-1">Net Profit/Loss</div>
+                      <div className={`text-xl font-bold ${totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {maskCurrency(totalProfitLoss, isAnonymized)}
+                      </div>
+                      <div className={`text-xs font-medium mt-1 ${totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(1)}% return
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Weighted Avg CAGR</div>
+                      <div className={`text-xl font-bold ${weightedAvgCAGR >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatPercentage(weightedAvgCAGR)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Avg {avgHoldingDays} days held
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Exited Positions */}
         {!loading && exitedPositions.length > 0 && (
           <Card className="border-blue-100">

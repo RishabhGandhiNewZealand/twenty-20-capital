@@ -308,8 +308,8 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
   return (
     <Card className="border-blue-100">
       <CardHeader className="pb-2 sm:pb-4">
-        <div className="flex flex-col gap-3">
-          <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Performance (Time-Weighted Return)</CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Performance</CardTitle>
           
           {/* Time Period Filter Buttons */}
           <div className="flex flex-wrap items-center gap-2">
@@ -347,7 +347,7 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
                   Custom
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-4" align="start">
+              <PopoverContent className="w-80 p-4" align="end">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="start-date" className="text-sm font-medium">Start Date</Label>
