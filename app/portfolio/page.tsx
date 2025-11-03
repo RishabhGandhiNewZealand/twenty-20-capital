@@ -84,12 +84,8 @@ export default function HomePage() {
       try {
         // Fetch all data in parallel for better performance (with cache busting)
         const timestamp = Date.now()
-        const [currentResponse, portfolioResponse, historyResponse] = await Promise.all([
+        const [currentResponse, historyResponse] = await Promise.all([
           fetch(`/api/portfolio-current?t=${timestamp}`, { cache: 'no-store' }),
-          fetch(`/api/portfolio?t=${timestamp}`, { cache: 'no-store' }).catch((error) => {
-            console.error('Failed to fetch portfolio data:', error)
-            return null
-          }),
           fetch(`/api/portfolio-history?t=${timestamp}`, { cache: 'no-store' }).catch((error) => {
             console.error('Failed to fetch portfolio history:', error)
             return null
@@ -104,12 +100,10 @@ export default function HomePage() {
         
         setHoldings(currentData.holdings)
         setSummary(currentData.summary)
+        setExitedPositions(currentData.exitedPositions || [])
 
-        // Handle exited positions (optional)
-        if (portfolioResponse && portfolioResponse.ok) {
-          const portfolioData = await portfolioResponse.json()
-          setExitedPositions(portfolioData.exitedPositions)
-        }
+        console.log('Portfolio current data:', currentData)
+        console.log('Exited positions:', currentData.exitedPositions)
 
         // Handle portfolio history for accurate values (optional but preferred)
         if (historyResponse && historyResponse.ok) {
