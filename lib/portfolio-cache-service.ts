@@ -12,6 +12,7 @@ import yahooFinance from 'yahoo-finance2'
 import { logger } from './logger'
 import { FALLBACK_USD_TO_NZD_RATE } from './constants'
 import { generatePortfolioData } from './portfolioServerData'
+import { TradeRecord } from '@/types/portfolio'
 
 // Types
 interface DailyPortfolioData {
@@ -162,6 +163,94 @@ function fillMissingDates(
 }
 
 /**
+ * Get the nearest available price from a price map (for trade dates)
+ */
+function getNearestPrice(
+  dateStr: string, 
+  priceMap: Map<string, number>,
+  lookbackDays: number = 5
+): number {
+  // First try the exact date
+  if (priceMap.has(dateStr)) {
+    return priceMap.get(dateStr)!
+  }
+  
+  // Look for the nearest price within lookback days
+  const targetDate = new Date(dateStr)
+  for (let i = 1; i <= lookbackDays; i++) {
+    // Try past dates first (more conservative for purchases)
+    const pastDate = new Date(targetDate)
+    pastDate.setDate(pastDate.getDate() - i)
+    const pastDateStr = pastDate.toISOString().split('T')[0]
+    if (priceMap.has(pastDateStr)) {
+      return priceMap.get(pastDateStr)!
+    }
+    
+    // Try future dates
+    const futureDate = new Date(targetDate)
+    futureDate.setDate(futureDate.getDate() + i)
+    const futureDateStr = futureDate.toISOString().split('T')[0]
+    if (priceMap.has(futureDateStr)) {
+      return priceMap.get(futureDateStr)!
+    }
+  }
+  
+  return 0
+}
+
+/**
+ * Calculate S&P 500 benchmark shares using historical SPY prices
+ */
+async function calculateSP500Benchmark(
+  trades: TradeRecord[],
+  exchangeRate: number
+): Promise<{ sp500Shares: number; currentCostBasis: number }> {
+  if (!trades || trades.length === 0) {
+    return { sp500Shares: 0, currentCostBasis: 0 }
+  }
+
+  const sortedTrades = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  // Get date range for SPY prices
+  const startDate = new Date(sortedTrades[0].date)
+  const endDate = new Date(sortedTrades[sortedTrades.length - 1].date)
+  
+  // Fetch historical SPY prices
+  const spyPrices = await getHistoricalPrices('SPY', startDate, endDate)
+  
+  let sp500Shares = 0
+  let currentCostBasis = 0
+  let soldCapitalAvailable = 0
+  
+  for (const trade of sortedTrades) {
+    const tradeValueNZD = Math.abs(trade.value)
+    
+    if (trade.type === 'Buy') {
+      if (soldCapitalAvailable >= tradeValueNZD) {
+        soldCapitalAvailable -= tradeValueNZD
+      } else {
+        const newCapital = tradeValueNZD - soldCapitalAvailable
+        currentCostBasis += newCapital
+        soldCapitalAvailable = 0
+        
+        // Use actual historical SPY price for this trade date
+        const spyPriceUSD = getNearestPrice(trade.date, spyPrices)
+        if (spyPriceUSD > 0) {
+          const spyPriceNZD = spyPriceUSD * exchangeRate
+          sp500Shares += newCapital / spyPriceNZD
+        } else {
+          logger.warn(`No SPY price found for trade date ${trade.date}, skipping S&P 500 calculation for this trade`)
+        }
+      }
+    } else if (trade.type === 'Sell') {
+      soldCapitalAvailable += tradeValueNZD
+    }
+  }
+  
+  return { sp500Shares, currentCostBasis }
+}
+
+/**
  * Calculate portfolio history with caching
  */
 async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
@@ -267,6 +356,37 @@ export async function getCachedPortfolioHistory(): Promise<DailyPortfolioData[]>
 }
 
 /**
+ * Get current price for a ticker
+ */
+async function getCurrentPrice(ticker: string): Promise<number> {
+  try {
+    let yfinanceTicker = ticker
+    if (ticker === 'MFT') {
+      yfinanceTicker = 'MFT.NZ'
+    }
+
+    const quote = await yahooFinance.quote(yfinanceTicker)
+    return quote.regularMarketPrice || 0
+  } catch (error) {
+    logger.error(`Error fetching current price for ${ticker}:`, error)
+    return 0
+  }
+}
+
+/**
+ * Get current USD/NZD exchange rate
+ */
+async function getCurrentUSDNZDRate(): Promise<number> {
+  try {
+    const quote = await yahooFinance.quote('NZDUSD=X')
+    return 1 / (quote.regularMarketPrice || 0.606)
+  } catch (error) {
+    logger.error('Error fetching USD/NZD rate:', error)
+    return FALLBACK_USD_TO_NZD_RATE
+  }
+}
+
+/**
  * Get cached current portfolio data
  */
 export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentData> {
@@ -275,20 +395,79 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
     async () => {
       const { holdings, exitedPositions } = await generatePortfolioData()
       
-      // Calculate summary data
-      const totalValue = holdings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-      const totalCost = holdings.reduce((sum, h) => sum + h.costBasisNZD, 0)
+      // Fetch current prices for all holdings
+      const exchangeRate = await getCurrentUSDNZDRate()
+      const tickers = holdings.map(h => h.symbol)
+      
+      const pricePromises = tickers.map(ticker => getCurrentPrice(ticker))
+      const prices = await Promise.all(pricePromises)
+      
+      const priceMap = new Map<string, number>()
+      tickers.forEach((ticker, index) => {
+        priceMap.set(ticker, prices[index])
+      })
+      
+      // Calculate current values and gains for each holding
+      const enrichedHoldings = holdings.map(holding => {
+        const currentPrice = priceMap.get(holding.symbol) || 0
+        const isUSD = holding.instrumentCurrency === 'USD'
+        const currentValueNZD = holding.totalShares * currentPrice * (isUSD ? exchangeRate : 1)
+        const costBasisNZD = holding.totalShares * holding.avgPriceNZD
+        const gainNZD = currentValueNZD - costBasisNZD
+        const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
+        
+        return {
+          symbol: holding.symbol,
+          name: holding.name,
+          shares: holding.totalShares,
+          currentPrice,
+          currentValueNZD,
+          costBasisNZD,
+          gainNZD,
+          gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
+          allocation: 0, // Will be calculated below
+          currency: holding.instrumentCurrency
+        }
+      })
+      
+      // Calculate total value and allocations
+      const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
+      const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
+      
+      enrichedHoldings.forEach(holding => {
+        holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
+      })
+      
+      // Sort by allocation
+      enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
+      
       const totalGain = totalValue - totalCost
       const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
       
+      // Calculate S&P 500 benchmark using actual historical SPY prices
+      const adminUserId = process.env.ADMIN_USER_ID || ''
+      const trades = await getCachedTradeData(adminUserId)
+      
+      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
+      
+      const currentSpyPrice = await getCurrentPrice('SPY')
+      const sp500ValueUSD = sp500Shares * currentSpyPrice
+      const sp500Value = sp500ValueUSD * exchangeRate
+      const sp500GainNZD = sp500Value - currentCostBasis
+      const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
+      
       return {
-        holdings,
+        holdings: enrichedHoldings,
         exitedPositions,
         summary: {
           totalValueNZD: totalValue,
           totalCostBasisNZD: totalCost,
           totalGainNZD: totalGain,
-          totalGainPercent
+          totalGainPercent,
+          sp500Value,
+          sp500GainNZD,
+          sp500GainPercent,
+          exchangeRate
         },
         lastUpdated: new Date().toISOString()
       }
@@ -338,24 +517,83 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
     calculatePortfolioHistory
   )
   
-  // Register refresh callback for current portfolio
+  // Register refresh callback for current portfolio (use the same logic as the cache getter)
   cacheManager.registerRefreshCallback(
     CacheKey.PORTFOLIO_CURRENT,
     async () => {
+      // Call getCachedPortfolioCurrentData without the cache layer
       const { holdings, exitedPositions } = await generatePortfolioData()
-      const totalValue = holdings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-      const totalCost = holdings.reduce((sum, h) => sum + h.costBasisNZD, 0)
+      
+      // Fetch current prices for all holdings
+      const exchangeRate = await getCurrentUSDNZDRate()
+      const tickers = holdings.map(h => h.symbol)
+      
+      const pricePromises = tickers.map(ticker => getCurrentPrice(ticker))
+      const prices = await Promise.all(pricePromises)
+      
+      const priceMap = new Map<string, number>()
+      tickers.forEach((ticker, index) => {
+        priceMap.set(ticker, prices[index])
+      })
+      
+      // Calculate current values and gains for each holding
+      const enrichedHoldings = holdings.map(holding => {
+        const currentPrice = priceMap.get(holding.symbol) || 0
+        const isUSD = holding.instrumentCurrency === 'USD'
+        const currentValueNZD = holding.totalShares * currentPrice * (isUSD ? exchangeRate : 1)
+        const costBasisNZD = holding.totalShares * holding.avgPriceNZD
+        const gainNZD = currentValueNZD - costBasisNZD
+        const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
+        
+        return {
+          symbol: holding.symbol,
+          name: holding.name,
+          shares: holding.totalShares,
+          currentPrice,
+          currentValueNZD,
+          costBasisNZD,
+          gainNZD,
+          gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
+          allocation: 0,
+          currency: holding.instrumentCurrency
+        }
+      })
+      
+      const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
+      const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
+      
+      enrichedHoldings.forEach(holding => {
+        holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
+      })
+      
+      enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
+      
       const totalGain = totalValue - totalCost
       const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
       
+      const adminUserId = process.env.ADMIN_USER_ID || ''
+      const trades = await getCachedTradeData(adminUserId)
+      
+      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
+      
+      const currentSpyPrice = await getCurrentPrice('SPY')
+      const sp500ValueUSD = sp500Shares * currentSpyPrice
+      const sp500Value = sp500ValueUSD * exchangeRate
+      const sp500GainNZD = sp500Value - currentCostBasis
+      const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
+      
       return {
-        holdings,
+        holdings: enrichedHoldings,
         exitedPositions,
         summary: {
           totalValueNZD: totalValue,
           totalCostBasisNZD: totalCost,
           totalGainNZD: totalGain,
-          totalGainPercent
+          totalGainPercent,
+          sp500Value,
+          sp500GainNZD,
+          sp500GainPercent,
+          exchangeRate
         },
         lastUpdated: new Date().toISOString()
       }

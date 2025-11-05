@@ -8,7 +8,7 @@ import { PortfolioChart } from "@/components/portfolio-chart"
 import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
 import { getLogoUrl } from "@/lib/company-utils"
 import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
-import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency } from "@/lib/financial-calculations"
+import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency, calculateTimeWeightedReturn, calculateCAGRFromTotalReturn } from "@/lib/financial-calculations"
 import { formatNumber, formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { maskCurrency, maskShares, maskValue } from "@/lib/anonymization-utils"
@@ -84,12 +84,8 @@ export default function HomePage() {
       try {
         // Fetch all data in parallel for better performance (with cache busting)
         const timestamp = Date.now()
-        const [currentResponse, portfolioResponse, historyResponse] = await Promise.all([
+        const [currentResponse, historyResponse] = await Promise.all([
           fetch(`/api/portfolio-current?t=${timestamp}`, { cache: 'no-store' }),
-          fetch(`/api/portfolio?t=${timestamp}`, { cache: 'no-store' }).catch((error) => {
-            console.error('Failed to fetch portfolio data:', error)
-            return null
-          }),
           fetch(`/api/portfolio-history?t=${timestamp}`, { cache: 'no-store' }).catch((error) => {
             console.error('Failed to fetch portfolio history:', error)
             return null
@@ -104,12 +100,10 @@ export default function HomePage() {
         
         setHoldings(currentData.holdings)
         setSummary(currentData.summary)
+        setExitedPositions(currentData.exitedPositions || [])
 
-        // Handle exited positions (optional)
-        if (portfolioResponse && portfolioResponse.ok) {
-          const portfolioData = await portfolioResponse.json()
-          setExitedPositions(portfolioData.exitedPositions)
-        }
+        console.log('Portfolio current data:', currentData)
+        console.log('Exited positions:', currentData.exitedPositions)
 
         // Handle portfolio history for accurate values (optional but preferred)
         if (historyResponse && historyResponse.ok) {
@@ -133,10 +127,21 @@ export default function HomePage() {
             // Update portfolio stats with the accurate data
             const formattedValue = formatCurrency(latestHistory.portfolioValue)
 
-            // Calculate CAGR from the gain percentages
+            // Calculate CAGR using Time-Weighted Return (TWR)
             const yearsSinceInception = getYearsSinceInception()
-            const portfolioCAGR = calculateCAGRFromGainPercent(updatedSummary.totalGainPercent, yearsSinceInception)
-            const sp500CAGR = calculateCAGRFromGainPercent(updatedSummary.sp500GainPercent, yearsSinceInception)
+            
+            // Calculate TWR for portfolio
+            const portfolioTWR = calculateTimeWeightedReturn(historyData.history)
+            const portfolioCAGR = calculateCAGRFromTotalReturn(portfolioTWR, yearsSinceInception)
+            
+            // Calculate TWR for S&P 500 (using sp500Value as portfolio value)
+            const sp500History = historyData.history.map((h: any) => ({
+              date: h.date,
+              portfolioValue: h.sp500Value,
+              costBasis: h.costBasis
+            }))
+            const sp500TWR = calculateTimeWeightedReturn(sp500History)
+            const sp500CAGR = calculateCAGRFromTotalReturn(sp500TWR, yearsSinceInception)
 
             setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
           }
@@ -146,7 +151,7 @@ export default function HomePage() {
           
           const formattedValue = formatCurrency(totalValueNZD)
 
-          // Calculate CAGR from the gain percentages
+          // Calculate CAGR from the gain percentages (fallback method)
           const yearsSinceInception = getYearsSinceInception()
           const portfolioCAGR = calculateCAGRFromGainPercent(totalGainPercent, yearsSinceInception)
           const sp500CAGR = calculateCAGRFromGainPercent(sp500GainPercent, yearsSinceInception)
@@ -442,6 +447,86 @@ export default function HomePage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Exited Positions Returns Summary */}
+        {!loading && exitedPositions.length > 0 && (
+          <Card className="border-blue-100 mb-6 sm:mb-8">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-gray-900 text-lg sm:text-xl">Exited Positions Returns</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 sm:px-6">
+              {(() => {
+                // Calculate aggregate statistics for exited positions
+                const totalInvested = exitedPositions.reduce((sum, p) => sum + p.totalInvestedNZD, 0)
+                const totalReturned = exitedPositions.reduce((sum, p) => sum + p.totalReturnNZD, 0)
+                const totalProfitLoss = exitedPositions.reduce((sum, p) => sum + p.profitLossNZD, 0)
+                const totalReturnPercent = totalInvested > 0 ? ((totalProfitLoss / totalInvested) * 100) : 0
+                
+                // Calculate weighted average CAGR
+                const weightedCAGRSum = exitedPositions.reduce((sum, position) => {
+                  const entryDate = new Date(position.entryDate)
+                  const exitDate = new Date(position.exitDate)
+                  const yearsHeld = (exitDate.getTime() - entryDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                  const cagr = calculateCAGRFromGainPercent(position.profitLossPercentage, yearsHeld)
+                  return sum + (cagr * position.totalInvestedNZD)
+                }, 0)
+                const weightedAvgCAGR = totalInvested > 0 ? weightedCAGRSum / totalInvested : 0
+
+                // Calculate average holding period
+                const totalDays = exitedPositions.reduce((sum, position) => {
+                  const entryDate = new Date(position.entryDate)
+                  const exitDate = new Date(position.exitDate)
+                  return sum + Math.floor((exitDate.getTime() - entryDate.getTime()) / (24 * 60 * 60 * 1000))
+                }, 0)
+                const avgHoldingDays = Math.floor(totalDays / exitedPositions.length)
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Total Invested</div>
+                      <div className="text-xl font-bold text-gray-900">
+                        {maskCurrency(totalInvested, isAnonymized)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {exitedPositions.length} position{exitedPositions.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Total Returned</div>
+                      <div className="text-xl font-bold text-gray-900">
+                        {maskCurrency(totalReturned, isAnonymized)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Including gains/losses
+                      </div>
+                    </div>
+
+                    <div className={`rounded-lg p-4 border ${totalProfitLoss >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                      <div className="text-sm text-gray-600 mb-1">Net Profit/Loss</div>
+                      <div className={`text-xl font-bold ${totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {maskCurrency(totalProfitLoss, isAnonymized)}
+                      </div>
+                      <div className={`text-xs font-medium mt-1 ${totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(1)}% return
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Weighted Avg CAGR</div>
+                      <div className={`text-xl font-bold ${weightedAvgCAGR >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatPercentage(weightedAvgCAGR)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Avg {avgHoldingDays} days held
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Exited Positions */}
         {!loading && exitedPositions.length > 0 && (
