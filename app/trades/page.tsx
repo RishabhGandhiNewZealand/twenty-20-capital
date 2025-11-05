@@ -146,8 +146,10 @@ export default function TradesPage() {
         groups[key].totalShares += qty
         groups[key].totalValue += val
       } else if (trade.type === 'Sell') {
-        const qty = isNaN(trade.qty) ? 0 : trade.qty
-        const val = isNaN(trade.value) ? 0 : trade.value
+        // Sell trades may be stored with negative quantities in the database
+        // Use Math.abs() to ensure we subtract the correct positive amount
+        const qty = isNaN(trade.qty) ? 0 : Math.abs(trade.qty)
+        const val = isNaN(trade.value) ? 0 : Math.abs(trade.value)
         groups[key].totalShares -= qty
         groups[key].totalValue -= val
       }
