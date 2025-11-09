@@ -1,6 +1,6 @@
-# Personal Portfolio Tracker
+# Twenty 20 Capital - Capital Appreciation Fund
 
-A sophisticated portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS that provides real-time investment monitoring, performance analytics, and comprehensive reporting capabilities.
+A transparent investment fund website built with Next.js 15, TypeScript, and Tailwind CSS that provides real-time portfolio monitoring, performance analytics, and comprehensive reporting.
 
 ## Table of Contents
 
@@ -19,17 +19,16 @@ A sophisticated portfolio tracking application built with Next.js 15, TypeScript
 
 ## Overview
 
-This application serves as a comprehensive personal investment portfolio tracker designed for individual investors who want to monitor their investments, track performance against benchmarks, and gain insights into their portfolio composition. The system provides real-time market data integration, multi-currency support, and advanced analytics while maintaining a clean, responsive user interface.
+This website serves as the public face of Twenty 20 Capital's Capital Appreciation Fund, providing complete transparency into fund holdings, performance, and investment decisions. The platform offers real-time market data integration, multi-currency support, and comprehensive analytics while maintaining a clean, responsive user interface.
 
 ## Key Features
 
-### Portfolio Management
+### Fund Transparency
 - **Real-time Portfolio Valuation**: Live market data integration with Yahoo Finance API
-- **Multi-Currency Support**: Automatic conversion to NZD with support for USD and other currencies
-- **Transaction Tracking**: Complete buy/sell/reinvestment transaction history
-- **Trade Management Interface**: Add, edit, and delete trades with staged changes
-- **Position Management**: Current holdings with cost basis and gain/loss calculations
-- **Exited Positions**: Historical tracking of closed positions with realized gains
+- **Complete Holdings Disclosure**: Every position, allocation, and price publicly visible
+- **Transaction History**: Full transparency of all buy/sell/reinvestment transactions
+- **Position Details**: Current holdings with entry prices, cost basis, and gain/loss calculations
+- **Exited Positions**: Historical tracking of closed positions with realized gains and losses
 
 ### Performance Analytics
 - **S&P 500 Benchmarking**: Compare portfolio performance against market index
@@ -46,10 +45,10 @@ This application serves as a comprehensive personal investment portfolio tracker
 
 ### User Experience
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Anonymization Mode**: Password-protected privacy mode for sharing
 - **Dark Mode Support**: System-aware theme switching
 - **Performance Optimized**: Server-side rendering with intelligent caching
 - **Accessibility**: WCAG compliant with keyboard navigation support
+- **Public Access**: No authentication required - complete transparency for all visitors
 
 ## Architecture
 
@@ -382,17 +381,10 @@ Built with passion for personal finance tracking and portfolio management.
 
 Set these in your environment:
 
-- `DATABASE_URL`=postgres://...
-- `ADMIN_USER_ID`=<admin_user_id>
-- `ADMIN_EMAIL`=<admin@email.com>
+```env
+# Database Connection
+DATABASE_URL=your_neon_database_url
 
-Client requests to user-scoped API endpoints must include headers:
-
-- `x-user-id`: authenticated user ID
-- `x-user-email`: authenticated user email
-- `x-is-admin`: boolean string ("true" or "false")
-
-These are derived from `@stackframe/stack` user object:
-
-- user ID: `user.id || user.userId`
-- email: `user.primaryEmail || user.email || user.primaryEmailAddress?.emailAddress`
+# Optional: AI News Analysis
+GEMINI_API_KEY=your_gemini_api_key
+```

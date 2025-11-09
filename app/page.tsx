@@ -52,24 +52,24 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 py-16 sm:py-24 relative">
           <div className="text-center space-y-6">
             <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 dark:text-gray-100">
-              I Got Tired of Spreadsheets
-              <span className="text-blue-600 dark:text-blue-400"> So I Built This</span>
+              Twenty 20 Capital
+              <span className="text-blue-600 dark:text-blue-400"> Capital Appreciation Fund</span>
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              A portfolio tracker that actually shows me what I need to know. 
-              One place for all my investments with the metrics that matter.
+              A concentrated, high-conviction investment fund focused on quality businesses
+              with sustainable competitive advantages and exceptional long-term growth potential.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Link href="/rishs-portfolio">
+              <Link href="/portfolio">
                 <Button size="lg" className="group">
-                  See the Portfolio
+                  View Portfolio
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link href="#technical-deep-dive">
+              <Link href="/investment-thesis">
                 <Button size="lg" variant="outline">
                   <Code2 className="mr-2 h-4 w-4" />
-                  How It's Built
+                  Investment Thesis
                 </Button>
               </Link>
             </div>
@@ -77,40 +77,40 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Motivation Section */}
+      {/* Investment Philosophy Section */}
       <section className="py-12 sm:py-16 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-4xl mx-auto px-4">
-          <Card className="border-2 border-orange-200 dark:border-orange-900/50 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 shadow-lg">
+          <Card className="border-2 border-blue-200 dark:border-blue-900/50 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 shadow-lg">
             <CardHeader>
               <CardTitle className="text-xl text-gray-900 dark:text-gray-100">
-                Why Existing Solutions Weren't Enough
+                Investment Philosophy
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-700 dark:text-gray-300 font-medium">
-                I tried them all. Free tools, premium subscriptions, broker dashboards. They all fell short.
+                We focus on building concentrated positions in exceptional businesses with sustainable competitive advantages.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start">
-                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
-                  <span className="text-gray-600 dark:text-gray-400">Most trackers show you numbers but not the story. Where's my CAGR? How am I doing vs the market?</span>
+                  <span className="text-blue-600 dark:text-blue-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400"><strong>Quality First:</strong> We invest in businesses with strong moats, pricing power, and consistent returns on capital</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
-                  <span className="text-gray-600 dark:text-gray-400">Premium tools cost $20+/month and still left me feeling like something was missing</span>
+                  <span className="text-blue-600 dark:text-blue-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400"><strong>Long-Term Focus:</strong> Our holding period is measured in years, not months, allowing compound returns to work their magic</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
-                  <span className="text-gray-600 dark:text-gray-400">No way to share my progress publicly. I wanted transparency in my investing journey</span>
+                  <span className="text-blue-600 dark:text-blue-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400"><strong>Concentrated Portfolio:</strong> High conviction positions in our best ideas, typically 8-15 holdings</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-orange-600 dark:text-orange-400 mr-3 text-lg">▸</span>
-                  <span className="text-gray-600 dark:text-gray-400">Cookie-cutter dashboards that don't show what actually matters to me</span>
+                  <span className="text-blue-600 dark:text-blue-400 mr-3 text-lg">▸</span>
+                  <span className="text-gray-600 dark:text-gray-400"><strong>Full Transparency:</strong> Complete visibility into our portfolio, trades, and performance versus the S&P 500</span>
                 </li>
               </ul>
-              <div className="pt-4 border-t border-orange-200 dark:border-gray-700">
+              <div className="pt-4 border-t border-blue-200 dark:border-gray-700">
                 <p className="text-gray-800 dark:text-gray-200 font-semibold text-lg">
-                  So I built exactly what I wanted. And now it's public for everyone to see.
+                  Track our journey as we aim to outperform the market through patient, disciplined investing.
                 </p>
               </div>
             </CardContent>
@@ -121,14 +121,14 @@ export default function LandingPage() {
 
 
       {/* Key Features Section */}
-      <section className="py-12 sm:py-16 bg-gray-50 dark:bg-gray-900/50">
+      <section className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-gray-900 dark:text-gray-100">
-              What It Does
+              Performance & Transparency
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
-              Everything I needed to track my investments properly
+              Track our fund's performance with complete transparency
             </p>
           </div>
           
@@ -136,11 +136,11 @@ export default function LandingPage() {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center space-x-3 pb-3">
                 <ChartLine className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                <CardTitle className="text-base">Live Updates</CardTitle>
+                <CardTitle className="text-base">Real-Time Performance</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Prices refresh every 5 minutes when markets are open
+                  Live portfolio valuations updated throughout trading hours
                 </p>
               </CardContent>
             </Card>
@@ -148,11 +148,11 @@ export default function LandingPage() {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center space-x-3 pb-3">
                 <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-                <CardTitle className="text-base">Real Performance</CardTitle>
+                <CardTitle className="text-base">Benchmark Comparison</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  CAGR, total returns, and S&P 500 comparison
+                  Track performance vs S&P 500 with detailed CAGR analysis
                 </p>
               </CardContent>
             </Card>
@@ -160,11 +160,11 @@ export default function LandingPage() {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center space-x-3 pb-3">
                 <Globe className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                <CardTitle className="text-base">Unified View</CardTitle>
+                <CardTitle className="text-base">Complete Holdings</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  All investments in one clean, organized dashboard
+                  Every position, entry price, and allocation publicly visible
                 </p>
               </CardContent>
             </Card>
@@ -176,7 +176,7 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  My investing journey, wins and losses, all public
+                  All trades, gains, losses, and exited positions disclosed
                 </p>
               </CardContent>
             </Card>
@@ -260,21 +260,21 @@ export default function LandingPage() {
       <section className="py-12 sm:py-16 bg-blue-600 dark:bg-blue-700">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-            Want to See It in Action?
+            Explore the Capital Appreciation Fund
           </h2>
           <p className="text-lg text-blue-100 mb-6">
-            Check out the live portfolio or learn more about how it works.
+            View our complete portfolio holdings, performance metrics, and investment analysis.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/rishs-portfolio">
+            <Link href="/portfolio">
               <Button size="lg" variant="secondary" className="group">
                 View Portfolio
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Link href="/about">
+            <Link href="/about-us">
               <Button size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-blue-600">
-                About Me
+                About Twenty 20 Capital
               </Button>
             </Link>
           </div>

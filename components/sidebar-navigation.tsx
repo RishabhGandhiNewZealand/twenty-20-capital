@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -14,84 +14,30 @@ import {
   FileText, 
   BarChart3, 
   Newspaper, 
-  User,
-  Shield,
-  ShieldOff,
-  Database,
-  LogIn,
-  LogOut as LogOutIcon,
   Briefcase,
   BookOpen,
-  Search,
   Users
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { Button } from "@/components/ui/button"
-import { useStackApp, useUser } from "@stackframe/stack"
 
-function toTitleCase(input: string): string {
-  return input
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ")
-}
-
-function getRawEmail(u: any): string {
-  return (
-    u?.primaryEmail ||
-    u?.email ||
-    u?.primaryEmailAddress?.emailAddress ||
-    u?.primaryEmailAddress?.email ||
-    ""
-  )
-  .toString()
-}
-
-type Props = { adminEmail?: string }
-
-export default function SidebarNavigation({ adminEmail = "" }: Props) {
+export default function SidebarNavigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isInsightsOpen, setIsInsightsOpen] = useState(true)
   const [isResearchOpen, setIsResearchOpen] = useState(true)
-  const [isMyPortfolioOpen, setIsMyPortfolioOpen] = useState(true)
-  const { isAnonymized, setAnonymized } = useAnonymization()
-  const user = useUser()
-  const stack = useStackApp()
 
-  const rawUserEmail = useMemo(() => getRawEmail(user), [user])
-  const userEmail = rawUserEmail
-  const displayName = useMemo(() => {
-    const base = (user?.displayName || user?.name || user?.username || userEmail.split("@")[0] || "").toString()
-    return toTitleCase(base)
-  }, [user, userEmail])
-
-  const isAdmin = useMemo(() => !!rawUserEmail && !!adminEmail && rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
-
-  useEffect(() => {
-    setAnonymized(!isAdmin)
-  }, [isAdmin, setAnonymized])
-
-  // Basic nav items that are always visible
+  // Navigation items
   const basicNavItems = [
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // My Portfolio section items - includes trades for all users
-  const myPortfolioItems = user ? [
-    { href: "/portfolio", label: "Portfolio", icon: Briefcase },
-    { href: "/trades", label: "Trades", icon: Database }
-  ] : []
-
-  // Rish's Insights section items
-  const rishInsightsItems = [
-    { href: "/rishs-portfolio", label: "Rish's Portfolio", icon: TrendingUp },
-    { href: "/analyses", label: "Analyses", icon: BarChart3 },
+  // Fund Insights section items
+  const fundInsightsItems = [
+    { href: "/portfolio", label: "Portfolio", icon: TrendingUp },
     { href: "/reports", label: "Reports", icon: FileText },
+    { href: "/analyses", label: "Analyses", icon: BarChart3 },
     { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
   ]
 
@@ -102,19 +48,12 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
 
   // Other nav items
   const otherNavItems = [
-    { href: "/about-us", label: "About Us", icon: Users },
+    { href: "/about-us", label: "About", icon: Users },
   ]
 
   // Get current page info for header
-  const allNavItems = [...basicNavItems, ...myPortfolioItems, ...rishInsightsItems, ...researchItems, ...otherNavItems]
+  const allNavItems = [...basicNavItems, ...fundInsightsItems, ...researchItems, ...otherNavItems]
   let currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
-  
-  // Special handling for renamed/moved pages
-  if (pathname === '/investment-thesis') {
-    currentPage = { href: '/investment-thesis', label: 'Investment Thesis', icon: BookOpen }
-  } else if (pathname === '/portfolio') {
-    currentPage = { href: '/portfolio', label: 'Portfolio', icon: Briefcase }
-  }
 
   useEffect(() => {
     const checkMobile = () => {
@@ -155,12 +94,12 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           <Link href="/" className="flex items-center space-x-2">
             <Image 
               src="/logo.png" 
-              alt="Rish Invests Logo" 
+              alt="Twenty 20 Capital Logo" 
               width={32} 
               height={32}
               className="h-7 w-7 sm:h-8 sm:w-8"
             />
-            <span className="text-base sm:text-lg font-bold">Rish Invests</span>
+            <span className="text-base sm:text-lg font-bold">Twenty 20 Capital</span>
           </Link>
 
           {/* Toggle Button */}
@@ -182,45 +121,9 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
             <span className="text-sm font-medium hidden sm:inline">{currentPage.label}</span>
           </div>
 
-          {/* Right side: Theme + User */}
+          {/* Right side: Theme Toggle */}
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            {/* Desktop auth controls */}
-            <div className="hidden sm:flex items-center gap-2">
-              {!user ? (
-                <Link href="/login">
-                  <Button variant="outline" size="sm" className="ml-2">
-                    Login / Sign Up
-                  </Button>
-                </Link>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm font-medium">{displayName}</span>
-                    <span className="text-xs text-muted-foreground">{userEmail}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" className="gap-1" onClick={() => stack.signOut()}>
-                    <LogOutIcon className="h-4 w-4" />
-                    Logout
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile icon-only auth controls */}
-            <div className="flex sm:hidden items-center gap-1">
-              {!user ? (
-                <Link href="/login" aria-label="Login or Sign Up">
-                  <Button variant="ghost" size="icon">
-                    <LogIn className="h-5 w-5" />
-                  </Button>
-                </Link>
-              ) : (
-                <Button variant="ghost" size="icon" aria-label="Logout" onClick={() => stack.signOut()}>
-                  <LogOutIcon className="h-5 w-5" />
-                </Button>
-              )}
-            </div>
           </div>
         </div>
       </header>
@@ -258,55 +161,13 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
 
-            {/* My Portfolio Section - only show if user is logged in */}
-            {user && myPortfolioItems.length > 0 && (
-              <li className="mt-4">
-                <button
-                  onClick={() => setIsMyPortfolioOpen(!isMyPortfolioOpen)}
-                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
-                >
-                  <span>My Portfolio</span>
-                  {isMyPortfolioOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </button>
-                {isMyPortfolioOpen && (
-                  <ul className="mt-1 ml-3 space-y-1">
-                    {myPortfolioItems.map((item) => {
-                      const Icon = item.icon
-                      const isActive = pathname === item.href
-                      
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                              isActive
-                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                            )}
-                          >
-                            <Icon className="h-5 w-5" />
-                            <span>{item.label}</span>
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </li>
-            )}
-
-            {/* Rish's Insights Section - visible for all users */}
+            {/* Fund Insights Section */}
             <li className="mt-4">
               <button
                 onClick={() => setIsInsightsOpen(!isInsightsOpen)}
                 className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
               >
-                <span>Rish's Insights</span>
+                <span>Fund Insights</span>
                 {isInsightsOpen ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
@@ -315,7 +176,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               </button>
               {isInsightsOpen && (
                 <ul className="mt-1 ml-3 space-y-1">
-                  {rishInsightsItems.map((item) => {
+                  {fundInsightsItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href
                     
@@ -403,40 +264,6 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
           </ul>
-          
-          {/* Auth control at the bottom */}
-          <div className="pt-4 mt-4 border-t border-border">
-            {!user ? (
-              <Link href="/login" className="w-full">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  size="sm"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span>Login / Sign Up</span>
-                </Button>
-              </Link>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
-                  Logged in as {displayName} ({userEmail})
-                </div>
-                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
-                  {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
-                    Manage account
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
-                    <LogOutIcon className="h-4 w-4 mr-2" />
-                    <span>Logout</span>
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
         </nav>
       </aside>
 

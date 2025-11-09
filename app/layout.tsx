@@ -5,15 +5,13 @@ import "./globals.css"
 import SidebarNavigation from "@/components/sidebar-navigation"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes"
-import { AnonymizationProvider } from "@/contexts/AnonymizationContext"
-import { StackProvider, StackServerApp } from "@stackframe/stack"
 import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rish Invests",
-  description: "Track your personal investing journey and portfolio performance",
+  title: "Twenty 20 Capital",
+  description: "Twenty 20 Capital - Capital Appreciation Fund Performance",
   generator: 'v0.dev',
   icons: {
     icon: '/logo-favicon.png',
@@ -33,29 +31,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const stackApp = new StackServerApp({
-    projectId: process.env.NEXT_PUBLIC_STACK_PROJECT_ID || "",
-    publishableClientKey: process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY || "",
-    secretServerKey: process.env.STACK_SECRET_SERVER_KEY || "",
-    tokenStore: "nextjs-cookie",
-  })
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <StackProvider app={stackApp}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <AnonymizationProvider>
-              <Suspense fallback={null}>
-                <SidebarNavigation adminEmail={process.env.ADMIN_EMAIL || ""} />
-              </Suspense>
-              <main className="min-h-screen">
-                {children}
-              </main>
-              <Analytics />
-            </AnonymizationProvider>
-          </ThemeProvider>
-        </StackProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Suspense fallback={null}>
+            <SidebarNavigation />
+          </Suspense>
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   )
