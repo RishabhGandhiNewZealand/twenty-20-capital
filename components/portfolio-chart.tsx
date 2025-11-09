@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, CalendarIcon } from "lucide-react"
 import { formatPercentage as formatPercentageBase, calculateTWRPerformanceData } from "@/lib/financial-calculations"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { cn } from "@/lib/utils"
 import {
   LineChart,
@@ -62,8 +61,7 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('ALL')
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
-  const { isAnonymized } = useAnonymization()
-  const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : isAnonymized
+  const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : false
 
   useEffect(() => {
     async function fetchPortfolioHistory() {

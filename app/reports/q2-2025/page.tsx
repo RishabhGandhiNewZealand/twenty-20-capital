@@ -3,11 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, AlertTriangle, Target, Plus, Minus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { maskCurrency, maskShares } from "@/lib/anonymization-utils"
+import { formatCurrency } from "@/lib/financial-calculations"
+import { formatNumber } from "@/lib/format-utils"
 
 export default function Q2Report2025Page() {
-  const { isAnonymized } = useAnonymization()
 
   const quarterStats = [
     { label: "Q2 Return", value: "+5.18%", icon: TrendingUp },
@@ -142,7 +141,7 @@ export default function Q2Report2025Page() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">
-                    {stat.isCurrency ? maskCurrency(stat.value, isAnonymized, 'NZD') : stat.value}
+                    {stat.isCurrency ? formatCurrency(stat.value) : stat.value}
                   </div>
                 </CardContent>
               </Card>
@@ -231,11 +230,11 @@ export default function Q2Report2025Page() {
                             <span className="font-medium text-gray-900">{holding.allocation}%</span>
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <span className="text-gray-700">{maskShares(holding.shares, isAnonymized)}</span>
+                            <span className="text-gray-700">{formatNumber(holding.shares, 2)}</span>
                           </td>
                           <td className="py-3 px-2 text-right">
                             <span className="font-medium text-gray-900">
-                              {maskCurrency(holding.nzdValue, isAnonymized, 'NZD')}
+                              {formatCurrency(holding.nzdValue)}
                             </span>
                           </td>
                           <td className="py-3 px-2 text-center">
@@ -269,7 +268,7 @@ export default function Q2Report2025Page() {
                   The second quarter gave us a continuation of the uncertainty that started last quarter. It started with liberation day in the US. Where the administration announced very large reciprocal tariffs, this caused a large dip of around 10% in the S&P 500. But over the last few months, these tariffs have been largely removed, and new trade deals are in place. This caused a strong recovery in the market. However, the uncertainty around them is still in place as the administration looks to further its goals. Moreover, we had major escalations in wars across the world, namely the Russia Ukraine and Israel Iran. The USA intervened directly in the Israel Iran war, playing global police and causing a ceasefire.
                 </p>
                 <p>
-                  Overall, the portfolio has performed exactly in line with the index. The performance of the individual stocks was better than the market index. However, the NZD strengthened with respect to the US dollar. This was to be expected with the increased uncertainty around the US markets. The portfolio is currently too small to accurately hedge against USD/NZD fluctuations, it is something I want to do when the portfolio size is greater than {isAnonymized ? "$***" : "$100k"} USD. This quarter we had no sells and 2 buys. Overall, the portfolio is up 5.18% vs the S&P 6.05%.
+                  Overall, the portfolio has performed exactly in line with the index. The performance of the individual stocks was better than the market index. However, the NZD strengthened with respect to the US dollar. This was to be expected with the increased uncertainty around the US markets. The portfolio is currently too small to accurately hedge against USD/NZD fluctuations, it is something I want to do when the portfolio size is greater than $100k USD. This quarter we had no sells and 2 buys. Overall, the portfolio is up 5.18% vs the S&P 6.05%.
                 </p>
               </div>
             </CardContent>
@@ -301,9 +300,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $240-250 USD</p>
                     <p><strong>Cost Basis:</strong> $173 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(18, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(18, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $176 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(5280, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(5280)}</p>
                   </div>
                 </div>
 
@@ -323,9 +322,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $90-100 NZD</p>
                     <p><strong>Cost Basis:</strong> $64.20 NZD</p>
-                    <p><strong>Final Position:</strong> {maskShares(67, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(67, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $67.15 NZD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(4499, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(4499)}</p>
                   </div>
                 </div>
               </div>
@@ -358,9 +357,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $570-580 USD</p>
                     <p><strong>Cost Basis:</strong> $449 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(4, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $561 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(3740, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(3740)}</p>
                   </div>
                 </div>
 
@@ -380,9 +379,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $720 USD</p>
                     <p><strong>Cost Basis:</strong> $450 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(3, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(3, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $719 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(3595, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(3595)}</p>
                   </div>
                 </div>
 
@@ -402,9 +401,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $1100 USD</p>
                     <p><strong>Cost Basis:</strong> $769 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(2, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(2, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $1340 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(4467, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(4467)}</p>
                   </div>
                 </div>
 
@@ -424,9 +423,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $620-670 USD</p>
                     <p><strong>Cost Basis:</strong> $510 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(5, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(5, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $527 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(4392, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(4392)}</p>
                   </div>
                 </div>
 
@@ -446,9 +445,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $270-300 USD</p>
                     <p><strong>Cost Basis:</strong> $194 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(13, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(13, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $219 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(4745, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(4745)}</p>
                   </div>
                 </div>
 
@@ -468,9 +467,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $110-120 USD</p>
                     <p><strong>Cost Basis:</strong> $68.4 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(40, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(40, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $93.3 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(6220, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(6220)}</p>
                   </div>
                 </div>
 
@@ -490,9 +489,9 @@ export default function Q2Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $900-1000 USD</p>
                     <p><strong>Cost Basis:</strong> $713 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(4, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $774 USD</p>
-                    <p><strong>Portfolio Value:</strong> {maskCurrency(5160, isAnonymized, 'NZD')}</p>
+                    <p><strong>Portfolio Value:</strong> {formatCurrency(5160)}</p>
                   </div>
                 </div>
               </div>

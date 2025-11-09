@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/button"
 import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
 import { formatCurrency } from "@/lib/financial-calculations"
 import { formatDate } from "@/lib/format-utils"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { maskCurrency } from "@/lib/anonymization-utils"
+// Anonymization removed - all values now display real data
 
 interface ChartData {
   name: string
@@ -62,8 +61,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   const [playbackSpeed, setPlaybackSpeed] = useState(1) // 0.5, 1, or 2
   const cacheRef = useRef<Map<string, HoldingAtDate[]>>(new Map())
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const { isAnonymized } = useAnonymization()
-  const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : isAnonymized
+  const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : false
 
   useEffect(() => {
     async function loadCompositionData() {

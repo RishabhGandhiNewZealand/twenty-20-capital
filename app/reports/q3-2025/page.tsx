@@ -3,11 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Briefcase, AlertTriangle, Target, Plus, Minus } from "lucide-react"
 import { getLogoUrl } from "@/lib/company-utils"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { maskCurrency, maskShares } from "@/lib/anonymization-utils"
+import { formatCurrency } from "@/lib/financial-calculations"
+import { formatNumber } from "@/lib/format-utils"
 
 export default function Q3Report2025Page() {
-  const { isAnonymized } = useAnonymization()
 
   const quarterStats = [
     { label: "Q3 Return", value: "+10%", icon: TrendingUp },
@@ -160,7 +159,7 @@ export default function Q3Report2025Page() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-gray-900">
-                    {stat.isCurrency ? maskCurrency(stat.value, isAnonymized, 'NZD') : stat.value}
+                    {stat.isCurrency ? formatCurrency(stat.value) : stat.value}
                   </div>
                 </CardContent>
               </Card>
@@ -252,11 +251,11 @@ export default function Q3Report2025Page() {
                             <span className="font-medium text-gray-900">{holding.allocation}%</span>
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <span className="text-gray-700">{maskShares(holding.shares, isAnonymized)}</span>
+                            <span className="text-gray-700">{formatNumber(holding.shares, 0)}</span>
                           </td>
                           <td className="py-3 px-2 text-right">
                             <span className="font-medium text-gray-900">
-                              {maskCurrency(holding.nzdValue, isAnonymized, 'NZD')}
+                              {formatCurrency(holding.nzdValue)}
                             </span>
                           </td>
                           <td className="py-3 px-2 text-center">
@@ -287,7 +286,7 @@ export default function Q3Report2025Page() {
             <CardContent>
               <div className="text-gray-700 space-y-4">
                 <p>
-                  <strong>Goal:</strong> Avoid permanent capital loss and achieve a +5% return on the index for the next 40+ years. The primary comparison point will be the S&P 500 on an unhedged basis. I will be comparing them on a money-weighted return basis, this will account for inflows of capital into the portfolio. I added roughly {maskCurrency(5000, isAnonymized, 'NZD')} this quarter into the portfolio and plan to maintain or exceed this level of contribution next quarter.
+                  <strong>Goal:</strong> Avoid permanent capital loss and achieve a +5% return on the index for the next 40+ years. The primary comparison point will be the S&P 500 on an unhedged basis. I will be comparing them on a money-weighted return basis, this will account for inflows of capital into the portfolio. I added roughly {formatCurrency(5000)} this quarter into the portfolio and plan to maintain or exceed this level of contribution next quarter.
                 </p>
               </div>
             </CardContent>
@@ -350,7 +349,7 @@ export default function Q3Report2025Page() {
                     Two themes worth noting: First, geopolitical tensions in Israel/Gaza and Russia/Ukraine continue escalating despite ceasefire talks, with Russia testing NATO's boundaries and Israel doubling down on their approach. Without passing judgment, it's clear all parties are pushing closer to the brink.
                   </p>
                   <p>
-                    Second, we're definitively in an AI bubble, though it likely has at least another year or more to run. The distinction is crucial: Google, Amazon, Microsoft, and Meta can absorb AI infrastructure spending into their existing businesses if ROI never materializes. OpenAI is different—signing massive deals ({maskCurrency(300000000000, isAnonymized, 'USD')} with Oracle) without substantial revenue, now making equity investments (like their AMD stake) rather than cash transactions. This mirrors 2000s bubble dynamics exactly.
+                    Second, we're definitively in an AI bubble, though it likely has at least another year or more to run. The distinction is crucial: Google, Amazon, Microsoft, and Meta can absorb AI infrastructure spending into their existing businesses if ROI never materializes. OpenAI is different—signing massive deals ({formatCurrency(300000000000)} with Oracle) without substantial revenue, now making equity investments (like their AMD stake) rather than cash transactions. This mirrors 2000s bubble dynamics exactly.
                   </p>
                   <p>
                     These moves aren't irrational, but they're betting on OpenAI cracking ASI (artificial superintelligence) and monetizing it massively within years—with no fallback plan. Even in bubble conditions, investor tolerance for cash burn is finite.
@@ -408,11 +407,11 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value (MELI):</strong> $3000 USD</p>
                     <p><strong>Cost Basis (MELI):</strong> $2475 USD</p>
-                    <p><strong>Final Position (MELI):</strong> {maskShares(0.5, isAnonymized)} shares</p>
+                    <p><strong>Final Position (MELI):</strong> {formatNumber(0.5, 0)} shares</p>
                     <p><strong>Price@30/09/2025 (MELI):</strong> $2336 USD</p>
                     <p><strong>Intrinsic value (SE):</strong> $250 USD</p>
                     <p><strong>Cost Basis (SE):</strong> $194 USD</p>
-                    <p><strong>Final Position (SE):</strong> {maskShares(7, isAnonymized)} shares</p>
+                    <p><strong>Final Position (SE):</strong> {formatNumber(7, 0)} shares</p>
                     <p><strong>Price@30/09/2025 (SE):</strong> $179 USD</p>
                   </div>
                 </div>
@@ -431,7 +430,7 @@ export default function Q3Report2025Page() {
                     <h3 className="font-bold text-gray-900">Zeta Limited (ZETA: NYSE)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    Zeta Limited (ZETA: NYSE) represents the high-risk allocation within my portfolio, designed to provide the potential for amplified gains. My strategy is to maintain one or two such positions—companies with the capability to generate outsized returns (even up to 10-100x)—while ensuring that quality is not completely sacrificed in pursuit of this potential. My primary focus is on smaller market cap companies, typically around {maskCurrency(1000000000, isAnonymized, 'USD')}, that are currently experiencing negative sentiment or have recently been impacted by adverse events. These types of positions are inherently volatile, often lacking strong moats, and could feasibly go to zero, so I intend to limit this segment to less than 10% of the overall portfolio. This approach is a slight deviation from my core investment thesis, given the elevated volatility, but the fundamental principles still apply I am searching for companies with the ability to compound over the long term and build enduring value.
+                    Zeta Limited (ZETA: NYSE) represents the high-risk allocation within my portfolio, designed to provide the potential for amplified gains. My strategy is to maintain one or two such positions—companies with the capability to generate outsized returns (even up to 10-100x)—while ensuring that quality is not completely sacrificed in pursuit of this potential. My primary focus is on smaller market cap companies, typically around {formatCurrency(1000000000)}, that are currently experiencing negative sentiment or have recently been impacted by adverse events. These types of positions are inherently volatile, often lacking strong moats, and could feasibly go to zero, so I intend to limit this segment to less than 10% of the overall portfolio. This approach is a slight deviation from my core investment thesis, given the elevated volatility, but the fundamental principles still apply I am searching for companies with the ability to compound over the long term and build enduring value.
                   </p>
                   <p className="text-gray-700 mb-2">
                     Zeta Limited is the first company to fill this role. Zeta operates as an enterprise software provider, helping clients optimise their marketing and advertising strategies. The offering is straightforward in concept: by leveraging proprietary data, customer data, and machine learning algorithms, Zeta identifies optimal audiences for its clients’ products. The return on investment delivered to customers is compelling—by targeting more likely buyers, clients can achieve better results while reaching fewer people. Notably, Zeta’s data is considered among the top three or four globally (after Google and Meta), enabling effective targeting at lower costs and with greater flexibility.
@@ -448,7 +447,7 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $50 USD</p>
                     <p><strong>Cost Basis:</strong> $16.8 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(97, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(97, 0)} shares</p>
                     <p><strong>Price@30/09/2025:</strong> $16.78 USD</p>
                   </div>
                 </div>
@@ -518,12 +517,12 @@ export default function Q3Report2025Page() {
                     <h3 className="font-bold text-gray-900">UBER (UBER: NYSE) (A tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    Uber continues to perform well, executing effectively on its strategic initiatives. This quarter, revenue grew by 18%, accompanied by further gains in profitability. Notably, the Uber One loyalty program is delivering significant value to users and is proving to be a robust customer acquisition tool—membership is growing at 50% year-over-year, and there is a realistic path to {maskShares(100000000, isAnonymized)} subscribers over the next five years. In addition, Uber is steadily expanding its partnerships with a range of autonomous vehicle players, including WeRide, AvRide, Cruise, May Mobility, Nuro/Lucid, and Volkswagen, among others. The company’s strategy is to foster a fragmented AV market with multiple participants, positioning itself as the leading aggregator. While Waymo has rapidly scaled and represents the largest competitive threat to Uber’s U.S. business, Uber’s strong execution thus far gives me continued confidence. I remain bullish on Uber’s prospects and took advantage of minor share price dips to add slightly to my position. Although the stock has appreciated, I believe there remains substantial upside ahead.
+                    Uber continues to perform well, executing effectively on its strategic initiatives. This quarter, revenue grew by 18%, accompanied by further gains in profitability. Notably, the Uber One loyalty program is delivering significant value to users and is proving to be a robust customer acquisition tool—membership is growing at 50% year-over-year, and there is a realistic path to {formatNumber(100000000, 0)} subscribers over the next five years. In addition, Uber is steadily expanding its partnerships with a range of autonomous vehicle players, including WeRide, AvRide, Cruise, May Mobility, Nuro/Lucid, and Volkswagen, among others. The company’s strategy is to foster a fragmented AV market with multiple participants, positioning itself as the leading aggregator. While Waymo has rapidly scaled and represents the largest competitive threat to Uber’s U.S. business, Uber’s strong execution thus far gives me continued confidence. I remain bullish on Uber’s prospects and took advantage of minor share price dips to add slightly to my position. Although the stock has appreciated, I believe there remains substantial upside ahead.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $120 USD</p>
                     <p><strong>Cost Basis:</strong> $69 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(41, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(41, 0)} shares</p>
                     <p><strong>Price@30/09/2025:</strong> $98 USD</p>
                   </div>
                 </div>
@@ -542,12 +541,12 @@ export default function Q3Report2025Page() {
                     <h3 className="font-bold text-gray-900">Amazon (AMZN: NASDAQ) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    My confidence in Amazon continues to grow, as the company maintains its leadership across various sectors and, in my view, remains undervalued by the market. Amazon Web Services (AWS) stands as the backbone of the internet, underscored by the recent outage—which, while likely causing a short-term financial impact, ultimately serves to highlight just how vital AWS is for investors. AWS’s momentum is picking up again, fuelled by strong AI-driven demand, and the company is increasingly winning business from smaller enterprises—a more impactful growth strategy, I believe, than simply pursuing large AI contracts as Microsoft has. The cloud backlog at AWS is now up over 20%, surpassing the {maskCurrency(200000000000, isAnonymized, 'USD')} mark. After sentiment dipped following Andy Jassy’s earnings call, I took advantage of the market’s reaction to add to my position. With AI adoption accelerating the need for cloud services, I expect AWS’s growth trajectory to strengthen further. This quarter, I had a key insight into AWS’s enduring advantage: once data is stored at scale in a particular cloud, it becomes effectively immovable between providers, locking in long-term demand for compute within that ecosystem. Given AWS’s unmatched data volume, it is best positioned to capture this enduring demand over the long haul.
+                    My confidence in Amazon continues to grow, as the company maintains its leadership across various sectors and, in my view, remains undervalued by the market. Amazon Web Services (AWS) stands as the backbone of the internet, underscored by the recent outage—which, while likely causing a short-term financial impact, ultimately serves to highlight just how vital AWS is for investors. AWS’s momentum is picking up again, fuelled by strong AI-driven demand, and the company is increasingly winning business from smaller enterprises—a more impactful growth strategy, I believe, than simply pursuing large AI contracts as Microsoft has. The cloud backlog at AWS is now up over 20%, surpassing the {formatCurrency(200000000000)} mark. After sentiment dipped following Andy Jassy’s earnings call, I took advantage of the market’s reaction to add to my position. With AI adoption accelerating the need for cloud services, I expect AWS’s growth trajectory to strengthen further. This quarter, I had a key insight into AWS’s enduring advantage: once data is stored at scale in a particular cloud, it becomes effectively immovable between providers, locking in long-term demand for compute within that ecosystem. Given AWS’s unmatched data volume, it is best positioned to capture this enduring demand over the long haul.
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $300 USD</p>
                     <p><strong>Cost Basis:</strong> $203 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(19, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(19, 0)} shares</p>
                     <p><strong>Price@30/09/2025:</strong> $220 USD</p>
                   </div>
                 </div>
@@ -593,7 +592,7 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $300 USD</p>
                     <p><strong>Cost Basis:</strong> $173 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(18, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(18, 0)} shares</p>
                     <p><strong>Price@30/09/2025:</strong> $243 USD</p>
                   </div>
                 </div>
@@ -617,7 +616,7 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $95 NZD</p>
                     <p><strong>Cost Basis:</strong> $64.20 NZD</p>
-                    <p><strong>Final Position:</strong> {maskShares(67, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(67, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> 62.9 NZD</p>
                   </div>
                 </div>
@@ -641,7 +640,7 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $600 USD</p>
                     <p><strong>Cost Basis:</strong> $449 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(4, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $568 USD</p>
                   </div>
                 </div>
@@ -665,7 +664,7 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $1150</p>
                     <p><strong>Cost Basis:</strong> $769 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(2, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(2, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $1199 USD</p>
                   </div>
                 </div>
@@ -689,7 +688,7 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $650 USD</p>
                     <p><strong>Cost Basis:</strong> $510 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(5, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(5, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $486 USD</p>
                   </div>
                 </div>
@@ -713,7 +712,7 @@ export default function Q3Report2025Page() {
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p><strong>Intrinsic value:</strong> $1000 USD</p>
                     <p><strong>Cost Basis:</strong> $713 USD</p>
-                    <p><strong>Final Position:</strong> {maskShares(4, isAnonymized)} shares</p>
+                    <p><strong>Final Position:</strong> {formatNumber(4, 0)} shares</p>
                     <p><strong>Price@30/06/2025:</strong> $968 USD</p>
                   </div>
                 </div>
@@ -729,7 +728,7 @@ export default function Q3Report2025Page() {
             <CardContent>
               <div className="text-gray-700">
                 <p>
-                  Overall, this quarter had its share of excitement, with most positions performing to expectations or better. The portfolio’s moat is stronger than ever, setting the stage for continued growth. Next quarter, I’m hoping to add more than {maskCurrency(5000, isAnonymized, 'NZD')} and aiming for an {maskCurrency(8000, isAnonymized, 'NZD')} target. The outlook is bright, and the strategy is working—steady progress toward long-term goals.
+                  Overall, this quarter had its share of excitement, with most positions performing to expectations or better. The portfolio’s moat is stronger than ever, setting the stage for continued growth. Next quarter, I’m hoping to add more than {formatCurrency(5000)} and aiming for an {formatCurrency(8000)} target. The outlook is bright, and the strategy is working—steady progress toward long-term goals.
                 </p>
               </div>
             </CardContent>
