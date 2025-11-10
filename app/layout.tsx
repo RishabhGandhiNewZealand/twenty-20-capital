@@ -6,6 +6,8 @@ import SidebarNavigation from "@/components/sidebar-navigation"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes"
 import { Suspense } from "react"
+import { StackProvider } from "@stackframe/stack"
+import { stackServerApp } from "@/lib/stack"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,15 +36,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Suspense fallback={null}>
-            <SidebarNavigation />
-          </Suspense>
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Analytics />
-        </ThemeProvider>
+        <StackProvider app={stackServerApp}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <Suspense fallback={null}>
+              <SidebarNavigation />
+            </Suspense>
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <Analytics />
+          </ThemeProvider>
+        </StackProvider>
       </body>
     </html>
   )

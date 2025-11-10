@@ -266,7 +266,7 @@ export default function Q1Report2025Page() {
             <CardContent>
               <div className="text-gray-700 space-y-4">
                 <p>
-                  Overall, the portfolio has performed in line with the index. The quarter started off well, resulting in roughly 8% gains for the portfolio but in recent weeks, we have fallen to a 5.4% loss. The index is currently at a 4.2% loss. We are underperforming the index this quarter. However, this is to be expected, my portfolio is inherently higher risk, as I try to get a higher than market return. Thus, in a downturn I expect the portfolio to fall more than the broader market. As the market has fallen. I have continued adding to my positions and starting one new position. I also trimmed one position. I was also exited out of 3 positions, one of which is a mistake. Let's get into it.
+                  Overall, the portfolio has performed in line with the index. The quarter started off well, resulting in roughly 8% gains for the portfolio but in recent weeks, we have fallen to a 5.4% loss. The index is currently at a 4.2% loss. we are underperforming the index this quarter. However, this is to be expected, our portfolio is inherently higher risk, as I try to get a higher than market return. Thus, in a downturn I expect the portfolio to fall more than the broader market. As the market has fallen. I have continued adding to my positions and starting one new position. I also trimmed one position. we were also exited out of 3 positions, one of which is a mistake. Let's get into it.
                 </p>
               </div>
             </CardContent>
@@ -293,13 +293,13 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Canadian Pacific Kansas City Railways (CP: NYSE) (A tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    This quarter I exited Canadian pacific in early February after the Trump Canadian and Mexican tariffs got announced. Truth be told I was scared out of this position by macro-economic factors. There was no change to the fundamentals and the company will likely continue to do well into the foreseeable future. While the demand for their services may decrease the long-term growth prospects are largely unchanged as I came to understand that the tariffs will not be a factor long term.
+                    This quarter I exited Canadian pacific in early February after the Trump Canadian and Mexican tariffs got announced. Truth be told we were scared out of this position by macro-economic factors. There was no change to the fundamentals and the company will likely continue to do well into the foreseeable future. While the demand for their services may decrease the long-term growth prospects are largely unchanged as I came to understand that the tariffs will not be a factor long term.
                   </p>
                   <p className="text-gray-700 mb-2">
-                    I reacted too quickly after 'bad' news and sold on fear rather than reason here. And I need to do better in this regard. This lesson is now learnt, and I will react appropriately to news in the future, in many cases not reacting at all.
+                    I reacted too quickly after 'bad' news and sold on fear rather than reason here. And I need to do better in this regard. This lesson is now learnt, and we will react appropriately to news in the future, in many cases not reacting at all.
                   </p>
                   <p className="text-gray-700">
-                    Luckily for me, the price of CP stock has remained largely unchanged since I sold. Offering me an opportunity to re-enter the position in the future. It is a business that I wish to own for the long term, despite not offering super high growth, it should provide stable returns from its current price point.
+                    Luckily for me, the price of CP stock has remained largely unchanged since we sold. Offering me an opportunity to re-enter the position in the future. It is a business that I wish to own for the long term, despite not offering super high growth, it should provide stable returns from its current price point.
                   </p>
                 </div>
 
@@ -314,10 +314,10 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Morgan Stanley Capital (MSCI: NYSE) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    I also exited out of MSCI for two reasons, Firstly I believe the company is very similar to S&P global, albeit with slightly faster growth but less diversified in its product offerings. This poses slightly higher risk. Secondly, after SPGI's recent merger and the debt renewal wall coming up, I believe that SPGI has significantly greater potential for outperformance. And the market is not appropriately pricing this growth. The funds from the sale were directly transferred into SPGI to consolidate my financial data provider's position. Only time will tell if this was the correct move or not.
+                    I also exited out of MSCI for two reasons, Firstly we believe the company is very similar to S&P global, albeit with slightly faster growth but less diversified in its product offerings. This poses slightly higher risk. Secondly, after SPGI's recent merger and the debt renewal wall coming up, we believe that SPGI has significantly greater potential for outperformance. And the market is not appropriately pricing this growth. The funds from the sale were directly transferred into SPGI to consolidate my financial data provider's position. Only time will tell if this was the correct move or not.
                   </p>
                   <p className="text-gray-700">
-                    One risk to this play is that MSCI beats expectations better than SPGI and the market rates the company back to 50+ PE multiples. But betting on the market re rating companies is a not a reasonable strategy. If MSCI trades down over the course of the year, I will happily add to it.
+                    One risk to this play is that MSCI beats expectations better than SPGI and the market rates the company back to 50+ PE multiples. But betting on the market re rating companies is a not a reasonable strategy. If MSCI trades down over the course of the year, we will happily add to it.
                   </p>
                 </div>
 
@@ -332,10 +332,10 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Salesforce (CRM: NYSE) (A tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    I sold out of my shares of Salesforce in mid to late March, for one main reason. I needed the cash for better opportunities. Amazon and Google both sold off significantly. I think they are much higher quality business than Salesforce. So, I traded up the quality of my portfolio to those businesses. At current prices, AMZN especially is a great deal which has sold off with the broader market. So I may look to trim/exit out of my entire position over the next quarter. I think Salesforce is an excellent company with great customer lock in. And it will continue to grow for the next decade.
+                    we sold out of my shares of Salesforce in mid to late March, for one main reason. I needed the cash for better opportunities. Amazon and Google both sold off significantly. we think they are much higher quality business than Salesforce. So, I traded up the quality of our portfolio to those businesses. At current prices, AMZN especially is a great deal which has sold off with the broader market. So I may look to trim/exit out of my entire position over the next quarter. we think Salesforce is an excellent company with great customer lock in. And it will continue to grow for the next decade.
                   </p>
                   <p className="text-gray-700">
-                    The question I am trying to answer is, will it be faster than AMZN, at current prices? I think not.
+                    The question I am trying to answer is, will it be faster than AMZN, at current prices? we think not.
                   </p>
                 </div>
 
@@ -350,7 +350,7 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Arista Network (ANET: NYSE) (A Tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    This report wouldn't be complete without mentioning my second blunder this quarter. I started a small position in Arista before closing it the next day for a small 2% loss. I started a position in Arista because I thought it was undervalued after the Deep Seek selloff. But I found myself asking questions about their business that I did not know the answer to. This gave me great uncertainty in the holding and made me uncomfortable holding it because I did not know enough about their business. So when prices dropped or increased, it was not easy to decide to buy more or to sell. Thus I decided to sell until I better understand the business. Overall, I do think the business is solid, but I would need a larger margin of safety before entering due to high risk.
+                    This report wouldn't be complete without mentioning my second blunder this quarter. we started a small position in Arista before closing it the next day for a small 2% loss. we started a position in Arista because I thought it was undervalued after the Deep Seek selloff. But I found myself asking questions about their business that I did not know the answer to. This gave me great uncertainty in the holding and made me uncomfortable holding it because I did not know enough about their business. So when prices dropped or increased, it was not easy to decide to buy more or to sell. Thus we decided to sell until I better understand the business. Overall, I do think the business is solid, but I would need a larger margin of safety before entering due to high risk.
                   </p>
                   <p className="text-gray-700">
                     The lesson here is to not enter a position because it has dropped 15% unless you understand the company well.
@@ -384,7 +384,7 @@ export default function Q1Report2025Page() {
                     ASML sits at the absolute pinnacle of technological achievement. Their EUV lithography machines are fundamental to producing the most advanced semiconductors – the brains powering AI, cloud computing, and more. Key players like TSMC and Samsung depend entirely on ASML for their cutting-edge fabs, enabling companies like Nvidia. Frankly, these machines are engineering marvels operating at the cutting edge of physics, arguably more complex than the James Webb telescope. This makes ASML indispensable; without them, the high-end chip production needed for ongoing technological advancement simply wouldn't happen.
                   </p>
                   <p>
-                    The company enjoys a near-monopoly (&gt;90% share) in high-end lithography, protected by a moat requiring decades and tens of billions for any competitor to cross. This dominance grants significant pricing power, with EUV machines fetching over $300 million each, further boosted by complexity limiting annual production. While the stock pulled back over 30% from highs on concerns around China sales (due to regulations) and potential competition, I believe these fears are overblown. Demand from other regions should compensate, and there's no credible evidence anyone is close to replicating their core tech, leaving their competitive advantage firmly intact.
+                    The company enjoys a near-monopoly (&gt;90% share) in high-end lithography, protected by a moat requiring decades and tens of billions for any competitor to cross. This dominance grants significant pricing power, with EUV machines fetching over $300 million each, further boosted by complexity limiting annual production. While the stock pulled back over 30% from highs on concerns around China sales (due to regulations) and potential competition, we believe these fears are overblown. Demand from other regions should compensate, and there's no credible evidence anyone is close to replicating their core tech, leaving their competitive advantage firmly intact.
                   </p>
                   <p>
                     Looking forward, the growth path seems clear. ASML's technology, guided by the Rayleigh criterion, has a significant runway for miniaturization via optics and computational processing advancements, suggesting a strong innovation pipeline for potentially two decades. Furthermore, their machines operate for decades, providing stable, service-based maintenance revenue. Coupled with relentless global semiconductor demand driven by secular trends (AI, auto, cloud), ASML is perfectly positioned as a critical enabler.
@@ -425,7 +425,7 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Standard and Poor Global (SPGI: NYSE) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    S and P Global continued along its merry way this quarter, with business as usual. The story remained as is and the company's performance was within expectations. I continued to add to it during this quarter, with new capital and consolidated my MSCI position into SPGI for reasons mentioned above. This slightly reduced my cost basis. The position is now a full-size position. And I still expect to hold it for years to come.
+                    S and P Global continued along its merry way this quarter, with business as usual. The story remained as is and the company's performance was within expectations. I continued to add to it during this quarter, with new capital and consolidated my MSCI position into SPGI for reasons mentioned above. This slightly reduced my cost basis. The position is now a full-size position. And We still expect to hold it for years to come.
                   </p>
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $620-670 USD</p>
@@ -447,7 +447,7 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Amazon (AMZN: NASDAQ) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    The biggest change in my sentiment for the portfolio was my increased conviction of Amazon as a business. Amazon is one of the best businesses in the world. And with economic uncertainty in the air due to geo-politics, I think Amazon will greatly benefit from this period as they have in the past. They will gain market share and consolidate their monopoly. There is no real threat to their company from AI or regulation. And their runway for growth is much larger than the market predicts. Moreover, they are primed for massive margin expansion as the high margin parts of their business continue to grow faster than the low margin parts. I think Amazon will likely be a 10 trillion dollar company in the next decade and the market is greatly undervaluing the company. I more than doubled my Amazon position this quarter.
+                    The biggest change in our sentiment for the portfolio was my increased conviction of Amazon as a business. Amazon is one of the best businesses in the world. And with economic uncertainty in the air due to geo-politics, we think Amazon will greatly benefit from this period as they have in the past. They will gain market share and consolidate their monopoly. There is no real threat to their company from AI or regulation. And their runway for growth is much larger than the market predicts. Moreover, they are primed for massive margin expansion as the high margin parts of their business continue to grow faster than the low margin parts. we think Amazon will likely be a 10 trillion dollar company in the next decade and the market is greatly undervaluing the company. I more than doubled my Amazon position this quarter.
                   </p>
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $270-300 USD</p>
@@ -491,7 +491,7 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">UBER (UBER: NYSE) (A tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    Uber has continued to progress steadily, delivering excellent revenue growth and continuing profitability. Moreover, it continues to roll out and announce more AV partnerships. I think smaller companies are realizing the potential of developing the AV software and then attaching it to a car. Then using the power of Ubers network to distribute. The winners in tech have all been companies with entrenched distribution networks. While other companies focus on developing the the AV tech, Uber solidifies its position as the go-to-supply demand aggregator. Uber's intrinsic value continues to grow rapidly while the market continues to discount it unreasonably.
+                    Uber has continued to progress steadily, delivering excellent revenue growth and continuing profitability. Moreover, it continues to roll out and announce more AV partnerships. we think smaller companies are realizing the potential of developing the AV software and then attaching it to a car. Then using the power of Ubers network to distribute. The winners in tech have all been companies with entrenched distribution networks. While other companies focus on developing the the AV tech, Uber solidifies its position as the go-to-supply demand aggregator. Uber's intrinsic value continues to grow rapidly while the market continues to discount it unreasonably.
                   </p>
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $100-120 USD</p>
@@ -526,7 +526,7 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Mastercard (MA: NYSE) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    Mastercard had a great quarter delivering strong than expected growth and FCF generation. This company keeps on executing on its long term business plan. They also acquired a small cyber security company to further improve their product offering. Mastercard is a better business than when I bought it and I see no reason to change anything.
+                    Mastercard had a great quarter delivering strong than expected growth and FCF generation. This company keeps on executing on its long term business plan. They also acquired a small cyber security company to further improve their product offering. Mastercard is a better business than when we bought it and I see no reason to change anything.
                   </p>
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $550-570 USD</p>
@@ -548,7 +548,7 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Meta (META: NASDAQ) (S tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    Meta once again delivered way better than expected growth. I am still baffled how this company delivers 20+ revenue growth at its size. I think my initial thesis is stronger than expected, Meta is driving engagement on their platform like never before. People are glued to their apps, me included. And it is difficult to leave as so much of the world is on these platforms. The advertising demand for this audience will continue to grow as business gets bigger. I think Meta can keep this growth up for the next 5 years. This is a bold claim but if you aren't advertising on Meta, you are losing out to your competition. My conviction of Meta has increased this quarter. Moreover, they deliver some of the best AI models in the world while keeping them open sourced. Which is simply destroying any moat that other companies are trying to build in AI. This further proves that using AI successfully is a better business than developing it. And Meta is still the only non-hardware company to profit significantly from AI thus far.
+                    Meta once again delivered way better than expected growth. I am still baffled how this company delivers 20+ revenue growth at its size. we think my initial thesis is stronger than expected, Meta is driving engagement on their platform like never before. People are glued to their apps, me included. And it is difficult to leave as so much of the world is on these platforms. The advertising demand for this audience will continue to grow as business gets bigger. we think Meta can keep this growth up for the next 5 years. This is a bold claim but if you aren't advertising on Meta, you are losing out to your competition. My conviction of Meta has increased this quarter. Moreover, they deliver some of the best AI models in the world while keeping them open sourced. Which is simply destroying any moat that other companies are trying to build in AI. This further proves that using AI successfully is a better business than developing it. And Meta is still the only non-hardware company to profit significantly from AI thus far.
                   </p>
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $700 USD</p>
@@ -570,7 +570,7 @@ export default function Q1Report2025Page() {
                     <h3 className="font-bold text-gray-900">Mainfreight (MFT: NZE) (A tier)</h3>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    Being an NZ company, Mainfreight only reports earnings half yearly so there was no update from the company this quarter. The company I believe is continuing to perform well, despite weak economic growth. Furthermore, Tariffs will hurt their business and growth as trade will reduce. But in previous times of economic uncertainty, Mainfreight has won market share, and this time will be no different. The stock has sold off a little bit and insiders are buying once again. I will continue to hold this company, as it has a completely different risk profile than the rest of the portfolio while having similar expected returns.
+                    Being an NZ company, Mainfreight only reports earnings half yearly so there was no update from the company this quarter. The company we believe is continuing to perform well, despite weak economic growth. Furthermore, Tariffs will hurt their business and growth as trade will reduce. But in previous times of economic uncertainty, Mainfreight has won market share, and this time will be no different. The stock has sold off a little bit and insiders are buying once again. we will continue to hold this company, as it has a completely different risk profile than the rest of the portfolio while having similar expected returns.
                   </p>
                                      <div className="mt-3 p-3 bg-gray-50 rounded">
                      <p><strong>Intrinsic value:</strong> $85-90 NZD</p>
@@ -673,7 +673,7 @@ export default function Q1Report2025Page() {
                   </div>
                   
                   <p className="mt-4">
-                    These are large increase in Capex, and as you can see, they are going primarily towards AI. I also own 3 of these companies. However, the investments are largely in their cloud business or in Meta's case to improve their core business. Which are already very profitable with large runways for growth. These investments are made with great companies with a history of high ROIC. So I am not too worried about the high investments, especially because they are not issuing debt to do so. The risk of not investing is much greater than over investing. These investments will ensure that these companies can keep up strong growth for years to come. The last thing is that, previously invention and advancement was possible at a small scale for small companies. But I think the next 40 years of innovation will require immense amount of capital and research. No one apart from big tech has the means or the will to invest in the future. From AI to Quantum to Augmented Reality to Nuclear Fusion. The size of big tech is one of its biggest strengths.
+                    These are large increase in Capex, and as you can see, they are going primarily towards AI. I also own 3 of these companies. However, the investments are largely in their cloud business or in Meta's case to improve their core business. Which are already very profitable with large runways for growth. These investments are made with great companies with a history of high ROIC. So I am not too worried about the high investments, especially because they are not issuing debt to do so. The risk of not investing is much greater than over investing. These investments will ensure that these companies can keep up strong growth for years to come. The last thing is that, previously invention and advancement was possible at a small scale for small companies. But we think the next 40 years of innovation will require immense amount of capital and research. No one apart from big tech has the means or the will to invest in the future. From AI to Quantum to Augmented Reality to Nuclear Fusion. The size of big tech is one of its biggest strengths.
                   </p>
                 </div>
 
@@ -695,7 +695,7 @@ export default function Q1Report2025Page() {
             <CardContent>
               <div className="text-gray-700">
                 <p>
-                  Overall, this quarter was interesting. The portfolios companies all are largely in a better position than they were 3 months ago. And I think the portfolio has become more concentrated but with a better risk profile. A few mistakes were made by me but they provide learning opportunities to improve future performance.
+                  Overall, this quarter was interesting. The portfolios companies all are largely in a better position than they were 3 months ago. And we think the portfolio has become more concentrated but with a better risk profile. A few mistakes were made by me but they provide learning opportunities to improve future performance.
                 </p>
               </div>
             </CardContent>

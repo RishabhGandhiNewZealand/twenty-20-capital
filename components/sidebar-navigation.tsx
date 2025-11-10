@@ -16,12 +16,18 @@ import {
   Newspaper, 
   Briefcase,
   BookOpen,
-  Users
+  Users,
+  Settings,
+  LogIn,
+  LogOut
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
+import { useUser } from "@stackframe/stack"
 
 export default function SidebarNavigation() {
+  const user = useUser({ or: 'return-null' });
+  const isAdmin = user && process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.primaryEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -38,7 +44,6 @@ export default function SidebarNavigation() {
     { href: "/portfolio", label: "Portfolio", icon: TrendingUp },
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
-    { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
   ]
 
   // Research section items
@@ -48,11 +53,16 @@ export default function SidebarNavigation() {
 
   // Other nav items
   const otherNavItems = [
-    { href: "/about-us", label: "About", icon: Users },
+    { href: "/about", label: "About", icon: Users },
   ]
 
+  // Admin nav items (only shown when authenticated as admin)
+  const adminNavItems = isAdmin ? [
+    { href: "/trades", label: "Manage Trades", icon: Settings },
+  ] : []
+
   // Get current page info for header
-  const allNavItems = [...basicNavItems, ...fundInsightsItems, ...researchItems, ...otherNavItems]
+  const allNavItems = [...basicNavItems, ...fundInsightsItems, ...researchItems, ...otherNavItems, ...adminNavItems]
   let currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
 
   useEffect(() => {
@@ -263,6 +273,55 @@ export default function SidebarNavigation() {
                 </li>
               )
             })}
+
+            {/* Admin Nav Items */}
+            {isAdmin && adminNavItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              
+              return (
+                <li key={item.href} className="mt-1">
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+
+            {/* Auth Controls */}
+            <li className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {user ? (
+                <div className="space-y-2">
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    {user.primaryEmail}
+                  </div>
+                  <Link
+                    href="/handler/sign-out"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span>Sign Out</span>
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href="/handler/sign-in"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <LogIn className="h-5 w-5" />
+                  <span>Admin Login</span>
+                </Link>
+              )}
+            </li>
           </ul>
         </nav>
       </aside>

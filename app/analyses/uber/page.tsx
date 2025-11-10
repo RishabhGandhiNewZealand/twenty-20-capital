@@ -618,7 +618,7 @@ export default function UberAnalysisPage() {
           <CardContent>
             <div className="prose max-w-none text-gray-700">
               <p className="mb-4">
-                The points discussed above indicate that Uber is a robust business with strong fundamentals, a competitive advantage (which I believe to be stronger than others might perceive), and potential threats that could impact its operations (which I consider to be less significant than others might). Due to these uncertainties, a wide range of scenarios could realistically occur.
+                The points discussed above indicate that Uber is a robust business with strong fundamentals, a competitive advantage (which we believe to be stronger than others might perceive), and potential threats that could impact its operations (which I consider to be less significant than others might). Due to these uncertainties, a wide range of scenarios could realistically occur.
               </p>
               <p className="mb-4">
                 The calculation presented here differs somewhat from other analyses. We will still forecast the future cash flows of the business. However, instead of discounting them for future value, we will analyse what the market will likely value those cash flows at a future point in time. Subsequently, we will assign a probability to each scenario materializing.

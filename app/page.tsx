@@ -66,7 +66,7 @@ export default function LandingPage() {
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link href="/investment-thesis">
+              <Link href="/about">
                 <Button size="lg" variant="outline">
                   <Code2 className="mr-2 h-4 w-4" />
                   Investment Thesis
@@ -272,7 +272,7 @@ export default function LandingPage() {
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Link href="/about-us">
+            <Link href="/about">
               <Button size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-blue-600">
                 About Twenty 20 Capital
               </Button>
