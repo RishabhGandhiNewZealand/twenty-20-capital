@@ -58,8 +58,8 @@ export default function InvestmentThesisPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">About My Investment Journey</h1>
-          <p className="text-gray-600">Building wealth through focused, quality investing over 40+ years</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">About Twenty 20 Capital</h1>
+          <p className="text-gray-600">Our investment philosophy, approach, and the Capital Appreciation Fund</p>
         </div>
 
         {/* Goal */}
@@ -73,7 +73,7 @@ export default function InvestmentThesisPage() {
           <CardContent>
             <div className="prose max-w-none text-gray-700">
               <p className="mb-4 text-lg font-medium text-gray-900">
-                Avoid permanent capital loss and achieve a +5% return on the S&P 500 for the next 40+ years.
+                Avoid permanent capital loss and achieve a +5% return above the S&P 500 for the next 40+ years.
               </p>
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">Key Metrics & Approach:</h4>
@@ -200,12 +200,50 @@ export default function InvestmentThesisPage() {
 
             <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
               <p className="text-gray-700 italic">
-                "I doubt I will achieve this with 100% consistency, but hopefully I will realize and learn from my mistakes."
+                "We doubt we will achieve this with 100% consistency, but we will realize and learn from our mistakes."
               </p>
             </div>
           </CardContent>
         </Card>
 
+        {/* Performance & Disclosure */}
+        <Card className="border-blue-100 mb-8">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center">
+              <Target className="h-5 w-5 text-blue-600 mr-2" />
+              Performance & Disclosure
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              All performance metrics, including CAGR (Compound Annual Growth Rate) and returns versus the S&P 500 benchmark, are calculated from the fund's inception and updated in real-time based on market prices.
+            </p>
+            <p className="text-gray-600 mb-4">
+              <strong>Important Notes:</strong>
+            </p>
+            <ul className="space-y-2 text-gray-600 mb-4">
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
+                <span>Past performance does not guarantee future results</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
+                <span>All holdings and trades are disclosed for educational purposes</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
+                <span>This is not investment advice - please consult a financial advisor</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
+                <span>Portfolio values are displayed in NZD (New Zealand Dollars)</span>
+              </li>
+            </ul>
+            <p className="text-gray-600 text-sm">
+              For inquiries, analysis requests, or general questions about our investment approach, please explore our publicly available reports and portfolio performance.
+            </p>
+          </CardContent>
+        </Card>
 
       </div>
     </div>
