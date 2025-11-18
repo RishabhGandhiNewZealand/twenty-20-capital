@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useStackApp, useUser } from "@stackframe/stack"
 import { Button } from "@/components/ui/button"
 import { Github } from "lucide-react"
@@ -8,19 +9,41 @@ import { Github } from "lucide-react"
 export default function LoginPage() {
   const stack = useStackApp()
   const user = useUser()
+  const adminEmail = useMemo(() => (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").toLowerCase(), [])
+
+  const isAdmin = useMemo(() => {
+    const email =
+      (user?.primaryEmail ||
+        user?.email ||
+        user?.primaryEmailAddress?.emailAddress ||
+        user?.primaryEmailAddress?.email ||
+        "")?.toString().toLowerCase()
+    if (!adminEmail) {
+      return Boolean(user)
+    }
+    return Boolean(user && email === adminEmail)
+  }, [user, adminEmail])
 
   useEffect(() => {
-    if (user) {
-      stack.redirectToAfterSignIn({ replace: true })
+    if (!user) return
+    if (!isAdmin) {
+      stack
+        .signOut({ redirectUrl: "/login" })
+        .catch(() => stack.redirectToSignOut())
+      return
     }
-  }, [user, stack])
+    stack.redirectToAfterSignIn({ replace: true })
+  }, [user, isAdmin, stack])
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Sign in or Sign up</h1>
-          <p className="text-sm text-muted-foreground">Choose a provider to continue</p>
+          <h1 className="text-2xl font-semibold">Twenty 20 Capital · Admin Access</h1>
+          <p className="text-sm text-muted-foreground">
+            Restricted to the Capital Appreciation Fund team. This is not an investor portal and not an offer to sell
+            securities.
+          </p>
         </div>
 
         <div className="space-y-3">
@@ -43,8 +66,13 @@ export default function LoginPage() {
           </Button>
         </div>
 
+        {!adminEmail && (
+          <p className="text-xs text-muted-foreground text-center">
+            NEXT_PUBLIC_ADMIN_EMAIL is not configured. Anyone who signs in will be treated as the administrator in this environment.
+          </p>
+        )}
         <p className="text-xs text-muted-foreground text-center">
-          Trouble signing in? We’ll redirect you to the standard page.
+          Need help? We’ll redirect you to the standard auth page. Unauthorized sign-ins are logged.
         </p>
       </div>
     </div>

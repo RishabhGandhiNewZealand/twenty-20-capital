@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { unstable_cache } from 'next/cache'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import { guardAdminRoute } from '@/lib/admin-auth'
 
 interface HoldingAtDate {
   symbol: string
@@ -219,21 +220,23 @@ const getCachedPortfolioCompositions = unstable_cache(
   }
 )
 
-export async function GET() {
-  try {
-    const compositions = await getCachedPortfolioCompositions()
-    
-    return NextResponse.json(compositions, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
-      }
-    })
-    
-  } catch (error) {
-    logger.error('Error in portfolio compositions endpoint:', error)
-    return NextResponse.json(
-      { error: 'Failed to calculate portfolio compositions' },
-      { status: 500 }
-    )
-  }
+export async function GET(request: NextRequest) {
+  return guardAdminRoute(request, async () => {
+    try {
+      const compositions = await getCachedPortfolioCompositions()
+      
+      return NextResponse.json(compositions, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
+        }
+      })
+      
+    } catch (error) {
+      logger.error('Error in portfolio compositions endpoint:', error)
+      return NextResponse.json(
+        { error: 'Failed to calculate portfolio compositions' },
+        { status: 500 }
+      )
+    }
+  })
 }

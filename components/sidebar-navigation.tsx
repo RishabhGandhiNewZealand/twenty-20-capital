@@ -14,15 +14,11 @@ import {
   FileText, 
   BarChart3, 
   Newspaper, 
-  User,
   Shield,
-  ShieldOff,
   Database,
   LogIn,
   LogOut as LogOutIcon,
-  Briefcase,
   BookOpen,
-  Search,
   Users
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
@@ -56,9 +52,8 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [isInsightsOpen, setIsInsightsOpen] = useState(true)
-  const [isResearchOpen, setIsResearchOpen] = useState(true)
-  const [isMyPortfolioOpen, setIsMyPortfolioOpen] = useState(true)
+  const [isFundConsoleOpen, setIsFundConsoleOpen] = useState(true)
+  const [isSupportOpen, setIsSupportOpen] = useState(true)
   const { isAnonymized, setAnonymized } = useAnonymization()
   const user = useUser()
   const stack = useStackApp()
@@ -81,32 +76,21 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // My Portfolio section items - includes trades for all users
-  const myPortfolioItems = user ? [
-    { href: "/portfolio", label: "Portfolio", icon: Briefcase },
-    { href: "/trades", label: "Trades", icon: Database }
-  ] : []
-
-  // Rish's Insights section items
-  const rishInsightsItems = [
-    { href: "/rishs-portfolio", label: "Rish's Portfolio", icon: TrendingUp },
+  const fundConsoleItems = [
+    { href: "/capital-appreciation-fund", label: "Fund Overview", icon: TrendingUp },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
+    { href: "/news", label: "Market Intelligence", icon: Newspaper },
+    { href: "/trades", label: "Trade Ledger", icon: Database },
   ]
 
-  // Research section items
-  const researchItems = [
-    { href: "/news", label: "News", icon: Newspaper },
-  ]
-
-  // Other nav items
-  const otherNavItems = [
-    { href: "/about-us", label: "About Us", icon: Users },
+  const supportItems = [
+    { href: "/about-us", label: "About Twenty 20", icon: Users },
   ]
 
   // Get current page info for header
-  const allNavItems = [...basicNavItems, ...myPortfolioItems, ...rishInsightsItems, ...researchItems, ...otherNavItems]
+  const allNavItems = [...basicNavItems, ...fundConsoleItems, ...supportItems]
   let currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
   
   // Special handling for renamed/moved pages
@@ -152,15 +136,18 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
       <header className="fixed top-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-sm border-b border-border z-50">
         <div className="flex items-center h-full px-4">
           {/* Logo and Title */}
-          <Link href="/" className="flex items-center space-x-2">
-            <Image 
-              src="/logo.png" 
-              alt="Rish Invests Logo" 
-              width={32} 
-              height={32}
-              className="h-7 w-7 sm:h-8 sm:w-8"
-            />
-            <span className="text-base sm:text-lg font-bold">Rish Invests</span>
+            <Link href="/" className="flex items-center space-x-2">
+              <Image 
+                src="/logo.png" 
+                alt="Twenty 20 Capital Logo" 
+                width={32} 
+                height={32}
+                className="h-7 w-7 sm:h-8 sm:w-8"
+              />
+              <div className="flex flex-col leading-tight">
+                <span className="text-base sm:text-lg font-bold">Twenty 20 Capital</span>
+                <span className="text-xs text-muted-foreground hidden sm:block">Capital Appreciation Fund</span>
+              </div>
           </Link>
 
           {/* Toggle Button */}
@@ -187,12 +174,12 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
             <ThemeToggle />
             {/* Desktop auth controls */}
             <div className="hidden sm:flex items-center gap-2">
-              {!user ? (
-                <Link href="/login">
-                  <Button variant="outline" size="sm" className="ml-2">
-                    Login / Sign Up
-                  </Button>
-                </Link>
+                {!user ? (
+                  <Link href="/login">
+                    <Button variant="outline" size="sm" className="ml-2">
+                      Admin Sign In
+                    </Button>
+                  </Link>
               ) : (
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col items-end">
@@ -258,26 +245,25 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
               )
             })}
 
-            {/* My Portfolio Section - only show if user is logged in */}
-            {user && myPortfolioItems.length > 0 && (
+              {/* Fund Console Section */}
               <li className="mt-4">
                 <button
-                  onClick={() => setIsMyPortfolioOpen(!isMyPortfolioOpen)}
+                  onClick={() => setIsFundConsoleOpen(!isFundConsoleOpen)}
                   className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
                 >
-                  <span>My Portfolio</span>
-                  {isMyPortfolioOpen ? (
+                  <span>Fund Console</span>
+                  {isFundConsoleOpen ? (
                     <ChevronUp className="h-4 w-4" />
                   ) : (
                     <ChevronDown className="h-4 w-4" />
                   )}
                 </button>
-                {isMyPortfolioOpen && (
+                {isFundConsoleOpen && (
                   <ul className="mt-1 ml-3 space-y-1">
-                    {myPortfolioItems.map((item) => {
+                    {fundConsoleItems.map((item) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href
-                      
+
                       return (
                         <li key={item.href}>
                           <Link
@@ -298,125 +284,61 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
                   </ul>
                 )}
               </li>
-            )}
 
-            {/* Rish's Insights Section - visible for all users */}
-            <li className="mt-4">
-              <button
-                onClick={() => setIsInsightsOpen(!isInsightsOpen)}
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
-              >
-                <span>Rish's Insights</span>
-                {isInsightsOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
+              {/* Support */}
+              <li className="mt-4">
+                <button
+                  onClick={() => setIsSupportOpen(!isSupportOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
+                >
+                  <span>Reference</span>
+                  {isSupportOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                {isSupportOpen && (
+                  <ul className="mt-1 ml-3 space-y-1">
+                    {supportItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            )}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 )}
-              </button>
-              {isInsightsOpen && (
-                <ul className="mt-1 ml-3 space-y-1">
-                  {rishInsightsItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href
-                    
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                          )}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </li>
-
-            {/* Research Section */}
-            <li className="mt-4">
-              <button
-                onClick={() => setIsResearchOpen(!isResearchOpen)}
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
-              >
-                <span>Research</span>
-                {isResearchOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
-              {isResearchOpen && (
-                <ul className="mt-1 ml-3 space-y-1">
-                  {researchItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href
-                    
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                          )}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </li>
-
-            {/* Other Nav Items */}
-            {otherNavItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              
-              return (
-                <li key={item.href} className="mt-1">
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              )
-            })}
+              </li>
           </ul>
           
           {/* Auth control at the bottom */}
-          <div className="pt-4 mt-4 border-t border-border">
-            {!user ? (
-              <Link href="/login" className="w-full">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  size="sm"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span>Login / Sign Up</span>
-                </Button>
-              </Link>
+            <div className="pt-4 mt-4 border-t border-border">
+              {!user ? (
+                <Link href="/login" className="w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    size="sm"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    <span>Admin Sign In</span>
+                  </Button>
+                </Link>
             ) : (
               <div className="flex flex-col gap-2">
                 <div className="text-xs text-muted-foreground px-1 hidden sm:block">

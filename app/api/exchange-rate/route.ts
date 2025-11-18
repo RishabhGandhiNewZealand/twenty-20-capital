@@ -1,33 +1,36 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE, CACHE_REVALIDATE } from '@/lib/constants'
+import { guardAdminRoute } from '@/lib/admin-auth'
 
-export async function GET() {
-  try {
-    // Using a free exchange rate API
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
-      next: { revalidate: CACHE_REVALIDATE.EXCHANGE_RATE }
-    })
+export async function GET(request: NextRequest) {
+  return guardAdminRoute(request, async () => {
+    try {
+      // Using a free exchange rate API
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+        next: { revalidate: CACHE_REVALIDATE.EXCHANGE_RATE }
+      })
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch exchange rate')
+      if (!response.ok) {
+        throw new Error('Failed to fetch exchange rate')
+      }
+
+      const data = await response.json()
+      const usdToNzd = data.rates.NZD
+
+      return NextResponse.json({
+        rate: usdToNzd,
+        lastUpdated: new Date().toISOString()
+      })
+
+    } catch (error) {
+      logger.error('Error fetching exchange rate:', error)
+      // Return a fallback rate if API fails
+      return NextResponse.json({
+        rate: FALLBACK_USD_TO_NZD_RATE,
+        lastUpdated: new Date().toISOString(),
+        isFallback: true
+      })
     }
-
-    const data = await response.json()
-    const usdToNzd = data.rates.NZD
-
-    return NextResponse.json({
-      rate: usdToNzd,
-      lastUpdated: new Date().toISOString()
-    })
-
-  } catch (error) {
-    logger.error('Error fetching exchange rate:', error)
-    // Return a fallback rate if API fails
-    return NextResponse.json({
-      rate: FALLBACK_USD_TO_NZD_RATE,
-      lastUpdated: new Date().toISOString(),
-      isFallback: true
-    })
-  }
+  })
 } 

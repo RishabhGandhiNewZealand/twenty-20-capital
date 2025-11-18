@@ -1,6 +1,6 @@
-# Personal Portfolio Tracker
+# Twenty 20 Capital – Capital Appreciation Fund Console
 
-A sophisticated portfolio tracking application built with Next.js 15, TypeScript, and Tailwind CSS that provides real-time investment monitoring, performance analytics, and comprehensive reporting capabilities.
+A private, admin-only fund console built with Next.js 15, TypeScript, and Tailwind CSS. It powers the Capital Appreciation Fund’s internal workflow—live NAV, exposure analytics, trade management, research, and disclosures—while enforcing strict access controls. This project is informational only; it is not investment advice and the fund is not open for external investment.
 
 ## Table of Contents
 
@@ -19,24 +19,23 @@ A sophisticated portfolio tracking application built with Next.js 15, TypeScript
 
 ## Overview
 
-This application serves as a comprehensive personal investment portfolio tracker designed for individual investors who want to monitor their investments, track performance against benchmarks, and gain insights into their portfolio composition. The system provides real-time market data integration, multi-currency support, and advanced analytics while maintaining a clean, responsive user interface.
+This console is the single source of truth for the Twenty 20 Capital team. It delivers institutional-grade monitoring of the Capital Appreciation Fund: authenticated access via Stack, deterministic caching, anonymization toggles for screenshots, and benchmark-aware analytics. Every page reiterates the compliance posture—informational only, not an offer to sell securities, and strictly private.
 
 ## Key Features
 
-### Portfolio Management
-- **Real-time Portfolio Valuation**: Live market data integration with Yahoo Finance API
-- **Multi-Currency Support**: Automatic conversion to NZD with support for USD and other currencies
-- **Transaction Tracking**: Complete buy/sell/reinvestment transaction history
-- **Trade Management Interface**: Add, edit, and delete trades with staged changes
-- **Position Management**: Current holdings with cost basis and gain/loss calculations
-- **Exited Positions**: Historical tracking of closed positions with realized gains
+### Fund Oversight & Operations
+- **Real-time Fund NAV**: Live market data integration with Yahoo Finance API and deterministic cache windows
+- **Multi-Currency Support**: Automatic conversion to NZD with FX attribution against benchmarks
+- **Trade Ledger**: Complete buy/sell/reinvestment history with staged changes and anonymization toggles
+- **Exposure Management**: Holdings with cost basis, gain/loss, and allocation insights for committee prep
+- **Exited Positions**: Historical tracking of closed positions with realized gains and narrative context
 
 ### Performance Analytics
-- **S&P 500 Benchmarking**: Compare portfolio performance against market index
-- **CAGR Calculations**: Compound Annual Growth Rate metrics
-- **Performance Visualization**: Interactive charts showing portfolio value over time
+- **S&P 500 Benchmarking**: Compare fund performance against the reference index
+- **CAGR Calculations**: Compound Annual Growth Rate metrics for NAV and benchmark
+- **Performance Visualization**: Interactive charts showing fund value over time
 - **Gain/Loss Analysis**: Detailed breakdown of unrealized and realized gains
-- **Allocation Insights**: Visual representation of portfolio composition
+- **Allocation Insights**: Visual representation of fund composition and currency exposure
 
 ### Reporting & Analysis
 - **Quarterly Reports**: Automated quarterly performance summaries

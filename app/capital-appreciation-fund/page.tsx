@@ -7,7 +7,7 @@ import { ExitedPosition } from "@/types/portfolio"
 import { PortfolioChart } from "@/components/portfolio-chart"
 import { PortfolioHorizontalBarChart } from "@/components/portfolio-horizontal-bar-chart"
 import { getLogoUrl } from "@/lib/company-utils"
-import { getYearsSinceInception, PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
+import { getYearsSinceInception } from "@/lib/constants"
 import { calculateCAGRFromGainPercent, formatPercentage, formatCurrency, calculateTimeWeightedReturn, calculateCAGRFromTotalReturn } from "@/lib/financial-calculations"
 import { formatNumber, formatDate, formatCurrencyWithDecimals } from "@/lib/format-utils"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
@@ -41,20 +41,20 @@ function createPortfolioStats(
   portfolioValue: string,
   portfolioCAGR: number,
   sp500CAGR: number,
-  subtitle: string = "Current portfolio value",
+  subtitle: string = "Current fund NAV",
   isAnonymized: boolean = false
 ) {
   return [
     {
-      title: "Portfolio Value (NZD)",
+      title: "Fund NAV (NZD)",
       value: isAnonymized ? "NZ$***" : portfolioValue,
       subtitle: subtitle,
       icon: DollarSign,
     },
     {
-      title: "Portfolio Yearly CAGR", 
+      title: "Fund Yearly CAGR", 
       value: formatPercentage(isNaN(portfolioCAGR) ? 0 : portfolioCAGR),
-      description: "Total Value Returns since inception",
+      description: "Net asset value returns since inception",
       icon: TrendingUp,
     },
     {
@@ -97,9 +97,6 @@ export default function HomePage() {
         setSummary(currentData.summary)
         setExitedPositions(currentData.exitedPositions || [])
 
-        console.log('Rish portfolio - current data:', currentData)
-        console.log('Rish portfolio - exited positions:', currentData.exitedPositions)
-
         if (historyResponse && historyResponse.ok) {
           const historyData = await historyResponse.json()
           if (historyData.history && historyData.history.length > 0) {
@@ -135,7 +132,7 @@ export default function HomePage() {
             const sp500TWR = calculateTimeWeightedReturn(sp500History)
             const sp500CAGR = calculateCAGRFromTotalReturn(sp500TWR, yearsSinceInception)
 
-            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
+              setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current fund NAV", isAnonymized))
           }
         } else {
           const { totalValueNZD, totalGainPercent, sp500GainPercent } = currentData.summary
@@ -147,7 +144,7 @@ export default function HomePage() {
           const portfolioCAGR = calculateCAGRFromGainPercent(isNaN(totalGainPercent) ? 0 : totalGainPercent, yearsSinceInception)
           const sp500CAGR = calculateCAGRFromGainPercent(isNaN(sp500GainPercent) ? 0 : sp500GainPercent, yearsSinceInception)
 
-          setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
+            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current fund NAV", isAnonymized))
         }
 
       } catch (error) {
@@ -175,6 +172,10 @@ export default function HomePage() {
             portfolioStats={portfolioStats} 
           />
         </div>
+          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50/70 text-amber-900 text-sm px-4 py-3">
+            Authorized Twenty 20 Capital personnel only. This data is informational, not investment advice, and the Capital
+            Appreciation Fund is not open for external investment.
+          </div>
 
         {!loading && (
           <div className="mb-6 sm:mb-8">
@@ -186,9 +187,9 @@ export default function HomePage() {
           </div>
         )}
 
-        <Card className="border-blue-100 mb-6 sm:mb-8">
-          <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Holdings</CardTitle>
+          <Card className="border-blue-100 mb-6 sm:mb-8">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-gray-900 text-lg sm:text-xl">Fund Holdings</CardTitle>
           </CardHeader>
           <CardContent className="px-0 sm:px-6">
             {loading ? (
@@ -274,10 +275,10 @@ export default function HomePage() {
                     </tbody>
                     {summary && (
                       <tfoot>
-                        <tr className="bg-gray-50">
-                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
-                            Total Portfolio
-                          </td>
+                          <tr className="bg-gray-50">
+                            <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
+                              Fund Total
+                            </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
                             Value: {maskCurrency(summary.totalValueNZD, isAnonymized)}
                           </td>
@@ -378,8 +379,8 @@ export default function HomePage() {
                   
                   {summary && (
                     <>
-                      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                        <div className="font-semibold text-gray-900 mb-3">Total Portfolio</div>
+                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                          <div className="font-semibold text-gray-900 mb-3">Fund Total</div>
                         <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <div className="text-gray-500">Market Value</div>

@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import yahooFinance from 'yahoo-finance2'
 import { logger } from '@/lib/logger'
 import { getCompanyColor } from '@/lib/company-colors'
+import { guardAdminRoute } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -57,38 +58,40 @@ async function resolveDomainWithCache(symbolUpper: string): Promise<string | nul
   return domain
 }
 
-export async function GET(req: Request, context: { params: Promise<{ symbol: string }> }) {
-	const { symbol } = await context.params
-	const symbolParam = symbol
-	if (!symbolParam || typeof symbolParam !== 'string') {
-		return NextResponse.json({ error: 'Missing symbol' }, { status: 400 })
-	}
+export async function GET(req: NextRequest, context: { params: Promise<{ symbol: string }> }) {
+  return guardAdminRoute(req, async () => {
+    const { symbol } = await context.params
+    const symbolParam = symbol
+    if (!symbolParam || typeof symbolParam !== 'string') {
+      return NextResponse.json({ error: 'Missing symbol' }, { status: 400 })
+    }
 
-	const url = new URL(req.url)
-	const sizeParam = url.searchParams.get('size')
-	const size = Math.max(16, Math.min(256, Number(sizeParam) || 64))
+    const url = new URL(req.url)
+    const sizeParam = url.searchParams.get('size')
+    const size = Math.max(16, Math.min(256, Number(sizeParam) || 64))
 
-    // Resolve company website via Yahoo and proxy Clearbit logo
-	try {
-		const domain = await resolveDomainWithCache(symbolParam.toUpperCase())
-		if (domain) {
-			const clearbitUrl = `https://logo.clearbit.com/${domain}?size=${size}`
-			const resp = await fetch(clearbitUrl)
-			if (resp.ok && resp.headers.get('content-type')?.startsWith('image/')) {
-				const buffer = Buffer.from(await resp.arrayBuffer())
-				return new NextResponse(buffer, {
-					headers: {
-						'Content-Type': resp.headers.get('content-type') || 'image/png',
-						'Cache-Control': 'public, s-maxage=604800, stale-while-revalidate=86400'
-					}
-				})
-			}
-		}
-	} catch (error) {
-		logger.warn('Logo remote fetch error', { symbol: symbolParam, error })
-	}
+      // Resolve company website via Yahoo and proxy Clearbit logo
+    try {
+      const domain = await resolveDomainWithCache(symbolParam.toUpperCase())
+      if (domain) {
+        const clearbitUrl = `https://logo.clearbit.com/${domain}?size=${size}`
+        const resp = await fetch(clearbitUrl)
+        if (resp.ok && resp.headers.get('content-type')?.startsWith('image/')) {
+          const buffer = Buffer.from(await resp.arrayBuffer())
+          return new NextResponse(buffer, {
+            headers: {
+              'Content-Type': resp.headers.get('content-type') || 'image/png',
+              'Cache-Control': 'public, s-maxage=604800, stale-while-revalidate=86400'
+            }
+          })
+        }
+      }
+    } catch (error) {
+      logger.warn('Logo remote fetch error', { symbol: symbolParam, error })
+    }
 
-    // No logo available from website → return 404 per requirement
-    return NextResponse.json({ error: 'Logo not available' }, { status: 404 })
+      // No logo available from website → return 404 per requirement
+      return NextResponse.json({ error: 'Logo not available' }, { status: 404 })
+  })
 }
 

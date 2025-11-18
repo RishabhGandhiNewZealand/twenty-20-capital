@@ -1,7 +1,7 @@
 # Horizontal Bar Chart Implementation
 
 ## Overview
-This document describes the portfolio horizontal bar chart visualization used on the main page of the Rish Invests application.
+This document describes the fund exposure horizontal bar chart visualization used on the main page of the Twenty 20 Capital console.
 
 ## Component Details
 
