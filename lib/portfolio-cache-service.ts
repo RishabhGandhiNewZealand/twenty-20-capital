@@ -13,6 +13,8 @@ import { logger } from './logger'
 import { FALLBACK_USD_TO_NZD_RATE } from './constants'
 import { generatePortfolioData } from './portfolioServerData'
 import { TradeRecord } from '@/types/portfolio'
+import { revalidateTag } from 'next/cache'
+import { CACHE_TAGS } from '@/lib/cache-config'
 
 // Types
 interface DailyPortfolioData {
@@ -631,6 +633,16 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
  */
 export async function invalidatePortfolioCaches(): Promise<void> {
   await cacheManager.invalidateOnTradeUpdate()
+  
+  // Invalidate Next.js cache tags
+  try {
+    revalidateTag(CACHE_TAGS.PORTFOLIO_COMPOSITIONS)
+    revalidateTag(CACHE_TAGS.TRADE_DATA)
+    revalidateTag(CACHE_TAGS.PORTFOLIO_HISTORY)
+    logger.info('Next.js cache tags invalidated')
+  } catch (error) {
+    logger.error('Error invalidating Next.js cache tags:', error)
+  }
 }
 
 /**

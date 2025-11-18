@@ -153,7 +153,9 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
         if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
           current.shares += trade.qty
         } else if (trade.type === 'Sell') {
-          current.shares += trade.qty
+          // For Sell trades, qty is typically positive (magnitude) in DB, so subtract it
+          // use Math.abs just in case it was stored as negative
+          current.shares -= Math.abs(trade.qty)
         }
         
         if (current.shares > 0.001) {
