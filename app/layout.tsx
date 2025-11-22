@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import SidebarNavigation from "@/components/sidebar-navigation"
+import { ComplianceBanner } from "@/components/compliance-banner"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes"
 import { AnonymizationProvider } from "@/contexts/AnonymizationContext"
@@ -12,8 +13,8 @@ import { Suspense } from "react"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rish Invests",
-  description: "Track your personal investing journey and portfolio performance",
+  title: "Twenty-20-Capital",
+  description: "Institutional investment fund focused on high-quality compounding businesses.",
   generator: 'v0.dev',
   icons: {
     icon: '/logo-favicon.png',
@@ -47,11 +48,11 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <AnonymizationProvider>
               <Suspense fallback={null}>
-                <SidebarNavigation adminEmail={process.env.ADMIN_EMAIL || ""} />
+                <SidebarNavigation adminEmail={process.env.ADMIN_EMAIL || ""}>
+                  {children}
+                </SidebarNavigation>
               </Suspense>
-              <main className="min-h-screen">
-                {children}
-              </main>
+              <ComplianceBanner />
               <Analytics />
             </AnonymizationProvider>
           </ThemeProvider>

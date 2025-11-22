@@ -22,7 +22,7 @@ export default function InvestmentThesisPage() {
       title: "Capital Light",
       description: "Does not require substantial capex and R&D to generate growth",
       icon: DollarSign,
-         },
+    },
      {
        title: "Predictability",
        description: "Consistent stream of cash flows over the long term",
@@ -47,7 +47,7 @@ export default function InvestmentThesisPage() {
     {
       type: "Sell",
       criteria: [
-        "Made a mistake in original analysis - cut losses and move on",
+        "Mistake in original analysis - cut losses and move on",
         "Company no longer meets quality standards",
         "Far more attractive opportunity in similar or better quality company"
       ]
@@ -58,8 +58,8 @@ export default function InvestmentThesisPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">About My Investment Journey</h1>
-          <p className="text-gray-600">Building wealth through focused, quality investing over 40+ years</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">About Our Investment Strategy</h1>
+          <p className="text-gray-600">Building wealth through focused, quality investing.</p>
         </div>
 
         {/* Goal */}
@@ -73,14 +73,14 @@ export default function InvestmentThesisPage() {
           <CardContent>
             <div className="prose max-w-none text-gray-700">
               <p className="mb-4 text-lg font-medium text-gray-900">
-                Avoid permanent capital loss and achieve a +5% return on the S&P 500 for the next 40+ years.
+                Avoid permanent capital loss and achieve superior returns relative to the S&P 500 over the long term.
               </p>
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">Key Metrics & Approach:</h4>
                 <ul className="space-y-1 text-gray-700">
                   <li>• <strong>Benchmark:</strong> S&P 500 comparison on total value CAGR basis</li>
-                  <li>• <strong>Capital Contribution:</strong> Majority of savings</li>
-                  <li>• <strong>Time Horizon:</strong> 40+ years of consistent investing</li>
+                  <li>• <strong>Capital Contribution:</strong> Fund Capital</li>
+                  <li>• <strong>Time Horizon:</strong> Long-term consistent investing</li>
                   <li>• <strong>Focus:</strong> Capital preservation with superior long-term returns</li>
                 </ul>
               </div>
@@ -99,7 +99,7 @@ export default function InvestmentThesisPage() {
           <CardContent>
             <div className="prose max-w-none text-gray-700 mb-6">
               <p className="text-lg">
-                Own high-quality businesses, purchase them at reasonable prices, and hold them for an extended period 
+                We own high-quality businesses, purchase them at reasonable prices, and hold them for an extended period 
                 while they remain excellent companies.
               </p>
             </div>
@@ -172,7 +172,7 @@ export default function InvestmentThesisPage() {
           <CardContent>
             <div className="prose max-w-none text-gray-700 mb-6">
               <p>
-                Successful investing requires excellent emotional control and temperament. Avoid speculation, gambling, 
+                Successful investing requires excellent emotional control and temperament. We avoid speculation, gambling, 
                 or investing due to FOMO or hype through disciplined buy and sell criteria.
               </p>
             </div>
@@ -200,7 +200,7 @@ export default function InvestmentThesisPage() {
 
             <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
               <p className="text-gray-700 italic">
-                "I doubt I will achieve this with 100% consistency, but hopefully I will realize and learn from my mistakes."
+                "We strive for consistency and learning from every market cycle to improve our decision making process."
               </p>
             </div>
           </CardContent>
