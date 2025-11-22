@@ -117,36 +117,10 @@ Note: If the company name includes a stock ticker in parentheses, use it to ensu
   try {
     logger.info(`Analyzing news for ${company}...`)
     
-    let result
-    let retries = 0
-    const maxRetries = 3
-    
-    while (retries < maxRetries) {
-      try {
-        result = await model.generateContent({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          systemInstruction: systemInstruction,
-        })
-        break // Success, exit retry loop
-      } catch (apiError: any) {
-        if (apiError.message?.includes('429') || apiError.message?.includes('quota')) {
-          retries++
-          if (retries < maxRetries) {
-            const waitTime = Math.min(Math.pow(2, retries) * 500, 5000) // Exponential backoff: 1s, 2s, max 5s
-            logger.warn(`Rate limit hit for ${company}, waiting ${waitTime}ms before retry ${retries}/${maxRetries}`)
-            await new Promise(resolve => setTimeout(resolve, waitTime))
-          } else {
-            throw apiError
-          }
-        } else {
-          throw apiError
-        }
-      }
-    }
-    
-    if (!result) {
-      throw new Error('Failed to get response after retries')
-    }
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      systemInstruction: systemInstruction,
+    })
     
     // Process the response
     const response = await result.response
@@ -282,19 +256,13 @@ Note: If the company name includes a stock ticker in parentheses, use it to ensu
     return companyData
   
   } catch (error: any) {
-    logger.error(`[${company}] Full error in analyzeCompanyNews:`, {
+    logger.error(`[${company}] Error in analyzeCompanyNews:`, {
       error: error.message,
       stack: error.stack,
       errorType: error.constructor?.name
     })
     
-    return {
-      company_name: company,
-      status: 'no_significant_news_found',
-      summary_points: [],
-      references: [],
-      error: error.message || 'Failed to analyze news'
-    }
+    throw error
   }
 }
 
@@ -321,38 +289,64 @@ const getCachedCompanyNews = unstable_cache(
       throw new Error('News service not configured. Please set GEMINI_API_KEY.')
     }
 
-    // Initialize Gemini
-    let genAI: GoogleGenerativeAI
-    let model: any
-    
-    try {
-      genAI = new GoogleGenerativeAI(apiKey)
-      model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash-exp",
-        generationConfig: {
-          temperature: 0.3,
-        },
-        tools: [{
-          googleSearch: {}
-        }]
-      })
-    } catch (error: any) {
-      // Fallback model
-      genAI = new GoogleGenerativeAI(apiKey)
-      model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        generationConfig: {
-          temperature: 0.3,
-        },
-        tools: [{
-          googleSearch: {}
-        }]
-      })
+    // Model Ladder Strategy
+    const MODEL_LADDER = [
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-preview",
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-flash-lite-preview",
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-lite",
+      "gemini-2.0-flash-exp",
+      "gemini-1.5-flash"
+    ];
+
+    let result: any = null;
+    let lastError: any = null;
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    for (const modelName of MODEL_LADDER) {
+      try {
+        logger.info(`Attempting to use model: ${modelName}`);
+        
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: {
+            temperature: 0.3,
+          },
+          tools: [{
+            googleSearch: {}
+          }]
+        });
+
+        // Analyze the company
+        result = await analyzeCompanyNews(company, model, startDate, endDate, currentDate);
+        
+        // If we get here, it succeeded
+        logger.info(`Successfully used model: ${modelName}`);
+        break;
+      } catch (error: any) {
+        lastError = error;
+        logger.warn(`Failed with model ${modelName}: ${error.message}. Trying next model...`);
+        // Continue to next model
+      }
     }
 
-    // Analyze the company
-    const currentDate = new Date().toISOString().split('T')[0]
-    const result = await analyzeCompanyNews(company, model, startDate, endDate, currentDate)
+    if (!result) {
+      logger.error(`All models failed for ${company}. Last error:`, lastError);
+      // Return error structure as fallback
+      return { 
+        data: {
+          company_name: company,
+          status: 'no_significant_news_found',
+          summary_points: [],
+          references: [],
+          error: lastError?.message || 'All models failed'
+        }, 
+        source: 'gemini-failed' 
+      };
+    }
     
     // Only cache successful results with news found
     const shouldCache = result && 
