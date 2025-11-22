@@ -7,22 +7,16 @@ import { usePathname } from "next/navigation"
 import { 
   ChevronLeft, 
   ChevronRight, 
-  ChevronDown,
-  ChevronUp,
   Home, 
   TrendingUp, 
   FileText, 
   BarChart3, 
   Newspaper, 
-  User,
   Shield,
-  ShieldOff,
   Database,
-  LogIn,
   LogOut as LogOutIcon,
   Briefcase,
   BookOpen,
-  Search,
   Users
 } from "lucide-react"
 import ThemeToggle from "@/components/theme-toggle"
@@ -50,16 +44,16 @@ function getRawEmail(u: any): string {
   .toString()
 }
 
-type Props = { adminEmail?: string }
+type Props = { 
+  adminEmail?: string 
+  children?: React.ReactNode
+}
 
-export default function SidebarNavigation({ adminEmail = "" }: Props) {
+export default function SidebarNavigation({ adminEmail = "", children }: Props) {
   const pathname = usePathname()
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false) // Default to closed
   const [isMobile, setIsMobile] = useState(false)
-  const [isInsightsOpen, setIsInsightsOpen] = useState(true)
-  const [isResearchOpen, setIsResearchOpen] = useState(true)
-  const [isMyPortfolioOpen, setIsMyPortfolioOpen] = useState(true)
-  const { isAnonymized, setAnonymized } = useAnonymization()
+  const { setAnonymized } = useAnonymization()
   const user = useUser()
   const stack = useStackApp()
 
@@ -72,44 +66,48 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
 
   const isAdmin = useMemo(() => !!rawUserEmail && !!adminEmail && rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
 
-  useEffect(() => {
-    setAnonymized(!isAdmin)
-  }, [isAdmin, setAnonymized])
-
-  // Basic nav items that are always visible
+  // Basic nav items
   const basicNavItems = [
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // My Portfolio section items - includes trades for all users
-  const myPortfolioItems = user ? [
-    { href: "/portfolio", label: "Portfolio", icon: Briefcase },
+  // Fund Management - Filter out Portfolio if admin
+  const fundManagementItems = isAdmin ? [
+    // Removed Portfolio link as requested for admin view
+    // { href: "/portfolio", label: "Portfolio", icon: Briefcase }, 
     { href: "/trades", label: "Trades", icon: Database }
   ] : []
 
-  // Rish's Insights section items
-  const rishInsightsItems = [
-    { href: "/rishs-portfolio", label: "Rish's Portfolio", icon: TrendingUp },
+  // Fund Insights
+  const fundInsightsItems = [
+    { href: "/rishs-portfolio", label: "Appreciation Fund", icon: TrendingUp },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
   ]
 
-  // Research section items
+  // Research
   const researchItems = [
     { href: "/news", label: "News", icon: Newspaper },
   ]
 
-  // Other nav items
+  // Other
   const otherNavItems = [
     { href: "/about-us", label: "About Us", icon: Users },
   ]
 
-  // Get current page info for header
-  const allNavItems = [...basicNavItems, ...myPortfolioItems, ...rishInsightsItems, ...researchItems, ...otherNavItems]
-  let currentPage = allNavItems.find(item => item.href === pathname) || allNavItems[0]
+  // Combine all items for easy rendering
+  const allGroups = [
+    { title: null, items: basicNavItems },
+    { title: "Fund Management", items: fundManagementItems },
+    { title: "Fund Insights", items: fundInsightsItems },
+    { title: "Research", items: researchItems },
+    { title: null, items: otherNavItems },
+  ]
+
+  const flatNavItems = allGroups.flatMap(g => g.items)
+  let currentPage = flatNavItems.find(item => item.href === pathname) || flatNavItems[0]
   
-  // Special handling for renamed/moved pages
   if (pathname === '/investment-thesis') {
     currentPage = { href: '/investment-thesis', label: 'Investment Thesis', icon: BookOpen }
   } else if (pathname === '/portfolio') {
@@ -121,6 +119,9 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
       setIsMobile(window.innerWidth < 768)
       if (window.innerWidth < 768) {
         setIsOpen(false)
+      } else {
+        // Optional: Auto-open on desktop? Keeping it closed by default for now unless user wants otherwise.
+        // setIsOpen(true) 
       }
     }
     checkMobile()
@@ -134,18 +135,6 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
     }
   }, [pathname, isMobile])
 
-  useEffect(() => {
-    function handleGlobalClick(e: MouseEvent) {
-      if (!isOpen) return
-      const sidebar = document.querySelector('[data-sidebar-root]') as HTMLElement | null
-      if (sidebar && !sidebar.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('click', handleGlobalClick)
-    return () => document.removeEventListener('click', handleGlobalClick)
-  }, [isOpen])
-
   return (
     <>
       {/* Header Bar */}
@@ -155,12 +144,12 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           <Link href="/" className="flex items-center space-x-2">
             <Image 
               src="/logo.png" 
-              alt="Rish Invests Logo" 
+              alt="Twenty-20-Capital Logo" 
               width={32} 
               height={32}
               className="h-7 w-7 sm:h-8 sm:w-8"
             />
-            <span className="text-base sm:text-lg font-bold">Rish Invests</span>
+            <span className="text-base sm:text-lg font-bold">Twenty-20-Capital</span>
           </Link>
 
           {/* Toggle Button */}
@@ -187,13 +176,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
             <ThemeToggle />
             {/* Desktop auth controls */}
             <div className="hidden sm:flex items-center gap-2">
-              {!user ? (
-                <Link href="/login">
-                  <Button variant="outline" size="sm" className="ml-2">
-                    Login / Sign Up
-                  </Button>
-                </Link>
-              ) : (
+              {user && (
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col items-end">
                     <span className="text-sm font-medium">{displayName}</span>
@@ -209,13 +192,7 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
 
             {/* Mobile icon-only auth controls */}
             <div className="flex sm:hidden items-center gap-1">
-              {!user ? (
-                <Link href="/login" aria-label="Login or Sign Up">
-                  <Button variant="ghost" size="icon">
-                    <LogIn className="h-5 w-5" />
-                  </Button>
-                </Link>
-              ) : (
+              {user && (
                 <Button variant="ghost" size="icon" aria-label="Logout" onClick={() => stack.signOut()}>
                   <LogOutIcon className="h-5 w-5" />
                 </Button>
@@ -225,222 +202,103 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
         </div>
       </header>
 
-      {/* Sidebar */}
-      <aside
-        data-sidebar-root
-        className={cn(
-          "fixed left-0 top-16 bottom-0 z-40 w-64 bg-background/95 backdrop-blur-sm border-r border-border transition-transform duration-300 shadow-xl",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <nav className="h-full flex flex-col overflow-y-auto p-4">
-          <ul className="space-y-1 flex-1">
-            {/* Home */}
-            {basicNavItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      {/* Main Layout Container */}
+      <div className="pt-16 min-h-screen flex">
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 top-16 z-40 bg-background/95 backdrop-blur-sm border-r border-border transition-all duration-300 overflow-hidden",
+            isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full",
+            // Mobile: full width or sliding, usually fixed over content. 
+            // But requested behavior is "moves the rest of the webpage".
+            // On mobile, moving the whole page might be squishy. Usually we overlay on mobile, push on desktop.
+            // Let's keep mobile behavior as overlay (or hidden) and desktop as push.
+            isMobile && isOpen && "w-64 translate-x-0 shadow-xl"
+          )}
+        >
+          <nav className="h-full flex flex-col overflow-y-auto p-4 w-64">
+            <ul className="space-y-6 flex-1">
+              {allGroups.map((group, groupIndex) => (
+                group.items.length > 0 && (
+                  <li key={groupIndex}>
+                    {group.title && (
+                      <h3 className="mb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {group.title}
+                      </h3>
                     )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
+                    <ul className="space-y-1">
+                      {group.items.map((item) => {
+                         const Icon = item.icon
+                         const isActive = pathname === item.href
+                         return (
+                           <li key={item.href}>
+                             <Link
+                               href={item.href}
+                               className={cn(
+                                 "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                 isActive
+                                   ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                               )}
+                             >
+                               <Icon className="h-5 w-5" />
+                               <span>{item.label}</span>
+                             </Link>
+                           </li>
+                         )
+                      })}
+                    </ul>
+                  </li>
+                )
+              ))}
+            </ul>
+            
+            {/* Auth control at the bottom */}
+            <div className="pt-4 mt-auto border-t border-border">
+              {!user ? (
+                <div className="flex justify-center">
+                  <Link href="/portal-access" aria-label="Admin Access">
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-20 hover:opacity-100 transition-opacity">
+                      <Shield className="h-3 w-3" />
+                    </Button>
                   </Link>
-                </li>
-              )
-            })}
-
-            {/* My Portfolio Section - only show if user is logged in */}
-            {user && myPortfolioItems.length > 0 && (
-              <li className="mt-4">
-                <button
-                  onClick={() => setIsMyPortfolioOpen(!isMyPortfolioOpen)}
-                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
-                >
-                  <span>My Portfolio</span>
-                  {isMyPortfolioOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </button>
-                {isMyPortfolioOpen && (
-                  <ul className="mt-1 ml-3 space-y-1">
-                    {myPortfolioItems.map((item) => {
-                      const Icon = item.icon
-                      const isActive = pathname === item.href
-                      
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                              isActive
-                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                            )}
-                          >
-                            <Icon className="h-5 w-5" />
-                            <span>{item.label}</span>
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </li>
-            )}
-
-            {/* Rish's Insights Section - visible for all users */}
-            <li className="mt-4">
-              <button
-                onClick={() => setIsInsightsOpen(!isInsightsOpen)}
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
-              >
-                <span>Rish's Insights</span>
-                {isInsightsOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
-              {isInsightsOpen && (
-                <ul className="mt-1 ml-3 space-y-1">
-                  {rishInsightsItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href
-                    
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                          )}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </li>
-
-            {/* Research Section */}
-            <li className="mt-4">
-              <button
-                onClick={() => setIsResearchOpen(!isResearchOpen)}
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-accent rounded-md transition-colors"
-              >
-                <span>Research</span>
-                {isResearchOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
-              {isResearchOpen && (
-                <ul className="mt-1 ml-3 space-y-1">
-                  {researchItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href
-                    
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                          )}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </li>
-
-            {/* Other Nav Items */}
-            {otherNavItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              
-              return (
-                <li key={item.href} className="mt-1">
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-          
-          {/* Auth control at the bottom */}
-          <div className="pt-4 mt-4 border-t border-border">
-            {!user ? (
-              <Link href="/login" className="w-full">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  size="sm"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span>Login / Sign Up</span>
-                </Button>
-              </Link>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
-                  Logged in as {displayName} ({userEmail})
                 </div>
-                <div className="text-xs text-muted-foreground px-1 hidden sm:block">
-                  {isAdmin ? "Full view enabled" : "Standard view (values hidden)"}
-                </div>
+              ) : (
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
-                    Manage account
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
-                    <LogOutIcon className="h-4 w-4 mr-2" />
-                    <span>Logout</span>
-                  </Button>
+                  <div className="text-xs text-muted-foreground px-1 hidden sm:block">
+                    Logged in as {displayName} ({userEmail})
+                  </div>
+                  <div className="text-xs text-muted-foreground px-1 hidden sm:block">
+                    {isAdmin ? "Full view enabled" : "Standard view"}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.redirectToAccountSettings()}>
+                      Manage account
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => stack.signOut()}>
+                      <LogOutIcon className="h-4 w-4 mr-2" />
+                      <span>Logout</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </nav>
-      </aside>
+              )}
+            </div>
+          </nav>
+        </aside>
 
-      {/* Overlay for mobile */}
+        {/* Content Wrapper */}
+        <main 
+          className={cn(
+            "flex-1 transition-all duration-300 w-full",
+            // On desktop, add left margin when open to simulate "push"
+            !isMobile && isOpen ? "ml-64" : "ml-0"
+          )}
+        >
+          {children}
+        </main>
+      </div>
+
+      {/* Overlay for mobile only */}
       {isOpen && isMobile && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
@@ -448,9 +306,6 @@ export default function SidebarNavigation({ adminEmail = "" }: Props) {
           style={{ top: '4rem' }}
         />
       )}
-
-      {/* Main content spacer */}
-      <div className="h-16" />
     </>
   )
 }

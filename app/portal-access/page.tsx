@@ -19,8 +19,8 @@ export default function LoginPage() {
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Sign in or Sign up</h1>
-          <p className="text-sm text-muted-foreground">Choose a provider to continue</p>
+          <h1 className="text-2xl font-semibold">Admin Access</h1>
+          <p className="text-sm text-muted-foreground">Authorized Personnel Only</p>
         </div>
 
         <div className="space-y-3">

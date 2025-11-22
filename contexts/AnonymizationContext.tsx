@@ -11,8 +11,8 @@ interface AnonymizationContextType {
 const AnonymizationContext = createContext<AnonymizationContextType | undefined>(undefined)
 
 export function AnonymizationProvider({ children }: { children: ReactNode }) {
-  // Default to anonymized mode for safety
-  const [isAnonymized, setIsAnonymized] = useState(true)
+  // Default to non-anonymized mode as requested
+  const [isAnonymized, setIsAnonymized] = useState(false)
 
   const toggleAnonymization = () => {
     setIsAnonymized(prev => !prev)

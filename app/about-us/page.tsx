@@ -10,7 +10,7 @@ export default function AboutUsPage() {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">About Us</h1>
-          <p className="text-gray-600">Learn more about Rish Invests and our mission</p>
+          <p className="text-gray-600">Learn more about Twenty-20-Capital and our mission</p>
         </div>
 
         {/* Mission Statement */}
@@ -23,7 +23,7 @@ export default function AboutUsPage() {
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <p className="text-gray-600 leading-relaxed">
-              [Mission statement placeholder - To be filled with information about the purpose and goals of Rish Invests]
+              Our mission is to achieve superior long-term capital appreciation by investing in a concentrated portfolio of high-quality, compounding businesses. We believe that disciplined analysis, emotional stability, and a long-term time horizon are the keys to outperforming the market.
             </p>
           </CardContent>
         </Card>
@@ -38,10 +38,10 @@ export default function AboutUsPage() {
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <p className="text-gray-600 leading-relaxed mb-4">
-              [Team information placeholder - Details about the team behind Rish Invests]
+              Twenty-20-Capital is an investment firm focused on public equity markets. We are not traders; we are business owners. We view every stock ticker as an ownership stake in a real business.
             </p>
             <p className="text-gray-600 leading-relaxed">
-              [Background and expertise placeholder]
+              Our team brings a rigorous, fundamental approach to investing, focusing on understanding the durability of a company's competitive advantage and its ability to reinvest capital at high rates of return.
             </p>
           </CardContent>
         </Card>
@@ -57,21 +57,21 @@ export default function AboutUsPage() {
           <CardContent className="px-4 sm:px-6">
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Investment Tracking</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Fundamental Research</h3>
                 <p className="text-gray-600">
-                  [Description of investment tracking services and features]
+                  We conduct deep-dive research into company fundamentals, industry dynamics, and management quality.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Market Analysis</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Portfolio Management</h3>
                 <p className="text-gray-600">
-                  [Description of market analysis and research capabilities]
+                  We construct a concentrated portfolio of our highest conviction ideas, managing risk through quality rather than broad diversification.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Portfolio Insights</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Transparent Reporting</h3>
                 <p className="text-gray-600">
-                  [Description of portfolio insights and reporting features]
+                  We believe in transparency. We share our investment theses, performance metrics, and market commentary with our stakeholders.
                 </p>
               </div>
             </div>
@@ -88,12 +88,10 @@ export default function AboutUsPage() {
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <p className="text-gray-600 mb-4">
-              [Contact information placeholder - How to reach out for questions or collaboration]
+              For inquiries, please contact us at:
             </p>
             <div className="space-y-2 text-gray-600">
-              <p>[Email placeholder]</p>
-              <p>[Social media links placeholder]</p>
-              <p>[Other contact methods placeholder]</p>
+              <p>Email: contact@twenty20capital.com</p>
             </div>
           </CardContent>
         </Card>
