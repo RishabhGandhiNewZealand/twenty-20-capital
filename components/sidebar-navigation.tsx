@@ -4,14 +4,14 @@ import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Home, 
-  TrendingUp, 
-  FileText, 
-  BarChart3, 
-  Newspaper, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  TrendingUp,
+  FileText,
+  BarChart3,
+  Newspaper,
   Shield,
   Database,
   LogOut as LogOutIcon,
@@ -41,11 +41,11 @@ function getRawEmail(u: any): string {
     u?.primaryEmailAddress?.email ||
     ""
   )
-  .toString()
+    .toString()
 }
 
-type Props = { 
-  adminEmail?: string 
+type Props = {
+  adminEmail?: string
   children?: React.ReactNode
 }
 
@@ -80,7 +80,7 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
 
   // Fund Insights
   const fundInsightsItems = [
-    { href: "/rishs-portfolio", label: "Appreciation Fund", icon: TrendingUp },
+    { href: "/appreciation-fund", label: "Appreciation Fund", icon: TrendingUp },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
@@ -107,7 +107,7 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
 
   const flatNavItems = allGroups.flatMap(g => g.items)
   let currentPage = flatNavItems.find(item => item.href === pathname) || flatNavItems[0]
-  
+
   if (pathname === '/investment-thesis') {
     currentPage = { href: '/investment-thesis', label: 'Investment Thesis', icon: BookOpen }
   } else if (pathname === '/portfolio') {
@@ -142,10 +142,10 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
         <div className="flex items-center h-full px-4">
           {/* Logo and Title */}
           <Link href="/" className="flex items-center space-x-2">
-            <Image 
-              src="/logo.png" 
-              alt="Twenty-20-Capital Logo" 
-              width={32} 
+            <Image
+              src="/logo.png"
+              alt="Twenty-20-Capital Logo"
+              width={32}
               height={32}
               className="h-7 w-7 sm:h-8 sm:w-8"
             />
@@ -228,31 +228,31 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
                     )}
                     <ul className="space-y-1">
                       {group.items.map((item) => {
-                         const Icon = item.icon
-                         const isActive = pathname === item.href
-                         return (
-                           <li key={item.href}>
-                             <Link
-                               href={item.href}
-                               className={cn(
-                                 "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                 isActive
-                                   ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                               )}
-                             >
-                               <Icon className="h-5 w-5" />
-                               <span>{item.label}</span>
-                             </Link>
-                           </li>
-                         )
+                        const Icon = item.icon
+                        const isActive = pathname === item.href
+                        return (
+                          <li key={item.href}>
+                            <Link
+                              href={item.href}
+                              className={cn(
+                                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                isActive
+                                  ? "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                              )}
+                            >
+                              <Icon className="h-5 w-5" />
+                              <span>{item.label}</span>
+                            </Link>
+                          </li>
+                        )
                       })}
                     </ul>
                   </li>
                 )
               ))}
             </ul>
-            
+
             {/* Auth control at the bottom */}
             <div className="pt-4 mt-auto border-t border-border">
               {!user ? (
@@ -287,7 +287,7 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
         </aside>
 
         {/* Content Wrapper */}
-        <main 
+        <main
           className={cn(
             "flex-1 transition-all duration-300 w-full",
             // On desktop, add left margin when open to simulate "push"

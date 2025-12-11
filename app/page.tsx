@@ -53,7 +53,7 @@ export default function LandingPage() {
               Disciplined Capital Appreciation through Focused Investing in Quality Compounding Machines.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <Link href="/rishs-portfolio">
+              <Link href="/appreciation-fund">
                 <Button size="lg" className="h-12 px-8 text-base">
                   View Appreciation Fund
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -75,7 +75,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Investment Philosophy</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              We own high-quality businesses, purchase them at reasonable prices, and hold them for an extended period 
+              We own high-quality businesses, purchase them at reasonable prices, and hold them for an extended period
               while they remain excellent companies.
             </p>
           </div>
@@ -107,7 +107,7 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                  To avoid permanent capital loss and achieve superior returns relative to the S&P 500 over the long term. 
+                  To avoid permanent capital loss and achieve superior returns relative to the S&P 500 over the long term.
                   We measure success not by quarterly fluctuations, but by multi-year compounding of capital.
                 </p>
               </CardContent>
@@ -175,7 +175,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-16 text-center">
-            <Link href="/rishs-portfolio">
+            <Link href="/appreciation-fund">
               <Button size="lg" className="px-8">
                 Explore the Fund
               </Button>
