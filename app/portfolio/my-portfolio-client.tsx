@@ -22,7 +22,7 @@ function getRawEmail(u: any): string {
     u?.primaryEmailAddress?.email ||
     ""
   )
-  .toString()
+    .toString()
 }
 
 function getUserId(u: any): string {
@@ -83,7 +83,7 @@ function createPortfolioStats(
       icon: DollarSign,
     },
     {
-      title: "Portfolio Yearly CAGR", 
+      title: "Portfolio Yearly CAGR",
       value: formatPercentage(isNaN(portfolioCAGR) ? 0 : portfolioCAGR),
       description: "Total Value Returns since inception",
       icon: TrendingUp,
@@ -121,7 +121,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
     }
     // If admin, redirect to Rish's portfolio
     if (isAdmin) {
-      router.push("/rishs-portfolio")
+      router.push("/appreciation-fund")
       return
     }
   }, [user, isAdmin, router])
@@ -181,12 +181,12 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
           }
         }
       } catch (error) {
-        setPortfolioStats(prev => prev.map((stat, index) => 
-          index === 0 ? { 
-            ...stat, 
+        setPortfolioStats(prev => prev.map((stat, index) =>
+          index === 0 ? {
+            ...stat,
             value: "Error",
             subtitle: "Failed to load portfolio data",
-            description: undefined 
+            description: undefined
           } : stat
         ))
       } finally {
@@ -205,7 +205,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <PortfolioChart 
+          <PortfolioChart
             portfolioStats={portfolioStats}
             historyPath="/api/user-portfolio-history"
             historyHeaders={{ 'x-user-id': userId, 'x-user-email': rawUserEmail, 'x-is-admin': 'false' }}
@@ -215,7 +215,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
 
         {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioHorizontalBarChart 
+            <PortfolioHorizontalBarChart
               holdings={holdings}
               compositionPath="/api/user-portfolio-compositions"
               compositionDatePath="/api/user-portfolio-composition"
@@ -257,8 +257,8 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                         <tr key={holding.symbol} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <img 
-                                src={getLogoUrl(holding.symbol)} 
+                              <img
+                                src={getLogoUrl(holding.symbol)}
                                 alt={holding.symbol}
                                 className="h-8 w-8 rounded-full mr-3"
                                 onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=0a1a16&color=f5f5f5` }}
@@ -319,8 +319,8 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                     <div key={holding.symbol} className="bg-white rounded-lg border border-gray-200 p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center">
-                          <img 
-                            src={getLogoUrl(holding.symbol)} 
+                          <img
+                            src={getLogoUrl(holding.symbol)}
                             alt={holding.symbol}
                             className="h-10 w-10 rounded-full mr-3"
                             onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${holding.symbol}&background=0a1a16&color=f5f5f5` }}
@@ -331,7 +331,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className={`text-center py-3 mb-3 rounded-lg ${holding.gainNZD >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
                         <div className={`text-2xl font-bold ${holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {(isNaN(holding.gainPercent) ? 0 : holding.gainPercent).toFixed(1)}%
@@ -340,7 +340,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                           {maskCurrency(holding.gainNZD, false)}
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <div className="text-gray-500">Shares</div>
@@ -366,7 +366,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                       </div>
                     </div>
                   ))}
-                  
+
                   {summary && (
                     <>
                       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -441,8 +441,8 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                           <tr key={position.symbol + position.exitDate} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                             <td className="py-3 px-2">
                               <div className="flex items-center">
-                                <img 
-                                  src={getLogoUrl(position.symbol)} 
+                                <img
+                                  src={getLogoUrl(position.symbol)}
                                   alt={`${position.symbol} logo`}
                                   className="w-8 h-8 rounded-full mr-3"
                                   onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5` }}
@@ -483,8 +483,8 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                       <div key={position.symbol + position.exitDate} className="bg-white rounded-lg border border-gray-200 p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center">
-                            <img 
-                              src={getLogoUrl(position.symbol)} 
+                            <img
+                              src={getLogoUrl(position.symbol)}
                               alt={`${position.symbol} logo`}
                               className="w-8 h-8 rounded-full mr-2"
                               onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${position.symbol}&background=0a1a16&color=f5f5f5` }}
