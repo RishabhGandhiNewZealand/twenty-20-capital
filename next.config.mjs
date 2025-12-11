@@ -8,7 +8,24 @@ const nextConfig = {
   },
   images: {
     // Enable image optimization for better performance
-    domains: ['logo.clearbit.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'logo.clearbit.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'icons.duckduckgo.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.google.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
+      }
+    ],
     formats: ['image/avif', 'image/webp'],
   },
   // Enable React strict mode for better development experience
