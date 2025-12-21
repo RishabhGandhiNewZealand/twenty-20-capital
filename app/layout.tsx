@@ -13,8 +13,8 @@ import { Suspense } from "react"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Twenty-20-Capital",
-  description: "Institutional investment fund focused on high-quality compounding businesses.",
+  title: "RishInvests",
+  description: "Personal portfolio tracker focused on high-quality compounding businesses.",
   generator: 'v0.dev',
   icons: {
     icon: '/logo-favicon.png',
