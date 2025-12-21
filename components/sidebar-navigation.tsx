@@ -71,16 +71,16 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
     { href: "/", label: "Home", icon: Home },
   ]
 
-  // Fund Management - Filter out Portfolio if admin
-  const fundManagementItems = isAdmin ? [
+  // Portfolio Management - Filter out Portfolio if admin
+  const portfolioManagementItems = isAdmin ? [
     // Removed Portfolio link as requested for admin view
     // { href: "/portfolio", label: "Portfolio", icon: Briefcase }, 
     { href: "/trades", label: "Trades", icon: Database }
   ] : []
 
-  // Fund Insights
-  const fundInsightsItems = [
-    { href: "/appreciation-fund", label: "Appreciation Fund", icon: TrendingUp },
+  // Portfolio Insights
+  const portfolioInsightsItems = [
+    { href: "/appreciation-fund", label: "Portfolio", icon: TrendingUp },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
@@ -93,14 +93,14 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
 
   // Other
   const otherNavItems = [
-    { href: "/about-us", label: "About Us", icon: Users },
+    { href: "/about-us", label: "About", icon: Users },
   ]
 
   // Combine all items for easy rendering
   const allGroups = [
     { title: null, items: basicNavItems },
-    { title: "Fund Management", items: fundManagementItems },
-    { title: "Fund Insights", items: fundInsightsItems },
+    { title: "Portfolio Management", items: portfolioManagementItems },
+    { title: "Portfolio Insights", items: portfolioInsightsItems },
     { title: "Research", items: researchItems },
     { title: null, items: otherNavItems },
   ]
@@ -144,12 +144,12 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
           <Link href="/" className="flex items-center space-x-2">
             <Image
               src="/logo.png"
-              alt="Twenty-20-Capital Logo"
+              alt="RishInvests Logo"
               width={32}
               height={32}
               className="h-7 w-7 sm:h-8 sm:w-8"
             />
-            <span className="text-base sm:text-lg font-bold">Twenty-20-Capital</span>
+            <span className="text-base sm:text-lg font-bold">RishInvests</span>
           </Link>
 
           {/* Toggle Button */}

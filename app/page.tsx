@@ -47,7 +47,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 py-20 sm:py-32 relative">
           <div className="text-center space-y-8">
             <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-              Twenty-20-Capital
+              RishInvests
             </h1>
             <p className="text-xl sm:text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto font-light leading-relaxed">
               Disciplined Capital Appreciation through Focused Investing in Quality Compounding Machines.
@@ -55,13 +55,13 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
               <Link href="/appreciation-fund">
                 <Button size="lg" className="h-12 px-8 text-base">
-                  View Appreciation Fund
+                  View Portfolio
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link href="#strategy">
                 <Button size="lg" variant="outline" className="h-12 px-8 text-base">
-                  Our Strategy
+                  My Strategy
                 </Button>
               </Link>
             </div>
@@ -75,7 +75,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Investment Philosophy</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              We own high-quality businesses, purchase them at reasonable prices, and hold them for an extended period
+              I own high-quality businesses, purchase them at reasonable prices, and hold them for an extended period
               while they remain excellent companies.
             </p>
           </div>
@@ -102,13 +102,13 @@ export default function LandingPage() {
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
                   <Target className="h-5 w-5 mr-2 text-blue-600" />
-                  Our Goal
+                  My Goal
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                   To avoid permanent capital loss and achieve superior returns relative to the S&P 500 over the long term.
-                  We measure success not by quarterly fluctuations, but by multi-year compounding of capital.
+                  I measure success not by quarterly fluctuations, but by multi-year compounding of capital.
                 </p>
               </CardContent>
             </Card>
@@ -151,7 +151,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Transparent Performance</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                We track and publish our performance metrics, including CAGR and total returns, compared against the S&P 500 benchmark.
+                I track and publish my performance metrics, including CAGR and total returns, compared against the S&P 500 benchmark.
               </p>
             </div>
             <div className="text-center p-6">
@@ -160,7 +160,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Global Perspective</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Our mandate allows us to invest in the best businesses globally, regardless of geography, though we primarily focus on developed markets.
+                My mandate allows me to invest in the best businesses globally, regardless of geography, though I primarily focus on developed markets.
               </p>
             </div>
             <div className="text-center p-6">
@@ -169,7 +169,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Detailed Analysis</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                We publish our investment theses and research, providing transparency into our decision-making process.
+                I publish my investment theses and research, providing transparency into my decision-making process.
               </p>
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function LandingPage() {
           <div className="mt-16 text-center">
             <Link href="/appreciation-fund">
               <Button size="lg" className="px-8">
-                Explore the Fund
+                Explore the Portfolio
               </Button>
             </Link>
           </div>
@@ -191,7 +191,7 @@ export default function LandingPage() {
             Stay Updated
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-            Follow our latest market commentary and portfolio updates.
+            Follow my latest market commentary and portfolio updates.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/news">
