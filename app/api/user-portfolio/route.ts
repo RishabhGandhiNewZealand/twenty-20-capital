@@ -132,18 +132,15 @@ export async function GET(request: NextRequest) {
 
     const currentExchangeRate = await getCurrentUSDNZDRate()
     const tickers = Array.from(holdingsBySymbol.keys())
+    const prices = await Promise.all([
+      ...tickers.map(ticker => getCurrentPrice(ticker)),
+      getCurrentPrice('SPY')
+    ])
 
-    const prices: number[] = []
-
-    // Fetch current prices sequentially
-    for (const ticker of tickers) {
-      prices.push(await getCurrentPrice(ticker))
-    }
-    // Fetch current SPY price
-    const currentSpyPrice = await getCurrentPrice('SPY')
-
+    const currentSpyPrice = prices[prices.length - 1]
+    const tickerPrices = prices.slice(0, -1)
     const priceMap = new Map<string, number>()
-    tickers.forEach((ticker, index) => { priceMap.set(ticker, prices[index]) })
+    tickers.forEach((ticker, index) => { priceMap.set(ticker, tickerPrices[index]) })
 
     const holdings: Array<{ symbol: string, name: string, shares: number, currentPrice: number, currentValueNZD: number, costBasisNZD: number, gainNZD: number, gainPercent: number, allocation: number, currency: string, avgPriceInstrument?: number }> = []
     let totalValueNZD = 0

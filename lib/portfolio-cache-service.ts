@@ -284,25 +284,20 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     logger.debug('Unique tickers:', tickers)
     logger.debug('Needs exchange rate:', needsExchangeRate)
 
-    logger.info(`Fetching historical data for ${tickers.length} tickers sequentially...`)
+    logger.info(`Fetching historical data for ${tickers.length} tickers in parallel...`)
+    const priceDataResults = await Promise.all(tickers.map(async (ticker) => ({
+      ticker,
+      prices: await getHistoricalPrices(ticker, startDate, endDate)
+    })))
+
     const tickerPrices = new Map<string, Map<string, number>>()
+    priceDataResults.forEach(({ ticker, prices }) => tickerPrices.set(ticker, prices))
 
-    // Fetch ticker prices sequentially
-    for (const ticker of tickers) {
-      const prices = await getHistoricalPrices(ticker, startDate, endDate)
-      tickerPrices.set(ticker, prices)
-    }
-
-    // Fetch exchange rate if needed
-    let exchangeRates = new Map<string, number>()
-    if (needsExchangeRate) {
-      logger.info('Fetching USD/NZD exchange rate sequentially...')
-      exchangeRates = await getUSDNZDRate(startDate, endDate)
-    }
-
-    // Fetch SPY prices for S&P 500 comparison
-    logger.info('Fetching SPY prices sequentially...')
-    const spyPrices = await getHistoricalPrices('SPY', startDate, endDate)
+    // Fetch exchange rate and SPY prices in parallel
+    const [exchangeRates, spyPrices] = await Promise.all([
+      needsExchangeRate ? getUSDNZDRate(startDate, endDate) : Promise.resolve(new Map<string, number>()),
+      getHistoricalPrices('SPY', startDate, endDate)
+    ])
 
     logger.info('Filling missing dates...')
 
@@ -393,12 +388,9 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
       const exchangeRate = await getCurrentUSDNZDRate()
       const tickers = holdings.map(h => h.symbol)
 
-      logger.info(`Fetching current prices for ${tickers.length} tickers sequentially...`)
-      const priceMap = new Map<string, number>()
-      for (const ticker of tickers) {
-        const price = await getCurrentPrice(ticker)
-        priceMap.set(ticker, price)
-      }
+      logger.info(`Fetching current prices for ${tickers.length} tickers in parallel...`)
+      const prices = await Promise.all(tickers.map(ticker => getCurrentPrice(ticker)))
+      const priceMap = new Map<string, number>(tickers.map((ticker, i) => [ticker, prices[i]]))
 
       // Calculate current values and gains for each holding
       const enrichedHoldings = holdings.map(holding => {
@@ -521,12 +513,9 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
       const exchangeRate = await getCurrentUSDNZDRate()
       const tickers = holdings.map(h => h.symbol)
 
-      logger.info(`Fetching current prices for ${tickers.length} tickers sequentially (refresh)...`)
-      const priceMap = new Map<string, number>()
-      for (const ticker of tickers) {
-        const price = await getCurrentPrice(ticker)
-        priceMap.set(ticker, price)
-      }
+      logger.info(`Fetching current prices for ${tickers.length} tickers in parallel (refresh)...`)
+      const prices = await Promise.all(tickers.map(ticker => getCurrentPrice(ticker)))
+      const priceMap = new Map<string, number>(tickers.map((ticker, i) => [ticker, prices[i]]))
 
       // Calculate current values and gains for each holding
       const enrichedHoldings = holdings.map(holding => {

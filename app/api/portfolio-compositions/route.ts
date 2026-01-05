@@ -40,15 +40,13 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
 
     const tickers = [...new Set(trades.map(t => t.code))]
 
-    const priceDataArray = []
-    for (const ticker of tickers) {
+    const priceDataPromises = tickers.map(async (ticker) => {
       try {
         let yfinanceTicker = ticker
         if (ticker === 'MFT') {
           yfinanceTicker = 'MFT.NZ'
         }
 
-        logger.info(`Fetching historical prices for ${yfinanceTicker} (composition)...`)
         const quotes = await yahooFinance.historical(yfinanceTicker, {
           period1: startDate,
           period2: endDate,
@@ -61,30 +59,30 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
             priceMap.set(dateStr, quote.close)
           })
 
-        priceDataArray.push({ ticker, priceMap })
+        return { ticker, priceMap }
       } catch (error) {
         logger.error(`Error fetching prices for ${ticker}:`, error)
-        priceDataArray.push({ ticker, priceMap: new Map<string, number>() })
+        return { ticker, priceMap: new Map<string, number>() }
       }
-    }
+    })
 
-    logger.info('Fetching exchange rates (composition)...')
-    let exchangeRates = new Map<string, number>()
-    try {
-      const quotes = await yahooFinance.historical('NZDUSD=X', {
-        period1: startDate,
-        period2: endDate,
-        interval: '1d'
-      })
+    const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', {
+      period1: startDate,
+      period2: endDate,
+      interval: '1d'
+    }).then(quotes => {
       const rateMap = new Map<string, number>()
         ; (quotes as any).forEach((quote: any) => {
           const dateStr = quote.date.toISOString().split('T')[0]
           rateMap.set(dateStr, 1 / quote.close)
         })
-      exchangeRates = rateMap
-    } catch (error) {
-      logger.error('Error fetching exchange rates for composition:', error)
-    }
+      return rateMap
+    }).catch(() => new Map<string, number>())
+
+    const [priceDataArray, exchangeRates] = await Promise.all([
+      Promise.all(priceDataPromises),
+      exchangeRatePromise
+    ])
 
     const tickerPriceMap = new Map<string, Map<string, number>>()
     priceDataArray.forEach(({ ticker, priceMap }) => {
@@ -103,7 +101,7 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
 
         if (priceMap.has(dateStr)) {
           lastPrice = priceMap.get(dateStr)!
-          filledMap.set(dateStr, lastPrice)
+          filledMap.set(dateStr, lastPrice!)
         } else if (lastPrice !== null) {
           filledMap.set(dateStr, lastPrice!)
         }

@@ -89,10 +89,7 @@ export async function GET(
     const holdingsArray = Array.from(holdings.values())
     const tickers = holdingsArray.map(h => h.symbol)
 
-    // Fetch prices and exchange rate in parallel
-    // Fetch prices sequentially
-    const priceResults = []
-    for (const ticker of tickers) {
+    const pricePromises = tickers.map(async (ticker) => {
       try {
         let yfinanceTicker = ticker
         if (ticker === 'MFT') {
@@ -107,30 +104,30 @@ export async function GET(
 
         if ((quotes as any).length > 0) {
           const closestQuote = (quotes as any)[(quotes as any).length - 1]
-          priceResults.push({ ticker, price: closestQuote.close })
-        } else {
-          priceResults.push({ ticker, price: 0 })
+          return { ticker, price: closestQuote.close }
         }
+        return { ticker, price: 0 }
       } catch (error) {
         logger.error(`Error fetching price for ${ticker} on ${targetDate}:`, error)
-        priceResults.push({ ticker, price: 0 })
+        return { ticker, price: 0 }
       }
-    }
+    })
 
-    // Fetch exchange rate
-    let exchangeRate = FALLBACK_USD_TO_NZD_RATE
-    try {
-      const quotes = await yahooFinance.historical('NZDUSD=X', {
-        period1: startDate,
-        period2: targetDateObj,
-        interval: '1d'
-      })
+    const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', {
+      period1: startDate,
+      period2: targetDateObj,
+      interval: '1d'
+    }).then(quotes => {
       if ((quotes as any).length > 0) {
-        exchangeRate = 1 / (quotes as any)[(quotes as any).length - 1].close
+        return 1 / (quotes as any)[(quotes as any).length - 1].close
       }
-    } catch (e) {
-      // Use fallback
-    }
+      return FALLBACK_USD_TO_NZD_RATE
+    }).catch(() => FALLBACK_USD_TO_NZD_RATE)
+
+    const [priceResults, exchangeRate] = await Promise.all([
+      Promise.all(pricePromises),
+      exchangeRatePromise
+    ])
 
     // Create price map
     const priceMap = new Map(priceResults.map(r => [r.ticker, r.price]))
