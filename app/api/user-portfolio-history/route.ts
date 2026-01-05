@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
 import { calculateDailyReturns } from '@/lib/portfolioCalculations'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from '@/lib/yahoo-finance'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
 function fillMissingDates(priceMap: Map<string, number>, startDate: Date, endDate: Date): Map<string, number> {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       if (ticker === 'MFT') yfinanceTicker = 'MFT.NZ'
       const quotes = await yahooFinance.historical(yfinanceTicker, { period1: startDate, period2: endDate, interval: '1d' })
       const priceMap = new Map<string, number>()
-      quotes.forEach(q => priceMap.set(q.date.toISOString().split('T')[0], q.close))
+        ; (quotes as any).forEach((q: any) => priceMap.set(q.date.toISOString().split('T')[0], q.close))
       return { ticker, priceMap }
     } catch (e) {
       return { ticker, priceMap: new Map<string, number>() }
@@ -51,10 +51,11 @@ export async function GET(request: NextRequest) {
 
   const exchangeRatesPromise = yahooFinance.historical('NZDUSD=X', { period1: startDate, period2: endDate, interval: '1d' })
     .then(quotes => {
-      const rateMap = new Map<string, number>()
-      quotes.forEach(q => rateMap.set(q.date.toISOString().split('T')[0], 1 / q.close))
-      return rateMap
-    }).catch(() => {
+      const m = new Map<string, number>()
+        ; (quotes as any).forEach((q: any) => m.set(q.date.toISOString().split('T')[0], 1 / q.close))
+      return m
+    })
+    .catch(() => {
       const m = new Map<string, number>()
       const d = new Date(startDate)
       while (d <= endDate) {
@@ -66,10 +67,11 @@ export async function GET(request: NextRequest) {
 
   const spyPromise = yahooFinance.historical('SPY', { period1: startDate, period2: endDate, interval: '1d' })
     .then(quotes => {
-      const priceMap = new Map<string, number>()
-      quotes.forEach(q => priceMap.set(q.date.toISOString().split('T')[0], q.close))
-      return priceMap
-    }).catch(() => new Map<string, number>())
+      const m = new Map<string, number>()
+        ; (quotes as any).forEach((q: any) => m.set(q.date.toISOString().split('T')[0], q.close))
+      return m
+    })
+    .catch(() => new Map<string, number>())
 
   const [priceDataArray, exchangeRatesRaw, spyPricesRaw] = await Promise.all([
     Promise.all(priceDataPromises),
