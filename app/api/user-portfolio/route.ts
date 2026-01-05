@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_NZD_TO_USD_RATE, MIN_SHARE_THRESHOLD } from '@/lib/constants'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from '@/lib/yahoo-finance'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
 import { calculatePortfolioData } from '@/lib/portfolio'
 
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         let yfinanceTicker = ticker
         if (ticker === 'MFT') yfinanceTicker = 'MFT.NZ'
         const quote = await yahooFinance.quote(yfinanceTicker)
-        return quote.regularMarketPrice || 0
+        return (quote as any).regularMarketPrice || 0
       } catch {
         return 0
       }
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         const endDate = new Date(date)
         endDate.setDate(endDate.getDate() + 1)
         const quotes = await yahooFinance.historical(ticker, { period1: date, period2: endDate, interval: '1d' })
-        return quotes.length > 0 ? quotes[0].close : 0
+        return (quotes as any).length > 0 ? (quotes as any)[0].close : 0
       } catch {
         return 0
       }
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const getCurrentUSDNZDRate = async (): Promise<number> => {
       try {
         const quote = await yahooFinance.quote('NZDUSD=X')
-        return 1 / (quote.regularMarketPrice || FALLBACK_NZD_TO_USD_RATE)
+        return 1 / ((quote as any).regularMarketPrice || FALLBACK_NZD_TO_USD_RATE)
       } catch {
         return FALLBACK_USD_TO_NZD_RATE
       }
@@ -77,12 +77,14 @@ export async function GET(request: NextRequest) {
     let soldCapitalAvailable = 0
 
     const tradeDates = [...new Set(trades.filter(t => t.type === 'Buy').map(t => t.date))]
-    const spyHistoricalPrices = await Promise.all(tradeDates.map(async (dateStr) => {
+    const spyPriceMap = new Map<string, number>()
+
+    // Fetch SPY historical prices sequentially
+    for (const dateStr of tradeDates) {
       const date = new Date(dateStr)
       const price = await getHistoricalPrice('SPY', date)
-      return { date: dateStr, price }
-    }))
-    const spyPriceMap = new Map(spyHistoricalPrices.map(p => [p.date, p.price]))
+      spyPriceMap.set(dateStr, price)
+    }
 
     for (const trade of trades) {
       const current = holdingsBySymbol.get(trade.code) || { shares: 0, totalCostNZD: 0, name: trade.name, currency: trade.instrumentCurrency }
@@ -131,14 +133,17 @@ export async function GET(request: NextRequest) {
     const currentExchangeRate = await getCurrentUSDNZDRate()
     const tickers = Array.from(holdingsBySymbol.keys())
 
-    const prices = await Promise.all([
-      ...tickers.map(ticker => getCurrentPrice(ticker)),
-      getCurrentPrice('SPY')
-    ])
+    const prices: number[] = []
+
+    // Fetch current prices sequentially
+    for (const ticker of tickers) {
+      prices.push(await getCurrentPrice(ticker))
+    }
+    // Fetch current SPY price
+    const currentSpyPrice = await getCurrentPrice('SPY')
 
     const priceMap = new Map<string, number>()
     tickers.forEach((ticker, index) => { priceMap.set(ticker, prices[index]) })
-    const currentSpyPrice = prices[prices.length - 1]
 
     const holdings: Array<{ symbol: string, name: string, shares: number, currentPrice: number, currentValueNZD: number, costBasisNZD: number, gainNZD: number, gainPercent: number, allocation: number, currency: string, avgPriceInstrument?: number }> = []
     let totalValueNZD = 0

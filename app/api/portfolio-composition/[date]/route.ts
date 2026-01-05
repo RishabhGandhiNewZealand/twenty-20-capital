@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from '@/lib/yahoo-finance'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
@@ -22,7 +22,7 @@ export async function GET(
 ) {
   try {
     const targetDate = params.date
-    
+
     // Check cache first
     if (compositionCache.has(targetDate)) {
       return NextResponse.json({
@@ -34,7 +34,7 @@ export async function GET(
 
     // Fetch cached trade data from database
     const trades = await getCachedTradeData()
-    
+
     // If no trades found, return empty response
     if (!trades || trades.length === 0) {
       logger.warn('No trade data found in database')
@@ -44,10 +44,10 @@ export async function GET(
         cached: false
       })
     }
-    
+
     // Sort trades by date
     trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
+
     // Calculate holdings up to the target date
     const holdings = new Map<string, {
       symbol: string
@@ -55,97 +55,97 @@ export async function GET(
       shares: number
       currency: string
     }>()
-    
+
     for (const trade of trades) {
       if (new Date(trade.date) > new Date(targetDate)) {
         break
       }
-      
+
       const current = holdings.get(trade.code) || {
         symbol: trade.code,
         name: trade.name,
         shares: 0,
         currency: trade.instrumentCurrency
       }
-      
+
       if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
         current.shares += trade.qty
       } else if (trade.type === 'Sell') {
         current.shares += trade.qty // qty is negative for sells
       }
-      
+
       if (current.shares > 0) {
         holdings.set(trade.code, current)
       } else {
         holdings.delete(trade.code) // Remove if position is closed
       }
     }
-    
+
     // Get prices for the target date
     const targetDateObj = new Date(targetDate)
     const startDate = new Date(targetDate)
     startDate.setDate(startDate.getDate() - 5) // Look back 5 days for price data
-    
+
     const holdingsArray = Array.from(holdings.values())
     const tickers = holdingsArray.map(h => h.symbol)
-    
+
     // Fetch prices and exchange rate in parallel
-    const pricePromises = tickers.map(async (ticker) => {
+    // Fetch prices sequentially
+    const priceResults = []
+    for (const ticker of tickers) {
       try {
         let yfinanceTicker = ticker
         if (ticker === 'MFT') {
           yfinanceTicker = 'MFT.NZ'
         }
-        
+
         const quotes = await yahooFinance.historical(yfinanceTicker, {
           period1: startDate,
           period2: targetDateObj,
           interval: '1d'
         })
-        
-        // Get the closest price to target date
-        if (quotes.length > 0) {
-          const closestQuote = quotes[quotes.length - 1]
-          return { ticker, price: closestQuote.close }
+
+        if ((quotes as any).length > 0) {
+          const closestQuote = (quotes as any)[(quotes as any).length - 1]
+          priceResults.push({ ticker, price: closestQuote.close })
+        } else {
+          priceResults.push({ ticker, price: 0 })
         }
-        return { ticker, price: 0 }
       } catch (error) {
         logger.error(`Error fetching price for ${ticker} on ${targetDate}:`, error)
-        return { ticker, price: 0 }
+        priceResults.push({ ticker, price: 0 })
       }
-    })
-    
+    }
+
     // Fetch exchange rate
-    const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', {
-      period1: startDate,
-      period2: targetDateObj,
-      interval: '1d'
-    }).then(quotes => {
-      if (quotes.length > 0) {
-        return 1 / quotes[quotes.length - 1].close
+    let exchangeRate = FALLBACK_USD_TO_NZD_RATE
+    try {
+      const quotes = await yahooFinance.historical('NZDUSD=X', {
+        period1: startDate,
+        period2: targetDateObj,
+        interval: '1d'
+      })
+      if ((quotes as any).length > 0) {
+        exchangeRate = 1 / (quotes as any)[(quotes as any).length - 1].close
       }
-      return FALLBACK_USD_TO_NZD_RATE
-    }).catch(() => FALLBACK_USD_TO_NZD_RATE)
-    
-    const [priceResults, exchangeRate] = await Promise.all([
-      Promise.all(pricePromises),
-      exchangeRatePromise
-    ])
-    
+    } catch (e) {
+      // Use fallback
+    }
+
     // Create price map
     const priceMap = new Map(priceResults.map(r => [r.ticker, r.price]))
-    
+
     // Calculate portfolio values
     let totalValue = 0
     const holdingsWithValues: HoldingAtDate[] = []
-    
+
     for (const holding of holdingsArray) {
       const price = priceMap.get(holding.symbol) || 0
       const valueInCurrency = holding.shares * price
-      const valueNZD = holding.currency === 'USD' 
-        ? valueInCurrency * exchangeRate 
+      const valueNZD = holding.currency === 'USD'
+        ? valueInCurrency * exchangeRate
         : valueInCurrency
-      
+
       if (valueNZD > 0) {
         totalValue += valueNZD
         holdingsWithValues.push({
@@ -158,25 +158,25 @@ export async function GET(
         })
       }
     }
-    
+
     // Calculate percentages
     holdingsWithValues.forEach(holding => {
       holding.percentage = (holding.value / totalValue) * 100
     })
-    
+
     // Sort by value descending
     holdingsWithValues.sort((a, b) => b.value - a.value)
-    
+
     // Cache the result
     compositionCache.set(targetDate, holdingsWithValues)
-    
+
     return NextResponse.json({
       date: targetDate,
       holdings: holdingsWithValues,
       totalValue,
       cached: false
     })
-    
+
   } catch (error) {
     logger.error('Error calculating portfolio composition:', error)
     return NextResponse.json(

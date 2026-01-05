@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
 import { calculateDailyReturns } from '@/lib/portfolioCalculations'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from '@/lib/yahoo-finance'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
 function fillMissingDates(priceMap: Map<string, number>, startDate: Date, endDate: Date): Map<string, number> {
@@ -36,46 +36,44 @@ export async function GET(request: NextRequest) {
 
   const tickers = [...new Set(sorted.map(t => t.code))]
 
-  const priceDataPromises = tickers.map(async (ticker) => {
+  // Fetch price data sequentially
+  const priceDataArray = []
+  for (const ticker of tickers) {
     try {
       let yfinanceTicker = ticker
       if (ticker === 'MFT') yfinanceTicker = 'MFT.NZ'
       const quotes = await yahooFinance.historical(yfinanceTicker, { period1: startDate, period2: endDate, interval: '1d' })
       const priceMap = new Map<string, number>()
-      quotes.forEach(q => priceMap.set(q.date.toISOString().split('T')[0], q.close))
-      return { ticker, priceMap }
+        ; (quotes as any).forEach((q: any) => priceMap.set(q.date.toISOString().split('T')[0], q.close))
+      priceDataArray.push({ ticker, priceMap })
     } catch (e) {
-      return { ticker, priceMap: new Map<string, number>() }
+      priceDataArray.push({ ticker, priceMap: new Map<string, number>() })
     }
-  })
+  }
 
-  const exchangeRatesPromise = yahooFinance.historical('NZDUSD=X', { period1: startDate, period2: endDate, interval: '1d' })
-    .then(quotes => {
-      const rateMap = new Map<string, number>()
-      quotes.forEach(q => rateMap.set(q.date.toISOString().split('T')[0], 1 / q.close))
-      return rateMap
-    }).catch(() => {
-      const m = new Map<string, number>()
-      const d = new Date(startDate)
-      while (d <= endDate) {
-        m.set(d.toISOString().split('T')[0], FALLBACK_USD_TO_NZD_RATE)
-        d.setDate(d.getDate() + 1)
-      }
-      return m
-    })
+  // Fetch exchange rates
+  let exchangeRatesRaw = new Map<string, number>()
+  try {
+    const quotes = await yahooFinance.historical('NZDUSD=X', { period1: startDate, period2: endDate, interval: '1d' })
+      ; (quotes as any).forEach((q: any) => exchangeRatesRaw.set(q.date.toISOString().split('T')[0], 1 / q.close))
+  } catch (e) {
+    const m = new Map<string, number>()
+    const d = new Date(startDate)
+    while (d <= endDate) {
+      m.set(d.toISOString().split('T')[0], FALLBACK_USD_TO_NZD_RATE)
+      d.setDate(d.getDate() + 1)
+    }
+    exchangeRatesRaw = m
+  }
 
-  const spyPromise = yahooFinance.historical('SPY', { period1: startDate, period2: endDate, interval: '1d' })
-    .then(quotes => {
-      const priceMap = new Map<string, number>()
-      quotes.forEach(q => priceMap.set(q.date.toISOString().split('T')[0], q.close))
-      return priceMap
-    }).catch(() => new Map<string, number>())
-
-  const [priceDataArray, exchangeRatesRaw, spyPricesRaw] = await Promise.all([
-    Promise.all(priceDataPromises),
-    exchangeRatesPromise,
-    spyPromise
-  ])
+  // Fetch SPY prices
+  let spyPricesRaw = new Map<string, number>()
+  try {
+    const quotes = await yahooFinance.historical('SPY', { period1: startDate, period2: endDate, interval: '1d' })
+      ; (quotes as any).forEach((q: any) => spyPricesRaw.set(q.date.toISOString().split('T')[0], q.close))
+  } catch (e) {
+    // Already an empty map
+  }
 
   // Fill forward missing dates for consistency
   const tickerPriceMap = new Map<string, Map<string, number>>()

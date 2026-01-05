@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from '@/lib/yahoo-finance'
 import { logger } from '@/lib/logger'
 import { getCompanyColor } from '@/lib/company-colors'
 
@@ -22,9 +22,9 @@ async function resolveCompanyWebsite(symbol: string): Promise<string | null> {
 	for (const candidate of candidates) {
 		try {
 			// Use quoteSummary to access assetProfile.website when available
-			// @ts-ignore - module type for quoteSummary varies
 			const summary = await yahooFinance.quoteSummary(candidate, { modules: ['assetProfile'] })
-			const website = summary?.assetProfile?.website as string | undefined
+			const assetProfile = (summary as any)?.assetProfile
+			const website = assetProfile?.website as string | undefined
 			if (website && typeof website === 'string') {
 				return website
 			}

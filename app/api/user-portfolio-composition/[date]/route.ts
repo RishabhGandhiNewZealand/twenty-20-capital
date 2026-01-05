@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from '@/lib/yahoo-finance'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
 
@@ -39,27 +39,33 @@ export async function GET(request: NextRequest, { params }: { params: { date: st
     const holdingsArray = Array.from(holdings.values())
     const tickers = holdingsArray.map(h => h.symbol)
 
-    const pricePromises = tickers.map(async (ticker) => {
+    const priceResults = []
+    for (const ticker of tickers) {
       try {
         let yfinanceTicker = ticker
         if (ticker === 'MFT') yfinanceTicker = 'MFT.NZ'
         const quotes = await yahooFinance.historical(yfinanceTicker, { period1: startDate, period2: targetDateObj, interval: '1d' })
-        if (quotes.length > 0) {
-          const closestQuote = quotes[quotes.length - 1]
-          return { ticker, price: closestQuote.close }
+        if ((quotes as any).length > 0) {
+          const closestQuote = (quotes as any)[(quotes as any).length - 1]
+          priceResults.push({ ticker, price: closestQuote.close })
+        } else {
+          priceResults.push({ ticker, price: 0 })
         }
-        return { ticker, price: 0 }
       } catch (error) {
         logger.error(`Error fetching price for ${ticker} on ${targetDate}:`, error)
-        return { ticker, price: 0 }
+        priceResults.push({ ticker, price: 0 })
       }
-    })
+    }
 
-    const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', { period1: startDate, period2: targetDateObj, interval: '1d' })
-      .then(quotes => quotes.length > 0 ? 1 / quotes[quotes.length - 1].close : FALLBACK_USD_TO_NZD_RATE)
-      .catch(() => FALLBACK_USD_TO_NZD_RATE)
-
-    const [priceResults, exchangeRate] = await Promise.all([Promise.all(pricePromises), exchangeRatePromise])
+    let exchangeRate = FALLBACK_USD_TO_NZD_RATE
+    try {
+      const quotes = await yahooFinance.historical('NZDUSD=X', { period1: startDate, period2: targetDateObj, interval: '1d' })
+      if ((quotes as any).length > 0) {
+        exchangeRate = 1 / (quotes as any)[(quotes as any).length - 1].close
+      }
+    } catch (e) {
+      // Use fallback
+    }
 
     const priceMap = new Map(priceResults.map(r => [r.ticker, r.price]))
 

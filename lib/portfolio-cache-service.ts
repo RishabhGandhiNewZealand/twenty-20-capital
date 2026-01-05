@@ -8,7 +8,7 @@
 import cacheManager, { CacheKey, CacheEvent } from './cache-manager'
 import { getCachedTradeData } from './trade-data-cache'
 import { calculateDailyReturns } from './portfolioCalculations'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from './yahoo-finance'
 import { logger } from './logger'
 import { FALLBACK_USD_TO_NZD_RATE } from './constants'
 import { generatePortfolioData } from './portfolioServerData'
@@ -49,12 +49,12 @@ const CACHE_TTL = {
  * Get historical prices for a stock with caching
  */
 async function getHistoricalPrices(
-  ticker: string, 
-  startDate: Date, 
+  ticker: string,
+  startDate: Date,
   endDate: Date
 ): Promise<Map<string, number>> {
   const cacheKey = `${CacheKey.STOCK_PRICES}:${ticker}:${startDate.toISOString().split('T')[0]}:${endDate.toISOString().split('T')[0]}`
-  
+
   return cacheManager.getOrSet(
     cacheKey,
     async () => {
@@ -66,20 +66,20 @@ async function getHistoricalPrices(
         }
 
         logger.debug(`Fetching history for ${yfinanceTicker} from ${startDate.toISOString()} to ${endDate.toISOString()}`)
-        
+
         const quotes = await yahooFinance.historical(yfinanceTicker, {
           period1: startDate,
           period2: endDate,
           interval: '1d'
         })
 
-        logger.debug(`Got ${quotes.length} quotes for ${yfinanceTicker}`)
+        logger.debug(`Got ${(quotes as any).length} quotes for ${yfinanceTicker}`)
 
         const priceMap = new Map<string, number>()
-        quotes.forEach(quote => {
-          const dateStr = quote.date.toISOString().split('T')[0]
-          priceMap.set(dateStr, quote.close)
-        })
+          ; (quotes as any).forEach((quote: any) => {
+            const dateStr = quote.date.toISOString().split('T')[0]
+            priceMap.set(dateStr, quote.close)
+          })
 
         return priceMap
       } catch (error) {
@@ -96,27 +96,27 @@ async function getHistoricalPrices(
  */
 async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string, number>> {
   const cacheKey = `${CacheKey.STOCK_PRICES}:USDNZD:${startDate.toISOString().split('T')[0]}:${endDate.toISOString().split('T')[0]}`
-  
+
   return cacheManager.getOrSet(
     cacheKey,
     async () => {
       try {
         logger.debug(`Fetching USD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`)
-        
+
         const quotes = await yahooFinance.historical('NZDUSD=X', {
           period1: startDate,
           period2: endDate,
           interval: '1d'
         })
 
-        logger.debug(`Got ${quotes.length} exchange rate quotes`)
+        logger.debug(`Got ${(quotes as any).length} exchange rate quotes`)
 
         const rateMap = new Map<string, number>()
-        quotes.forEach(quote => {
-          const dateStr = quote.date.toISOString().split('T')[0]
-          // Convert NZD/USD to USD/NZD by inverting
-          rateMap.set(dateStr, 1 / quote.close)
-        })
+          ; (quotes as any).forEach((quote: any) => {
+            const dateStr = quote.date.toISOString().split('T')[0]
+            // Convert NZD/USD to USD/NZD by inverting
+            rateMap.set(dateStr, 1 / quote.close)
+          })
 
         return rateMap
       } catch (error) {
@@ -140,8 +140,8 @@ async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string
  * Fill forward missing dates in price data
  */
 function fillMissingDates(
-  priceMap: Map<string, number>, 
-  startDate: Date, 
+  priceMap: Map<string, number>,
+  startDate: Date,
   endDate: Date
 ): Map<string, number> {
   const filledMap = new Map<string, number>()
@@ -150,7 +150,7 @@ function fillMissingDates(
 
   while (currentDate <= endDate) {
     const dateStr = currentDate.toISOString().split('T')[0]
-    
+
     if (priceMap.has(dateStr)) {
       lastPrice = priceMap.get(dateStr)!
       filledMap.set(dateStr, lastPrice)
@@ -168,7 +168,7 @@ function fillMissingDates(
  * Get the nearest available price from a price map (for trade dates)
  */
 function getNearestPrice(
-  dateStr: string, 
+  dateStr: string,
   priceMap: Map<string, number>,
   lookbackDays: number = 5
 ): number {
@@ -176,7 +176,7 @@ function getNearestPrice(
   if (priceMap.has(dateStr)) {
     return priceMap.get(dateStr)!
   }
-  
+
   // Look for the nearest price within lookback days
   const targetDate = new Date(dateStr)
   for (let i = 1; i <= lookbackDays; i++) {
@@ -187,7 +187,7 @@ function getNearestPrice(
     if (priceMap.has(pastDateStr)) {
       return priceMap.get(pastDateStr)!
     }
-    
+
     // Try future dates
     const futureDate = new Date(targetDate)
     futureDate.setDate(futureDate.getDate() + i)
@@ -196,7 +196,7 @@ function getNearestPrice(
       return priceMap.get(futureDateStr)!
     }
   }
-  
+
   return 0
 }
 
@@ -212,21 +212,21 @@ async function calculateSP500Benchmark(
   }
 
   const sortedTrades = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  
+
   // Get date range for SPY prices
   const startDate = new Date(sortedTrades[0].date)
   const endDate = new Date(sortedTrades[sortedTrades.length - 1].date)
-  
+
   // Fetch historical SPY prices
   const spyPrices = await getHistoricalPrices('SPY', startDate, endDate)
-  
+
   let sp500Shares = 0
   let currentCostBasis = 0
   let soldCapitalAvailable = 0
-  
+
   for (const trade of sortedTrades) {
     const tradeValueNZD = Math.abs(trade.value)
-    
+
     if (trade.type === 'Buy') {
       if (soldCapitalAvailable >= tradeValueNZD) {
         soldCapitalAvailable -= tradeValueNZD
@@ -234,7 +234,7 @@ async function calculateSP500Benchmark(
         const newCapital = tradeValueNZD - soldCapitalAvailable
         currentCostBasis += newCapital
         soldCapitalAvailable = 0
-        
+
         // Use actual historical SPY price for this trade date
         const spyPriceUSD = getNearestPrice(trade.date, spyPrices)
         if (spyPriceUSD > 0) {
@@ -248,7 +248,7 @@ async function calculateSP500Benchmark(
       soldCapitalAvailable += tradeValueNZD
     }
   }
-  
+
   return { sp500Shares, currentCostBasis }
 }
 
@@ -260,7 +260,7 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     // Fetch cached trade data - ADMIN ONLY
     const adminUserId = process.env.ADMIN_USER_ID || ''
     const trades = await getCachedTradeData(adminUserId)
-    
+
     if (!trades || trades.length === 0) {
       logger.warn('No trade data found for portfolio history')
       return []
@@ -272,7 +272,7 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     // Get date range
     const startDate = new Date(trades[0].date)
     const endDate = new Date()
-    
+
     logger.info('Portfolio history calculation started')
     logger.debug('Date range:', { start: startDate.toISOString(), end: endDate.toISOString() })
     logger.debug('Number of trades:', trades.length)
@@ -284,36 +284,28 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     logger.debug('Unique tickers:', tickers)
     logger.debug('Needs exchange rate:', needsExchangeRate)
 
-    // Fetch all historical data in parallel
-    const promises: Promise<any>[] = []
-    
-    // Add price fetching promises
-    tickers.forEach(ticker => {
-      promises.push(getHistoricalPrices(ticker, startDate, endDate))
-    })
-    
-    // Add exchange rate if needed
-    if (needsExchangeRate) {
-      promises.push(getUSDNZDRate(startDate, endDate))
-    }
-    
-    // Add SPY prices for S&P 500 comparison
-    promises.push(getHistoricalPrices('SPY', startDate, endDate))
-
-    logger.info('Fetching historical data...')
-    const results = await Promise.all(promises)
-
-    // Organize the results
+    logger.info(`Fetching historical data for ${tickers.length} tickers sequentially...`)
     const tickerPrices = new Map<string, Map<string, number>>()
-    tickers.forEach((ticker, index) => {
-      tickerPrices.set(ticker, results[index])
-    })
 
-    const exchangeRates = needsExchangeRate ? results[tickers.length] : new Map<string, number>()
-    const spyPrices = results[results.length - 1]
+    // Fetch ticker prices sequentially
+    for (const ticker of tickers) {
+      const prices = await getHistoricalPrices(ticker, startDate, endDate)
+      tickerPrices.set(ticker, prices)
+    }
+
+    // Fetch exchange rate if needed
+    let exchangeRates = new Map<string, number>()
+    if (needsExchangeRate) {
+      logger.info('Fetching USD/NZD exchange rate sequentially...')
+      exchangeRates = await getUSDNZDRate(startDate, endDate)
+    }
+
+    // Fetch SPY prices for S&P 500 comparison
+    logger.info('Fetching SPY prices sequentially...')
+    const spyPrices = await getHistoricalPrices('SPY', startDate, endDate)
 
     logger.info('Filling missing dates...')
-    
+
     // Fill forward missing prices
     const filledPrices = new Map<string, Map<string, number>>()
     tickers.forEach(ticker => {
@@ -325,7 +317,7 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     const filledSpyPrices = fillMissingDates(spyPrices, startDate, endDate)
 
     logger.info('Calculating daily portfolio values...')
-    
+
     // Calculate daily portfolio values
     const dailyData = calculateDailyReturns(
       trades,
@@ -337,7 +329,7 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     )
 
     logger.info(`Portfolio history calculation completed. Generated ${dailyData.length} daily data points`)
-    
+
     return dailyData
 
   } catch (error) {
@@ -368,7 +360,7 @@ async function getCurrentPrice(ticker: string): Promise<number> {
     }
 
     const quote = await yahooFinance.quote(yfinanceTicker)
-    return quote.regularMarketPrice || 0
+    return (quote as any).regularMarketPrice || 0
   } catch (error) {
     logger.error(`Error fetching current price for ${ticker}:`, error)
     return 0
@@ -381,7 +373,7 @@ async function getCurrentPrice(ticker: string): Promise<number> {
 async function getCurrentUSDNZDRate(): Promise<number> {
   try {
     const quote = await yahooFinance.quote('NZDUSD=X')
-    return 1 / (quote.regularMarketPrice || 0.606)
+    return 1 / ((quote as any).regularMarketPrice || 0.606)
   } catch (error) {
     logger.error('Error fetching USD/NZD rate:', error)
     return FALLBACK_USD_TO_NZD_RATE
@@ -396,19 +388,18 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
     CacheKey.PORTFOLIO_CURRENT,
     async () => {
       const { holdings, exitedPositions } = await generatePortfolioData()
-      
+
       // Fetch current prices for all holdings
       const exchangeRate = await getCurrentUSDNZDRate()
       const tickers = holdings.map(h => h.symbol)
-      
-      const pricePromises = tickers.map(ticker => getCurrentPrice(ticker))
-      const prices = await Promise.all(pricePromises)
-      
+
+      logger.info(`Fetching current prices for ${tickers.length} tickers sequentially...`)
       const priceMap = new Map<string, number>()
-      tickers.forEach((ticker, index) => {
-        priceMap.set(ticker, prices[index])
-      })
-      
+      for (const ticker of tickers) {
+        const price = await getCurrentPrice(ticker)
+        priceMap.set(ticker, price)
+      }
+
       // Calculate current values and gains for each holding
       const enrichedHoldings = holdings.map(holding => {
         const currentPrice = priceMap.get(holding.symbol) || 0
@@ -417,7 +408,7 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
         const costBasisNZD = holding.totalShares * holding.avgPriceNZD
         const gainNZD = currentValueNZD - costBasisNZD
         const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
-        
+
         return {
           symbol: holding.symbol,
           name: holding.name,
@@ -431,33 +422,33 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
           currency: holding.instrumentCurrency
         }
       })
-      
+
       // Calculate total value and allocations
       const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
       const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
-      
+
       enrichedHoldings.forEach(holding => {
         holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
       })
-      
+
       // Sort by allocation
       enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
-      
+
       const totalGain = totalValue - totalCost
       const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
-      
+
       // Calculate S&P 500 benchmark using actual historical SPY prices
       const adminUserId = process.env.ADMIN_USER_ID || ''
       const trades = await getCachedTradeData(adminUserId)
-      
+
       const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
-      
+
       const currentSpyPrice = await getCurrentPrice('SPY')
       const sp500ValueUSD = sp500Shares * currentSpyPrice
       const sp500Value = sp500ValueUSD * exchangeRate
       const sp500GainNZD = sp500Value - currentCostBasis
       const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
-      
+
       return {
         holdings: enrichedHoldings,
         exitedPositions,
@@ -486,7 +477,7 @@ export async function getCachedPortfolioComposition(): Promise<PortfolioComposit
     CacheKey.PORTFOLIO_COMPOSITION,
     async () => {
       const { holdings } = await getCachedPortfolioCurrentData()
-      
+
       // Calculate composition percentages
       const totalValue = holdings.reduce((sum, h) => sum + h.currentValueNZD, 0)
       const compositions = holdings.map(h => ({
@@ -496,10 +487,10 @@ export async function getCachedPortfolioComposition(): Promise<PortfolioComposit
         percentage: totalValue > 0 ? (h.currentValueNZD / totalValue) * 100 : 0,
         color: h.color || '#000000'
       }))
-      
+
       // Sort by percentage descending
       compositions.sort((a, b) => b.percentage - a.percentage)
-      
+
       return {
         compositions,
         lastUpdated: new Date().toISOString()
@@ -518,26 +509,25 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
     CacheKey.PORTFOLIO_HISTORY,
     calculatePortfolioHistory
   )
-  
+
   // Register refresh callback for current portfolio (use the same logic as the cache getter)
   cacheManager.registerRefreshCallback(
     CacheKey.PORTFOLIO_CURRENT,
     async () => {
       // Call getCachedPortfolioCurrentData without the cache layer
       const { holdings, exitedPositions } = await generatePortfolioData()
-      
+
       // Fetch current prices for all holdings
       const exchangeRate = await getCurrentUSDNZDRate()
       const tickers = holdings.map(h => h.symbol)
-      
-      const pricePromises = tickers.map(ticker => getCurrentPrice(ticker))
-      const prices = await Promise.all(pricePromises)
-      
+
+      logger.info(`Fetching current prices for ${tickers.length} tickers sequentially (refresh)...`)
       const priceMap = new Map<string, number>()
-      tickers.forEach((ticker, index) => {
-        priceMap.set(ticker, prices[index])
-      })
-      
+      for (const ticker of tickers) {
+        const price = await getCurrentPrice(ticker)
+        priceMap.set(ticker, price)
+      }
+
       // Calculate current values and gains for each holding
       const enrichedHoldings = holdings.map(holding => {
         const currentPrice = priceMap.get(holding.symbol) || 0
@@ -546,7 +536,7 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
         const costBasisNZD = holding.totalShares * holding.avgPriceNZD
         const gainNZD = currentValueNZD - costBasisNZD
         const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
-        
+
         return {
           symbol: holding.symbol,
           name: holding.name,
@@ -560,30 +550,30 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
           currency: holding.instrumentCurrency
         }
       })
-      
+
       const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
       const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
-      
+
       enrichedHoldings.forEach(holding => {
         holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
       })
-      
+
       enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
-      
+
       const totalGain = totalValue - totalCost
       const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
-      
+
       const adminUserId = process.env.ADMIN_USER_ID || ''
       const trades = await getCachedTradeData(adminUserId)
-      
+
       const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
-      
+
       const currentSpyPrice = await getCurrentPrice('SPY')
       const sp500ValueUSD = sp500Shares * currentSpyPrice
       const sp500Value = sp500ValueUSD * exchangeRate
       const sp500GainNZD = sp500Value - currentCostBasis
       const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
-      
+
       return {
         holdings: enrichedHoldings,
         exitedPositions,
@@ -601,7 +591,7 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
       }
     }
   )
-  
+
   // Register refresh callback for portfolio composition
   cacheManager.registerRefreshCallback(
     CacheKey.PORTFOLIO_COMPOSITION,
@@ -615,16 +605,16 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
         percentage: totalValue > 0 ? (h.currentValueNZD / totalValue) * 100 : 0,
         color: h.color || '#000000'
       }))
-      
+
       compositions.sort((a, b) => b.percentage - a.percentage)
-      
+
       return {
         compositions,
         lastUpdated: new Date().toISOString()
       }
     }
   )
-  
+
   logger.info('Portfolio cache refresh callbacks registered')
 }
 
@@ -633,7 +623,7 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
  */
 export async function invalidatePortfolioCaches(): Promise<void> {
   await cacheManager.invalidateOnTradeUpdate()
-  
+
   // Invalidate Next.js cache tags
   try {
     revalidateTag(CACHE_TAGS.PORTFOLIO_COMPOSITIONS)
@@ -650,17 +640,17 @@ export async function invalidatePortfolioCaches(): Promise<void> {
  */
 export async function warmUpPortfolioCaches(): Promise<void> {
   logger.info('Warming up portfolio caches...')
-  
+
   try {
     // Pre-fetch all portfolio data in parallel
     const startTime = Date.now()
-    
+
     await Promise.all([
       getCachedPortfolioHistory(),
       getCachedPortfolioCurrentData(),
       getCachedPortfolioComposition()
     ])
-    
+
     const duration = Date.now() - startTime
     logger.info(`Portfolio caches warmed up in ${duration}ms`)
   } catch (error) {
