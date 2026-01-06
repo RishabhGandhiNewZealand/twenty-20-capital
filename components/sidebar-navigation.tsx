@@ -60,7 +60,7 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
   const rawUserEmail = useMemo(() => getRawEmail(user), [user])
   const userEmail = rawUserEmail
   const displayName = useMemo(() => {
-    const base = (user?.displayName || user?.name || user?.username || userEmail.split("@")[0] || "").toString()
+    const base = (user?.displayName || userEmail.split("@")[0] || "").toString()
     return toTitleCase(base)
   }, [user, userEmail])
 
@@ -75,7 +75,8 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
   const portfolioManagementItems = isAdmin ? [
     // Removed Portfolio link as requested for admin view
     // { href: "/portfolio", label: "Portfolio", icon: Briefcase }, 
-    { href: "/trades", label: "Trades", icon: Database }
+    { href: "/trades", label: "Trades", icon: Database },
+    { href: "/multi-agent-pm", label: "Multi-Agent PM", icon: Shield }
   ] : []
 
   // Portfolio Insights
@@ -86,10 +87,6 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
     { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
   ]
 
-  // Research
-  const researchItems = [
-    { href: "/news", label: "News", icon: Newspaper },
-  ]
 
   // Other
   const otherNavItems = [
@@ -101,7 +98,6 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
     { title: null, items: basicNavItems },
     { title: "Portfolio Management", items: portfolioManagementItems },
     { title: "Portfolio Insights", items: portfolioInsightsItems },
-    { title: "Research", items: researchItems },
     { title: null, items: otherNavItems },
   ]
 
