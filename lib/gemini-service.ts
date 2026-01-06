@@ -58,6 +58,22 @@ const loadPrompt = (filename: string, variables: Record<string, string> = {}): s
     }
 };
 
+// Pricing (USD per 1M tokens) - Gemini 2.0 Flash / 1.5 Flash
+// Input: $0.075 / 1M, Output: $0.30 / 1M (for prompts < 128k)
+const COST_PER_1M_INPUT = 0.075;
+const COST_PER_1M_OUTPUT = 0.30;
+
+const logUsage = (modelName: string, usage: any) => {
+    if (!usage) return;
+    const inputCost = (usage.promptTokenCount / 1_000_000) * COST_PER_1M_INPUT;
+    const outputCost = (usage.candidatesTokenCount / 1_000_000) * COST_PER_1M_OUTPUT;
+    const totalCost = inputCost + outputCost;
+
+    console.log(`\n[GEMINI USAGE - ${modelName}]`);
+    console.log(`Tokens: ${usage.promptTokenCount} (in) / ${usage.candidatesTokenCount} (out) / ${usage.totalTokenCount} (total)`);
+    console.log(`Estimated Cost: $${totalCost.toFixed(6)} USD\n`);
+};
+
 /**
  * Agent 1: Fundamental Analyst
  */
@@ -82,6 +98,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         });
 
         const response = result.response;
+        logUsage(ANALYSIS_MODEL, response.usageMetadata);
         const text = response.text();
 
         // Extract sources if available
@@ -181,6 +198,7 @@ Analyze every portfolio company's quality before making the swap.`;
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] }
         });
 
+        logUsage(DECISION_MODEL, result.response.usageMetadata);
         const text = result.response.text();
         return JSON.parse(text) as TradeDecision;
 

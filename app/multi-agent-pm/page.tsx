@@ -255,43 +255,64 @@ export default function MultiAgentPMPage() {
 
                     {/* Simple Portfolio Table included directly or componentized */}
                     <div className="bg-slate-800/20 rounded-xl border border-slate-700/50 p-6 shadow-xl backdrop-blur-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3 text-slate-100">
-                                <PieChart className="text-blue-400" />
-                                <h2 className="text-xl font-bold uppercase tracking-tight">Live Allocation</h2>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <Button variant="ghost" size="sm" onClick={initPortfolio} className="text-slate-400 hover:text-white">
-                                    <RefreshCw size={16} className={state.status === AgentStatus.RETRIEVING_PORTFOLIO ? 'animate-spin' : ''} />
-                                </Button>
-                            </div>
-                        </div>
+                        {(() => {
+                            const totalFundValue = state.portfolio.reduce((sum, item) => sum + item.value, 0);
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3 text-slate-100">
+                                            <PieChart className="text-blue-400" />
+                                            <h2 className="text-xl font-bold uppercase tracking-tight">Live Allocation</h2>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-right mr-4">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Assets</p>
+                                                <p className="text-lg font-black text-slate-100 tracking-tighter">${totalFundValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px] text-slate-500 uppercase">NZD</span></p>
+                                            </div>
+                                            <Button variant="ghost" size="sm" onClick={initPortfolio} className="text-slate-400 hover:text-white">
+                                                <RefreshCw size={16} className={state.status === AgentStatus.RETRIEVING_PORTFOLIO ? 'animate-spin' : ''} />
+                                            </Button>
+                                        </div>
+                                    </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="border-b border-slate-700/50">
-                                    <tr>
-                                        <th className="py-3 px-4 text-slate-500 font-bold text-[10px] uppercase tracking-widest">Ticker</th>
-                                        <th className="py-3 px-4 text-slate-500 font-bold text-[10px] uppercase tracking-widest text-right">Shares</th>
-                                        <th className="py-3 px-4 text-slate-500 font-bold text-[10px] uppercase tracking-widest text-right">Value (NZD)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {state.portfolio.map((item, idx) => (
-                                        <tr key={idx} className="border-b border-slate-800/30 hover:bg-slate-800/30 transition-colors">
-                                            <td className="py-3 px-4 font-black text-blue-400 tracking-wider uppercase">{item.symbol}</td>
-                                            <td className="py-3 px-4 text-slate-300 font-mono text-sm text-right">{item.shares.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                            <td className="py-3 px-4 text-slate-300 font-mono text-sm text-right">${item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        </tr>
-                                    ))}
-                                    {state.portfolio.length === 0 && (
-                                        <tr>
-                                            <td colSpan={3} className="py-8 text-center text-slate-600 text-xs uppercase tracking-widest">No Active Holdings</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="border-b border-slate-700/50">
+                                                <tr>
+                                                    <th className="py-3 px-4 text-slate-500 font-bold text-[10px] uppercase tracking-widest">Ticker</th>
+                                                    <th className="py-3 px-4 text-slate-500 font-bold text-[10px] uppercase tracking-widest text-right">Shares</th>
+                                                    <th className="py-3 px-4 text-slate-500 font-bold text-[10px] uppercase tracking-widest text-right">Fund Weight</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {state.portfolio.map((item, idx) => {
+                                                    const weight = (item.value / totalFundValue) * 100;
+                                                    return (
+                                                        <tr key={idx} className="border-b border-slate-800/30 hover:bg-slate-800/30 transition-colors">
+                                                            <td className="py-3 px-4 font-black text-blue-400 tracking-wider uppercase">{item.symbol}</td>
+                                                            <td className="py-3 px-4 text-slate-300 font-mono text-sm text-right">{item.shares.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                            <td className="py-3 px-4 text-right">
+                                                                <div className="flex items-center justify-end gap-3 text-slate-100 font-mono text-sm">
+                                                                    <div className="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden hidden md:block">
+                                                                        <div className="bg-blue-500 h-full" style={{ width: `${weight}%` }}></div>
+                                                                    </div>
+                                                                    {weight.toFixed(2)}%
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                {state.portfolio.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan={3} className="py-8 text-center text-slate-600 text-xs uppercase tracking-widest">No Active Holdings</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
 
                 </main>

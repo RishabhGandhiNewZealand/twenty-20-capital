@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { EquityAnalysis, TradeDecision } from '@/lib/gemini-service';
+import { MarkdownLite } from '@/components/markdown-lite';
 
 // Define Log Interface here as it's UI specific
 export interface AnalysisLog {
@@ -132,9 +133,8 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                                 </div>
                                             </div>
 
-                                            <div className="text-sm pr-2 mb-6 max-h-[500px] overflow-y-auto whitespace-pre-line text-slate-300">
-                                                {/* We use whitespace-pre-line to preserve structure without dangerous HTML/marked for now */}
-                                                {analysis.summary}
+                                            <div className="text-sm pr-2 mb-6 max-h-[500px] overflow-y-auto text-slate-300">
+                                                <MarkdownLite content={analysis.summary} />
                                             </div>
 
                                             <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-4">
