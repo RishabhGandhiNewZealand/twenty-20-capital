@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AnalysisDashboard, { AgentStatus, AnalysisLog } from './components/analysis-dashboard';
 import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
-import { runFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
+import { runFundamentalAnalysis, runBatchFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
+import { TickerStatus } from './components/analysis-dashboard';
 
 // State Definition
 interface State {
@@ -19,6 +20,7 @@ interface State {
     error: string | null;
     portfolio: PortfolioItem[];
     targetTicker: string;
+    tickerStatuses: TickerStatus[];
 }
 
 // Actions
@@ -30,6 +32,8 @@ type Action =
     | { type: 'SET_TARGET_TICKER'; payload: string }
     | { type: 'ADD_ANALYSIS'; payload: EquityAnalysis }
     | { type: 'RESET_ANALYSES' }
+    | { type: 'SET_TICKER_STATUSES'; payload: TickerStatus[] }
+    | { type: 'UPDATE_TICKER_STATUS'; payload: { ticker: string, state: TickerStatus['state'] } }
     | { type: 'SET_DECISION'; payload: TradeDecision };
 
 const initialState: State = {
@@ -40,6 +44,7 @@ const initialState: State = {
     error: null,
     portfolio: [],
     targetTicker: 'NVDA',
+    tickerStatuses: [],
 };
 
 function reducer(state: State, action: Action): State {
@@ -57,7 +62,16 @@ function reducer(state: State, action: Action): State {
         case 'ADD_ANALYSIS':
             return { ...state, analyses: [...state.analyses, action.payload] };
         case 'RESET_ANALYSES':
-            return { ...state, analyses: [], tradeDecision: null, logs: [], error: null };
+            return { ...state, analyses: [], tradeDecision: null, logs: [], error: null, tickerStatuses: [] };
+        case 'SET_TICKER_STATUSES':
+            return { ...state, tickerStatuses: action.payload };
+        case 'UPDATE_TICKER_STATUS':
+            return {
+                ...state,
+                tickerStatuses: state.tickerStatuses.map(ts =>
+                    ts.ticker === action.payload.ticker ? { ...ts, state: action.payload.state } : ts
+                )
+            };
         case 'SET_DECISION':
             return { ...state, tradeDecision: action.payload };
         default:
@@ -138,51 +152,58 @@ export default function MultiAgentPMPage() {
         dispatch({ type: 'SET_STATUS', payload: AgentStatus.ANALYZING_TARGET });
 
         try {
-            // Step 1: Analyze Target
-            addLog("Analyst", `Generative Research on ${state.targetTicker}...`);
-            const targetRes = await runFundamentalAnalysis(state.targetTicker, true);
+            addLog("Coordinator", `Initiating parallel swarm: Researching ${state.targetTicker} and scanning ${state.portfolio.length} holdings...`);
 
-            if (!targetRes.success || !targetRes.data) throw new Error(targetRes.error);
+            // Initialize Status Board
+            const tickerList = [
+                { symbol: state.targetTicker, isTarget: true },
+                ...state.portfolio.map(p => ({ symbol: p.symbol, isTarget: false }))
+            ];
 
-            dispatch({ type: 'ADD_ANALYSIS', payload: targetRes.data });
-            addLog("Analyst", "Research Report Generated.");
+            const initialStatuses: TickerStatus[] = tickerList.map(t => ({
+                ticker: t.symbol,
+                isTarget: t.isTarget,
+                state: 'RESEARCHING' // Setting all to researching immediately as we fire the batch
+            }));
+            dispatch({ type: 'SET_TICKER_STATUSES', payload: initialStatuses });
 
-            // Step 2: Scan Portfolio
-            dispatch({ type: 'SET_STATUS', payload: AgentStatus.SCANNING_PORTFOLIO });
-            addLog("Coordinator", `Scanning portfolio context (${state.portfolio.length} holdings)...`);
+            // Step 1: Fire Batched Analyst Call (Backend handles Promise.all)
+            const results = await runBatchFundamentalAnalysis(tickerList.map(t => ({ ticker: t.symbol, isTarget: t.isTarget })));
 
-            const portfolioAnalyses: EquityAnalysis[] = [];
+            const analysisResults: EquityAnalysis[] = [];
+            let targetAnalysis: EquityAnalysis | null = null;
 
-            // Parallelize? Limit concurrency to avoid rate limits? 
-            // Gemini Flash has high rate limits. Let's do batches of 3.
-            const batchSize = 3;
-            for (let i = 0; i < state.portfolio.length; i += batchSize) {
-                const batch = state.portfolio.slice(i, i + batchSize);
-                const promises = batch.map(item => runFundamentalAnalysis(item.symbol, false));
-
-                const results = await Promise.all(promises);
-
-                for (const res of results) {
-                    if (res.success && res.data) {
-                        portfolioAnalyses.push(res.data);
-                        dispatch({ type: 'ADD_ANALYSIS', payload: res.data });
-                        addLog("Analyst", `Scanned ${res.data.ticker}`);
-                    }
+            // Step 2: Process results and update UI
+            results.forEach((res, index) => {
+                const ticker = tickerList[index].symbol;
+                if (res.success && res.data) {
+                    dispatch({ type: 'ADD_ANALYSIS', payload: res.data });
+                    dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker, state: 'COMPLETED' } });
+                    addLog("Analyst", `Intelligence captured for ${ticker}.`);
+                    if (tickerList[index].isTarget) targetAnalysis = res.data;
+                    else analysisResults.push(res.data);
+                } else {
+                    dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker, state: 'ERROR' } });
+                    addLog("Analyst", `Warning: Failed to scan ${ticker}: ${res.error}`);
                 }
+            });
+
+            if (!targetAnalysis) {
+                throw new Error(`Failed to generate critical research for target: ${state.targetTicker}`);
             }
 
-            addLog("Coordinator", `Portfolio Capture Complete.`);
+            addLog("Coordinator", `Full intelligence payload received. Synchronizing Portfolio Manager...`);
 
-            // Step 3: Decision
+            // Step 3: Portfolio Manager Decision
             dispatch({ type: 'SET_STATUS', payload: AgentStatus.MAKING_DECISION });
-            addLog("Portfolio Manager", "Synthesizing Investment Strategy...");
+            addLog("Portfolio Manager", "Synthesizing Investment Strategy based on full swarm intelligence...");
 
-            const decisionRes = await runPortfolioManagerDecision(targetRes.data, portfolioAnalyses, state.portfolio);
+            const decisionRes = await runPortfolioManagerDecision(targetAnalysis, analysisResults, state.portfolio);
 
             if (!decisionRes.success || !decisionRes.data) throw new Error(decisionRes.error);
 
             dispatch({ type: 'SET_DECISION', payload: decisionRes.data });
-            addLog("Portfolio Manager", `Decision Finalized: ${decisionRes.data.action}`);
+            addLog("Portfolio Manager", `Strategic Decision Finalized: ${decisionRes.data.action}`);
 
             dispatch({ type: 'SET_STATUS', payload: AgentStatus.COMPLETED });
 
@@ -251,6 +272,7 @@ export default function MultiAgentPMPage() {
                         logs={state.logs}
                         analyses={state.analyses}
                         tradeDecision={state.tradeDecision}
+                        tickerStatuses={state.tickerStatuses}
                     />
 
                     {/* Simple Portfolio Table included directly or componentized */}

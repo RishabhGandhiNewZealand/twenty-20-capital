@@ -28,14 +28,21 @@ export enum AgentStatus {
     ERROR = 'ERROR'
 }
 
+export interface TickerStatus {
+    ticker: string;
+    state: 'PENDING' | 'RESEARCHING' | 'COMPLETED' | 'ERROR';
+    isTarget: boolean;
+}
+
 interface Props {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
     tradeDecision: TradeDecision | null;
+    tickerStatuses: TickerStatus[];
 }
 
-const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision }) => {
+const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses }) => {
 
     const downloadMarkdown = (analysis: EquityAnalysis) => {
         const blob = new Blob([analysis.summary], { type: 'text/markdown' });
@@ -78,6 +85,40 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                     </div>
                 </ScrollArea>
             </Card>
+
+            {/* Intelligence Swarm Status Board */}
+            {tickerStatuses.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {tickerStatuses.map((ts) => (
+                        <div key={ts.ticker} className={cn(
+                            "p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300",
+                            ts.state === 'COMPLETED' ? "bg-emerald-950/20 border-emerald-500/30" :
+                                ts.state === 'RESEARCHING' ? "bg-blue-950/20 border-blue-500/50 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.2)]" :
+                                    ts.state === 'ERROR' ? "bg-red-950/20 border-red-500/30" :
+                                        "bg-slate-900 border-slate-800 opacity-50"
+                        )}>
+                            <div className="flex items-center gap-1.5 w-full justify-between">
+                                <span className="font-black text-xs tracking-tighter text-white">{ts.ticker}</span>
+                                {ts.isTarget && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]"></div>}
+                            </div>
+                            <div className="flex items-center gap-2 w-full">
+                                <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                    <div className={cn(
+                                        "h-full transition-all duration-500",
+                                        ts.state === 'COMPLETED' ? "w-full bg-emerald-500" :
+                                            ts.state === 'RESEARCHING' ? "w-1/2 bg-blue-500" :
+                                                ts.state === 'ERROR' ? "w-full bg-red-500" :
+                                                    "w-0"
+                                    )}></div>
+                                </div>
+                                <span className="text-[8px] font-black uppercase text-slate-500 whitespace-nowrap">
+                                    {ts.state === 'RESEARCHING' ? 'Analysing' : ts.state.toLowerCase()}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Intelligence Archive (Analyses) */}

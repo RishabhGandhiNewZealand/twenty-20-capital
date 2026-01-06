@@ -8,8 +8,14 @@ export async function runFundamentalAnalysis(ticker: string, isTarget: boolean =
         return { success: true, data: analysis };
     } catch (error) {
         console.error('Fundamental Analysis Error:', error);
-        return { success: false, error: 'Failed to analyze equity.' };
+        return { success: false, error: `Failed to analyze ${ticker}` };
     }
+}
+
+export async function runBatchFundamentalAnalysis(items: { ticker: string, isTarget: boolean }[]) {
+    // Fire all analyst calls in parallel on the server
+    const promises = items.map(item => runFundamentalAnalysis(item.ticker, item.isTarget));
+    return Promise.all(promises);
 }
 
 export async function runPortfolioManagerDecision(
