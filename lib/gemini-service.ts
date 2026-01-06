@@ -31,7 +31,7 @@ export interface TradeDecision {
 
 // Configuration
 const ANALYSIS_MODEL = 'gemini-3-flash-preview';
-const DECISION_MODEL = 'gemini-3-flash-preview';
+const DECISION_MODEL = 'gemini-3-pro-preview';
 
 // Initialize Gemini Client
 // WARNING: Ensure GEMINI_API_KEY is in your .env.local
@@ -60,18 +60,39 @@ const loadPrompt = (filename: string, variables: Record<string, string> = {}): s
 
 // Pricing (USD per 1M tokens) - Gemini 2.0 Flash / 1.5 Flash
 // Input: $0.075 / 1M, Output: $0.30 / 1M (for prompts < 128k)
-const COST_PER_1M_INPUT = 0.075;
-const COST_PER_1M_OUTPUT = 0.30;
-
 const logUsage = (modelName: string, usage: any) => {
     if (!usage) return;
-    const inputCost = (usage.promptTokenCount / 1_000_000) * COST_PER_1M_INPUT;
-    const outputCost = (usage.candidatesTokenCount / 1_000_000) * COST_PER_1M_OUTPUT;
+
+    const isPro = modelName.includes('pro');
+    const tokenCount = usage.promptTokenCount;
+
+    let inputRate = 0;
+    let outputRate = 0;
+
+    if (isPro) {
+        // Gemini 3 Pro Tiered Pricing
+        if (tokenCount <= 200_000) {
+            inputRate = 2.00;
+            outputRate = 12.00;
+        } else {
+            inputRate = 4.00;
+            outputRate = 18.00;
+        }
+    } else {
+        // Gemini 3 Flash Fixed Pricing
+        inputRate = 0.50;
+        outputRate = 3.00;
+    }
+
+    const inputCost = (usage.promptTokenCount / 1_000_000) * inputRate;
+    const outputCost = (usage.candidatesTokenCount / 1_000_000) * outputRate;
     const totalCost = inputCost + outputCost;
 
-    console.log(`\n[GEMINI USAGE - ${modelName}]`);
+    console.log(`\n[GEMINI 3 USAGE - ${modelName}]`);
     console.log(`Tokens: ${usage.promptTokenCount} (in) / ${usage.candidatesTokenCount} (out) / ${usage.totalTokenCount} (total)`);
-    console.log(`Estimated Cost: $${totalCost.toFixed(6)} USD\n`);
+    console.log(`Estimated Cost: $${totalCost.toFixed(6)} USD`);
+    if (isPro) console.log(`Pricing Tier: ${tokenCount <= 200_000 ? '<= 200k' : '> 200k'}`);
+    console.log("");
 };
 
 /**
@@ -94,7 +115,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-            tools: [{ googleSearch: {} } as any] // Using googleSearch for Gemini 2.0/3 grounding
+            tools: [{ googleSearch: {} } as any]
         });
 
         const response = result.response;
