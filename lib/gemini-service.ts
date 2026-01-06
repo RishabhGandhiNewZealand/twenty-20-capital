@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, GenerateContentResponse } from "@google/generative-ai";
 import fs from 'fs';
 import path from 'path';
 
@@ -34,8 +34,8 @@ const ANALYSIS_MODEL = 'gemini-3-flash-preview';
 const DECISION_MODEL = 'gemini-3-flash-preview';
 
 // Initialize Gemini Client
-// WARNING: Ensure GOOGLE_API_KEY is in your .env.local
-const genAI = new GoogleGenAI(process.env.GOOGLE_API_KEY || '');
+// WARNING: Ensure GEMINI_API_KEY is in your .env.local
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 /**
  * Utility: Load and template prompt files
@@ -62,6 +62,11 @@ const loadPrompt = (filename: string, variables: Record<string, string> = {}): s
  * Agent 1: Fundamental Analyst
  */
 export const analyzeEquity = async (ticker: string, isTarget: boolean = false): Promise<EquityAnalysis> => {
+    // Basic API Key validation
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error("Gemini API Key is missing. Please set GEMINI_API_KEY in your .env.local");
+    }
+
     const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
     // Load static system instruction
@@ -73,7 +78,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-            tools: [{ googleSearch: {} }] // Enabled for research
+            tools: [{ googleSearch: {} } as any] // Using googleSearch for Gemini 2.0/3 grounding
         });
 
         const response = result.response;
@@ -126,14 +131,19 @@ export const makeTradeDecision = async (
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: {
-                type: Type.OBJECT,
+                type: SchemaType.OBJECT,
                 properties: {
-                    action: { type: Type.STRING, description: 'BUY, SELL, TRIM, or HOLD', enum: ['BUY', 'SELL', 'TRIM', 'HOLD'] },
-                    ticker: { type: Type.STRING, description: 'The ticker being acted upon' },
-                    amount: { type: Type.NUMBER, description: 'Share quantity or allocation percentage change' },
-                    rationale: { type: Type.STRING, description: 'Detailed PM reasoning' },
-                    fundingSource: { type: Type.STRING, description: 'Source of funds' },
-                    portfolioImpact: { type: Type.STRING, description: 'Impact on portfolio quality/concentration' }
+                    action: {
+                        type: SchemaType.STRING,
+                        description: 'BUY, SELL, TRIM, or HOLD',
+                        enum: ['BUY', 'SELL', 'TRIM', 'HOLD'],
+                        format: 'enum'
+                    },
+                    ticker: { type: SchemaType.STRING, description: 'The ticker being acted upon' },
+                    amount: { type: SchemaType.NUMBER, description: 'Share quantity or allocation percentage change' },
+                    rationale: { type: SchemaType.STRING, description: 'Detailed PM reasoning' },
+                    fundingSource: { type: SchemaType.STRING, description: 'Source of funds' },
+                    portfolioImpact: { type: SchemaType.STRING, description: 'Impact on portfolio quality/concentration' }
                 },
                 required: ['action', 'ticker', 'amount', 'rationale', 'fundingSource', 'portfolioImpact']
             }
