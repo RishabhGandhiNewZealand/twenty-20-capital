@@ -70,7 +70,7 @@ Your response must follow this structure exactly:
 
 Company: 
 
-$$${'{{ticker}}'}$$
+$$ __TICKER_SYMBOL__ $$
 
  - 
 
