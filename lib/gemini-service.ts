@@ -29,6 +29,7 @@ export interface TradeDecision {
     portfolioImpact: string;
 }
 
+
 // Configuration
 const ANALYSIS_MODEL = 'gemini-3-flash-preview';
 const DECISION_MODEL = 'gemini-3-pro-preview';
@@ -190,14 +191,10 @@ export const makeTradeDecision = async (
 
     // Prepare context
     const portfolioContext = currentPortfolio.map((item) => {
-        const analysis = portfolioScan.find(a => a.ticker === item.symbol); // Note: using symbol/ticker mapping
+        const analysis = portfolioScan.find(a => a.ticker === item.symbol);
         return `### HOLDING: ${item.symbol}\nShares: ${item.shares}\nReport: ${analysis?.summary || 'N/A'}`;
     }).join("\n\n---\n\n");
 
-    // Load and template the prompt
-    // Note: The original prompt didn't need much templating other than context, 
-    // but we can inject dynamic rules here if we wanted. 
-    // For now, we'll keep the system instruction static and pass context in the user prompt.
     const systemInstruction = loadPrompt('portfolio-manager.txt');
 
     const userPrompt = `STRATEGIC DECISION SESSION: ${targetAnalysis.ticker}

@@ -87,10 +87,6 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
     { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
   ]
 
-  // Research
-  const researchItems = [
-    { href: "/news", label: "News", icon: Newspaper },
-  ]
 
   // Other
   const otherNavItems = [
@@ -102,7 +98,6 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
     { title: null, items: basicNavItems },
     { title: "Portfolio Management", items: portfolioManagementItems },
     { title: "Portfolio Insights", items: portfolioInsightsItems },
-    { title: "Research", items: researchItems },
     { title: null, items: otherNavItems },
   ]
 

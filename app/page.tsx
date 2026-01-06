@@ -194,11 +194,6 @@ export default function LandingPage() {
             Follow my latest market commentary and portfolio updates.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/news">
-              <Button variant="outline" size="lg">
-                Read Latest News
-              </Button>
-            </Link>
             <Link href="/analyses">
               <Button variant="outline" size="lg">
                 View Analyses
