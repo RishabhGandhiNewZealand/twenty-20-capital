@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, GenerateContentResponse } from "@google/generative-ai";
-import fs from 'fs';
-import path from 'path';
+import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT } from './agents/prompts';
 
 // Types definition (ported from source)
 export interface PortfolioItem {
@@ -38,26 +37,6 @@ const DECISION_MODEL = 'gemini-3-pro-preview';
 // WARNING: Ensure GEMINI_API_KEY is in your .env.local
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-/**
- * Utility: Load and template prompt files
- */
-const loadPrompt = (filename: string, variables: Record<string, string> = {}): string => {
-    try {
-        const filePath = path.join(process.cwd(), 'lib', 'agents', 'prompts', filename);
-        let content = fs.readFileSync(filePath, 'utf-8');
-
-        // Simple templating: {{key}} -> value
-        Object.entries(variables).forEach(([key, value]) => {
-            const regex = new RegExp(`{{${key}}}`, 'g');
-            content = content.replace(regex, value);
-        });
-
-        return content;
-    } catch (error) {
-        console.error(`Error loading prompt file: ${filename}`, error);
-        throw new Error(`Failed to load system instruction: ${filename}`);
-    }
-};
 
 // Pricing (USD per 1M tokens) - Gemini 2.0 Flash / 1.5 Flash
 // Input: $0.075 / 1M, Output: $0.30 / 1M (for prompts < 128k)
@@ -107,8 +86,8 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
 
     const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
-    // Load static system instruction
-    const systemInstruction = loadPrompt('fundamental-analyst.txt');
+    // Load system instruction
+    const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace(/{{ticker}}/g, ticker);
 
     const taskPrompt = `Perform a high-fidelity fundamental analysis for strictly: ${ticker}. Use Google Search to get current market data and reports. Output exactly following the structure provided.`;
 
@@ -195,7 +174,12 @@ export const makeTradeDecision = async (
         return `### HOLDING: ${item.symbol}\nShares: ${item.shares}\nReport: ${analysis?.summary || 'N/A'}`;
     }).join("\n\n---\n\n");
 
-    const systemInstruction = loadPrompt('portfolio-manager.txt');
+    const systemInstruction = PORTFOLIO_MANAGER_PROMPT;
+
+    // Check if systemInstruction loaded (should be fine now)
+    if (!systemInstruction) {
+        throw new Error("Portfolio Manager prompt is missing.");
+    }
 
     const userPrompt = `STRATEGIC DECISION SESSION: ${targetAnalysis.ticker}
 
