@@ -87,7 +87,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
     const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
     // Load system instruction
-    const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace(/{{ticker}}/g, ticker);
+    const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
 
     const taskPrompt = `Perform a high-fidelity fundamental analysis for strictly: ${ticker}. Use Google Search to get current market data and reports. Output exactly following the structure provided.`;
 
