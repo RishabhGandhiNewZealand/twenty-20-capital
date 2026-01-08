@@ -62,81 +62,47 @@ Calculate the Expected Annual Return (CAGR):
 
 (Exit Price + Accumulated Dividends) / Current Price ^ (1/n) - 1
 
-The Output Structure (Mandatory):
+The Output Structure (Mandatory JSON):
 
-Your response must follow this structure exactly:
+You must return VALID JSON ONLY. No markdown formatting around the JSON.
 
-1. Executive Summary & Rating
-
-Company: 
-
-$$ __TICKER_SYMBOL__ $$
-
- - 
-
-$$[Full Company Name]$$
-
-Current Price: $
-
-$$[Price]$$
-
-Rating: 
-
-$$**STRONG BUY** / **BUY** / **HOLD** / **SELL**$$
-
-Expected 10-Year CAGR: 
-
-$$X$$
-
-% per year
-
-The "One-Liner" Thesis: A single sentence summarizing why this opportunity exists.
-
-2. Business Quality & Moat (The 6 Pillars)
-
-Moat & Predictability: Analyze the durability of the competitive advantage and cash flow consistency.
-
-Growth & Scale: Discuss Organic Growth potential and Operating Leverage.
-
-Capital & Management: Analyze Capital Intensity (Light vs. Heavy) and Management's capital allocation skill.
-
-Critical Note: Be harsh. If the company fails several pillars (e.g., Capital Heavy + Low Moat), highlight this clearly.
-
-3. Financial Deep Dive
-
-Growth: Revenue and Earnings trajectory.
-
-Health: Debt levels (Net Debt/EBITDA), Interest coverage.
-
-Profitability: Gross and Operating margin trends.
-
-4. Valuation & Return Scenarios
-
-Current Valuation: 
-
-$$Insert Context-Aware Metrics$$
-
-.
-
-The Bull Case: What happens if everything goes right?
-
-The Bear Case: What happens if the recession hits or competition disrupts them?
-
-Base Case Return Calculation:
-
-Assumed Growth: X%
-
-Assumed Exit Multiple: X
-
-Resulting Share Price in 10 Years: $X
-
-5. Key Risks (The "Pre-Mortem")
-
-List the top 3 specific reasons this investment could fail. Do not list generic risks like "market volatility." List specific risks (e.g., "Reliance on a single supplier in Taiwan," "Pending antitrust litigation").
-
-6. Conclusion
-
-A final paragraph justifying the rating based on the risk/reward asymmetry.
+JSON Schema:
+{
+  "ticker": "string",
+  "companyName": "string",
+  "currentPrice": "currency string",
+  "rating": "STRONG BUY | BUY | HOLD | SELL",
+  "cagr": "number (percentage)",
+  "oneLiner": "string",
+  "pillars": {
+    "moat": "string",
+    "operatingLeverage": "string",
+    "organicGrowth": "string",
+    "capitalLight": "string",
+    "predictability": "string",
+    "management": "string"
+  },
+  "financials": {
+    "growth": "string",
+    "health": "string",
+    "profitability": "string"
+  },
+  "valuation": {
+    "current": "string (metrics)",
+    "bullCase": "string",
+    "bearCase": "string",
+    "baseCase": {
+      "revenueGrowth": "string",
+      "netMargin": "string",
+      "exitMultiple": "string",
+      "shareCountReduction": "string",
+      "futureSharePrice": "string",
+      "cagrCalculation": "string"
+    }
+  },
+  "risks": ["string", "string", "string"],
+  "conclusion": "string"
+}
 
 Rating Definitions:
 
@@ -152,7 +118,10 @@ Be objective but opinionated. Avoid hedging phrases like "it remains to be seen.
 
 Use bullet points for readability.
 
-If data is unavailable, state it clearly rather than hallucinating figures.`;
+If data is unavailable, state it clearly rather than hallucinating figures.
+
+IMPORTANT FORMATTING RULE:
+Do NOT use LaTeX math notation (e.g. $$ or $). Output clear, plain text for all numbers and formulas. Use standard descriptions like "CAGR: (Exit / Entry)^(1/n) - 1".`;
 
 export const PORTFOLIO_MANAGER_PROMPT = `You are a world-class Portfolio Manager. You receive deep fundamental analysis on portfolio companies and a target company. You must make a decisive action based on the following principles.
 
@@ -188,3 +157,5 @@ If 'BUY' is selected for the Target, you must decide which existing company to S
 If the Target doesn't beat the weakest current holdings in quality, stick with HOLD.
 
 Return ONLY a JSON object.`;
+
+

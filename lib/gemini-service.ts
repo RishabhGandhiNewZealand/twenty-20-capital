@@ -14,6 +14,7 @@ export interface EquityAnalysis {
     ticker: string;
     summary: string;
     sentiment: 'Bullish' | 'Bearish' | 'Neutral';
+    cagr?: string;
     sources: { uri: string; title: string }[];
     timestamp: number;
     isTarget: boolean;
@@ -30,7 +31,7 @@ export interface TradeDecision {
 
 
 // Configuration
-const ANALYSIS_MODEL = 'gemini-3-flash-preview';
+const ANALYSIS_MODEL = 'gemini-3-pro-preview';
 const DECISION_MODEL = 'gemini-3-pro-preview';
 
 // Initialize Gemini Client
@@ -89,18 +90,80 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
     // Load system instruction
     const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
 
-    const taskPrompt = `Perform a high-fidelity fundamental analysis for strictly: ${ticker}. Use Google Search to get current market data and reports. Output exactly following the structure provided.`;
+    const taskPrompt = `Perform a high-fidelity fundamental analysis for strictly: ${ticker}. Use Google Search to get current market data and reports. Output strictly valid JSON.`;
 
     try {
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        companyName: { type: SchemaType.STRING },
+                        ticker: { type: SchemaType.STRING },
+                        currentPrice: { type: SchemaType.STRING },
+                        rating: { type: SchemaType.STRING },
+                        cagr: { type: SchemaType.STRING },
+                        oneLiner: { type: SchemaType.STRING },
+                        pillars: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                moat: { type: SchemaType.STRING },
+                                operatingLeverage: { type: SchemaType.STRING },
+                                organicGrowth: { type: SchemaType.STRING },
+                                capitalLight: { type: SchemaType.STRING },
+                                predictability: { type: SchemaType.STRING },
+                                management: { type: SchemaType.STRING }
+                            },
+                            required: ['moat', 'operatingLeverage', 'organicGrowth', 'capitalLight', 'predictability', 'management']
+                        },
+                        financials: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                growth: { type: SchemaType.STRING },
+                                health: { type: SchemaType.STRING },
+                                profitability: { type: SchemaType.STRING }
+                            },
+                            required: ['growth', 'health', 'profitability']
+                        },
+                        valuation: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                current: { type: SchemaType.STRING },
+                                bullCase: { type: SchemaType.STRING },
+                                bearCase: { type: SchemaType.STRING },
+                                baseCase: {
+                                    type: SchemaType.OBJECT,
+                                    properties: {
+                                        revenueGrowth: { type: SchemaType.STRING },
+                                        netMargin: { type: SchemaType.STRING },
+                                        exitMultiple: { type: SchemaType.STRING },
+                                        shareCountReduction: { type: SchemaType.STRING },
+                                        futureSharePrice: { type: SchemaType.STRING },
+                                        cagrCalculation: { type: SchemaType.STRING }
+                                    },
+                                    required: ['revenueGrowth', 'netMargin', 'exitMultiple', 'shareCountReduction', 'futureSharePrice', 'cagrCalculation']
+                                }
+                            },
+                            required: ['current', 'bullCase', 'bearCase', 'baseCase']
+                        },
+                        risks: {
+                            type: SchemaType.ARRAY,
+                            items: { type: SchemaType.STRING }
+                        },
+                        conclusion: { type: SchemaType.STRING }
+                    },
+                    required: ['companyName', 'ticker', 'currentPrice', 'rating', 'oneLiner', 'pillars', 'financials', 'valuation', 'risks', 'conclusion']
+                }
+            },
             tools: [{ googleSearch: {} } as any]
         });
 
         const response = result.response;
         logUsage(ANALYSIS_MODEL, response.usageMetadata);
-        const text = response.text();
+        let text = response.text();
 
         // Extract sources if available
         const sources: { uri: string; title: string }[] = [];
@@ -113,17 +176,44 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
             });
         }
 
+        // --- Improved Parsing Logic ---
+        let formattedText = "";
+        let cagr = 'N/A';
+
+        // 1. Clean markdown code blocks if present
+        if (text.includes("```json")) {
+            text = text.replace(/```json/g, '').replace(/```/g, '');
+        }
+
+        try {
+            // 2. Parse JSON
+            const data = JSON.parse(text);
+
+            // 3. Render Markdown
+            formattedText = renderAnalysisMarkdown(data);
+            cagr = data.cagr || data.valuation?.baseCase?.cagrCalculation || 'N/A';
+
+        } catch (e) {
+            console.error("Failed to parse analysis JSON:", e);
+            console.log("Raw Text:", text);
+
+            // Fallback: Return a friendly error message and the raw text in a code block
+            formattedText = `# Analysis Generation Error\n\nWe encountered an issue parsing the analysis data.\n\n### Raw Data Output:\n\`\`\`json\n${text}\n\`\`\``;
+            cagr = "Error";
+        }
+
         // Determine sentiment
         let sentiment: 'Bullish' | 'Bearish' | 'Neutral' = 'Neutral';
-        const textLower = text.toLowerCase();
+        const textLower = formattedText.toLowerCase();
         if (textLower.includes('strong buy') || textLower.includes('**buy**')) sentiment = 'Bullish';
         else if (textLower.includes('**sell**')) sentiment = 'Bearish';
         else if (textLower.includes('**hold**')) sentiment = 'Neutral';
 
         return {
             ticker,
-            summary: text,
+            summary: formattedText,
             sentiment,
+            cagr: cagr.toString().replace('%', '') + '%', // canonicalize
             sources,
             timestamp: Date.now(),
             isTarget
@@ -209,3 +299,65 @@ Analyze every portfolio company's quality before making the swap.`;
         throw new Error("Portfolio Manager failed to make a decision.");
     }
 };
+
+/**
+ * Formatter Script: Deterministic Markdown Generation
+ */
+const renderAnalysisMarkdown = (data: any): string => {
+    return `# ${data.companyName} (${data.ticker})
+## Executive Summary
+**Current Price:** ${data.currentPrice}
+**Rating:** ${data.rating}
+**Expected 10-Year CAGR:** ${data.cagr}%
+
+**Thesis:** ${data.oneLiner}
+
+---
+
+## Business Quality & Moat (6 Pillars)
+* **Wide Moat:** ${data.pillars.moat}
+* **Operating Leverage:** ${data.pillars.operatingLeverage}
+* **Organic Growth:** ${data.pillars.organicGrowth}
+* **Capital Light:** ${data.pillars.capitalLight}
+* **Predictability:** ${data.pillars.predictability}
+* **Smart Management:** ${data.pillars.management}
+
+---
+
+## Financial Deep Dive
+* **Growth:** ${data.financials.growth}
+* **Health:** ${data.financials.health}
+* **Profitability:** ${data.financials.profitability}
+
+---
+
+## Valuation & Return Scenarios
+**Current Valuation:**
+${data.valuation.current}
+
+### Scenarios
+* **Bull Case:** ${data.valuation.bullCase}
+* **Bear Case:** ${data.valuation.bearCase}
+
+### Base Case Return Model (10-Year View)
+* **Assumed Revenue Growth:** ${data.valuation.baseCase.revenueGrowth}
+* **Assumed Net Margin:** ${data.valuation.baseCase.netMargin}
+* **Assumed Exit Multiple:** ${data.valuation.baseCase.exitMultiple}
+* **Share Count Reduction:** ${data.valuation.baseCase.shareCountReduction}
+* **Resulting Share Price:** ${data.valuation.baseCase.futureSharePrice}
+* **Expected CAGR:** ${data.valuation.baseCase.cagrCalculation}
+
+---
+
+## Key Risks
+* ${data.risks[0]}
+* ${data.risks[1]}
+* ${data.risks[2]}
+
+---
+
+## Conclusion
+${data.conclusion}
+`;
+}
+

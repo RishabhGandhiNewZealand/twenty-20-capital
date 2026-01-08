@@ -1,14 +1,15 @@
 'use client';
 
-import React from 'react';
-import { Activity, ShieldCheck, TrendingUp, Link as LinkIcon, Download, Clock, Database, Coins, Briefcase } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Activity, ShieldCheck, TrendingUp, Link as LinkIcon, Download, Clock, Database, Coins, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import type { EquityAnalysis, TradeDecision } from '@/lib/gemini-service';
-import { MarkdownLite } from '@/components/markdown-lite';
+import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
+import ReactMarkdown from 'react-markdown';
+import { getLogoUrl } from '@/lib/company-utils';
 
 // Define Log Interface here as it's UI specific
 export interface AnalysisLog {
@@ -40,11 +41,14 @@ interface Props {
     analyses: EquityAnalysis[];
     tradeDecision: TradeDecision | null;
     tickerStatuses: TickerStatus[];
+    portfolio: PortfolioItem[];
 }
 
-const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses }) => {
+const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => {
+    const [isOpen, setIsOpen] = useState(false);
 
-    const downloadMarkdown = (analysis: EquityAnalysis) => {
+    const downloadMarkdown = (e: React.MouseEvent) => {
+        e.stopPropagation();
         const blob = new Blob([analysis.summary], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -55,6 +59,135 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
+
+    return (
+        <div className={cn(
+            "group rounded-xl border transition-all duration-500 overflow-hidden",
+            analysis.isTarget ? "bg-slate-900 border-blue-500/40 shadow-blue-500/10 shadow-lg" : "bg-slate-900/40 border-slate-800"
+        )}>
+            <div
+                className="flex justify-between items-center p-6 cursor-pointer hover:bg-slate-800/50 transition-colors"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div className="flex items-center gap-6">
+                    {/* Ticker & Logo */}
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={getLogoUrl(analysis.ticker)}
+                            alt={analysis.ticker}
+                            className="w-10 h-10 object-contain rounded-full bg-white/10 p-1"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                        />
+                        <div className="space-y-0.5">
+                            <span className="font-black text-2xl text-white tracking-tighter flex items-center gap-2">
+                                {analysis.ticker}
+                                {analysis.isTarget && <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 text-[9px] h-5">Target</Badge>}
+                            </span>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                <Clock size={10} />
+                                {new Date(analysis.timestamp).toLocaleDateString()}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Stats (Sentiment & CAGR) - Visible when collapsed */}
+                    <div className="hidden md:flex items-center gap-4 border-l border-slate-800 pl-6 h-10">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Signal</span>
+                            <span className={cn("text-sm font-black uppercase tracking-tight",
+                                analysis.sentiment === 'Bullish' ? "text-emerald-400" :
+                                    analysis.sentiment === 'Bearish' ? "text-red-400" :
+                                        "text-slate-400"
+                            )}>
+                                {analysis.sentiment}
+                            </span>
+                        </div>
+                        {analysis.cagr && (
+                            <div className="flex flex-col">
+                                <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Est. CAGR</span>
+                                <span className="text-sm font-black text-white tracking-tight">
+                                    {analysis.cagr}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-slate-400 hover:text-white"
+                    >
+                        {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                        onClick={downloadMarkdown}
+                        title="Save as Markdown File"
+                    >
+                        <Download size={14} />
+                    </Button>
+                </div>
+            </div>
+
+            {isOpen && (
+                <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
+                    <div className="text-sm pr-2 mb-6 max-h-[500px] overflow-y-auto text-slate-300">
+                        <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
+                            <ReactMarkdown
+                                components={{
+                                    h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
+                                    h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
+                                    h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
+                                    ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-emerald-500" {...props} />,
+                                    li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
+                                    strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
+                                    hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />
+                                }}
+                            >
+                                {analysis.summary}
+                            </ReactMarkdown>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-4">
+                        {analysis.sources.slice(0, 3).map((source, i) => (
+                            <a key={i} href={source.uri} target="_blank" rel="noopener noreferrer"
+                                className="text-[9px] text-slate-500 hover:text-blue-400 transition-colors flex items-center gap-1 font-bold bg-slate-950/40 px-2 py-1 rounded border border-slate-800 uppercase tracking-tighter">
+                                <LinkIcon size={10} /> {source.title.length > 20 ? source.title.substring(0, 20) + '...' : source.title}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio }) => {
+
+    const sortedAnalyses = useMemo(() => {
+        // 1. Separate Target(s)
+        const targets = analyses.filter(a => a.isTarget);
+        // 2. Separate Portfolio Holdings
+        const holdings = analyses.filter(a => !a.isTarget);
+
+        // 3. Sort Holdings by Portfolio Value (Descending)
+        // We look up the value in the portfolio prop
+        holdings.sort((a, b) => {
+            const valA = portfolio.find(p => p.symbol === a.ticker)?.value || 0;
+            const valB = portfolio.find(p => p.symbol === b.ticker)?.value || 0;
+            return valB - valA;
+        });
+
+        // 4. Combine: Target first, then sorted holdings
+        return [...targets, ...holdings];
+    }, [analyses, portfolio]);
 
     return (
         <div className="space-y-6">
@@ -98,7 +231,17 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                         "bg-slate-900 border-slate-800 opacity-50"
                         )}>
                             <div className="flex items-center gap-1.5 w-full justify-between">
-                                <span className="font-black text-xs tracking-tighter text-white">{ts.ticker}</span>
+                                <span className="font-black text-xs tracking-tighter text-white flex items-center gap-1.5">
+                                    <img
+                                        src={getLogoUrl(ts.ticker)}
+                                        alt={ts.ticker}
+                                        className="w-4 h-4 object-contain rounded-full bg-white/10"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                    />
+                                    {ts.ticker}
+                                </span>
                                 {ts.isTarget && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]"></div>}
                             </div>
                             <div className="flex items-center gap-2 w-full">
@@ -131,62 +274,15 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-8">
+                            <div className="space-y-4">
                                 {analyses.length === 0 ? (
                                     <div className="h-48 flex flex-col items-center justify-center text-slate-600 space-y-2">
                                         <ShieldCheck size={48} className="opacity-10 mb-2" />
                                         <p className="text-sm font-medium uppercase tracking-widest opacity-50">Archive Empty</p>
                                     </div>
                                 ) : (
-                                    analyses.map((analysis) => (
-                                        <div key={`${analysis.ticker}-${analysis.isTarget}`} className={cn(
-                                            "group p-6 rounded-xl border transition-all duration-500",
-                                            analysis.isTarget ? "bg-slate-900 border-blue-500/40 shadow-blue-500/10 shadow-lg" : "bg-slate-900/40 border-slate-800"
-                                        )}>
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="font-black text-3xl text-white tracking-tighter">{analysis.ticker}</span>
-                                                        {analysis.isTarget && <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 text-[9px]">Strategic Target</Badge>}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                        <Clock size={10} />
-                                                        Freshness: {new Date(analysis.timestamp).toLocaleDateString()}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="icon"
-                                                        className="bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
-                                                        onClick={() => downloadMarkdown(analysis)}
-                                                        title="Save as Markdown File"
-                                                    >
-                                                        <Download size={14} />
-                                                    </Button>
-                                                    <Badge variant="outline" className={cn("uppercase text-[10px] font-black",
-                                                        analysis.sentiment === 'Bullish' ? "bg-emerald-950/50 text-emerald-400 border-emerald-500/30" :
-                                                            analysis.sentiment === 'Bearish' ? "bg-red-950/50 text-red-400 border-red-500/30" :
-                                                                "bg-slate-800 text-slate-400 border-slate-700"
-                                                    )}>
-                                                        {analysis.sentiment} Signal
-                                                    </Badge>
-                                                </div>
-                                            </div>
-
-                                            <div className="text-sm pr-2 mb-6 max-h-[500px] overflow-y-auto text-slate-300">
-                                                <MarkdownLite content={analysis.summary} />
-                                            </div>
-
-                                            <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-4">
-                                                {analysis.sources.slice(0, 3).map((source, i) => (
-                                                    <a key={i} href={source.uri} target="_blank" rel="noopener noreferrer"
-                                                        className="text-[9px] text-slate-500 hover:text-blue-400 transition-colors flex items-center gap-1 font-bold bg-slate-950/40 px-2 py-1 rounded border border-slate-800 uppercase tracking-tighter">
-                                                        <LinkIcon size={10} /> {source.title.length > 20 ? source.title.substring(0, 20) + '...' : source.title}
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        </div>
+                                    sortedAnalyses.map((analysis) => (
+                                        <CollapsibleAnalysisCard key={`${analysis.ticker}-${analysis.isTarget}`} analysis={analysis} />
                                     ))
                                 )}
                             </div>
