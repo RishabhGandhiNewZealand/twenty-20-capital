@@ -152,7 +152,10 @@ Be objective but opinionated. Avoid hedging phrases like "it remains to be seen.
 
 Use bullet points for readability.
 
-If data is unavailable, state it clearly rather than hallucinating figures.`;
+If data is unavailable, state it clearly rather than hallucinating figures.
+
+IMPORTANT FORMATTING RULE:
+Do NOT use LaTeX math notation (e.g. $$ or $). Output clear, plain text for all numbers and formulas. Use standard descriptions like "CAGR: (Exit / Entry)^(1/n) - 1".`;
 
 export const PORTFOLIO_MANAGER_PROMPT = `You are a world-class Portfolio Manager. You receive deep fundamental analysis on portfolio companies and a target company. You must make a decisive action based on the following principles.
 

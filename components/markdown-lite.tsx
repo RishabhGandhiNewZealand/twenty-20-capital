@@ -21,7 +21,22 @@ export const MarkdownLite: React.FC<Props> = ({ content }) => {
             {blocks.map((block, i) => {
                 const trimmedBlock = block.trim();
 
-                // 1. Headers
+                // 0. Horizontal Rule
+                if (trimmedBlock === '---') {
+                    return <hr key={i} className="my-6 border-slate-700" />;
+                }
+
+                // 1. Math Blocks ($$)
+                if (trimmedBlock.startsWith('$$') && trimmedBlock.endsWith('$$')) {
+                    const mathContent = trimmedBlock.slice(2, -2).trim();
+                    return (
+                        <div key={i} className="my-4 p-4 bg-slate-950 rounded-lg border border-slate-800 font-mono text-xs text-blue-300 overflow-x-auto">
+                            {mathContent}
+                        </div>
+                    );
+                }
+
+                // 2. Headers
                 if (trimmedBlock.startsWith('#')) {
                     const level = trimmedBlock.match(/^#+/)?.[0].length || 1;
                     const text = trimmedBlock.replace(/^#+\s*/, '');
@@ -39,7 +54,7 @@ export const MarkdownLite: React.FC<Props> = ({ content }) => {
                     return <h4 key={i} className={headerClasses}>{renderInline(text)}</h4>;
                 }
 
-                // 2. Lists
+                // 3. Lists
                 if (trimmedBlock.startsWith('- ') || trimmedBlock.startsWith('* ') || /^\d+\.\s/.test(trimmedBlock)) {
                     const items = trimmedBlock.split('\n');
                     return (
@@ -52,7 +67,7 @@ export const MarkdownLite: React.FC<Props> = ({ content }) => {
                     );
                 }
 
-                // 3. Normal Paragraph
+                // 4. Normal Paragraph
                 return (
                     <p key={i} className="text-slate-300 leading-relaxed">
                         {renderInline(trimmedBlock)}

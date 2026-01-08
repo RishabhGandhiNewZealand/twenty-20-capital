@@ -10,6 +10,7 @@ import AnalysisDashboard, { AgentStatus, AnalysisLog } from './components/analys
 import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
 import { runFundamentalAnalysis, runBatchFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
 import { TickerStatus } from './components/analysis-dashboard';
+import { getLogoUrl } from '@/lib/company-utils';
 
 // State Definition
 interface State {
@@ -221,7 +222,7 @@ export default function MultiAgentPMPage() {
     }
 
     return (
-        <div className="min-h-screen p-4 md:p-8 flex flex-col items-center bg-[#0a0f1d] text-slate-100">
+        <div className="min-h-screen p-4 md:p-8 flex flex-col items-center bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
             <div className="max-w-7xl w-full space-y-8">
 
                 {/* Header */}
@@ -231,8 +232,8 @@ export default function MultiAgentPMPage() {
                             <BrainCircuit className="text-white" size={32} />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black tracking-tight uppercase italic">Twenty-20-insights</h1>
-                            <p className="text-slate-400 font-bold text-[10px] tracking-[0.4em] uppercase opacity-70">Strategic Multi-Agent Portfolio Intelligence</p>
+                            <h1 className="text-3xl font-black tracking-tight uppercase italic text-gray-900 dark:text-white">Rish Agentic Insights</h1>
+                            <p className="text-gray-500 dark:text-slate-400 font-bold text-[10px] tracking-[0.4em] uppercase opacity-70">Agentic Portfolio Manager (powered by Gemini)</p>
                         </div>
                     </div>
 
@@ -310,8 +311,18 @@ export default function MultiAgentPMPage() {
                                                 {state.portfolio.map((item, idx) => {
                                                     const weight = (item.value / totalFundValue) * 100;
                                                     return (
-                                                        <tr key={idx} className="border-b border-slate-800/30 hover:bg-slate-800/30 transition-colors">
-                                                            <td className="py-3 px-4 font-black text-blue-400 tracking-wider uppercase">{item.symbol}</td>
+                                                        <tr key={idx} className="border-b border-gray-200 dark:border-slate-800/30 hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                                                            <td className="py-3 px-4 font-black text-blue-600 dark:text-blue-400 tracking-wider uppercase flex items-center gap-2">
+                                                                <img
+                                                                    src={getLogoUrl(item.symbol)}
+                                                                    alt={item.symbol}
+                                                                    className="w-6 h-6 object-contain rounded-full bg-white"
+                                                                    onError={(e) => {
+                                                                        (e.target as HTMLImageElement).style.display = 'none';
+                                                                    }}
+                                                                />
+                                                                {item.symbol}
+                                                            </td>
                                                             <td className="py-3 px-4 text-slate-300 font-mono text-sm text-right">{item.shares.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                             <td className="py-3 px-4 text-right">
                                                                 <div className="flex items-center justify-end gap-3 text-slate-100 font-mono text-sm">

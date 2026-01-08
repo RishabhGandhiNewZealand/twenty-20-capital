@@ -64,6 +64,12 @@ export default function LandingPage() {
                   My Strategy
                 </Button>
               </Link>
+              <Link href="/multi-agent-pm">
+                <Button size="lg" variant="secondary" className="h-12 px-8 text-base bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400">
+                  Agent PM
+                  <Zap className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

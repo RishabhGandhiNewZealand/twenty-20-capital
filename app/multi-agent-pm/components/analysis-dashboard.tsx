@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { EquityAnalysis, TradeDecision } from '@/lib/gemini-service';
 import { MarkdownLite } from '@/components/markdown-lite';
+import { getLogoUrl } from '@/lib/company-utils';
 
 // Define Log Interface here as it's UI specific
 export interface AnalysisLog {
@@ -98,7 +99,17 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                         "bg-slate-900 border-slate-800 opacity-50"
                         )}>
                             <div className="flex items-center gap-1.5 w-full justify-between">
-                                <span className="font-black text-xs tracking-tighter text-white">{ts.ticker}</span>
+                                <span className="font-black text-xs tracking-tighter text-white flex items-center gap-1.5">
+                                    <img
+                                        src={getLogoUrl(ts.ticker)}
+                                        alt={ts.ticker}
+                                        className="w-4 h-4 object-contain rounded-full bg-white/10"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                    />
+                                    {ts.ticker}
+                                </span>
                                 {ts.isTarget && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]"></div>}
                             </div>
                             <div className="flex items-center gap-2 w-full">
@@ -146,6 +157,14 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                             <div className="flex justify-between items-start mb-6">
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-3">
+                                                        <img
+                                                            src={getLogoUrl(analysis.ticker)}
+                                                            alt={analysis.ticker}
+                                                            className="w-8 h-8 object-contain rounded-full bg-white/10"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                            }}
+                                                        />
                                                         <span className="font-black text-3xl text-white tracking-tighter">{analysis.ticker}</span>
                                                         {analysis.isTarget && <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 text-[9px]">Strategic Target</Badge>}
                                                     </div>
