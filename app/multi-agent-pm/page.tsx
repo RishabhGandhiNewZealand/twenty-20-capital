@@ -164,42 +164,68 @@ export default function MultiAgentPMPage() {
             const initialStatuses: TickerStatus[] = tickerList.map(t => ({
                 ticker: t.symbol,
                 isTarget: t.isTarget,
-                state: 'RESEARCHING' // Setting all to researching immediately as we fire the batch
+                state: 'RESEARCHING' // All start as researching
             }));
             dispatch({ type: 'SET_TICKER_STATUSES', payload: initialStatuses });
 
-            // Step 1: Fire Batched Analyst Call (Backend handles Promise.all)
-            const results = await runBatchFundamentalAnalysis(tickerList.map(t => ({ ticker: t.symbol, isTarget: t.isTarget })));
+            const tasks = tickerList.map(t => ({ ticker: t.symbol, isTarget: t.isTarget }));
 
-            const analysisResults: EquityAnalysis[] = [];
-            let targetAnalysis: EquityAnalysis | null = null;
-
-            // Step 2: Process results and update UI
-            results.forEach((res, index) => {
-                const ticker = tickerList[index].symbol;
-                if (res.success && res.data) {
-                    dispatch({ type: 'ADD_ANALYSIS', payload: res.data });
-                    dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker, state: 'COMPLETED' } });
-                    addLog("Analyst", `Intelligence captured for ${ticker}.`);
-                    if (tickerList[index].isTarget) targetAnalysis = res.data;
-                    else analysisResults.push(res.data);
-                } else {
-                    dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker, state: 'ERROR' } });
-                    addLog("Analyst", `Warning: Failed to scan ${ticker}: ${res.error}`);
-                }
+            // Step 1: Streaming Request
+            const response = await fetch('/api/stream-analysis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tasks })
             });
+
+            if (!response.body) throw new Error("No response body received from stream API");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let resultBuffer: EquityAnalysis[] = [];
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                for (const line of lines) {
+                    try {
+                        const res = JSON.parse(line);
+
+                        if (res.success && res.data) {
+                            const analysis = res.data as EquityAnalysis;
+                            dispatch({ type: 'ADD_ANALYSIS', payload: analysis });
+                            dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker: analysis.ticker, state: 'COMPLETED' } });
+                            addLog("Analyst", `Intelligence captured for ${analysis.ticker}.`);
+                            resultBuffer.push(analysis);
+                        } else {
+                            const failedTicker = res.ticker || "Unknown";
+                            dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker: failedTicker, state: 'ERROR' } });
+                            addLog("Analyst", `Warning: Failed to scan ${failedTicker}: ${res.error}`);
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse JSON chunk", e);
+                    }
+                }
+            }
+
+            // Step 2: Ensure we have the target analysis before proceeding
+            const targetAnalysis = resultBuffer.find(r => r.isTarget);
+            const portfolioAnalyses = resultBuffer.filter(r => !r.isTarget);
 
             if (!targetAnalysis) {
                 throw new Error(`Failed to generate critical research for target: ${state.targetTicker}`);
             }
 
-            addLog("Coordinator", `Full intelligence payload received. Synchronizing Portfolio Manager...`);
+            addLog("Coordinator", `Stream complete. Full intelligence payload received. Synchronizing Portfolio Manager...`);
 
             // Step 3: Portfolio Manager Decision
             dispatch({ type: 'SET_STATUS', payload: AgentStatus.MAKING_DECISION });
             addLog("Portfolio Manager", "Synthesizing Investment Strategy based on full swarm intelligence...");
 
-            const decisionRes = await runPortfolioManagerDecision(targetAnalysis, analysisResults, state.portfolio);
+            const decisionRes = await runPortfolioManagerDecision(targetAnalysis, portfolioAnalyses, state.portfolio);
 
             if (!decisionRes.success || !decisionRes.data) throw new Error(decisionRes.error);
 
@@ -274,6 +300,7 @@ export default function MultiAgentPMPage() {
                         analyses={state.analyses}
                         tradeDecision={state.tradeDecision}
                         tickerStatuses={state.tickerStatuses}
+                        portfolio={state.portfolio}
                     />
 
                     {/* Simple Portfolio Table included directly or componentized */}

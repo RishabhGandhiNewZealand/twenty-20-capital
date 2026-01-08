@@ -14,6 +14,7 @@ export interface EquityAnalysis {
     ticker: string;
     summary: string;
     sentiment: 'Bullish' | 'Bearish' | 'Neutral';
+    cagr?: string;
     sources: { uri: string; title: string }[];
     timestamp: number;
     isTarget: boolean;
@@ -95,13 +96,74 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-            generationConfig: { responseMimeType: "application/json" },
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        companyName: { type: SchemaType.STRING },
+                        ticker: { type: SchemaType.STRING },
+                        currentPrice: { type: SchemaType.STRING },
+                        rating: { type: SchemaType.STRING },
+                        cagr: { type: SchemaType.STRING },
+                        oneLiner: { type: SchemaType.STRING },
+                        pillars: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                moat: { type: SchemaType.STRING },
+                                operatingLeverage: { type: SchemaType.STRING },
+                                organicGrowth: { type: SchemaType.STRING },
+                                capitalLight: { type: SchemaType.STRING },
+                                predictability: { type: SchemaType.STRING },
+                                management: { type: SchemaType.STRING }
+                            },
+                            required: ['moat', 'operatingLeverage', 'organicGrowth', 'capitalLight', 'predictability', 'management']
+                        },
+                        financials: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                growth: { type: SchemaType.STRING },
+                                health: { type: SchemaType.STRING },
+                                profitability: { type: SchemaType.STRING }
+                            },
+                            required: ['growth', 'health', 'profitability']
+                        },
+                        valuation: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                current: { type: SchemaType.STRING },
+                                bullCase: { type: SchemaType.STRING },
+                                bearCase: { type: SchemaType.STRING },
+                                baseCase: {
+                                    type: SchemaType.OBJECT,
+                                    properties: {
+                                        revenueGrowth: { type: SchemaType.STRING },
+                                        netMargin: { type: SchemaType.STRING },
+                                        exitMultiple: { type: SchemaType.STRING },
+                                        shareCountReduction: { type: SchemaType.STRING },
+                                        futureSharePrice: { type: SchemaType.STRING },
+                                        cagrCalculation: { type: SchemaType.STRING }
+                                    },
+                                    required: ['revenueGrowth', 'netMargin', 'exitMultiple', 'shareCountReduction', 'futureSharePrice', 'cagrCalculation']
+                                }
+                            },
+                            required: ['current', 'bullCase', 'bearCase', 'baseCase']
+                        },
+                        risks: {
+                            type: SchemaType.ARRAY,
+                            items: { type: SchemaType.STRING }
+                        },
+                        conclusion: { type: SchemaType.STRING }
+                    },
+                    required: ['companyName', 'ticker', 'currentPrice', 'rating', 'oneLiner', 'pillars', 'financials', 'valuation', 'risks', 'conclusion']
+                }
+            },
             tools: [{ googleSearch: {} } as any]
         });
 
         const response = result.response;
         logUsage(ANALYSIS_MODEL, response.usageMetadata);
-        const text = response.text();
+        let text = response.text();
 
         // Extract sources if available
         const sources: { uri: string; title: string }[] = [];
@@ -114,17 +176,30 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
             });
         }
 
-        // --- NEW: Deterministic Formatter Script ---
-        // Clean up the output to ensure strict markdown compliance
-        let formattedText = text;
+        // --- Improved Parsing Logic ---
+        let formattedText = "";
+        let cagr = 'N/A';
+
+        // 1. Clean markdown code blocks if present
+        if (text.includes("```json")) {
+            text = text.replace(/```json/g, '').replace(/```/g, '');
+        }
+
         try {
+            // 2. Parse JSON
             const data = JSON.parse(text);
+
+            // 3. Render Markdown
             formattedText = renderAnalysisMarkdown(data);
+            cagr = data.cagr || data.valuation?.baseCase?.cagrCalculation || 'N/A';
+
         } catch (e) {
-            console.error("Failed to parse analysis JSON, falling back to raw text", e);
-            // Fallback: If JSON parse fails, we might have got raw text or bad JSON. 
-            // We just return what we have, possibly cleaning code blocks.
-            formattedText = text.replace(/```json/g, '').replace(/```/g, '');
+            console.error("Failed to parse analysis JSON:", e);
+            console.log("Raw Text:", text);
+
+            // Fallback: Return a friendly error message and the raw text in a code block
+            formattedText = `# Analysis Generation Error\n\nWe encountered an issue parsing the analysis data.\n\n### Raw Data Output:\n\`\`\`json\n${text}\n\`\`\``;
+            cagr = "Error";
         }
 
         // Determine sentiment
@@ -138,6 +213,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
             ticker,
             summary: formattedText,
             sentiment,
+            cagr: cagr.toString().replace('%', '') + '%', // canonicalize
             sources,
             timestamp: Date.now(),
             isTarget
