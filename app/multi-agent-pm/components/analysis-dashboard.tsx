@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { EquityAnalysis, TradeDecision } from '@/lib/gemini-service';
-import { MarkdownLite } from '@/components/markdown-lite';
+import ReactMarkdown from 'react-markdown';
 import { getLogoUrl } from '@/lib/company-utils';
 
 // Define Log Interface here as it's UI specific
@@ -194,7 +194,21 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                             </div>
 
                                             <div className="text-sm pr-2 mb-6 max-h-[500px] overflow-y-auto text-slate-300">
-                                                <MarkdownLite content={analysis.summary} />
+                                                <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
+                                                            h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
+                                                            h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
+                                                            ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-emerald-500" {...props} />,
+                                                            li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
+                                                            strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
+                                                            hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />
+                                                        }}
+                                                    >
+                                                        {analysis.summary}
+                                                    </ReactMarkdown>
+                                                </div>
                                             </div>
 
                                             <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-4">

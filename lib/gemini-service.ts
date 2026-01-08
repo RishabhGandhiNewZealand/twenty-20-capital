@@ -30,7 +30,7 @@ export interface TradeDecision {
 
 
 // Configuration
-const ANALYSIS_MODEL = 'gemini-3-flash-preview';
+const ANALYSIS_MODEL = 'gemini-3-pro-preview';
 const DECISION_MODEL = 'gemini-3-pro-preview';
 
 // Initialize Gemini Client
@@ -89,12 +89,13 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
     // Load system instruction
     const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
 
-    const taskPrompt = `Perform a high-fidelity fundamental analysis for strictly: ${ticker}. Use Google Search to get current market data and reports. Output exactly following the structure provided.`;
+    const taskPrompt = `Perform a high-fidelity fundamental analysis for strictly: ${ticker}. Use Google Search to get current market data and reports. Output strictly valid JSON.`;
 
     try {
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
+            generationConfig: { responseMimeType: "application/json" },
             tools: [{ googleSearch: {} } as any]
         });
 
@@ -113,16 +114,29 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
             });
         }
 
+        // --- NEW: Deterministic Formatter Script ---
+        // Clean up the output to ensure strict markdown compliance
+        let formattedText = text;
+        try {
+            const data = JSON.parse(text);
+            formattedText = renderAnalysisMarkdown(data);
+        } catch (e) {
+            console.error("Failed to parse analysis JSON, falling back to raw text", e);
+            // Fallback: If JSON parse fails, we might have got raw text or bad JSON. 
+            // We just return what we have, possibly cleaning code blocks.
+            formattedText = text.replace(/```json/g, '').replace(/```/g, '');
+        }
+
         // Determine sentiment
         let sentiment: 'Bullish' | 'Bearish' | 'Neutral' = 'Neutral';
-        const textLower = text.toLowerCase();
+        const textLower = formattedText.toLowerCase();
         if (textLower.includes('strong buy') || textLower.includes('**buy**')) sentiment = 'Bullish';
         else if (textLower.includes('**sell**')) sentiment = 'Bearish';
         else if (textLower.includes('**hold**')) sentiment = 'Neutral';
 
         return {
             ticker,
-            summary: text,
+            summary: formattedText,
             sentiment,
             sources,
             timestamp: Date.now(),
@@ -209,3 +223,65 @@ Analyze every portfolio company's quality before making the swap.`;
         throw new Error("Portfolio Manager failed to make a decision.");
     }
 };
+
+/**
+ * Formatter Script: Deterministic Markdown Generation
+ */
+const renderAnalysisMarkdown = (data: any): string => {
+    return `# ${data.companyName} (${data.ticker})
+## Executive Summary
+**Current Price:** ${data.currentPrice}
+**Rating:** ${data.rating}
+**Expected 10-Year CAGR:** ${data.cagr}%
+
+**Thesis:** ${data.oneLiner}
+
+---
+
+## Business Quality & Moat (6 Pillars)
+* **Wide Moat:** ${data.pillars.moat}
+* **Operating Leverage:** ${data.pillars.operatingLeverage}
+* **Organic Growth:** ${data.pillars.organicGrowth}
+* **Capital Light:** ${data.pillars.capitalLight}
+* **Predictability:** ${data.pillars.predictability}
+* **Smart Management:** ${data.pillars.management}
+
+---
+
+## Financial Deep Dive
+* **Growth:** ${data.financials.growth}
+* **Health:** ${data.financials.health}
+* **Profitability:** ${data.financials.profitability}
+
+---
+
+## Valuation & Return Scenarios
+**Current Valuation:**
+${data.valuation.current}
+
+### Scenarios
+* **Bull Case:** ${data.valuation.bullCase}
+* **Bear Case:** ${data.valuation.bearCase}
+
+### Base Case Return Model (10-Year View)
+* **Assumed Revenue Growth:** ${data.valuation.baseCase.revenueGrowth}
+* **Assumed Net Margin:** ${data.valuation.baseCase.netMargin}
+* **Assumed Exit Multiple:** ${data.valuation.baseCase.exitMultiple}
+* **Share Count Reduction:** ${data.valuation.baseCase.shareCountReduction}
+* **Resulting Share Price:** ${data.valuation.baseCase.futureSharePrice}
+* **Expected CAGR:** ${data.valuation.baseCase.cagrCalculation}
+
+---
+
+## Key Risks
+* ${data.risks[0]}
+* ${data.risks[1]}
+* ${data.risks[2]}
+
+---
+
+## Conclusion
+${data.conclusion}
+`;
+}
+

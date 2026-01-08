@@ -228,7 +228,7 @@ export default function MultiAgentPMPage() {
                 {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-8">
                     <div className="flex items-center gap-4">
-                        <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-3 rounded-2xl shadow-xl shadow-indigo-500/20">
+                        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-3 rounded-2xl shadow-xl shadow-emerald-500/20">
                             <BrainCircuit className="text-white" size={32} />
                         </div>
                         <div>
@@ -248,7 +248,7 @@ export default function MultiAgentPMPage() {
                         <Button
                             onClick={handleRunAnalysis}
                             disabled={state.status !== AgentStatus.IDLE && state.status !== AgentStatus.COMPLETED && state.status !== AgentStatus.ERROR}
-                            className="bg-indigo-600 hover:bg-indigo-500 h-auto py-4 px-8 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                            className="bg-emerald-600 hover:bg-emerald-500 h-auto py-4 px-8 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                         >
                             {state.status === AgentStatus.IDLE || state.status === AgentStatus.COMPLETED || state.status === AgentStatus.ERROR ? 'Analyze' : (
                                 <span className="flex items-center gap-2">
