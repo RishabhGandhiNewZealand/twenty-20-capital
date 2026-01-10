@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, GenerateContentResponse } from "@google/generative-ai";
-import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT, HAMILTON_HELMER_PROMPT } from './agents/prompts';
+import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT, HAMILTON_HELMER_PROMPT, COMPLEXITY_PM_PROMPT } from './agents/prompts';
 
 // Types definition (ported from source)
 export interface PortfolioItem {
@@ -28,6 +28,21 @@ export interface TradeDecision {
     rationale: string;
     fundingSource: string;
     portfolioImpact: string;
+}
+
+export interface ComplexityDecision {
+    analysis: {
+        classification: string;
+        s_curve_status: string;
+        nzs_score: string;
+        narrow_prediction_risk: string;
+    };
+    decision: "BUY" | "SELL" | "HOLD";
+    action_details: {
+        target_allocation: string;
+        funding_source: string;
+        reasoning: string;
+    };
 }
 
 
@@ -340,6 +355,90 @@ Analyze every portfolio company's quality and competitive durability (powers) be
     } catch (error) {
         console.error("Gemini PM Decision Failed:", error);
         throw new Error("Portfolio Manager failed to make a decision.");
+    }
+};
+
+/**
+ * Agent 4: Complexity Portfolio Manager
+ */
+export const makeComplexityDecision = async (
+    targetAnalysis: EquityAnalysis,
+    portfolioScan: EquityAnalysis[],
+    currentPortfolio: PortfolioItem[]
+): Promise<ComplexityDecision> => {
+
+    const model = genAI.getGenerativeModel({
+        model: DECISION_MODEL,
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    analysis: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            classification: { type: SchemaType.STRING },
+                            s_curve_status: { type: SchemaType.STRING },
+                            nzs_score: { type: SchemaType.STRING },
+                            narrow_prediction_risk: { type: SchemaType.STRING }
+                        },
+                        required: ['classification', 's_curve_status', 'nzs_score', 'narrow_prediction_risk']
+                    },
+                    decision: {
+                        type: SchemaType.STRING,
+                        enum: ['BUY', 'SELL', 'HOLD'],
+                        format: 'enum'
+                    },
+                    action_details: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            target_allocation: { type: SchemaType.STRING },
+                            funding_source: { type: SchemaType.STRING },
+                            reasoning: { type: SchemaType.STRING }
+                        },
+                        required: ['target_allocation', 'funding_source', 'reasoning']
+                    }
+                },
+                required: ['analysis', 'decision', 'action_details']
+            }
+        },
+    }, { apiVersion: 'v1beta' });
+
+    const portfolioContext = currentPortfolio.map((item) => {
+        const analysis = portfolioScan.find(a => a.ticker === item.symbol);
+        return `### HOLDING: ${item.symbol}\nShares: ${item.shares}\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
+    }).join("\n\n---\n\n");
+
+    const systemInstruction = COMPLEXITY_PM_PROMPT;
+
+    const userPrompt = `COMPLEXITY INVESTING DECISION SESSION: ${targetAnalysis.ticker}
+
+TARGET RESEARCH REPORTS:
+${targetAnalysis.summary}
+
+STRATEGIC ANALYSIS:
+${targetAnalysis.sevenPowers}
+
+---
+FULL PORTFOLIO CONTEXT:
+${portfolioContext}
+
+FINAL TASK:
+Apply the Complexity Investing framework to decide on ${targetAnalysis.ticker}. Return the required JSON object.`;
+
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+            systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] }
+        });
+
+        logUsage(DECISION_MODEL, result.response.usageMetadata);
+        const text = result.response.text();
+        return JSON.parse(text) as ComplexityDecision;
+
+    } catch (error) {
+        console.error("Gemini Complexity PM Decision Failed:", error);
+        throw new Error("Complexity Portfolio Manager failed to make a decision.");
     }
 };
 

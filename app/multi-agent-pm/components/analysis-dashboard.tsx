@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
+import type { EquityAnalysis, TradeDecision, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getLogoUrl } from '@/lib/company-utils';
@@ -40,7 +40,7 @@ interface Props {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
-    tradeDecision: TradeDecision | null;
+    tradeDecision: { standard: TradeDecision, complexity: ComplexityDecision } | null;
     tickerStatuses: TickerStatus[];
     portfolio: PortfolioItem[];
 }
@@ -347,30 +347,76 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                         </CardHeader>
                         <CardContent>
                             {tradeDecision ? (
-                                <div className="space-y-6">
-                                    <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-emerald-500/20 text-center shadow-inner">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Recommended Action</span>
-                                        <span className={cn("text-5xl font-black mb-3 italic",
-                                            tradeDecision.action === 'BUY' ? "text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" :
-                                                tradeDecision.action === 'SELL' ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]" :
-                                                    tradeDecision.action === 'TRIM' ? "text-orange-400" :
-                                                        "text-slate-500"
-                                        )}>
-                                            {tradeDecision.action}
-                                        </span>
-                                        <span className="text-xl font-black text-slate-100 tracking-tighter">{tradeDecision.ticker}</span>
-                                    </div>
+                                <div className="space-y-8">
+                                    {/* Standard PM */}
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-mono text-[9px] uppercase tracking-widest">Standard Manager</Badge>
+                                        </div>
 
-                                    <div className="space-y-4">
-                                        <div className="p-4 bg-blue-950/30 rounded-xl border border-blue-500/20 flex items-center gap-4">
-                                            <Coins className="text-blue-400" size={20} />
-                                            <div>
-                                                <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Funding</h3>
-                                                <p className="text-slate-100 text-sm font-bold">{tradeDecision.fundingSource}</p>
+                                        <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-emerald-500/20 text-center shadow-inner">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Recommended Action</span>
+                                            <span className={cn("text-5xl font-black mb-3 italic",
+                                                tradeDecision.standard.action === 'BUY' ? "text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" :
+                                                    tradeDecision.standard.action === 'SELL' ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]" :
+                                                        tradeDecision.standard.action === 'TRIM' ? "text-orange-400" :
+                                                            "text-slate-500"
+                                            )}>
+                                                {tradeDecision.standard.action}
+                                            </span>
+                                            <span className="text-xl font-black text-slate-100 tracking-tighter">{tradeDecision.standard.ticker}</span>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-blue-950/30 rounded-xl border border-blue-500/20 flex items-center gap-4">
+                                                <Coins className="text-blue-400" size={20} />
+                                                <div>
+                                                    <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Funding</h3>
+                                                    <p className="text-slate-100 text-sm font-bold">{tradeDecision.standard.fundingSource}</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
+                                                "{tradeDecision.standard.rationale}"
                                             </div>
                                         </div>
-                                        <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
-                                            "{tradeDecision.rationale}"
+                                    </div>
+
+                                    {/* Complexity PM */}
+                                    <div className="space-y-6 border-t-2 border-dashed border-slate-800 pt-8">
+                                        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                                            <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 font-mono text-[9px] uppercase tracking-widest">Complexity Manager</Badge>
+                                        </div>
+
+                                        <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-purple-500/20 text-center shadow-inner">
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase mb-2 tracking-widest bg-slate-900 px-2 py-1 rounded">
+                                                {tradeDecision.complexity.analysis.classification.split(':')[0]}
+                                            </span>
+                                            <span className={cn("text-5xl font-black mb-3 italic",
+                                                tradeDecision.complexity.decision === 'BUY' ? "text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.3)]" :
+                                                    tradeDecision.complexity.decision === 'SELL' ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]" :
+                                                        "text-slate-500"
+                                            )}>
+                                                {tradeDecision.complexity.decision}
+                                            </span>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className="text-[10px] text-slate-400 uppercase tracking-widest">NZS Score</span>
+                                                <span className="text-xs font-bold text-slate-200">{tradeDecision.complexity.analysis.nzs_score}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-purple-950/20 rounded-xl border border-purple-500/20 flex flex-col gap-2">
+                                                <h3 className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Allocation Strategy</h3>
+                                                <div className="flex justify-between items-center text-sm font-bold text-slate-200">
+                                                    <span>{tradeDecision.complexity.action_details.target_allocation}</span>
+                                                </div>
+                                                <div className="text-xs text-slate-400 mt-1">
+                                                    Using: <span className="text-white">{tradeDecision.complexity.action_details.funding_source}</span>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
+                                                "{tradeDecision.complexity.action_details.reasoning}"
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

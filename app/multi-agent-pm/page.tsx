@@ -7,7 +7,7 @@ import { BrainCircuit, Loader2, PieChart, RefreshCw, ExternalLink } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AnalysisDashboard, { AgentStatus, AnalysisLog } from './components/analysis-dashboard';
-import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
+import type { EquityAnalysis, TradeDecision, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import { runFundamentalAnalysis, runBatchFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
 import { TickerStatus } from './components/analysis-dashboard';
 import { getLogoUrl } from '@/lib/company-utils';
@@ -17,7 +17,7 @@ interface State {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
-    tradeDecision: TradeDecision | null;
+    tradeDecision: { standard: TradeDecision, complexity: ComplexityDecision } | null;
     error: string | null;
     portfolio: PortfolioItem[];
     targetTicker: string;
@@ -35,7 +35,7 @@ type Action =
     | { type: 'RESET_ANALYSES' }
     | { type: 'SET_TICKER_STATUSES'; payload: TickerStatus[] }
     | { type: 'UPDATE_TICKER_STATUS'; payload: { ticker: string, state: TickerStatus['state'] } }
-    | { type: 'SET_DECISION'; payload: TradeDecision };
+    | { type: 'SET_DECISION'; payload: { standard: TradeDecision, complexity: ComplexityDecision } };
 
 const initialState: State = {
     status: AgentStatus.IDLE,
@@ -230,7 +230,7 @@ export default function MultiAgentPMPage() {
             if (!decisionRes.success || !decisionRes.data) throw new Error(decisionRes.error);
 
             dispatch({ type: 'SET_DECISION', payload: decisionRes.data });
-            addLog("Portfolio Manager", `Strategic Decision Finalized: ${decisionRes.data.action}`);
+            addLog("Portfolio Manager", `Strategic Decisions Finalized: Standard[${decisionRes.data.standard.action}], Complexity[${decisionRes.data.complexity.decision}]`);
 
             dispatch({ type: 'SET_STATUS', payload: AgentStatus.COMPLETED });
 
