@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, GenerateContentResponse } from "@google/generative-ai";
-import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT } from './agents/prompts';
+import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT, HAMILTON_HELMER_PROMPT } from './agents/prompts';
 
 // Types definition (ported from source)
 export interface PortfolioItem {
@@ -15,6 +15,7 @@ export interface EquityAnalysis {
     summary: string;
     sentiment: 'Bullish' | 'Bearish' | 'Neutral';
     cagr?: string;
+    sevenPowers?: string; // New field for strategic analysis
     sources: { uri: string; title: string }[];
     timestamp: number;
     isTarget: boolean;
@@ -179,6 +180,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         // --- Improved Parsing Logic ---
         let formattedText = "";
         let cagr = 'N/A';
+        let data: any = null;
 
         // 1. Clean markdown code blocks if present
         if (text.includes("```json")) {
@@ -187,7 +189,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
 
         try {
             // 2. Parse JSON
-            const data = JSON.parse(text);
+            data = JSON.parse(text);
 
             // 3. Render Markdown
             formattedText = renderAnalysisMarkdown(data);
@@ -209,11 +211,21 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         else if (textLower.includes('**sell**')) sentiment = 'Bearish';
         else if (textLower.includes('**hold**')) sentiment = 'Neutral';
 
+        // --- Step 2: Strategic Analysis (7 Powers) ---
+        let sevenPowers = "";
+        try {
+            sevenPowers = await analyzeSevenPowers(ticker, (data && data.companyName) || ticker);
+        } catch (e) {
+            console.error("7 Powers analysis failed:", e);
+            sevenPowers = "Failed to generate strategic analysis.";
+        }
+
         return {
             ticker,
             summary: formattedText,
             sentiment,
             cagr: cagr.toString().replace('%', '') + '%', // canonicalize
+            sevenPowers,
             sources,
             timestamp: Date.now(),
             isTarget
@@ -222,6 +234,32 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
     } catch (error) {
         console.error("Gemini Analysis Failed:", error);
         throw new Error("Failed to generate equity analysis.");
+    }
+};
+
+/**
+ * Agent 2: Strategic Analyst (Hamilton Helmer / 7 Powers)
+ */
+export const analyzeSevenPowers = async (ticker: string, companyName: string): Promise<string> => {
+    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+
+    const systemInstruction = HAMILTON_HELMER_PROMPT
+        .replace('{{TICKER}}', ticker)
+        .replace('{{COMPANY_NAME}}', companyName);
+
+    const taskPrompt = `Conduct a forensic strategic analysis of ${companyName} (${ticker}) using the 7 Powers framework. Use Google Search for the specific financial proxies and market data. Output a structured Markdown report.`;
+
+    try {
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
+            systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
+            tools: [{ googleSearch: {} } as any]
+        });
+
+        return result.response.text();
+    } catch (error) {
+        console.error("7 Powers Analysis Failed:", error);
+        return "Insufficient Evidence to complete strategic analysis.";
     }
 };
 
@@ -261,7 +299,7 @@ export const makeTradeDecision = async (
     // Prepare context
     const portfolioContext = currentPortfolio.map((item) => {
         const analysis = portfolioScan.find(a => a.ticker === item.symbol);
-        return `### HOLDING: ${item.symbol}\nShares: ${item.shares}\nReport: ${analysis?.summary || 'N/A'}`;
+        return `### HOLDING: ${item.symbol}\nShares: ${item.shares}\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
     }).join("\n\n---\n\n");
 
     const systemInstruction = PORTFOLIO_MANAGER_PROMPT;
@@ -273,16 +311,21 @@ export const makeTradeDecision = async (
 
     const userPrompt = `STRATEGIC DECISION SESSION: ${targetAnalysis.ticker}
 
-TARGET RESEARCH REPORT:
+TARGET RESEARCH REPORTS:
+
+#### FUNDAMENTAL ANALYSIS:
 ${targetAnalysis.summary}
+
+#### STRATEGIC ANALYSIS (7 POWERS):
+${targetAnalysis.sevenPowers}
 
 ---
 FULL PORTFOLIO CONTEXT (${currentPortfolio.length} Holdings):
 ${portfolioContext}
 
 FINAL TASK:
-Based on the reports above, decide if ${targetAnalysis.ticker} earns a spot in the fund.
-Analyze every portfolio company's quality before making the swap.`;
+Based on the fundamental and strategic reports above, decide if ${targetAnalysis.ticker} earns a spot in the fund.
+Analyze every portfolio company's quality and competitive durability (powers) before making the swap.`;
 
     try {
         const result = await model.generateContent({

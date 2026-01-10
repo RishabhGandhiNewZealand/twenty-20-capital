@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { getLogoUrl } from '@/lib/company-utils';
 
 // Define Log Interface here as it's UI specific
@@ -137,22 +138,67 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
 
             {isOpen && (
                 <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
-                    <div className="text-sm pr-2 mb-6 max-h-[500px] overflow-y-auto text-slate-300">
-                        <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
-                            <ReactMarkdown
-                                components={{
-                                    h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
-                                    h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
-                                    h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
-                                    ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-emerald-500" {...props} />,
-                                    li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
-                                    strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
-                                    hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />
-                                }}
-                            >
-                                {analysis.summary}
-                            </ReactMarkdown>
+                    <div className={cn(
+                        "grid grid-cols-1 gap-8 mb-6",
+                        analysis.sevenPowers ? "lg:grid-cols-2 lg:divide-x lg:divide-slate-800" : ""
+                    )}>
+                        {/* Left Column: Fundamental Analysis */}
+                        <div className="text-sm pr-2 max-h-[600px] overflow-y-auto text-slate-300">
+                            {analysis.sevenPowers && (
+                                <div className="flex items-center gap-2 mb-4 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-emerald-500/20 pb-2">
+                                    <Database size={12} />
+                                    Fundamental Analyst
+                                </div>
+                            )}
+                            <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
+                                        h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
+                                        h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
+                                        ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-emerald-500" {...props} />,
+                                        li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
+                                        strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
+                                        hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />,
+                                        table: ({ node, ...props }: any) => <table className="w-full text-left border-collapse my-4" {...props} />,
+                                        th: ({ node, ...props }: any) => <th className="border-b border-slate-700 p-2 text-slate-100 font-bold" {...props} />,
+                                        td: ({ node, ...props }: any) => <td className="border-b border-slate-800 p-2 text-slate-400" {...props} />
+                                    }}
+                                >
+                                    {analysis.summary}
+                                </ReactMarkdown>
+                            </div>
                         </div>
+
+                        {/* Right Column: 7 Powers (Strategic Analysis) */}
+                        {analysis.sevenPowers && (
+                            <div className="text-sm lg:pl-8 max-h-[600px] overflow-y-auto text-slate-300 border-t lg:border-t-0 border-slate-800 pt-6 lg:pt-0">
+                                <div className="flex items-center gap-2 mb-4 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-blue-500/20 pb-2">
+                                    <ShieldCheck size={12} />
+                                    Strategic Analyst (7 Powers)
+                                </div>
+                                <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
+                                            h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
+                                            h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
+                                            ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-blue-500" {...props} />,
+                                            li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
+                                            strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
+                                            hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />,
+                                            table: ({ node, ...props }: any) => <table className="w-full text-left border-collapse my-4" {...props} />,
+                                            th: ({ node, ...props }: any) => <th className="border-b border-slate-700 p-2 text-slate-100 font-bold" {...props} />,
+                                            td: ({ node, ...props }: any) => <td className="border-b border-slate-800 p-2 text-slate-400" {...props} />
+                                        }}
+                                    >
+                                        {analysis.sevenPowers}
+                                    </ReactMarkdown>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-4">
