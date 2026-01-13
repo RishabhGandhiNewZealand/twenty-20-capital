@@ -7,7 +7,7 @@ import { BrainCircuit, Loader2, PieChart, RefreshCw, ExternalLink } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AnalysisDashboard, { AgentStatus, AnalysisLog } from './components/analysis-dashboard';
-import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
+import type { EquityAnalysis, TradeDecision, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import { runFundamentalAnalysis, runBatchFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
 import { TickerStatus } from './components/analysis-dashboard';
 import { getLogoUrl } from '@/lib/company-utils';
@@ -17,11 +17,12 @@ interface State {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
-    tradeDecision: TradeDecision | null;
+    tradeDecision: { standard: TradeDecision, complexity: ComplexityDecision } | null;
     error: string | null;
     portfolio: PortfolioItem[];
     targetTicker: string;
     tickerStatuses: TickerStatus[];
+    totalCost: number;
 }
 
 // Actions
@@ -35,7 +36,7 @@ type Action =
     | { type: 'RESET_ANALYSES' }
     | { type: 'SET_TICKER_STATUSES'; payload: TickerStatus[] }
     | { type: 'UPDATE_TICKER_STATUS'; payload: { ticker: string, state: TickerStatus['state'] } }
-    | { type: 'SET_DECISION'; payload: TradeDecision };
+    | { type: 'SET_DECISION'; payload: { standard: TradeDecision, complexity: ComplexityDecision } };
 
 const initialState: State = {
     status: AgentStatus.IDLE,
@@ -46,6 +47,7 @@ const initialState: State = {
     portfolio: [],
     targetTicker: 'NVDA',
     tickerStatuses: [],
+    totalCost: 0,
 };
 
 function reducer(state: State, action: Action): State {
@@ -61,9 +63,13 @@ function reducer(state: State, action: Action): State {
         case 'SET_TARGET_TICKER':
             return { ...state, targetTicker: action.payload };
         case 'ADD_ANALYSIS':
-            return { ...state, analyses: [...state.analyses, action.payload] };
+            return {
+                ...state,
+                analyses: [...state.analyses, action.payload],
+                totalCost: state.totalCost + (action.payload.usage?.cost || 0)
+            };
         case 'RESET_ANALYSES':
-            return { ...state, analyses: [], tradeDecision: null, logs: [], error: null, tickerStatuses: [] };
+            return { ...state, analyses: [], tradeDecision: null, logs: [], error: null, tickerStatuses: [], totalCost: 0 };
         case 'SET_TICKER_STATUSES':
             return { ...state, tickerStatuses: action.payload };
         case 'UPDATE_TICKER_STATUS':
@@ -74,7 +80,8 @@ function reducer(state: State, action: Action): State {
                 )
             };
         case 'SET_DECISION':
-            return { ...state, tradeDecision: action.payload };
+            const decisionCost = (action.payload.standard.usage?.cost || 0) + (action.payload.complexity.usage?.cost || 0);
+            return { ...state, tradeDecision: action.payload, totalCost: state.totalCost + decisionCost };
         default:
             return state;
     }
@@ -158,7 +165,9 @@ export default function MultiAgentPMPage() {
             // Initialize Status Board
             const tickerList = [
                 { symbol: state.targetTicker, isTarget: true },
-                ...state.portfolio.map(p => ({ symbol: p.symbol, isTarget: false }))
+                ...state.portfolio
+                    .filter(p => p.symbol !== state.targetTicker) // Deduplicate: Don't analyze target twice
+                    .map(p => ({ symbol: p.symbol, isTarget: false }))
             ];
 
             const initialStatuses: TickerStatus[] = tickerList.map(t => ({
@@ -198,7 +207,7 @@ export default function MultiAgentPMPage() {
                             const analysis = res.data as EquityAnalysis;
                             dispatch({ type: 'ADD_ANALYSIS', payload: analysis });
                             dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker: analysis.ticker, state: 'COMPLETED' } });
-                            addLog("Analyst", `Intelligence captured for ${analysis.ticker}.`);
+                            addLog("Analyst", `Intelligence captured for ${analysis.ticker} (Cost: $${(analysis.usage?.cost || 0).toFixed(4)}).`);
                             resultBuffer.push(analysis);
                         } else {
                             const failedTicker = res.ticker || "Unknown";
@@ -230,7 +239,8 @@ export default function MultiAgentPMPage() {
             if (!decisionRes.success || !decisionRes.data) throw new Error(decisionRes.error);
 
             dispatch({ type: 'SET_DECISION', payload: decisionRes.data });
-            addLog("Portfolio Manager", `Strategic Decision Finalized: ${decisionRes.data.action}`);
+            const pmCost = (decisionRes.data.standard.usage?.cost || 0) + (decisionRes.data.complexity.usage?.cost || 0);
+            addLog("Portfolio Manager", `Strategic Decisions Finalized (Cost: $${pmCost.toFixed(4)}). Standard[${decisionRes.data.standard.action}], Complexity[${decisionRes.data.complexity.decision}]`);
 
             dispatch({ type: 'SET_STATUS', payload: AgentStatus.COMPLETED });
 
@@ -301,6 +311,7 @@ export default function MultiAgentPMPage() {
                         tradeDecision={state.tradeDecision}
                         tickerStatuses={state.tickerStatuses}
                         portfolio={state.portfolio}
+                        totalCost={state.totalCost}
                     />
 
                     {/* Simple Portfolio Table included directly or componentized */}
@@ -317,7 +328,7 @@ export default function MultiAgentPMPage() {
                                         <div className="flex items-center gap-4">
                                             <div className="text-right mr-4">
                                                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Assets</p>
-                                                <p className="text-lg font-black text-slate-100 tracking-tighter">${totalFundValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px] text-slate-500 uppercase">NZD</span></p>
+                                                <p className="text-lg font-black text-slate-100 tracking-tighter">${totalFundValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px] text-slate-500 uppercase">USD</span></p>
                                             </div>
                                             <Button variant="ghost" size="sm" onClick={initPortfolio} className="text-slate-400 hover:text-white">
                                                 <RefreshCw size={16} className={state.status === AgentStatus.RETRIEVING_PORTFOLIO ? 'animate-spin' : ''} />

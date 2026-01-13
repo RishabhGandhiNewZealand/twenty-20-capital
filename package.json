@@ -45,6 +45,7 @@
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
     "recharts": "^2.15.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "yahoo-finance2": "^3.11.2"

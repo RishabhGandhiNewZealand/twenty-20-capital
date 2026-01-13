@@ -1,6 +1,6 @@
 'use server';
 
-import { analyzeEquity, makeTradeDecision, EquityAnalysis, PortfolioItem } from '@/lib/gemini-service';
+import { analyzeEquity, makeTradeDecision, makeComplexityDecision, EquityAnalysis, PortfolioItem } from '@/lib/gemini-service';
 
 export async function runFundamentalAnalysis(ticker: string, isTarget: boolean = false) {
     try {
@@ -24,8 +24,15 @@ export async function runPortfolioManagerDecision(
     currentPortfolio: PortfolioItem[]
 ) {
     try {
-        const decision = await makeTradeDecision(targetAnalysis, portfolioScan, currentPortfolio);
-        return { success: true, data: decision };
+        const [standard, complexity] = await Promise.all([
+            makeTradeDecision(targetAnalysis, portfolioScan, currentPortfolio),
+            makeComplexityDecision(targetAnalysis, portfolioScan, currentPortfolio)
+        ]);
+
+        return {
+            success: true,
+            data: { standard, complexity }
+        };
     } catch (error) {
         console.error('PM Decision Error:', error);
         return { success: false, error: 'Failed to make trade decision.' };

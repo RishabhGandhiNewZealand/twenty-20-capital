@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import type { EquityAnalysis, TradeDecision, PortfolioItem } from '@/lib/gemini-service';
+import type { EquityAnalysis, TradeDecision, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { getLogoUrl } from '@/lib/company-utils';
 
 // Define Log Interface here as it's UI specific
@@ -33,19 +34,23 @@ export interface TickerStatus {
     ticker: string;
     state: 'PENDING' | 'RESEARCHING' | 'COMPLETED' | 'ERROR';
     isTarget: boolean;
+    usage?: { tokens: number; cost: number };
+    subRuns?: { summary: string; sevenPowers?: string; usage: { tokens: number; cost: number } }[];
 }
 
 interface Props {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
-    tradeDecision: TradeDecision | null;
+    tradeDecision: { standard: TradeDecision, complexity: ComplexityDecision } | null;
     tickerStatuses: TickerStatus[];
     portfolio: PortfolioItem[];
+    totalCost: number;
 }
 
 const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [showSubRuns, setShowSubRuns] = useState(false);
 
     const downloadMarkdown = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -112,6 +117,9 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                                 </span>
                             </div>
                         )}
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[8px] uppercase font-black tracking-[0.2em] h-5">
+                            Synthesised (3x Parallel)
+                        </Badge>
                     </div>
                 </div>
 
@@ -137,23 +145,104 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
 
             {isOpen && (
                 <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
-                    <div className="text-sm pr-2 mb-6 max-h-[500px] overflow-y-auto text-slate-300">
-                        <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
-                            <ReactMarkdown
-                                components={{
-                                    h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
-                                    h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
-                                    h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
-                                    ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-emerald-500" {...props} />,
-                                    li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
-                                    strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
-                                    hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />
-                                }}
-                            >
-                                {analysis.summary}
-                            </ReactMarkdown>
+                    <div className={cn(
+                        "grid grid-cols-1 gap-8 mb-6",
+                        analysis.sevenPowers ? "lg:grid-cols-2 lg:divide-x lg:divide-slate-800" : ""
+                    )}>
+                        {/* Left Column: Fundamental Analysis */}
+                        <div className="text-sm pr-2 max-h-[600px] overflow-y-auto text-slate-300">
+                            {analysis.sevenPowers && (
+                                <div className="flex items-center gap-2 mb-4 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-emerald-500/20 pb-2">
+                                    <Database size={12} />
+                                    Fundamental Analyst
+                                </div>
+                            )}
+                            <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
+                                        h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
+                                        h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
+                                        ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-emerald-500" {...props} />,
+                                        li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
+                                        strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
+                                        hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />,
+                                        table: ({ node, ...props }: any) => <table className="w-full text-left border-collapse my-4" {...props} />,
+                                        th: ({ node, ...props }: any) => <th className="border-b border-slate-700 p-2 text-slate-100 font-bold" {...props} />,
+                                        td: ({ node, ...props }: any) => <td className="border-b border-slate-800 p-2 text-slate-400" {...props} />
+                                    }}
+                                >
+                                    {analysis.summary}
+                                </ReactMarkdown>
+                            </div>
                         </div>
+
+                        {/* Right Column: 7 Powers (Strategic Analysis) */}
+                        {analysis.sevenPowers && (
+                            <div className="text-sm lg:pl-8 max-h-[600px] overflow-y-auto text-slate-300 border-t lg:border-t-0 border-slate-800 pt-6 lg:pt-0">
+                                <div className="flex items-center gap-2 mb-4 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-blue-500/20 pb-2">
+                                    <ShieldCheck size={12} />
+                                    Strategic Analyst (7 Powers)
+                                </div>
+                                <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            h1: ({ node, ...props }: any) => <h1 className="text-2xl font-black text-white border-b border-white/10 pb-2 mb-4 uppercase tracking-tighter" {...props} />,
+                                            h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-slate-100 mt-6 mb-2" {...props} />,
+                                            h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-slate-200 mt-4 mb-2" {...props} />,
+                                            ul: ({ node, ...props }: any) => <ul className="list-disc pl-5 space-y-1 my-2 marker:text-blue-500" {...props} />,
+                                            li: ({ node, ...props }: any) => <li className="text-slate-300 pl-1" {...props} />,
+                                            strong: ({ node, ...props }: any) => <strong className="text-white font-black" {...props} />,
+                                            hr: ({ node, ...props }: any) => <hr className="my-6 border-slate-700" {...props} />,
+                                            table: ({ node, ...props }: any) => <table className="w-full text-left border-collapse my-4" {...props} />,
+                                            th: ({ node, ...props }: any) => <th className="border-b border-slate-700 p-2 text-slate-100 font-bold" {...props} />,
+                                            td: ({ node, ...props }: any) => <td className="border-b border-slate-800 p-2 text-slate-400" {...props} />
+                                        }}
+                                    >
+                                        {analysis.sevenPowers}
+                                    </ReactMarkdown>
+                                </div>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Parallel Runs (Sub-Runs) for Target Holding */}
+                    {analysis.isTarget && analysis.subRuns && (
+                        <div className="mt-8 border-t border-slate-800/60 pt-6">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => { e.stopPropagation(); setShowSubRuns(!showSubRuns); }}
+                                className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 hover:bg-blue-500/5 transition-all p-0 h-auto gap-2"
+                            >
+                                <Database size={12} />
+                                {showSubRuns ? 'Hide Parallel Runs' : 'Explore 3 Parallel Intelligence Runs'}
+                                {showSubRuns ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </Button>
+
+                            {showSubRuns && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                                    {analysis.subRuns.map((run, i) => (
+                                        <div key={i} className="bg-black/40 border border-slate-800 rounded-lg p-4 space-y-3">
+                                            <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
+                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Run #{i + 1}</span>
+                                                <span className="text-[9px] font-bold text-emerald-500">${run.usage.cost.toFixed(4)}</span>
+                                            </div>
+                                            <ScrollArea className="h-40 text-[10px] text-slate-400 leading-relaxed font-mono italic">
+                                                <div className="prose prose-invert prose-xs">
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                        {run.summary}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </ScrollArea>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-4">
                         {analysis.sources.slice(0, 3).map((source, i) => (
@@ -169,7 +258,9 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
     );
 };
 
-const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio }) => {
+const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio, totalCost }) => {
+    const [showStandardSubRuns, setShowStandardSubRuns] = useState(false);
+    const [showComplexitySubRuns, setShowComplexitySubRuns] = useState(false);
 
     const sortedAnalyses = useMemo(() => {
         // 1. Separate Target(s)
@@ -198,9 +289,18 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                         <Activity size={14} className="text-emerald-400" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Agent Command Center</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className={cn("h-2 w-2 rounded-full", status === AgentStatus.IDLE ? "bg-slate-500" : status === AgentStatus.ERROR ? "bg-red-500" : "bg-emerald-500 animate-pulse")}></span>
-                        <span className="text-[10px] uppercase font-mono text-slate-500">{status}</span>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Coins size={12} className="text-yellow-400" />
+                            <span className="text-[10px] font-bold text-white uppercase tracking-widest leading-none">
+                                Total Cost: <span className="text-emerald-400">${totalCost.toFixed(4)}</span>
+                            </span>
+                        </div>
+                        <div className="h-4 w-[1px] bg-slate-700 mx-1"></div>
+                        <div className="flex items-center gap-2">
+                            <span className={cn("h-2 w-2 rounded-full", status === AgentStatus.IDLE ? "bg-slate-500" : status === AgentStatus.ERROR ? "bg-red-500" : "bg-emerald-500 animate-pulse")}></span>
+                            <span className="text-[10px] uppercase font-mono text-slate-500">{status}</span>
+                        </div>
                     </div>
                 </div>
                 <ScrollArea className="h-40 bg-black/40 p-4 font-mono text-[11px]">
@@ -255,7 +355,15 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                     )}></div>
                                 </div>
                                 <span className="text-[8px] font-black uppercase text-slate-500 whitespace-nowrap">
-                                    {ts.state === 'RESEARCHING' ? 'Analysing' : ts.state.toLowerCase()}
+                                    {ts.state === 'COMPLETED' ? (
+                                        <span className="text-emerald-400">
+                                            ${(analyses.find(a => a.ticker === ts.ticker)?.usage?.cost || 0).toFixed(4)}
+                                        </span>
+                                    ) : ts.state === 'RESEARCHING' ? (
+                                        'Analysing'
+                                    ) : (
+                                        ts.state.toLowerCase()
+                                    )}
                                 </span>
                             </div>
                         </div>
@@ -301,30 +409,136 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                         </CardHeader>
                         <CardContent>
                             {tradeDecision ? (
-                                <div className="space-y-6">
-                                    <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-emerald-500/20 text-center shadow-inner">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Recommended Action</span>
-                                        <span className={cn("text-5xl font-black mb-3 italic",
-                                            tradeDecision.action === 'BUY' ? "text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" :
-                                                tradeDecision.action === 'SELL' ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]" :
-                                                    tradeDecision.action === 'TRIM' ? "text-orange-400" :
-                                                        "text-slate-500"
-                                        )}>
-                                            {tradeDecision.action}
-                                        </span>
-                                        <span className="text-xl font-black text-slate-100 tracking-tighter">{tradeDecision.ticker}</span>
+                                <div className="space-y-8">
+                                    {/* Standard PM */}
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-mono text-[9px] uppercase tracking-widest">Standard Manager</Badge>
+                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                Cost: <span className="text-emerald-400">${(tradeDecision.standard.usage?.cost || 0).toFixed(4)}</span>
+                                            </span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-emerald-500/20 text-center shadow-inner">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Recommended Action</span>
+                                            <span className={cn("text-5xl font-black mb-3 italic",
+                                                tradeDecision.standard.action === 'BUY' ? "text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" :
+                                                    tradeDecision.standard.action === 'SELL' ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]" :
+                                                        tradeDecision.standard.action === 'TRIM' ? "text-orange-400" :
+                                                            "text-slate-500"
+                                            )}>
+                                                {tradeDecision.standard.action}
+                                            </span>
+                                            <span className="text-xl font-black text-slate-100 tracking-tighter">{tradeDecision.standard.ticker}</span>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-blue-950/30 rounded-xl border border-blue-500/20 flex items-center gap-4">
+                                                <Coins className="text-blue-400" size={20} />
+                                                <div>
+                                                    <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Funding</h3>
+                                                    <p className="text-slate-100 text-sm font-bold">{tradeDecision.standard.fundingSource}</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
+                                                "{tradeDecision.standard.rationale}"
+                                            </div>
+
+                                            {/* Sub-runs for Standard PM */}
+                                            {tradeDecision.standard.subRuns && (
+                                                <div className="mt-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setShowStandardSubRuns(!showStandardSubRuns)}
+                                                        className="text-[9px] font-black uppercase text-blue-400 p-0 h-auto hover:bg-transparent"
+                                                    >
+                                                        {showStandardSubRuns ? 'Hide Details' : 'View 3 Parallel Decision Rationale'}
+                                                    </Button>
+                                                    {showStandardSubRuns && (
+                                                        <div className="space-y-2 mt-2 max-h-40 overflow-y-auto pr-2">
+                                                            {tradeDecision.standard.subRuns.map((run, i) => (
+                                                                <div key={i} className="p-2 bg-black/40 rounded border border-slate-800 text-[10px] space-y-1">
+                                                                    <div className="flex justify-between font-black text-slate-500 uppercase">
+                                                                        <span>Run #{i + 1}: {run.action}</span>
+                                                                        <span className="text-emerald-500/70">${run.usage.cost.toFixed(4)}</span>
+                                                                    </div>
+                                                                    <p className="text-slate-400 italic">"{run.rationale}"</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <div className="p-4 bg-blue-950/30 rounded-xl border border-blue-500/20 flex items-center gap-4">
-                                            <Coins className="text-blue-400" size={20} />
-                                            <div>
-                                                <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Funding</h3>
-                                                <p className="text-slate-100 text-sm font-bold">{tradeDecision.fundingSource}</p>
+                                    {/* Complexity PM */}
+                                    <div className="space-y-6 border-t-2 border-dashed border-slate-800 pt-8">
+                                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                            <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 font-mono text-[9px] uppercase tracking-widest">Complexity Manager</Badge>
+                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                Cost: <span className="text-purple-400">${(tradeDecision.complexity.usage?.cost || 0).toFixed(4)}</span>
+                                            </span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-purple-500/20 text-center shadow-inner">
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase mb-2 tracking-widest bg-slate-900 px-2 py-1 rounded">
+                                                {tradeDecision.complexity.analysis.classification.split(':')[0]}
+                                            </span>
+                                            <span className={cn("text-5xl font-black mb-3 italic",
+                                                tradeDecision.complexity.decision === 'BUY' ? "text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.3)]" :
+                                                    tradeDecision.complexity.decision === 'SELL' ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]" :
+                                                        "text-slate-500"
+                                            )}>
+                                                {tradeDecision.complexity.decision}
+                                            </span>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className="text-[10px] text-slate-400 uppercase tracking-widest">NZS Score</span>
+                                                <span className="text-xs font-bold text-slate-200">{tradeDecision.complexity.analysis.nzs_score}</span>
                                             </div>
                                         </div>
-                                        <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
-                                            "{tradeDecision.rationale}"
+
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-purple-950/20 rounded-xl border border-purple-500/20 flex flex-col gap-2">
+                                                <h3 className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Allocation Strategy</h3>
+                                                <div className="flex justify-between items-center text-sm font-bold text-slate-200">
+                                                    <span>{tradeDecision.complexity.action_details.target_allocation}</span>
+                                                </div>
+                                                <div className="text-xs text-slate-400 mt-1">
+                                                    Using: <span className="text-white">{tradeDecision.complexity.action_details.funding_source}</span>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
+                                                "{tradeDecision.complexity.action_details.reasoning}"
+                                            </div>
+
+                                            {/* Sub-runs for Complexity PM */}
+                                            {tradeDecision.complexity.subRuns && (
+                                                <div className="mt-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setShowComplexitySubRuns(!showComplexitySubRuns)}
+                                                        className="text-[9px] font-black uppercase text-purple-400 p-0 h-auto hover:bg-transparent"
+                                                    >
+                                                        {showComplexitySubRuns ? 'Hide Details' : 'View 3 Parallel Complexity Paths'}
+                                                    </Button>
+                                                    {showComplexitySubRuns && (
+                                                        <div className="space-y-2 mt-2 max-h-40 overflow-y-auto pr-2">
+                                                            {tradeDecision.complexity.subRuns.map((run, i) => (
+                                                                <div key={i} className="p-2 bg-black/40 rounded border border-slate-800 text-[10px] space-y-1">
+                                                                    <div className="flex justify-between font-black text-slate-500 uppercase">
+                                                                        <span>Run #{i + 1}: {run.decision}</span>
+                                                                        <span className="text-purple-500/70">${run.usage.cost.toFixed(4)}</span>
+                                                                    </div>
+                                                                    <p className="text-slate-400 italic">"{run.reasoning}"</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
