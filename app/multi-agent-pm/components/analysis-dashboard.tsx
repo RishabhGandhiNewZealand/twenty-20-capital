@@ -34,6 +34,8 @@ export interface TickerStatus {
     ticker: string;
     state: 'PENDING' | 'RESEARCHING' | 'COMPLETED' | 'ERROR';
     isTarget: boolean;
+    usage?: { tokens: number; cost: number };
+    subRuns?: { summary: string; sevenPowers?: string; usage: { tokens: number; cost: number } }[];
 }
 
 interface Props {
@@ -48,6 +50,7 @@ interface Props {
 
 const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [showSubRuns, setShowSubRuns] = useState(false);
 
     const downloadMarkdown = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -114,6 +117,9 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                                 </span>
                             </div>
                         )}
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[8px] uppercase font-black tracking-[0.2em] h-5">
+                            Synthesised (3x Parallel)
+                        </Badge>
                     </div>
                 </div>
 
@@ -202,6 +208,42 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                         )}
                     </div>
 
+                    {/* Parallel Runs (Sub-Runs) for Target Holding */}
+                    {analysis.isTarget && analysis.subRuns && (
+                        <div className="mt-8 border-t border-slate-800/60 pt-6">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => { e.stopPropagation(); setShowSubRuns(!showSubRuns); }}
+                                className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 hover:bg-blue-500/5 transition-all p-0 h-auto gap-2"
+                            >
+                                <Database size={12} />
+                                {showSubRuns ? 'Hide Parallel Runs' : 'Explore 3 Parallel Intelligence Runs'}
+                                {showSubRuns ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </Button>
+
+                            {showSubRuns && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                                    {analysis.subRuns.map((run, i) => (
+                                        <div key={i} className="bg-black/40 border border-slate-800 rounded-lg p-4 space-y-3">
+                                            <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
+                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Run #{i + 1}</span>
+                                                <span className="text-[9px] font-bold text-emerald-500">${run.usage.cost.toFixed(4)}</span>
+                                            </div>
+                                            <ScrollArea className="h-40 text-[10px] text-slate-400 leading-relaxed font-mono italic">
+                                                <div className="prose prose-invert prose-xs">
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                        {run.summary}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </ScrollArea>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-4">
                         {analysis.sources.slice(0, 3).map((source, i) => (
                             <a key={i} href={source.uri} target="_blank" rel="noopener noreferrer"
@@ -217,6 +259,8 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
 };
 
 const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio, totalCost }) => {
+    const [showStandardSubRuns, setShowStandardSubRuns] = useState(false);
+    const [showComplexitySubRuns, setShowComplexitySubRuns] = useState(false);
 
     const sortedAnalyses = useMemo(() => {
         // 1. Separate Target(s)
@@ -399,6 +443,33 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                             <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
                                                 "{tradeDecision.standard.rationale}"
                                             </div>
+
+                                            {/* Sub-runs for Standard PM */}
+                                            {tradeDecision.standard.subRuns && (
+                                                <div className="mt-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setShowStandardSubRuns(!showStandardSubRuns)}
+                                                        className="text-[9px] font-black uppercase text-blue-400 p-0 h-auto hover:bg-transparent"
+                                                    >
+                                                        {showStandardSubRuns ? 'Hide Details' : 'View 3 Parallel Decision Rationale'}
+                                                    </Button>
+                                                    {showStandardSubRuns && (
+                                                        <div className="space-y-2 mt-2 max-h-40 overflow-y-auto pr-2">
+                                                            {tradeDecision.standard.subRuns.map((run, i) => (
+                                                                <div key={i} className="p-2 bg-black/40 rounded border border-slate-800 text-[10px] space-y-1">
+                                                                    <div className="flex justify-between font-black text-slate-500 uppercase">
+                                                                        <span>Run #{i + 1}: {run.action}</span>
+                                                                        <span className="text-emerald-500/70">${run.usage.cost.toFixed(4)}</span>
+                                                                    </div>
+                                                                    <p className="text-slate-400 italic">"{run.rationale}"</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -441,6 +512,33 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                             <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
                                                 "{tradeDecision.complexity.action_details.reasoning}"
                                             </div>
+
+                                            {/* Sub-runs for Complexity PM */}
+                                            {tradeDecision.complexity.subRuns && (
+                                                <div className="mt-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setShowComplexitySubRuns(!showComplexitySubRuns)}
+                                                        className="text-[9px] font-black uppercase text-purple-400 p-0 h-auto hover:bg-transparent"
+                                                    >
+                                                        {showComplexitySubRuns ? 'Hide Details' : 'View 3 Parallel Complexity Paths'}
+                                                    </Button>
+                                                    {showComplexitySubRuns && (
+                                                        <div className="space-y-2 mt-2 max-h-40 overflow-y-auto pr-2">
+                                                            {tradeDecision.complexity.subRuns.map((run, i) => (
+                                                                <div key={i} className="p-2 bg-black/40 rounded border border-slate-800 text-[10px] space-y-1">
+                                                                    <div className="flex justify-between font-black text-slate-500 uppercase">
+                                                                        <span>Run #{i + 1}: {run.decision}</span>
+                                                                        <span className="text-purple-500/70">${run.usage.cost.toFixed(4)}</span>
+                                                                    </div>
+                                                                    <p className="text-slate-400 italic">"{run.reasoning}"</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

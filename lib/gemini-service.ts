@@ -1,5 +1,8 @@
-import { GoogleGenerativeAI, SchemaType, GenerateContentResponse } from "@google/generative-ai";
-import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT, HAMILTON_HELMER_PROMPT, COMPLEXITY_PM_PROMPT } from './agents/prompts';
+import { GoogleGenerativeAI, SchemaType, GenerateContentResponse, GenerateContentResult, Part } from "@google/generative-ai";
+import YahooFinance from 'yahoo-finance2';
+
+const yahooFinance = new YahooFinance();
+import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT, HAMILTON_HELMER_PROMPT, COMPLEXITY_PM_PROMPT, FUNDAMENTAL_SYNTHESIS_PROMPT, SEVEN_POWERS_SYNTHESIS_PROMPT, TRADE_DECISION_SYNTHESIS_PROMPT, COMPLEXITY_SYNTHESIS_PROMPT } from './agents/prompts';
 
 // Types definition (ported from source)
 export interface PortfolioItem {
@@ -20,6 +23,7 @@ export interface EquityAnalysis {
     timestamp: number;
     isTarget: boolean;
     usage?: { tokens: number; cost: number };
+    subRuns?: { summary: string; sevenPowers?: string; usage: { tokens: number; cost: number } }[];
 }
 
 export interface TradeDecision {
@@ -30,6 +34,7 @@ export interface TradeDecision {
     fundingSource: string;
     portfolioImpact: string;
     usage?: { tokens: number; cost: number };
+    subRuns?: { action: string; rationale: string; usage: { tokens: number; cost: number } }[];
 }
 
 export interface ComplexityDecision {
@@ -47,7 +52,121 @@ export interface ComplexityDecision {
         reasoning: string;
     };
     usage?: { tokens: number; cost: number };
+    subRuns?: { decision: string; reasoning: string; usage: { tokens: number; cost: number } }[];
 }
+
+/**
+ * JSON Schemas for Agent Outputs
+ */
+const FUNDAMENTAL_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        companyName: { type: SchemaType.STRING },
+        ticker: { type: SchemaType.STRING },
+        currentPrice: { type: SchemaType.STRING },
+        rating: { type: SchemaType.STRING },
+        cagr: { type: SchemaType.STRING },
+        oneLiner: { type: SchemaType.STRING },
+        pillars: {
+            type: SchemaType.OBJECT,
+            properties: {
+                moat: { type: SchemaType.STRING },
+                operatingLeverage: { type: SchemaType.STRING },
+                organicGrowth: { type: SchemaType.STRING },
+                capitalLight: { type: SchemaType.STRING },
+                predictability: { type: SchemaType.STRING },
+                management: { type: SchemaType.STRING }
+            },
+            required: ['moat', 'operatingLeverage', 'organicGrowth', 'capitalLight', 'predictability', 'management']
+        },
+        financials: {
+            type: SchemaType.OBJECT,
+            properties: {
+                growth: { type: SchemaType.STRING },
+                health: { type: SchemaType.STRING },
+                profitability: { type: SchemaType.STRING }
+            },
+            required: ['growth', 'health', 'profitability']
+        },
+        valuation: {
+            type: SchemaType.OBJECT,
+            properties: {
+                current: { type: SchemaType.STRING },
+                bullCase: { type: SchemaType.STRING },
+                bearCase: { type: SchemaType.STRING },
+                baseCase: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        revenueGrowth: { type: SchemaType.STRING },
+                        netMargin: { type: SchemaType.STRING },
+                        exitMultiple: { type: SchemaType.STRING },
+                        shareCountReduction: { type: SchemaType.STRING },
+                        futureSharePrice: { type: SchemaType.STRING },
+                        cagrCalculation: { type: SchemaType.STRING }
+                    },
+                    required: ['revenueGrowth', 'netMargin', 'exitMultiple', 'shareCountReduction', 'futureSharePrice', 'cagrCalculation']
+                }
+            },
+            required: ['current', 'bullCase', 'bearCase', 'baseCase']
+        },
+        risks: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
+        },
+        conclusion: { type: SchemaType.STRING }
+    },
+    required: ['companyName', 'ticker', 'currentPrice', 'rating', 'cagr', 'oneLiner', 'pillars', 'financials', 'valuation', 'risks', 'conclusion']
+};
+
+const TRADE_DECISION_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        action: {
+            type: SchemaType.STRING,
+            description: 'BUY, SELL, TRIM, or HOLD',
+            enum: ['BUY', 'SELL', 'TRIM', 'HOLD'],
+            format: 'enum'
+        },
+        ticker: { type: SchemaType.STRING, description: 'The ticker being acted upon' },
+        amount: { type: SchemaType.NUMBER, description: 'Share quantity or allocation percentage change' },
+        rationale: { type: SchemaType.STRING, description: 'Detailed PM reasoning' },
+        fundingSource: { type: SchemaType.STRING, description: 'Source of funds' },
+        portfolioImpact: { type: SchemaType.STRING, description: 'Impact on portfolio quality/concentration' }
+    },
+    required: ['action', 'ticker', 'amount', 'rationale', 'fundingSource', 'portfolioImpact']
+};
+
+const COMPLEXITY_DECISION_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        analysis: {
+            type: SchemaType.OBJECT,
+            properties: {
+                classification: { type: SchemaType.STRING },
+                s_curve_status: { type: SchemaType.STRING },
+                nzs_score: { type: SchemaType.STRING },
+                narrow_prediction_risk: { type: SchemaType.STRING }
+            },
+            required: ['classification', 's_curve_status', 'nzs_score', 'narrow_prediction_risk']
+        },
+        decision: {
+            type: SchemaType.STRING,
+            enum: ['BUY', 'SELL', 'HOLD'],
+            format: 'enum'
+        },
+        action_details: {
+            type: SchemaType.OBJECT,
+            properties: {
+                target_allocation: { type: SchemaType.STRING },
+                weighting_assessment: { type: SchemaType.STRING },
+                funding_source: { type: SchemaType.STRING },
+                reasoning: { type: SchemaType.STRING }
+            },
+            required: ['target_allocation', 'weighting_assessment', 'funding_source', 'reasoning']
+        }
+    },
+    required: ['analysis', 'decision', 'action_details']
+};
 
 
 // Configuration
@@ -61,6 +180,156 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Pricing (USD per 1M tokens) - Gemini 2.0 Flash / 1.5 Flash
 // Input: $0.075 / 1M, Output: $0.30 / 1M (for prompts < 128k)
+
+// Cast to any to avoid strict Schema validation recursion issues in TS
+// Cast to any to avoid strict Schema validation recursion issues in TS
+const SEARCH_TOOLS: any[] = [
+    { googleSearch: {} }
+];
+
+const FUNCTION_TOOLS: any[] = [
+    {
+        functionDeclarations: [
+            {
+                name: "get_stock_price",
+                description: "Get the real-time stock price and basic market data for a given ticker or symbol.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        ticker: {
+                            type: SchemaType.STRING,
+                            description: "The stock ticker symbol (e.g., AAPL, TSLA, BTC-USD)",
+                        },
+                    },
+                    required: ["ticker"],
+                },
+            },
+            {
+                name: "get_portfolio_allocation",
+                description: "Get the current portfolio allocation, total value, and list of holdings.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        dummy: { type: SchemaType.STRING, description: "Unused parameter to satisfy schema" }
+                    },
+                },
+            },
+        ],
+    },
+];
+
+/**
+ * TOOL EXECUTOR
+ */
+async function executeFinancialTools(name: string, args: any, currentPortfolio: PortfolioItem[] = [], portfolioScan: EquityAnalysis[] = []) {
+    if (name === "get_stock_price") {
+        try {
+            const quote: any = await yahooFinance.quoteSummary(args.ticker, { modules: ['price', 'summaryDetail'] });
+            return {
+                ticker: args.ticker,
+                price: quote.price?.regularMarketPrice,
+                currency: quote.price?.currency,
+                marketCap: quote.price?.marketCap,
+                peRatio: quote.summaryDetail?.trailingPE,
+                fiftyTwoWeekHigh: quote.summaryDetail?.fiftyTwoWeekHigh,
+                fiftyTwoWeekLow: quote.summaryDetail?.fiftyTwoWeekLow
+            };
+        } catch (e: any) {
+            console.error("Yahoo Finance Error:", e);
+            return { error: `Failed to fetch price for ${args.ticker}: ${e.message}` };
+        }
+    }
+
+    if (name === "get_portfolio_allocation") {
+        const totalValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
+        return {
+            totalValue,
+            holdings: currentPortfolio.map(item => ({
+                symbol: item.symbol,
+                value: item.value,
+                allocation: totalValue > 0 ? (item.value / totalValue * 100).toFixed(2) + '%' : '0%'
+            }))
+        };
+    }
+
+    return { error: "Unknown tool" };
+}
+
+/**
+ * Tool Aware Generator
+ * Handles the multi-turn loop for function calling
+ */
+async function generateWithTools<T>(
+    model: any,
+    prompt: string,
+    systemInstruction: string,
+    toolConfig: any[],
+    responseSchema?: any,
+    currentPortfolio: PortfolioItem[] = [],
+    portfolioScan: EquityAnalysis[] = []
+): Promise<{ data: T, usage: { tokens: number, cost: number } }> {
+    let chat = model.startChat({
+        systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
+        tools: toolConfig,
+        generationConfig: responseSchema ? { responseMimeType: "application/json", responseSchema: responseSchema } : undefined
+    });
+
+    let result = await withRetry<GenerateContentResult>(() => chat.sendMessage(prompt));
+    let functionCalls = result.response.functionCalls();
+
+    // Limits loop to 5 turns to prevent infinite loops
+    let loops = 0;
+    while (functionCalls && functionCalls.length > 0 && loops < 5) {
+        loops++;
+        const parts: Part[] = [];
+        for (const call of functionCalls) {
+            const toolResult = await executeFinancialTools(call.name, call.args, currentPortfolio, portfolioScan);
+            parts.push({
+                functionResponse: {
+                    name: call.name,
+                    response: { result: toolResult }
+                }
+            });
+        }
+        result = await withRetry<GenerateContentResult>(() => chat.sendMessage(parts));
+        functionCalls = result.response.functionCalls();
+    }
+
+    // Final Generation enforced JSON
+    // If the last response was free-text (after tools), we might need to coerce it to JSON if it's not.
+    // However, Gemini usually adheres to schema if provided in generationConfig even during chat.
+    // But startChat doesn't support responseSchema in all SDK versions effectively on the final turn if mixed.
+    // Strategy: Take the chat history and make a final "conversion" call if strictly needed,
+    // OR just trust the model if we pass generationConfig to sendMessage.
+    // Let's try passing the schema to the initial startChat or the final sendMessage? 
+    // The SDK allows generationConfig in startChat.
+
+    // Re-instantiate chat with schema for final output if needed, or simply parse.
+    // Issue: Function calling mode often fights with JSON mode.
+    // Best practice: Let the loop finish. Then ask for the final JSON.
+
+    // Let's optimize: We passed the schema? No, we didn't pass schema to startChat yet.
+    // Let's try to ask for JSON in the final turn.
+
+    // Actually, simple valid JSON enforcement:
+    const text = result.response.text();
+    try {
+        return {
+            data: JSON.parse(text) as T,
+            usage: calculateUsage(model.model, result.response.usageMetadata)
+        };
+    } catch (e) {
+        // Fallback: If JSON parse fails, ask specifically for JSON
+        const finalResult = await withRetry<GenerateContentResult>(() => chat.sendMessage({
+            role: 'user',
+            parts: [{ text: "Strictly output the final report in valid JSON format matching the schema." }]
+        }));
+        return {
+            data: JSON.parse(finalResult.response.text()) as T,
+            usage: calculateUsage(model.model, finalResult.response.usageMetadata)
+        };
+    }
+}
 
 /**
  * Robust retry helper for API instability
@@ -116,6 +385,103 @@ const calculateUsage = (modelName: string, usage: any) => {
 };
 
 /**
+ * Parallel Execution Helper
+ */
+async function runParallel<T>(
+    fn: () => Promise<T>,
+    count: number = 3
+): Promise<{ results: T[], usage: { tokens: number, cost: number } }> {
+    const promises = Array.from({ length: count }, () => fn());
+    const outcomes = await Promise.all(promises);
+
+    return {
+        results: outcomes,
+        usage: outcomes.reduce((acc, o: any) => ({
+            tokens: acc.tokens + (o.usage?.tokens || 0),
+            cost: acc.cost + (o.usage?.cost || 0)
+        }), { tokens: 0, cost: 0 })
+    };
+}
+
+/**
+ * Synthesisers
+ */
+async function synthesiseFundamental(results: any[]): Promise<{ data: any, usage: { tokens: number, cost: number } }> {
+    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 fundamental analysis reports:\n\n${results.map((r, i) => `REPORT ${i + 1}:\n${JSON.stringify(r)}`).join('\n\n')}\n\nUse the 'get_stock_price' tool to verify the correct CURRENT numbers if the reports disagree.`;
+
+    // Synthesis uses FUNCTION TOOLS ONLY to verify data
+    const result = await generateWithTools<any>(model, prompt, FUNDAMENTAL_SYNTHESIS_PROMPT, FUNCTION_TOOLS, FUNDAMENTAL_SCHEMA);
+
+    return {
+        data: result.data,
+        usage: result.usage
+    };
+}
+
+async function synthesiseSevenPowers(results: string[]): Promise<{ text: string, usage: { tokens: number, cost: number } }> {
+    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 strategic analyses:\n\n${results.map((r, i) => `REPORT ${i + 1}:\n${r}`).join('\n\n')}\n\nUse 'get_stock_price' to verify any disputed metrics.`;
+
+    // Synthesis uses FUNCTION TOOLS ONLY
+    // Since 7 Powers output is Markdown, not strict JSON, we handle it slightly manually or use generateWithTools with no schema
+    let chat = model.startChat({
+        systemInstruction: { role: 'system', parts: [{ text: SEVEN_POWERS_SYNTHESIS_PROMPT }] },
+        tools: FUNCTION_TOOLS
+    });
+
+    let result = await withRetry<GenerateContentResult>(() => chat.sendMessage(prompt));
+    let functionCalls = result.response.functionCalls();
+    let loops = 0;
+    while (functionCalls && functionCalls.length > 0 && loops < 5) {
+        loops++;
+        const parts: Part[] = [];
+        for (const call of functionCalls) {
+            const toolResult = await executeFinancialTools(call.name, call.args);
+            parts.push({ functionResponse: { name: call.name, response: { result: toolResult } } });
+        }
+        result = await withRetry<GenerateContentResult>(() => chat.sendMessage(parts));
+        functionCalls = result.response.functionCalls();
+    }
+
+    return {
+        text: result.response.text(),
+        usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
+    };
+}
+
+async function synthesiseTradeDecision(results: TradeDecision[]): Promise<{ data: TradeDecision, usage: { tokens: number, cost: number } }> {
+    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 trade recommendations:\n\n${results.map((r, i) => `REC ${i + 1}:\n${JSON.stringify(r)}`).join('\n\n')}\n\nUse 'get_stock_price' or 'get_portfolio_allocation' to verify data if needed.`;
+
+    // Synthesis uses FUNCTION TOOLS ONLY
+    const result = await generateWithTools<TradeDecision>(model, prompt, TRADE_DECISION_SYNTHESIS_PROMPT, FUNCTION_TOOLS, TRADE_DECISION_SCHEMA);
+
+    return {
+        data: result.data,
+        usage: result.usage
+    };
+}
+
+async function synthesiseComplexityDecision(results: ComplexityDecision[]): Promise<{ data: ComplexityDecision, usage: { tokens: number, cost: number } }> {
+    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 complexity assessments:\n\n${results.map((r, i) => `ASSESSMENT ${i + 1}:\n${JSON.stringify(r)}`).join('\n\n')}`;
+
+    // Complexity synthesis typically needs search for "S-Curve" verification, but we are restricted to separating tools.
+    // The user requested Function Tools only for synthesis to fix the error.
+    // However, Complexity PM heavily relies on "Google Search to verify claims".
+    // We will stick to FUNCTION_TOOLS to comply with the fix, or NO tools if only logic is needed.
+    // Let's use FUNCTION_TOOLS to allow price verification if referenced.
+
+    const result = await generateWithTools<ComplexityDecision>(model, prompt, COMPLEXITY_SYNTHESIS_PROMPT, FUNCTION_TOOLS, COMPLEXITY_DECISION_SCHEMA);
+
+    return {
+        data: result.data,
+        usage: result.usage
+    };
+}
+
+/**
  * Agent 1: Fundamental Analyst
  */
 export const analyzeEquity = async (ticker: string, isTarget: boolean = false): Promise<EquityAnalysis> => {
@@ -124,116 +490,63 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         throw new Error("Gemini API Key is missing. Please set GEMINI_API_KEY in your .env.local");
     }
 
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+    const coreAnalysis = async () => {
+        const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
-    // Load system instruction
-    const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
+        // 1. Pre-fetch Live Data (Code-side)
+        const priceData = await executeFinancialTools('get_stock_price', { ticker });
 
-    const taskPrompt = `Perform a high-fidelity fundamental analysis for strictly: ${ticker}. Use Google Search to get current market data and reports. Output strictly valid JSON.`;
+        const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
+        const taskPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
+Perform a high-fidelity fundamental analysis for strictly: ${ticker}.
 
-    try {
+*** PROVIDED LIVE MARKET DATA (DO NOT SEARCH FOR THIS) ***
+${JSON.stringify(priceData, null, 2)}
+********************************************************
+
+INSTRUCTIONS:
+1. Use the PROVIDED LIVE DATA above for all price, market cap, and PE metrics.
+2. OUTSIDE of these numbers, you MUST use Google Search for 10-K, Revenues, and qualitative research.
+Output strictly valid JSON.`;
+
+        // 2. Use Model -> ONLY SEARCH TOOLS (No collision)
         const result = await withRetry(() => model.generateContent({
             contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        companyName: { type: SchemaType.STRING },
-                        ticker: { type: SchemaType.STRING },
-                        currentPrice: { type: SchemaType.STRING },
-                        rating: { type: SchemaType.STRING },
-                        cagr: { type: SchemaType.STRING },
-                        oneLiner: { type: SchemaType.STRING },
-                        pillars: {
-                            type: SchemaType.OBJECT,
-                            properties: {
-                                moat: { type: SchemaType.STRING },
-                                operatingLeverage: { type: SchemaType.STRING },
-                                organicGrowth: { type: SchemaType.STRING },
-                                capitalLight: { type: SchemaType.STRING },
-                                predictability: { type: SchemaType.STRING },
-                                management: { type: SchemaType.STRING }
-                            },
-                            required: ['moat', 'operatingLeverage', 'organicGrowth', 'capitalLight', 'predictability', 'management']
-                        },
-                        financials: {
-                            type: SchemaType.OBJECT,
-                            properties: {
-                                growth: { type: SchemaType.STRING },
-                                health: { type: SchemaType.STRING },
-                                profitability: { type: SchemaType.STRING }
-                            },
-                            required: ['growth', 'health', 'profitability']
-                        },
-                        valuation: {
-                            type: SchemaType.OBJECT,
-                            properties: {
-                                current: { type: SchemaType.STRING },
-                                bullCase: { type: SchemaType.STRING },
-                                bearCase: { type: SchemaType.STRING },
-                                baseCase: {
-                                    type: SchemaType.OBJECT,
-                                    properties: {
-                                        revenueGrowth: { type: SchemaType.STRING },
-                                        netMargin: { type: SchemaType.STRING },
-                                        exitMultiple: { type: SchemaType.STRING },
-                                        shareCountReduction: { type: SchemaType.STRING },
-                                        futureSharePrice: { type: SchemaType.STRING },
-                                        cagrCalculation: { type: SchemaType.STRING }
-                                    },
-                                    required: ['revenueGrowth', 'netMargin', 'exitMultiple', 'shareCountReduction', 'futureSharePrice', 'cagrCalculation']
-                                }
-                            },
-                            required: ['current', 'bullCase', 'bearCase', 'baseCase']
-                        },
-                        risks: {
-                            type: SchemaType.ARRAY,
-                            items: { type: SchemaType.STRING }
-                        },
-                        conclusion: { type: SchemaType.STRING }
-                    },
-                    required: ['companyName', 'ticker', 'currentPrice', 'rating', 'cagr', 'oneLiner', 'pillars', 'financials', 'valuation', 'risks', 'conclusion']
-                }
-            }
+            tools: SEARCH_TOOLS,
+            generationConfig: { responseMimeType: "application/json", responseSchema: FUNDAMENTAL_SCHEMA as any }
         }));
 
-        const response = result.response;
-        const usage = calculateUsage(ANALYSIS_MODEL, response.usageMetadata);
-        let text = response.text();
+        // Note: For now, we rely on Google Search tool implicit grounding or metadata if needed, 
+        // but since we are not using 'generateWithTools' loop here, we get standard 'generateContent' results.
 
-        // Extract sources if available
-        const sources: { uri: string; title: string }[] = [];
-        const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (chunks) {
-            chunks.forEach((chunk: any) => {
-                if (chunk.web) {
-                    sources.push({ uri: chunk.web.uri, title: chunk.web.title || chunk.web.uri });
-                }
-            });
-        }
+        return {
+            data: JSON.parse(result.response.text()),
+            usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata),
+            sources: []
+        };
+    };
 
-        let data: any = null;
-        let formattedText = "";
-        let cagr = 'N/A';
+    try {
+        // Run 3 Core Analyses in Parallel
+        const { results, usage: parallelUsage } = await runParallel(coreAnalysis, 3);
 
-        try {
-            if (!text || text.trim() === "") {
-                throw new Error("Model returned an empty response.");
-            }
-            // Clean markdown if present (though schema should prevent it)
-            if (text.includes("```json")) {
-                text = text.replace(/```json/g, '').replace(/```/g, '');
-            }
-            data = JSON.parse(text);
-            formattedText = renderAnalysisMarkdown(data);
-            cagr = data.cagr || data.valuation?.baseCase?.cagrCalculation || 'N/A';
-        } catch (e) {
-            console.error("Failed to parse analysis JSON:", e);
-            formattedText = `# Analysis Generation Error\n\nWe encountered an issue parsing the analysis data.\n\n### Raw Data Output:\n\`\`\`json\n${text}\n\`\`\``;
-            cagr = "Error";
-        }
+        // Synthesise
+        const { data: synthesisedData, usage: synthesisUsage } = await synthesiseFundamental(results.map(r => r.data));
+
+        const totalUsage = {
+            tokens: parallelUsage.tokens + synthesisUsage.tokens,
+            cost: parallelUsage.cost + synthesisUsage.cost
+        };
+
+        const formattedText = renderAnalysisMarkdown(synthesisedData);
+        const cagr = synthesisedData.cagr || synthesisedData.valuation?.baseCase?.cagrCalculation || 'N/A';
+        const sources = Array.from(new Set(
+            results
+                .flatMap(r => (r as any).sources || [])
+                .filter(s => s && s.uri)
+                .map(s => JSON.stringify(s))
+        )).map(s => JSON.parse(s));
 
         // Determine sentiment
         let sentiment: 'Bullish' | 'Bearish' | 'Neutral' = 'Neutral';
@@ -242,29 +555,26 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         else if (textLower.includes('**sell**')) sentiment = 'Bearish';
         else if (textLower.includes('**hold**')) sentiment = 'Neutral';
 
-        // Step 2: Strategic Analysis (7 Powers)
-        let sevenPowers = "";
-        try {
-            const spResult = await analyzeSevenPowers(ticker, (data && data.companyName) || ticker);
-            sevenPowers = spResult.text;
-            // Accumulate usage
-            usage.tokens += spResult.usage.tokens;
-            usage.cost += spResult.usage.cost;
-        } catch (e) {
-            console.error("7 Powers analysis failed:", e);
-            sevenPowers = "Failed to generate strategic analysis.";
-        }
+        // Step 2: Strategic Analysis (7 Powers) - Also 3x
+        const spResult = await analyzeSevenPowers(ticker, synthesisedData.companyName || ticker, isTarget);
+
+        totalUsage.tokens += spResult.usage.tokens;
+        totalUsage.cost += spResult.usage.cost;
 
         return {
             ticker,
             summary: formattedText,
             sentiment,
             cagr: cagr.toString().replace('%', '') + '%',
-            sevenPowers,
+            sevenPowers: spResult.text,
             sources,
             timestamp: Date.now(),
             isTarget,
-            usage
+            usage: totalUsage,
+            subRuns: isTarget ? results.map((r, i) => ({
+                summary: renderAnalysisMarkdown(r.data),
+                usage: r.usage
+            })) : undefined
         };
 
     } catch (error) {
@@ -276,25 +586,55 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
 /**
  * Agent 2: Strategic Analyst (Hamilton Helmer / 7 Powers)
  */
-export const analyzeSevenPowers = async (ticker: string, companyName: string): Promise<{ text: string, usage: { tokens: number, cost: number } }> => {
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+export const analyzeSevenPowers = async (ticker: string, companyName: string, isTarget: boolean = false): Promise<{ text: string, usage: { tokens: number, cost: number }, subRuns?: { text: string, usage: { tokens: number, cost: number } }[] }> => {
+    const coreAnalysis = async () => {
+        const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
-    const systemInstruction = HAMILTON_HELMER_PROMPT
-        .replace('{{TICKER}}', ticker)
-        .replace('{{COMPANY_NAME}}', companyName);
+        // 1. Pre-fetch Live Data
+        const priceData = await executeFinancialTools('get_stock_price', { ticker });
 
-    const taskPrompt = `Conduct a forensic strategic analysis of ${companyName} (${ticker}) using the 7 Powers framework. Use Google Search for the specific financial proxies and market data. Output a structured Markdown report.`;
+        const systemInstruction = HAMILTON_HELMER_PROMPT
+            .replace('{{TICKER}}', ticker)
+            .replace('{{COMPANY_NAME}}', companyName);
 
-    try {
+        const taskPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
+Conduct a forensic strategic analysis of ${companyName} (${ticker}) using the 7 Powers framework.
+
+*** PROVIDED LIVE MARKET DATA ***
+${JSON.stringify(priceData, null, 2)}
+*********************************
+
+1. Use the provided market cap data.
+2. Use Google Search to find "Financial Proxies" (Margins, Churn).
+Output a structured Markdown report.`;
+
+        // 2. Use Model -> ONLY SEARCH TOOLS
         const result = await withRetry(() => model.generateContent({
             contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
             systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-            tools: [{ googleSearch: {} } as any]
+            tools: SEARCH_TOOLS
         }));
 
         return {
-            text: result.response.text(),
+            data: result.response.text(),
             usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
+        };
+    };
+
+    try {
+        const { results, usage: parallelUsage } = await runParallel(coreAnalysis, 3);
+        const { text: synthesisedText, usage: synthesisUsage } = await synthesiseSevenPowers(results.map(r => r.data));
+
+        return {
+            text: synthesisedText,
+            usage: {
+                tokens: parallelUsage.tokens + synthesisUsage.tokens,
+                cost: parallelUsage.cost + synthesisUsage.cost
+            },
+            subRuns: isTarget ? results.map((r, i) => ({
+                text: r.data,
+                usage: r.usage
+            })) : undefined
         };
     } catch (error) {
         console.error("7 Powers Analysis Failed:", error);
@@ -313,55 +653,39 @@ export const makeTradeDecision = async (
     portfolioScan: EquityAnalysis[],
     currentPortfolio: PortfolioItem[]
 ): Promise<TradeDecision> => {
-
-    const model = genAI.getGenerativeModel({
-        model: DECISION_MODEL,
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: SchemaType.OBJECT,
-                properties: {
-                    action: {
-                        type: SchemaType.STRING,
-                        description: 'BUY, SELL, TRIM, or HOLD',
-                        enum: ['BUY', 'SELL', 'TRIM', 'HOLD'],
-                        format: 'enum'
-                    },
-                    ticker: { type: SchemaType.STRING, description: 'The ticker being acted upon' },
-                    amount: { type: SchemaType.NUMBER, description: 'Share quantity or allocation percentage change' },
-                    rationale: { type: SchemaType.STRING, description: 'Detailed PM reasoning' },
-                    fundingSource: { type: SchemaType.STRING, description: 'Source of funds' },
-                    portfolioImpact: { type: SchemaType.STRING, description: 'Impact on portfolio quality/concentration' }
-                },
-                required: ['action', 'ticker', 'amount', 'rationale', 'fundingSource', 'portfolioImpact']
+    const coreDecision = async () => {
+        const model = genAI.getGenerativeModel({
+            model: DECISION_MODEL,
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: TRADE_DECISION_SCHEMA as any
             }
-        }
-    }, { apiVersion: 'v1beta' });
+        }, { apiVersion: 'v1beta' });
 
-    // Prepare context
-    const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
-    const portfolioContext = currentPortfolio.map((item) => {
-        const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-        const analysis = portfolioScan.find(a => a.ticker === item.symbol);
-        return `### HOLDING: ${item.name} (${item.symbol})\nShares: ${item.shares}\nValue: ${item.value.toLocaleString()} USD (${allocation}%)\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
-    }).join("\n\n---\n\n");
+        // 1. Pre-fetch Portfolio Allocation
+        const allocationData = await executeFinancialTools('get_portfolio_allocation', {}, currentPortfolio);
 
-    const systemInstruction = PORTFOLIO_MANAGER_PROMPT;
+        // Prepare context
+        const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
+        const portfolioContext = currentPortfolio.map((item) => {
+            const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
+            const analysis = portfolioScan.find(a => a.ticker === item.symbol);
+            return `### HOLDING: ${item.name} (${item.symbol})\nShares: ${item.shares}\nValue: ${item.value.toLocaleString()} USD (${allocation}%)\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
+        }).join("\n\n---\n\n");
 
-    // Check if systemInstruction loaded (should be fine now)
-    if (!systemInstruction) {
-        throw new Error("Portfolio Manager prompt is missing.");
-    }
+        const existingHolding = currentPortfolio.find(p => p.symbol === targetAnalysis.ticker);
+        const existingHoldingAllocation = existingHolding && totalPortfolioValue > 0 ? ((existingHolding.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
+        const existingHoldingContext = existingHolding
+            ? `\n*** ATTENTION: ${targetAnalysis.ticker} IS ALREADY IN THE PORTFOLIO ***\nCurrent Holding: ${existingHolding.shares} shares. Value: ${existingHolding.value.toLocaleString()} USD (${existingHoldingAllocation}%).\nEvaluate if this position should be INCREASED, DECREASED, or MAINTAINED.`
+            : "";
 
-    // Check if target is in portfolio
-    const existingHolding = currentPortfolio.find(p => p.symbol === targetAnalysis.ticker);
-    const existingHoldingAllocation = existingHolding && totalPortfolioValue > 0 ? ((existingHolding.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-    const existingHoldingContext = existingHolding
-        ? `\n*** ATTENTION: ${targetAnalysis.ticker} IS ALREADY IN THE PORTFOLIO ***\nCurrent Holding: ${existingHolding.shares} shares. Value: ${existingHolding.value.toLocaleString()} USD (${existingHoldingAllocation}%).\nEvaluate if this position should be INCREASED, DECREASED, or MAINTAINED.`
-        : "";
-
-    const userPrompt = `STRATEGIC DECISION SESSION: ${targetAnalysis.ticker}
+        const userPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
+STRATEGIC DECISION SESSION: ${targetAnalysis.ticker}
 ${existingHoldingContext}
+
+*** PROVIDED LIVE PORTFOLIO STATUS ***
+${JSON.stringify(allocationData, null, 2)}
+**************************************
 
 TARGET RESEARCH REPORTS:
 
@@ -376,23 +700,39 @@ FULL PORTFOLIO CONTEXT (${currentPortfolio.length} Holdings):
 ${portfolioContext}
 
 FINAL TASK:
-Based on the fundamental and strategic reports above, decide if ${targetAnalysis.ticker} earns a spot in the fund.
-Analyze every portfolio company's quality and competitive durability (powers) before making the swap.`;
+Based on the fundamental reports and the PROVIDED allocation data above, decide if ${targetAnalysis.ticker} earns a spot in the fund.
+Analyze every portfolio company's quality/durability before making the swap.`;
 
-    try {
+        // 2. Use Model -> ONLY SEARCH TOOLS (No collision)
         const result = await withRetry(() => model.generateContent({
             contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-            systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] }
+            systemInstruction: { role: 'system', parts: [{ text: PORTFOLIO_MANAGER_PROMPT }] },
+            tools: SEARCH_TOOLS,
+            generationConfig: { responseMimeType: "application/json", responseSchema: TRADE_DECISION_SCHEMA as any }
         }));
 
-        const usage = calculateUsage(DECISION_MODEL, result.response.usageMetadata);
-        const text = result.response.text();
-        if (!text || text.trim() === "") {
-            throw new Error("Model returned an empty response.");
-        }
-        const data = JSON.parse(text) as TradeDecision;
-        data.usage = usage;
-        return data;
+        return {
+            data: JSON.parse(result.response.text()),
+            usage: calculateUsage(DECISION_MODEL, result.response.usageMetadata)
+        };
+    };
+
+    try {
+        const { results, usage: parallelUsage } = await runParallel(coreDecision, 3);
+        const { data: synthesisedDecision, usage: synthesisUsage } = await synthesiseTradeDecision(results.map(r => r.data));
+
+        const decision = synthesisedDecision;
+        decision.usage = {
+            tokens: parallelUsage.tokens + synthesisUsage.tokens,
+            cost: parallelUsage.cost + synthesisUsage.cost
+        };
+        decision.subRuns = results.map(r => ({
+            action: r.data.action,
+            rationale: r.data.rationale,
+            usage: r.usage
+        }));
+
+        return decision;
 
     } catch (error) {
         console.error("Gemini PM Decision Failed:", error);
@@ -408,63 +748,38 @@ export const makeComplexityDecision = async (
     portfolioScan: EquityAnalysis[],
     currentPortfolio: PortfolioItem[]
 ): Promise<ComplexityDecision> => {
+    const coreDecision = async () => {
+        const model = genAI.getGenerativeModel({
+            model: DECISION_MODEL,
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: COMPLEXITY_DECISION_SCHEMA as any
+            },
+        }, { apiVersion: 'v1beta' });
 
-    const model = genAI.getGenerativeModel({
-        model: DECISION_MODEL,
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: SchemaType.OBJECT,
-                properties: {
-                    analysis: {
-                        type: SchemaType.OBJECT,
-                        properties: {
-                            classification: { type: SchemaType.STRING },
-                            s_curve_status: { type: SchemaType.STRING },
-                            nzs_score: { type: SchemaType.STRING },
-                            narrow_prediction_risk: { type: SchemaType.STRING }
-                        },
-                        required: ['classification', 's_curve_status', 'nzs_score', 'narrow_prediction_risk']
-                    },
-                    decision: {
-                        type: SchemaType.STRING,
-                        enum: ['BUY', 'SELL', 'HOLD'],
-                        format: 'enum'
-                    },
-                    action_details: {
-                        type: SchemaType.OBJECT,
-                        properties: {
-                            target_allocation: { type: SchemaType.STRING },
-                            weighting_assessment: { type: SchemaType.STRING },
-                            funding_source: { type: SchemaType.STRING },
-                            reasoning: { type: SchemaType.STRING }
-                        },
-                        required: ['target_allocation', 'weighting_assessment', 'funding_source', 'reasoning']
-                    }
-                },
-                required: ['analysis', 'decision', 'action_details']
-            }
-        },
-    }, { apiVersion: 'v1beta' });
+        // 1. Pre-fetch Portfolio Allocation
+        const allocationData = await executeFinancialTools('get_portfolio_allocation', {}, currentPortfolio);
 
-    const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
-    const portfolioContext = currentPortfolio.map((item) => {
-        const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-        const analysis = portfolioScan.find(a => a.ticker === item.symbol);
-        return `### HOLDING: ${item.name} (${item.symbol})\nShares: ${item.shares}\nValue: ${item.value.toLocaleString()} USD (${allocation}%)\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
-    }).join("\n\n---\n\n");
+        const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
+        const portfolioContext = currentPortfolio.map((item) => {
+            const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
+            const analysis = portfolioScan.find(a => a.ticker === item.symbol);
+            return `### HOLDING: ${item.name} (${item.symbol})\nShares: ${item.shares}\nValue: ${item.value.toLocaleString()} USD (${allocation}%)\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
+        }).join("\n\n---\n\n");
 
-    const systemInstruction = COMPLEXITY_PM_PROMPT;
+        const existingHolding = currentPortfolio.find(p => p.symbol === targetAnalysis.ticker);
+        const existingHoldingAllocation = existingHolding && totalPortfolioValue > 0 ? ((existingHolding.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
+        const existingHoldingContext = existingHolding
+            ? `\n*** ATTENTION: ${targetAnalysis.ticker} IS ALREADY IN THE PORTFOLIO ***\nCurrent Holding: ${existingHolding.shares} shares. Value: ${existingHolding.value.toLocaleString()} USD (${existingHoldingAllocation}%).\nEvaluate if this position should be INCREASED, DECREASED, or MAINTAINED based on its classification.`
+            : "";
 
-    // Check if target is in portfolio
-    const existingHolding = currentPortfolio.find(p => p.symbol === targetAnalysis.ticker);
-    const existingHoldingAllocation = existingHolding && totalPortfolioValue > 0 ? ((existingHolding.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-    const existingHoldingContext = existingHolding
-        ? `\n*** ATTENTION: ${targetAnalysis.ticker} IS ALREADY IN THE PORTFOLIO ***\nCurrent Holding: ${existingHolding.shares} shares. Value: ${existingHolding.value.toLocaleString()} USD (${existingHoldingAllocation}%).\nEvaluate if this position should be INCREASED, DECREASED, or MAINTAINED based on its classification.`
-        : "";
-
-    const userPrompt = `COMPLEXITY INVESTING DECISION SESSION: ${targetAnalysis.ticker}
+        const userPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
+COMPLEXITY INVESTING DECISION SESSION: ${targetAnalysis.ticker}
 ${existingHoldingContext}
+
+*** PROVIDED LIVE PORTFOLIO STATUS ***
+${JSON.stringify(allocationData, null, 2)}
+**************************************
 
 TARGET RESEARCH REPORTS:
 ${targetAnalysis.summary}
@@ -479,20 +794,37 @@ ${portfolioContext}
 FINAL TASK:
 Apply the Complexity Investing framework to decide on ${targetAnalysis.ticker}. Return the required JSON object.`;
 
-    try {
+        // 2. Use Model -> ONLY SEARCH TOOLS
         const result = await withRetry(() => model.generateContent({
             contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-            systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] }
+            systemInstruction: { role: 'system', parts: [{ text: COMPLEXITY_PM_PROMPT }] },
+            tools: SEARCH_TOOLS,
+            generationConfig: { responseMimeType: "application/json", responseSchema: COMPLEXITY_DECISION_SCHEMA as any }
         }));
 
-        const usage = calculateUsage(DECISION_MODEL, result.response.usageMetadata);
-        const text = result.response.text();
-        if (!text || text.trim() === "") {
-            throw new Error("Model returned an empty response.");
-        }
-        const data = JSON.parse(text) as ComplexityDecision;
-        data.usage = usage;
-        return data;
+        return {
+            data: JSON.parse(result.response.text()),
+            usage: calculateUsage(DECISION_MODEL, result.response.usageMetadata)
+        };
+    };
+
+    try {
+        const { results, usage: parallelUsage } = await runParallel(coreDecision, 3);
+        const { data: synthesisedDecision, usage: synthesisUsage } = await synthesiseComplexityDecision(results.map(r => r.data));
+
+        const decision = synthesisedDecision;
+        decision.usage = {
+            tokens: parallelUsage.tokens + synthesisUsage.tokens,
+            cost: parallelUsage.cost + synthesisUsage.cost
+        };
+        decision.subRuns = results.map(r => ({
+            decision: r.data.decision,
+            reasoning: r.data.action_details.reasoning,
+            usage: r.usage
+        }));
+
+        return decision;
+
     } catch (error) {
         console.error("Gemini Complexity PM Decision Failed:", error);
         throw new Error("Complexity Portfolio Manager failed to make a decision.");
@@ -503,60 +835,60 @@ Apply the Complexity Investing framework to decide on ${targetAnalysis.ticker}. 
  * Formatter Script: Deterministic Markdown Generation
  */
 const renderAnalysisMarkdown = (data: any): string => {
-    return `# ${data.companyName} (${data.ticker})
+    return `# ${data.companyName || 'Unknown Company'} (${data.ticker || 'N/A'})
 ## Executive Summary
-**Current Price:** ${data.currentPrice}
-**Rating:** ${data.rating}
-**Expected 10-Year CAGR:** ${data.cagr}%
+**Current Price:** ${data.currentPrice || 'N/A'}
+**Rating:** ${data.rating || 'N/A'}
+**Expected 10-Year CAGR:** ${data.cagr || 'N/A'}%
 
-**Thesis:** ${data.oneLiner}
+**Thesis:** ${data.oneLiner || 'N/A'}
 
 ---
 
 ## Business Quality & Moat (6 Pillars)
-* **Wide Moat:** ${data.pillars.moat}
-* **Operating Leverage:** ${data.pillars.operatingLeverage}
-* **Organic Growth:** ${data.pillars.organicGrowth}
-* **Capital Light:** ${data.pillars.capitalLight}
-* **Predictability:** ${data.pillars.predictability}
-* **Smart Management:** ${data.pillars.management}
+* **Wide Moat:** ${data.pillars?.moat || 'N/A'}
+* **Operating Leverage:** ${data.pillars?.operatingLeverage || 'N/A'}
+* **Organic Growth:** ${data.pillars?.organicGrowth || 'N/A'}
+* **Capital Light:** ${data.pillars?.capitalLight || 'N/A'}
+* **Predictability:** ${data.pillars?.predictability || 'N/A'}
+* **Smart Management:** ${data.pillars?.management || 'N/A'}
 
 ---
 
 ## Financial Deep Dive
-* **Growth:** ${data.financials.growth}
-* **Health:** ${data.financials.health}
-* **Profitability:** ${data.financials.profitability}
+* **Growth:** ${data.financials?.growth || 'N/A'}
+* **Health:** ${data.financials?.health || 'N/A'}
+* **Profitability:** ${data.financials?.profitability || 'N/A'}
 
 ---
 
 ## Valuation & Return Scenarios
 **Current Valuation:**
-${data.valuation.current}
+${data.valuation?.current || 'N/A'}
 
 ### Scenarios
-* **Bull Case:** ${data.valuation.bullCase}
-* **Bear Case:** ${data.valuation.bearCase}
+* **Bull Case:** ${data.valuation?.bullCase || 'N/A'}
+* **Bear Case:** ${data.valuation?.bearCase || 'N/A'}
 
 ### Base Case Return Model (10-Year View)
-* **Assumed Revenue Growth:** ${data.valuation.baseCase.revenueGrowth}
-* **Assumed Net Margin:** ${data.valuation.baseCase.netMargin}
-* **Assumed Exit Multiple:** ${data.valuation.baseCase.exitMultiple}
-* **Share Count Reduction:** ${data.valuation.baseCase.shareCountReduction}
-* **Resulting Share Price:** ${data.valuation.baseCase.futureSharePrice}
-* **Expected CAGR:** ${data.valuation.baseCase.cagrCalculation}
+* **Assumed Revenue Growth:** ${data.valuation?.baseCase?.revenueGrowth || 'N/A'}
+* **Assumed Net Margin:** ${data.valuation?.baseCase?.netMargin || 'N/A'}
+* **Assumed Exit Multiple:** ${data.valuation?.baseCase?.exitMultiple || 'N/A'}
+* **Share Count Reduction:** ${data.valuation?.baseCase?.shareCountReduction || 'N/A'}
+* **Resulting Share Price:** ${data.valuation?.baseCase?.futureSharePrice || 'N/A'}
+* **Expected CAGR:** ${data.valuation?.baseCase?.cagrCalculation || 'N/A'}
 
 ---
 
 ## Key Risks
-* ${data.risks[0]}
-* ${data.risks[1]}
-* ${data.risks[2]}
+* ${data.risks?.[0] || 'N/A'}
+* ${data.risks?.[1] || 'N/A'}
+* ${data.risks?.[2] || 'N/A'}
 
 ---
 
 ## Conclusion
-${data.conclusion}
+${data.conclusion || 'N/A'}
 `;
 }
 
