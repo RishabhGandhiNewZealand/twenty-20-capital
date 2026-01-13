@@ -255,7 +255,13 @@ SELL CRITERIA:
 
 YOUR MISSION:
 Review the Target Analysis vs. the Current Portfolio Analysis. 
-If 'BUY' is selected for the Target, you must decide which existing company to SELL or TRIM to fund it, OR use 'New Capital' if the portfolio size allows (under 12 companies). 
+
+FUNDING LOGIC (New Capital vs. Selling):
+1. **Upgrade Quality (SELL/TRIM):** If the Target is significantly higher quality than your weakest holding, PREFER selling/trimming the weak link to fund the upgrade. This creates a "Survival of the Fittest" portfolio.
+2. **Deployment (NEW CAPITAL):** If the Target is high quality AND the current portfolio positions are also high quality (no obvious weak links), PREFER "New Capital" to increase overall market exposure.
+3. **Concentration Check:** If you are at max capacity (15 stocks), you MUST SELL/TRIM to buy. If under capacity (<12), prefer New Capital.
+
+If 'BUY' is selected, output the specific funding source based on this logic.
 If the Target doesn't beat the weakest current holdings in quality, stick with HOLD.
 
 Return ONLY a JSON object.`;
@@ -297,11 +303,21 @@ Classify the Target Company into one of these buckets:
 2.  **Pure Optionality (Tail):** Binary outcome, huge TAM, early S-Curve. -> *Action: Small speculative Buy (if Tail room exists).*
 3.  **The Middle / Value Trap:** Concave S-Curve, reliance on "moats" (which are vulnerabilities), or low NZS. -> *Action: HARD PASS / SELL.*
 
-**Step 2: Portfolio Construction (The Swap)**
+**Step 2: Portfolio Construction (The Swap or Rebalance)**
 Compare the Target to the Current Portfolio:
-* **To Buy Head:** You must Sell/Trim a "Middle" company or a "Tail" position that has become too large without gaining Resilience.
-* **To Buy Tail:** You must use new capital or Sell a failed Tail position.
-* **The "Ant" Principle:** If the Target does not increase the portfolio's collective NZS or Adaptability, DO NOT TRADE.
+*   **If Target is already in Portfolio:** Evaluate its current weight.
+    *   **Is it a "Head" company?** Should be concentrated (high conviction). If weight is small, suggest ADDING.
+    *   **Is it a "Tail" company?** Should be small (<1%). If weight is large, suggest TRIMMING (harvesting optionality).
+*   **To Buy Head:** You must Sell/Trim a "Middle" company or a "Tail" position that has become too large without gaining Resilience, OR use "New Capital".
+*   **To Buy Tail:** You must use "New Capital" (preferred) or Sell a failed Tail position.
+*   **The "Ant" Principle:** If the Target does not increase the portfolio's collective NZS or Adaptability, DO NOT TRADE.
+
+**Funding Logic (Crucial):**
+*   **New Capital:** PREFERRED for "Tail" bets (small speculative amounts) to avoid disrupting the "Head" (core compounding). Also used for "Head" bets if no "Middle" exists to kill.
+*   **Exception for Tail Bets:** You may TRIM a "Head" holding to fund a "Tail" bet ONLY if that Head holding is:
+    1.  **Super Stretched Valuation:** >30 Price/Sales or >100 Price/Earnings (unless heavily justified by growth).
+    2.  **Overweight:** >15% of total portfolio.
+*   **Kill The Middle (Sell to Fund):** If a "Middle" (mediocre) company exists, ALWAYS sell it to fund a "Head" investment. This is the primary mechanism for evolving the portfolio.
 
 ### IV. OUTPUT FORMAT
 Return ONLY a JSON object.
@@ -316,6 +332,7 @@ Return ONLY a JSON object.
   "decision": "BUY | SELL | HOLD",
   "action_details": {
     "target_allocation": "Head (Concentrated) or Tail (<1%)",
+    "weighting_assessment": "Correctly Weighted | Underweight | Overweight | N/A (New Position)",
     "funding_source": "Name of asset to SELL/TRIM or 'New Capital'",
     "reasoning": "Why this swap improves Resilience or Optionality."
   }

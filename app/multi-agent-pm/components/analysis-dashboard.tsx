@@ -43,6 +43,7 @@ interface Props {
     tradeDecision: { standard: TradeDecision, complexity: ComplexityDecision } | null;
     tickerStatuses: TickerStatus[];
     portfolio: PortfolioItem[];
+    totalCost: number;
 }
 
 const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => {
@@ -215,7 +216,7 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
     );
 };
 
-const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio }) => {
+const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio, totalCost }) => {
 
     const sortedAnalyses = useMemo(() => {
         // 1. Separate Target(s)
@@ -244,9 +245,18 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                         <Activity size={14} className="text-emerald-400" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Agent Command Center</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className={cn("h-2 w-2 rounded-full", status === AgentStatus.IDLE ? "bg-slate-500" : status === AgentStatus.ERROR ? "bg-red-500" : "bg-emerald-500 animate-pulse")}></span>
-                        <span className="text-[10px] uppercase font-mono text-slate-500">{status}</span>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Coins size={12} className="text-yellow-400" />
+                            <span className="text-[10px] font-bold text-white uppercase tracking-widest leading-none">
+                                Total Cost: <span className="text-emerald-400">${totalCost.toFixed(4)}</span>
+                            </span>
+                        </div>
+                        <div className="h-4 w-[1px] bg-slate-700 mx-1"></div>
+                        <div className="flex items-center gap-2">
+                            <span className={cn("h-2 w-2 rounded-full", status === AgentStatus.IDLE ? "bg-slate-500" : status === AgentStatus.ERROR ? "bg-red-500" : "bg-emerald-500 animate-pulse")}></span>
+                            <span className="text-[10px] uppercase font-mono text-slate-500">{status}</span>
+                        </div>
                     </div>
                 </div>
                 <ScrollArea className="h-40 bg-black/40 p-4 font-mono text-[11px]">
@@ -301,7 +311,15 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                     )}></div>
                                 </div>
                                 <span className="text-[8px] font-black uppercase text-slate-500 whitespace-nowrap">
-                                    {ts.state === 'RESEARCHING' ? 'Analysing' : ts.state.toLowerCase()}
+                                    {ts.state === 'COMPLETED' ? (
+                                        <span className="text-emerald-400">
+                                            ${(analyses.find(a => a.ticker === ts.ticker)?.usage?.cost || 0).toFixed(4)}
+                                        </span>
+                                    ) : ts.state === 'RESEARCHING' ? (
+                                        'Analysing'
+                                    ) : (
+                                        ts.state.toLowerCase()
+                                    )}
                                 </span>
                             </div>
                         </div>
@@ -350,8 +368,11 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                 <div className="space-y-8">
                                     {/* Standard PM */}
                                     <div className="space-y-6">
-                                        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                                             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-mono text-[9px] uppercase tracking-widest">Standard Manager</Badge>
+                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                Cost: <span className="text-emerald-400">${(tradeDecision.standard.usage?.cost || 0).toFixed(4)}</span>
+                                            </span>
                                         </div>
 
                                         <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-emerald-500/20 text-center shadow-inner">
@@ -383,8 +404,11 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
 
                                     {/* Complexity PM */}
                                     <div className="space-y-6 border-t-2 border-dashed border-slate-800 pt-8">
-                                        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                                             <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 font-mono text-[9px] uppercase tracking-widest">Complexity Manager</Badge>
+                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                Cost: <span className="text-purple-400">${(tradeDecision.complexity.usage?.cost || 0).toFixed(4)}</span>
+                                            </span>
                                         </div>
 
                                         <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-purple-500/20 text-center shadow-inner">
