@@ -3,6 +3,7 @@ import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
 import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT, HAMILTON_HELMER_PROMPT, COMPLEXITY_PM_PROMPT, FUNDAMENTAL_SYNTHESIS_PROMPT, SEVEN_POWERS_SYNTHESIS_PROMPT, TRADE_DECISION_SYNTHESIS_PROMPT, COMPLEXITY_SYNTHESIS_PROMPT } from './agents/prompts';
+import cacheManager, { CacheKey } from './cache-manager';
 
 // Types definition (ported from source)
 export interface PortfolioItem {
@@ -490,6 +491,23 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         throw new Error("Gemini API Key is missing. Please set GEMINI_API_KEY in your .env.local");
     }
 
+    // 0. CHECK CACHE (24 Hours)
+    // We strictly cache by ticker.
+    const cacheKey = `${CacheKey.EQUITY_ANALYSIS}:${ticker}`;
+    const cached = await cacheManager.get<EquityAnalysis>(cacheKey);
+
+    if (cached) {
+        console.log(`[Cache] Hit for ${ticker} (v${cached.version})`);
+
+        // Zero out cost so the UI doesn't add stale costs to the session total
+        const zeroUsage = { tokens: 0, cost: 0 };
+        return {
+            ...cached.data,
+            usage: zeroUsage,
+            subRuns: cached.data.subRuns?.map(r => ({ ...r, usage: zeroUsage }))
+        };
+    }
+
     const coreAnalysis = async () => {
         const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
@@ -561,7 +579,7 @@ Output strictly valid JSON.`;
         totalUsage.tokens += spResult.usage.tokens;
         totalUsage.cost += spResult.usage.cost;
 
-        return {
+        const finalAnalysis: EquityAnalysis = {
             ticker,
             summary: formattedText,
             sentiment,
@@ -576,6 +594,11 @@ Output strictly valid JSON.`;
                 usage: r.usage
             })) : undefined
         };
+
+        // CACHE RESULT (24 Hours = 86400 seconds)
+        await cacheManager.set(cacheKey, finalAnalysis, 86400);
+
+        return finalAnalysis;
 
     } catch (error) {
         console.error("Gemini Analysis Failed:", error);
