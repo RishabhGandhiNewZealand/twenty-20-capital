@@ -31,7 +31,8 @@ export enum CacheKey {
   PORTFOLIO_CURRENT = 'portfolio:current',
   PORTFOLIO_COMPOSITION = 'portfolio:composition',
   TRADE_DATA = 'trade:data',
-  STOCK_PRICES = 'stock:prices'
+  STOCK_PRICES = 'stock:prices',
+  EQUITY_ANALYSIS = 'equity:analysis'
 }
 
 interface CacheOptions {
@@ -56,7 +57,7 @@ class CacheManager extends EventEmitter {
 
   constructor(options: CacheOptions = {}) {
     super()
-    
+
     this.cache = new NodeCache({
       stdTTL: options.ttl || CACHE_TTL_SECONDS,
       checkperiod: CHECK_PERIOD_SECONDS,
@@ -70,7 +71,7 @@ class CacheManager extends EventEmitter {
 
     // Set up cache event listeners
     this.setupEventListeners()
-    
+
     logger.info('Cache Manager initialized', {
       ttl: options.ttl || CACHE_TTL_SECONDS,
       checkPeriod: CHECK_PERIOD_SECONDS
@@ -82,7 +83,7 @@ class CacheManager extends EventEmitter {
     this.cache.on('expired', (key: string, value: any) => {
       logger.info(`Cache key expired: ${key}`)
       this.emit(CacheEvent.CACHE_EXPIRED, { key, value })
-      
+
       // Trigger async refresh if callback is registered
       if (this.refreshCallbacks.has(key)) {
         this.refreshCacheAsync(key)
@@ -108,17 +109,17 @@ class CacheManager extends EventEmitter {
     try {
       const versionedKey = this.getVersionedKey(key)
       const entry = this.cache.get<CacheEntry<T>>(versionedKey)
-      
+
       if (entry) {
         // Update access metadata
         entry.lastAccessed = new Date()
         entry.accessCount++
         this.cache.set(versionedKey, entry)
-        
+
         logger.debug(`Cache hit for key: ${key} (v${entry.version})`)
         return entry
       }
-      
+
       logger.debug(`Cache miss for key: ${key}`)
       return undefined
     } catch (error) {
@@ -134,7 +135,7 @@ class CacheManager extends EventEmitter {
     try {
       const version = this.incrementVersion(key)
       const versionedKey = this.getVersionedKey(key)
-      
+
       const entry: CacheEntry<T> = {
         data,
         version,
@@ -144,12 +145,12 @@ class CacheManager extends EventEmitter {
       }
 
       const success = this.cache.set(versionedKey, entry, ttl || CACHE_TTL_SECONDS)
-      
+
       if (success) {
         logger.info(`Cache set for key: ${key} (v${version}), TTL: ${ttl || CACHE_TTL_SECONDS}s`)
         this.emit(CacheEvent.CACHE_REFRESHED, { key, version })
       }
-      
+
       return success
     } catch (error) {
       logger.error(`Error setting cache key ${key}:`, error)
@@ -162,14 +163,14 @@ class CacheManager extends EventEmitter {
    */
   async bust(key: string | string[]): Promise<void> {
     const keys = Array.isArray(key) ? key : [key]
-    
+
     for (const k of keys) {
       const oldVersion = this.keyVersions.get(k) || 0
       const newVersion = this.incrementVersion(k)
-      
+
       logger.info(`Cache busted for key: ${k} (v${oldVersion} -> v${newVersion})`)
       this.emit(CacheEvent.CACHE_BUSTED, { key: k, oldVersion, newVersion })
-      
+
       // Trigger async refresh if callback is registered
       if (this.refreshCallbacks.has(k)) {
         await this.refreshCacheAsync(k)
@@ -202,19 +203,19 @@ class CacheManager extends EventEmitter {
     }
 
     this.refreshInProgress.add(key)
-    
+
     try {
       logger.info(`Starting async cache refresh for key: ${key}`)
-      
+
       // Execute refresh in background
       setImmediate(async () => {
         try {
           const startTime = Date.now()
           const data = await callback()
           const duration = Date.now() - startTime
-          
+
           await this.set(key, data)
-          
+
           logger.info(`Cache refreshed for key: ${key} in ${duration}ms`)
         } catch (error) {
           logger.error(`Error refreshing cache for key ${key}:`, error)
@@ -245,10 +246,10 @@ class CacheManager extends EventEmitter {
     // Fetch fresh data
     logger.info(`Fetching fresh data for key: ${key}`)
     const data = await fetchCallback()
-    
+
     // Store in cache
     await this.set(key, data, ttl)
-    
+
     return data
   }
 
@@ -257,7 +258,7 @@ class CacheManager extends EventEmitter {
    */
   async invalidateOnTradeUpdate(): Promise<void> {
     logger.info('Invalidating cache due to trade update')
-    
+
     // Bust all portfolio-related caches
     await this.bust([
       CacheKey.PORTFOLIO_HISTORY,
@@ -265,7 +266,7 @@ class CacheManager extends EventEmitter {
       CacheKey.PORTFOLIO_COMPOSITION,
       CacheKey.TRADE_DATA
     ])
-    
+
     this.emit(CacheEvent.TRADE_UPDATED)
   }
 
@@ -284,7 +285,7 @@ class CacheManager extends EventEmitter {
       refreshInProgress: Array.from(this.refreshInProgress),
       ttl: CACHE_TTL_SECONDS
     }
-    
+
     return stats
   }
 
