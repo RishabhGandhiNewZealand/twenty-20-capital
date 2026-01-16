@@ -321,10 +321,9 @@ async function generateWithTools<T>(
         };
     } catch (e) {
         // Fallback: If JSON parse fails, ask specifically for JSON
-        const finalResult = await withRetry<GenerateContentResult>(() => chat.sendMessage({
-            role: 'user',
-            parts: [{ text: "Strictly output the final report in valid JSON format matching the schema." }]
-        }));
+        const finalResult = await withRetry<GenerateContentResult>(() => chat.sendMessage(
+            "Strictly output the final report in valid JSON format matching the schema."
+        ));
         return {
             data: JSON.parse(finalResult.response.text()) as T,
             usage: calculateUsage(model.model, finalResult.response.usageMetadata)
@@ -445,8 +444,27 @@ async function synthesiseSevenPowers(results: string[]): Promise<{ text: string,
         functionCalls = result.response.functionCalls();
     }
 
+    let responseText = "";
+    try {
+        responseText = result.response.text();
+    } catch (e: any) {
+        console.error("Gemini 7P Synthesis text() failed:", e);
+        // Fallback to concatenating the inputs if synthesis fails
+        return {
+            text: results.join("\n\n---\n\n") + "\n\n*(Synthesis failed, showing raw reports)*",
+            usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
+        };
+    }
+
+    if (!responseText) {
+        return {
+            text: results.join("\n\n---\n\n") + "\n\n*(Synthesis returned empty, showing raw reports)*",
+            usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
+        };
+    }
+
     return {
-        text: result.response.text(),
+        text: responseText,
         usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
     };
 }
@@ -499,6 +517,27 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
     if (cached) {
         console.log(`[Cache] Hit for ${ticker} (v${cached.version})`);
 
+        // Check if 7 Powers is missing or empty (backfill for old cache entries)
+        if (!cached.data.sevenPowers || cached.data.sevenPowers.trim().length === 0) {
+            console.log(`[Cache] Backfilling 7 Powers for ${ticker}...`);
+            const spResult = await analyzeSevenPowers(ticker, ticker, isTarget);
+
+            if (spResult.text) {
+                console.log(`[Cache] Backfill successful for ${ticker}. Length: ${spResult.text.length}`);
+                cached.data.sevenPowers = spResult.text;
+
+                // Update cache with new complete record
+                await cacheManager.set(cacheKey, cached.data, 86400);
+
+                return {
+                    ...cached.data,
+                    usage: spResult.usage, // Charge for the backfill run
+                };
+            } else {
+                console.warn(`[Cache] Backfill failed (empty result) for ${ticker}`);
+            }
+        }
+
         // Zero out cost so the UI doesn't add stale costs to the session total
         const zeroUsage = { tokens: 0, cost: 0 };
         return {
@@ -538,10 +577,41 @@ Output strictly valid JSON.`;
         // Note: For now, we rely on Google Search tool implicit grounding or metadata if needed, 
         // but since we are not using 'generateWithTools' loop here, we get standard 'generateContent' results.
 
+
+        let responseText = "";
+        try {
+            responseText = result.response.text();
+        } catch (e: any) {
+            console.error("Gemini text() retrieval failed:", e);
+            console.log("Full Response:", JSON.stringify(result.response, null, 2));
+            throw new Error(`Gemini response error: ${e.message}`);
+        }
+
+        if (!responseText) {
+            console.error("Gemini returned empty text. Full Response:", JSON.stringify(result.response, null, 2));
+            throw new Error("Gemini returned empty text response.");
+        }
+
+        let parsedData;
+        try {
+            parsedData = JSON.parse(responseText);
+        } catch (e: any) {
+            console.error("JSON Parse Error:", e);
+            console.log("Raw Response Text:", responseText);
+
+            // Simple cleanup fallback if md blocks are present despite JSON mode
+            const cleanText = responseText.replace(/```json\n?|\n?```/g, '').trim();
+            try {
+                parsedData = JSON.parse(cleanText);
+            } catch (e2) {
+                throw new Error(`Failed to parse Gemini response as JSON: ${e.message}`);
+            }
+        }
+
         return {
-            data: JSON.parse(result.response.text()),
+            data: parsedData,
             usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata),
-            sources: []
+            sources: [] // Sources handling might need update if we want to extract from groundingMetadata
         };
     };
 
@@ -574,7 +644,9 @@ Output strictly valid JSON.`;
         else if (textLower.includes('**hold**')) sentiment = 'Neutral';
 
         // Step 2: Strategic Analysis (7 Powers) - Also 3x
-        const spResult = await analyzeSevenPowers(ticker, synthesisedData.companyName || ticker, isTarget);
+        console.log(`[Analysis] Starting 7 Powers for ${ticker}...`);
+        const spResult = await analyzeSevenPowers(ticker, ticker, isTarget);
+        console.log(`[Analysis] 7 Powers Size for ${ticker}: ${spResult.text.length} chars`);
 
         totalUsage.tokens += spResult.usage.tokens;
         totalUsage.cost += spResult.usage.cost;
@@ -638,8 +710,21 @@ Output a structured Markdown report.`;
             tools: SEARCH_TOOLS
         }));
 
+
+        let responseText = "";
+        try {
+            responseText = result.response.text();
+        } catch (e: any) {
+            console.error("7 Powers Core Analysis text() failed:", e);
+            responseText = "An internal error occurred while generating this report segment.";
+        }
+
+        if (!responseText) {
+            responseText = "The model returned an empty response for this segment.";
+        }
+
         return {
-            data: result.response.text(),
+            data: responseText,
             usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
         };
     };

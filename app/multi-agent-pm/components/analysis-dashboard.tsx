@@ -146,17 +146,14 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
             {isOpen && (
                 <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
                     <div className={cn(
-                        "grid grid-cols-1 gap-8 mb-6",
-                        analysis.sevenPowers ? "lg:grid-cols-2 lg:divide-x lg:divide-slate-800" : ""
+                        "grid grid-cols-1 gap-8 mb-6 lg:grid-cols-2 lg:divide-x lg:divide-slate-800"
                     )}>
                         {/* Left Column: Fundamental Analysis */}
                         <div className="text-sm pr-2 max-h-[600px] overflow-y-auto text-slate-300">
-                            {analysis.sevenPowers && (
-                                <div className="flex items-center gap-2 mb-4 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-emerald-500/20 pb-2">
-                                    <Database size={12} />
-                                    Fundamental Analyst
-                                </div>
-                            )}
+                            <div className="flex items-center gap-2 mb-4 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-emerald-500/20 pb-2">
+                                <Database size={12} />
+                                Fundamental Analyst
+                            </div>
                             <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
@@ -179,12 +176,14 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                         </div>
 
                         {/* Right Column: 7 Powers (Strategic Analysis) */}
-                        {analysis.sevenPowers && (
-                            <div className="text-sm lg:pl-8 max-h-[600px] overflow-y-auto text-slate-300 border-t lg:border-t-0 border-slate-800 pt-6 lg:pt-0">
-                                <div className="flex items-center gap-2 mb-4 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-blue-500/20 pb-2">
-                                    <ShieldCheck size={12} />
-                                    Strategic Analyst (7 Powers)
-                                </div>
+
+                        {/* Always show this section, but display placeholder if data is missing */}
+                        <div className={cn("text-sm lg:pl-8 max-h-[600px] overflow-y-auto text-slate-300 border-t lg:border-t-0 border-slate-800 pt-6 lg:pt-0", !analysis.sevenPowers && "hidden lg:block")}>
+                            <div className="flex items-center gap-2 mb-4 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-blue-500/20 pb-2">
+                                <ShieldCheck size={12} />
+                                Strategic Analyst (7 Powers)
+                            </div>
+                            {analysis.sevenPowers ? (
                                 <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
                                     <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
@@ -204,8 +203,13 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                                         {analysis.sevenPowers}
                                     </ReactMarkdown>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="h-48 flex flex-col items-center justify-center text-slate-600 space-y-2 border-2 border-dashed border-slate-800 rounded-lg opacity-50">
+                                    <ShieldCheck size={24} className="opacity-20 mb-2" />
+                                    <p className="text-[10px] font-medium uppercase tracking-widest opacity-50 text-center px-4">Analysis Pending or Unavailable</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Parallel Runs (Sub-Runs) for Target Holding */}
