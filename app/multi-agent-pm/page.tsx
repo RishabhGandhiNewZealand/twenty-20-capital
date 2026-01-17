@@ -7,7 +7,7 @@ import { BrainCircuit, Loader2, PieChart, RefreshCw, ExternalLink } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AnalysisDashboard, { AgentStatus, AnalysisLog } from './components/analysis-dashboard';
-import type { EquityAnalysis, TradeDecision, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
+import type { EquityAnalysis, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import { runFundamentalAnalysis, runBatchFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
 import { TickerStatus } from './components/analysis-dashboard';
 import { getLogoUrl } from '@/lib/company-utils';
@@ -17,7 +17,7 @@ interface State {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
-    tradeDecision: { standard: TradeDecision, complexity: ComplexityDecision } | null;
+    tradeDecision: { complexity: ComplexityDecision } | null;
     error: string | null;
     portfolio: PortfolioItem[];
     targetTicker: string;
@@ -36,7 +36,7 @@ type Action =
     | { type: 'RESET_ANALYSES' }
     | { type: 'SET_TICKER_STATUSES'; payload: TickerStatus[] }
     | { type: 'UPDATE_TICKER_STATUS'; payload: { ticker: string, state: TickerStatus['state'] } }
-    | { type: 'SET_DECISION'; payload: { standard: TradeDecision, complexity: ComplexityDecision } };
+    | { type: 'SET_DECISION'; payload: { complexity: ComplexityDecision } };
 
 const initialState: State = {
     status: AgentStatus.IDLE,
@@ -80,7 +80,7 @@ function reducer(state: State, action: Action): State {
                 )
             };
         case 'SET_DECISION':
-            const decisionCost = (action.payload.standard.usage?.cost || 0) + (action.payload.complexity.usage?.cost || 0);
+            const decisionCost = action.payload.complexity.usage?.cost || 0;
             return { ...state, tradeDecision: action.payload, totalCost: state.totalCost + decisionCost };
         default:
             return state;
@@ -239,8 +239,8 @@ export default function MultiAgentPMPage() {
             if (!decisionRes.success || !decisionRes.data) throw new Error(decisionRes.error);
 
             dispatch({ type: 'SET_DECISION', payload: decisionRes.data });
-            const pmCost = (decisionRes.data.standard.usage?.cost || 0) + (decisionRes.data.complexity.usage?.cost || 0);
-            addLog("Portfolio Manager", `Strategic Decisions Finalized (Cost: $${pmCost.toFixed(4)}). Standard[${decisionRes.data.standard.action}], Complexity[${decisionRes.data.complexity.decision}]`);
+            const pmCost = decisionRes.data.complexity.usage?.cost || 0;
+            addLog("Portfolio Manager", `Strategic Decisions Finalized (Cost: $${pmCost.toFixed(4)}). Complexity[${decisionRes.data.complexity.decision}]`);
 
             dispatch({ type: 'SET_STATUS', payload: AgentStatus.COMPLETED });
 

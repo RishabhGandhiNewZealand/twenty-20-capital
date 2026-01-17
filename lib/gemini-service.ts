@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, SchemaType, GenerateContentResponse, GenerateConten
 import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
-import { FUNDAMENTAL_ANALYST_PROMPT, PORTFOLIO_MANAGER_PROMPT, HAMILTON_HELMER_PROMPT, COMPLEXITY_PM_PROMPT, FUNDAMENTAL_SYNTHESIS_PROMPT, SEVEN_POWERS_SYNTHESIS_PROMPT, TRADE_DECISION_SYNTHESIS_PROMPT, COMPLEXITY_SYNTHESIS_PROMPT } from './agents/prompts';
+import { FUNDAMENTAL_ANALYST_PROMPT, HAMILTON_HELMER_PROMPT, COMPLEXITY_PM_PROMPT } from './agents/prompts';
 import cacheManager, { CacheKey } from './cache-manager';
 
 // Types definition (ported from source)
@@ -25,17 +25,6 @@ export interface EquityAnalysis {
     isTarget: boolean;
     usage?: { tokens: number; cost: number };
     subRuns?: { summary: string; sevenPowers?: string; usage: { tokens: number; cost: number } }[];
-}
-
-export interface TradeDecision {
-    action: 'BUY' | 'SELL' | 'TRIM' | 'HOLD';
-    ticker: string;
-    amount: number;
-    rationale: string;
-    fundingSource: string;
-    portfolioImpact: string;
-    usage?: { tokens: number; cost: number };
-    subRuns?: { action: string; rationale: string; usage: { tokens: number; cost: number } }[];
 }
 
 export interface ComplexityDecision {
@@ -119,24 +108,6 @@ const FUNDAMENTAL_SCHEMA = {
     required: ['companyName', 'ticker', 'currentPrice', 'rating', 'cagr', 'oneLiner', 'pillars', 'financials', 'valuation', 'risks', 'conclusion']
 };
 
-const TRADE_DECISION_SCHEMA = {
-    type: SchemaType.OBJECT,
-    properties: {
-        action: {
-            type: SchemaType.STRING,
-            description: 'BUY, SELL, TRIM, or HOLD',
-            enum: ['BUY', 'SELL', 'TRIM', 'HOLD'],
-            format: 'enum'
-        },
-        ticker: { type: SchemaType.STRING, description: 'The ticker being acted upon' },
-        amount: { type: SchemaType.NUMBER, description: 'Share quantity or allocation percentage change' },
-        rationale: { type: SchemaType.STRING, description: 'Detailed PM reasoning' },
-        fundingSource: { type: SchemaType.STRING, description: 'Source of funds' },
-        portfolioImpact: { type: SchemaType.STRING, description: 'Impact on portfolio quality/concentration' }
-    },
-    required: ['action', 'ticker', 'amount', 'rationale', 'fundingSource', 'portfolioImpact']
-};
-
 const COMPLEXITY_DECISION_SCHEMA = {
     type: SchemaType.OBJECT,
     properties: {
@@ -172,7 +143,7 @@ const COMPLEXITY_DECISION_SCHEMA = {
 
 // Configuration
 const ANALYSIS_MODEL = 'gemini-3-flash-preview';
-const DECISION_MODEL = 'gemini-3-flash-preview';
+const DECISION_MODEL = 'gemini-3-pro-preview';
 
 // Initialize Gemini Client
 // WARNING: Ensure GEMINI_API_KEY is in your .env.local
@@ -385,122 +356,6 @@ const calculateUsage = (modelName: string, usage: any) => {
 };
 
 /**
- * Parallel Execution Helper
- */
-async function runParallel<T>(
-    fn: () => Promise<T>,
-    count: number = 3
-): Promise<{ results: T[], usage: { tokens: number, cost: number } }> {
-    const promises = Array.from({ length: count }, () => fn());
-    const outcomes = await Promise.all(promises);
-
-    return {
-        results: outcomes,
-        usage: outcomes.reduce((acc, o: any) => ({
-            tokens: acc.tokens + (o.usage?.tokens || 0),
-            cost: acc.cost + (o.usage?.cost || 0)
-        }), { tokens: 0, cost: 0 })
-    };
-}
-
-/**
- * Synthesisers
- */
-async function synthesiseFundamental(results: any[]): Promise<{ data: any, usage: { tokens: number, cost: number } }> {
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
-    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 fundamental analysis reports:\n\n${results.map((r, i) => `REPORT ${i + 1}:\n${JSON.stringify(r)}`).join('\n\n')}\n\nUse the 'get_stock_price' tool to verify the correct CURRENT numbers if the reports disagree.`;
-
-    // Synthesis uses FUNCTION TOOLS ONLY to verify data
-    const result = await generateWithTools<any>(model, prompt, FUNDAMENTAL_SYNTHESIS_PROMPT, FUNCTION_TOOLS, FUNDAMENTAL_SCHEMA);
-
-    return {
-        data: result.data,
-        usage: result.usage
-    };
-}
-
-async function synthesiseSevenPowers(results: string[]): Promise<{ text: string, usage: { tokens: number, cost: number } }> {
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
-    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 strategic analyses:\n\n${results.map((r, i) => `REPORT ${i + 1}:\n${r}`).join('\n\n')}\n\nUse 'get_stock_price' to verify any disputed metrics.`;
-
-    // Synthesis uses FUNCTION TOOLS ONLY
-    // Since 7 Powers output is Markdown, not strict JSON, we handle it slightly manually or use generateWithTools with no schema
-    let chat = model.startChat({
-        systemInstruction: { role: 'system', parts: [{ text: SEVEN_POWERS_SYNTHESIS_PROMPT }] },
-        tools: FUNCTION_TOOLS
-    });
-
-    let result = await withRetry<GenerateContentResult>(() => chat.sendMessage(prompt));
-    let functionCalls = result.response.functionCalls();
-    let loops = 0;
-    while (functionCalls && functionCalls.length > 0 && loops < 5) {
-        loops++;
-        const parts: Part[] = [];
-        for (const call of functionCalls) {
-            const toolResult = await executeFinancialTools(call.name, call.args);
-            parts.push({ functionResponse: { name: call.name, response: { result: toolResult } } });
-        }
-        result = await withRetry<GenerateContentResult>(() => chat.sendMessage(parts));
-        functionCalls = result.response.functionCalls();
-    }
-
-    let responseText = "";
-    try {
-        responseText = result.response.text();
-    } catch (e: any) {
-        console.error("Gemini 7P Synthesis text() failed:", e);
-        // Fallback to concatenating the inputs if synthesis fails
-        return {
-            text: results.join("\n\n---\n\n") + "\n\n*(Synthesis failed, showing raw reports)*",
-            usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
-        };
-    }
-
-    if (!responseText) {
-        return {
-            text: results.join("\n\n---\n\n") + "\n\n*(Synthesis returned empty, showing raw reports)*",
-            usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
-        };
-    }
-
-    return {
-        text: responseText,
-        usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
-    };
-}
-
-async function synthesiseTradeDecision(results: TradeDecision[]): Promise<{ data: TradeDecision, usage: { tokens: number, cost: number } }> {
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
-    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 trade recommendations:\n\n${results.map((r, i) => `REC ${i + 1}:\n${JSON.stringify(r)}`).join('\n\n')}\n\nUse 'get_stock_price' or 'get_portfolio_allocation' to verify data if needed.`;
-
-    // Synthesis uses FUNCTION TOOLS ONLY
-    const result = await generateWithTools<TradeDecision>(model, prompt, TRADE_DECISION_SYNTHESIS_PROMPT, FUNCTION_TOOLS, TRADE_DECISION_SCHEMA);
-
-    return {
-        data: result.data,
-        usage: result.usage
-    };
-}
-
-async function synthesiseComplexityDecision(results: ComplexityDecision[]): Promise<{ data: ComplexityDecision, usage: { tokens: number, cost: number } }> {
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
-    const prompt = `Today's Date: ${new Date().toISOString().split('T')[0]}\nSynthesise these 3 complexity assessments:\n\n${results.map((r, i) => `ASSESSMENT ${i + 1}:\n${JSON.stringify(r)}`).join('\n\n')}`;
-
-    // Complexity synthesis typically needs search for "S-Curve" verification, but we are restricted to separating tools.
-    // The user requested Function Tools only for synthesis to fix the error.
-    // However, Complexity PM heavily relies on "Google Search to verify claims".
-    // We will stick to FUNCTION_TOOLS to comply with the fix, or NO tools if only logic is needed.
-    // Let's use FUNCTION_TOOLS to allow price verification if referenced.
-
-    const result = await generateWithTools<ComplexityDecision>(model, prompt, COMPLEXITY_SYNTHESIS_PROMPT, FUNCTION_TOOLS, COMPLEXITY_DECISION_SCHEMA);
-
-    return {
-        data: result.data,
-        usage: result.usage
-    };
-}
-
-/**
  * Agent 1: Fundamental Analyst
  */
 export const analyzeEquity = async (ticker: string, isTarget: boolean = false): Promise<EquityAnalysis> => {
@@ -547,14 +402,13 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         };
     }
 
-    const coreAnalysis = async () => {
-        const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
-        // 1. Pre-fetch Live Data (Code-side)
-        const priceData = await executeFinancialTools('get_stock_price', { ticker });
+    // 1. Pre-fetch Live Data (Code-side)
+    const priceData = await executeFinancialTools('get_stock_price', { ticker });
 
-        const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
-        const taskPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
+    const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
+    const taskPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
 Perform a high-fidelity fundamental analysis for strictly: ${ticker}.
 
 *** PROVIDED LIVE MARKET DATA (DO NOT SEARCH FOR THIS) ***
@@ -566,133 +420,95 @@ INSTRUCTIONS:
 2. OUTSIDE of these numbers, you MUST use Google Search for 10-K, Revenues, and qualitative research.
 Output strictly valid JSON.`;
 
-        // 2. Use Model -> ONLY SEARCH TOOLS (No collision)
-        const result = await withRetry(() => model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
-            systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-            tools: SEARCH_TOOLS,
-            generationConfig: { responseMimeType: "application/json", responseSchema: FUNDAMENTAL_SCHEMA as any }
-        }));
+    // 2. Use Model -> ONLY SEARCH TOOLS (No collision)
+    const result = await withRetry(() => model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
+        systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
+        tools: SEARCH_TOOLS,
+        generationConfig: { responseMimeType: "application/json", responseSchema: FUNDAMENTAL_SCHEMA as any }
+    }));
 
-        // Note: For now, we rely on Google Search tool implicit grounding or metadata if needed, 
-        // but since we are not using 'generateWithTools' loop here, we get standard 'generateContent' results.
+    let responseText = "";
+    try {
+        responseText = result.response.text();
+    } catch (e: any) {
+        console.error("Gemini text() retrieval failed:", e);
+        console.log("Full Response:", JSON.stringify(result.response, null, 2));
+        throw new Error(`Gemini response error: ${e.message}`);
+    }
 
+    if (!responseText) {
+        console.error("Gemini returned empty text. Full Response:", JSON.stringify(result.response, null, 2));
+        throw new Error("Gemini returned empty text response.");
+    }
 
-        let responseText = "";
+    let parsedData;
+    try {
+        parsedData = JSON.parse(responseText);
+    } catch (e: any) {
+        console.error("JSON Parse Error:", e);
+        // Simple cleanup fallback
+        const cleanText = responseText.replace(/```json\n?|\n?```/g, '').trim();
         try {
-            responseText = result.response.text();
-        } catch (e: any) {
-            console.error("Gemini text() retrieval failed:", e);
-            console.log("Full Response:", JSON.stringify(result.response, null, 2));
-            throw new Error(`Gemini response error: ${e.message}`);
+            parsedData = JSON.parse(cleanText);
+        } catch (e2) {
+            throw new Error(`Failed to parse Gemini response as JSON: ${e.message}`);
         }
+    }
 
-        if (!responseText) {
-            console.error("Gemini returned empty text. Full Response:", JSON.stringify(result.response, null, 2));
-            throw new Error("Gemini returned empty text response.");
-        }
+    const usage = calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata);
+    const formattedText = renderAnalysisMarkdown(parsedData);
+    const cagr = parsedData.cagr || parsedData.valuation?.baseCase?.cagrCalculation || 'N/A';
 
-        let parsedData;
-        try {
-            parsedData = JSON.parse(responseText);
-        } catch (e: any) {
-            console.error("JSON Parse Error:", e);
-            console.log("Raw Response Text:", responseText);
+    // Determine sentiment
+    let sentiment: 'Bullish' | 'Bearish' | 'Neutral' = 'Neutral';
+    const textLower = formattedText.toLowerCase();
+    if (textLower.includes('strong buy') || textLower.includes('**buy**')) sentiment = 'Bullish';
+    else if (textLower.includes('**sell**')) sentiment = 'Bearish';
+    else if (textLower.includes('**hold**')) sentiment = 'Neutral';
 
-            // Simple cleanup fallback if md blocks are present despite JSON mode
-            const cleanText = responseText.replace(/```json\n?|\n?```/g, '').trim();
-            try {
-                parsedData = JSON.parse(cleanText);
-            } catch (e2) {
-                throw new Error(`Failed to parse Gemini response as JSON: ${e.message}`);
-            }
-        }
+    // Step 2: Strategic Analysis (7 Powers)
+    console.log(`[Analysis] Starting 7 Powers for ${ticker}...`);
+    const spResult = await analyzeSevenPowers(ticker, ticker, isTarget);
+    console.log(`[Analysis] 7 Powers Size for ${ticker}: ${spResult.text.length} chars`);
 
-        return {
-            data: parsedData,
-            usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata),
-            sources: [] // Sources handling might need update if we want to extract from groundingMetadata
-        };
+    const totalUsage = {
+        tokens: usage.tokens + spResult.usage.tokens,
+        cost: usage.cost + spResult.usage.cost
     };
 
-    try {
-        // Run 3 Core Analyses in Parallel
-        const { results, usage: parallelUsage } = await runParallel(coreAnalysis, 3);
+    const finalAnalysis: EquityAnalysis = {
+        ticker,
+        summary: formattedText,
+        sentiment,
+        cagr: cagr.toString().replace('%', '') + '%',
+        sevenPowers: spResult.text,
+        sources: [], // Sources tracking could be added if needed from metadata
+        timestamp: Date.now(),
+        isTarget,
+        usage: totalUsage
+    };
 
-        // Synthesise
-        const { data: synthesisedData, usage: synthesisUsage } = await synthesiseFundamental(results.map(r => r.data));
+    // CACHE RESULT (24 Hours)
+    await cacheManager.set(cacheKey, finalAnalysis, 86400);
 
-        const totalUsage = {
-            tokens: parallelUsage.tokens + synthesisUsage.tokens,
-            cost: parallelUsage.cost + synthesisUsage.cost
-        };
-
-        const formattedText = renderAnalysisMarkdown(synthesisedData);
-        const cagr = synthesisedData.cagr || synthesisedData.valuation?.baseCase?.cagrCalculation || 'N/A';
-        const sources = Array.from(new Set(
-            results
-                .flatMap(r => (r as any).sources || [])
-                .filter(s => s && s.uri)
-                .map(s => JSON.stringify(s))
-        )).map(s => JSON.parse(s));
-
-        // Determine sentiment
-        let sentiment: 'Bullish' | 'Bearish' | 'Neutral' = 'Neutral';
-        const textLower = formattedText.toLowerCase();
-        if (textLower.includes('strong buy') || textLower.includes('**buy**')) sentiment = 'Bullish';
-        else if (textLower.includes('**sell**')) sentiment = 'Bearish';
-        else if (textLower.includes('**hold**')) sentiment = 'Neutral';
-
-        // Step 2: Strategic Analysis (7 Powers) - Also 3x
-        console.log(`[Analysis] Starting 7 Powers for ${ticker}...`);
-        const spResult = await analyzeSevenPowers(ticker, ticker, isTarget);
-        console.log(`[Analysis] 7 Powers Size for ${ticker}: ${spResult.text.length} chars`);
-
-        totalUsage.tokens += spResult.usage.tokens;
-        totalUsage.cost += spResult.usage.cost;
-
-        const finalAnalysis: EquityAnalysis = {
-            ticker,
-            summary: formattedText,
-            sentiment,
-            cagr: cagr.toString().replace('%', '') + '%',
-            sevenPowers: spResult.text,
-            sources,
-            timestamp: Date.now(),
-            isTarget,
-            usage: totalUsage,
-            subRuns: isTarget ? results.map((r, i) => ({
-                summary: renderAnalysisMarkdown(r.data),
-                usage: r.usage
-            })) : undefined
-        };
-
-        // CACHE RESULT (24 Hours = 86400 seconds)
-        await cacheManager.set(cacheKey, finalAnalysis, 86400);
-
-        return finalAnalysis;
-
-    } catch (error) {
-        console.error("Gemini Analysis Failed:", error);
-        throw new Error("Failed to generate equity analysis.");
-    }
+    return finalAnalysis;
 };
 
 /**
  * Agent 2: Strategic Analyst (Hamilton Helmer / 7 Powers)
  */
-export const analyzeSevenPowers = async (ticker: string, companyName: string, isTarget: boolean = false): Promise<{ text: string, usage: { tokens: number, cost: number }, subRuns?: { text: string, usage: { tokens: number, cost: number } }[] }> => {
-    const coreAnalysis = async () => {
-        const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
+export const analyzeSevenPowers = async (ticker: string, companyName: string, isTarget: boolean = false): Promise<{ text: string, usage: { tokens: number, cost: number } }> => {
+    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
-        // 1. Pre-fetch Live Data
-        const priceData = await executeFinancialTools('get_stock_price', { ticker });
+    // 1. Pre-fetch Live Data
+    const priceData = await executeFinancialTools('get_stock_price', { ticker });
 
-        const systemInstruction = HAMILTON_HELMER_PROMPT
-            .replace('{{TICKER}}', ticker)
-            .replace('{{COMPANY_NAME}}', companyName);
+    const systemInstruction = HAMILTON_HELMER_PROMPT
+        .replace('{{TICKER}}', ticker)
+        .replace('{{COMPANY_NAME}}', companyName);
 
-        const taskPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
+    const taskPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
 Conduct a forensic strategic analysis of ${companyName} (${ticker}) using the 7 Powers framework.
 
 *** PROVIDED LIVE MARKET DATA ***
@@ -703,149 +519,32 @@ ${JSON.stringify(priceData, null, 2)}
 2. Use Google Search to find "Financial Proxies" (Margins, Churn).
 Output a structured Markdown report.`;
 
-        // 2. Use Model -> ONLY SEARCH TOOLS
-        const result = await withRetry(() => model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
-            systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-            tools: SEARCH_TOOLS
-        }));
+    // 2. Use Model -> ONLY SEARCH TOOLS
+    const result = await withRetry(() => model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
+        systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
+        tools: SEARCH_TOOLS
+    }));
 
-
-        let responseText = "";
-        try {
-            responseText = result.response.text();
-        } catch (e: any) {
-            console.error("7 Powers Core Analysis text() failed:", e);
-            responseText = "An internal error occurred while generating this report segment.";
-        }
-
-        if (!responseText) {
-            responseText = "The model returned an empty response for this segment.";
-        }
-
-        return {
-            data: responseText,
-            usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
-        };
-    };
-
+    let responseText = "";
     try {
-        const { results, usage: parallelUsage } = await runParallel(coreAnalysis, 3);
-        const { text: synthesisedText, usage: synthesisUsage } = await synthesiseSevenPowers(results.map(r => r.data));
-
-        return {
-            text: synthesisedText,
-            usage: {
-                tokens: parallelUsage.tokens + synthesisUsage.tokens,
-                cost: parallelUsage.cost + synthesisUsage.cost
-            },
-            subRuns: isTarget ? results.map((r, i) => ({
-                text: r.data,
-                usage: r.usage
-            })) : undefined
-        };
-    } catch (error) {
-        console.error("7 Powers Analysis Failed:", error);
-        return {
-            text: "Insufficient Evidence to complete strategic analysis.",
-            usage: { tokens: 0, cost: 0 }
-        };
+        responseText = result.response.text();
+    } catch (e: any) {
+        console.error("7 Powers Core Analysis text() failed:", e);
+        responseText = "An internal error occurred while generating this report segment.";
     }
+
+    if (!responseText) {
+        responseText = "The model returned an empty response for this segment.";
+    }
+
+    return {
+        text: responseText,
+        usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
+    };
 };
 
 /**
- * Agent 3: Portfolio Manager
- */
-export const makeTradeDecision = async (
-    targetAnalysis: EquityAnalysis,
-    portfolioScan: EquityAnalysis[],
-    currentPortfolio: PortfolioItem[]
-): Promise<TradeDecision> => {
-    const coreDecision = async () => {
-        const model = genAI.getGenerativeModel({
-            model: DECISION_MODEL,
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: TRADE_DECISION_SCHEMA as any
-            }
-        }, { apiVersion: 'v1beta' });
-
-        // 1. Pre-fetch Portfolio Allocation
-        const allocationData = await executeFinancialTools('get_portfolio_allocation', {}, currentPortfolio);
-
-        // Prepare context
-        const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
-        const portfolioContext = currentPortfolio.map((item) => {
-            const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-            const analysis = portfolioScan.find(a => a.ticker === item.symbol);
-            return `### HOLDING: ${item.name} (${item.symbol})\nShares: ${item.shares}\nValue: ${item.value.toLocaleString()} USD (${allocation}%)\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
-        }).join("\n\n---\n\n");
-
-        const existingHolding = currentPortfolio.find(p => p.symbol === targetAnalysis.ticker);
-        const existingHoldingAllocation = existingHolding && totalPortfolioValue > 0 ? ((existingHolding.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-        const existingHoldingContext = existingHolding
-            ? `\n*** ATTENTION: ${targetAnalysis.ticker} IS ALREADY IN THE PORTFOLIO ***\nCurrent Holding: ${existingHolding.shares} shares. Value: ${existingHolding.value.toLocaleString()} USD (${existingHoldingAllocation}%).\nEvaluate if this position should be INCREASED, DECREASED, or MAINTAINED.`
-            : "";
-
-        const userPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
-STRATEGIC DECISION SESSION: ${targetAnalysis.ticker}
-${existingHoldingContext}
-
-*** PROVIDED LIVE PORTFOLIO STATUS ***
-${JSON.stringify(allocationData, null, 2)}
-**************************************
-
-TARGET RESEARCH REPORTS:
-
-#### FUNDAMENTAL ANALYSIS:
-${targetAnalysis.summary}
-
-#### STRATEGIC ANALYSIS (7 POWERS):
-${targetAnalysis.sevenPowers}
-
----
-FULL PORTFOLIO CONTEXT (${currentPortfolio.length} Holdings):
-${portfolioContext}
-
-FINAL TASK:
-Based on the fundamental reports and the PROVIDED allocation data above, decide if ${targetAnalysis.ticker} earns a spot in the fund.
-Analyze every portfolio company's quality/durability before making the swap.`;
-
-        // 2. Use Model -> ONLY SEARCH TOOLS (No collision)
-        const result = await withRetry(() => model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-            systemInstruction: { role: 'system', parts: [{ text: PORTFOLIO_MANAGER_PROMPT }] },
-            tools: SEARCH_TOOLS,
-            generationConfig: { responseMimeType: "application/json", responseSchema: TRADE_DECISION_SCHEMA as any }
-        }));
-
-        return {
-            data: JSON.parse(result.response.text()),
-            usage: calculateUsage(DECISION_MODEL, result.response.usageMetadata)
-        };
-    };
-
-    try {
-        const { results, usage: parallelUsage } = await runParallel(coreDecision, 3);
-        const { data: synthesisedDecision, usage: synthesisUsage } = await synthesiseTradeDecision(results.map(r => r.data));
-
-        const decision = synthesisedDecision;
-        decision.usage = {
-            tokens: parallelUsage.tokens + synthesisUsage.tokens,
-            cost: parallelUsage.cost + synthesisUsage.cost
-        };
-        decision.subRuns = results.map(r => ({
-            action: r.data.action,
-            rationale: r.data.rationale,
-            usage: r.usage
-        }));
-
-        return decision;
-
-    } catch (error) {
-        console.error("Gemini PM Decision Failed:", error);
-        throw new Error("Portfolio Manager failed to make a decision.");
-    }
 };
 
 /**
@@ -856,32 +555,31 @@ export const makeComplexityDecision = async (
     portfolioScan: EquityAnalysis[],
     currentPortfolio: PortfolioItem[]
 ): Promise<ComplexityDecision> => {
-    const coreDecision = async () => {
-        const model = genAI.getGenerativeModel({
-            model: DECISION_MODEL,
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: COMPLEXITY_DECISION_SCHEMA as any
-            },
-        }, { apiVersion: 'v1beta' });
+    const model = genAI.getGenerativeModel({
+        model: DECISION_MODEL,
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: COMPLEXITY_DECISION_SCHEMA as any
+        },
+    }, { apiVersion: 'v1beta' });
 
-        // 1. Pre-fetch Portfolio Allocation
-        const allocationData = await executeFinancialTools('get_portfolio_allocation', {}, currentPortfolio);
+    // 1. Pre-fetch Portfolio Allocation
+    const allocationData = await executeFinancialTools('get_portfolio_allocation', {}, currentPortfolio);
 
-        const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
-        const portfolioContext = currentPortfolio.map((item) => {
-            const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-            const analysis = portfolioScan.find(a => a.ticker === item.symbol);
-            return `### HOLDING: ${item.name} (${item.symbol})\nShares: ${item.shares}\nValue: ${item.value.toLocaleString()} USD (${allocation}%)\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
-        }).join("\n\n---\n\n");
+    const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
+    const portfolioContext = currentPortfolio.map((item) => {
+        const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
+        const analysis = portfolioScan.find(a => a.ticker === item.symbol);
+        return `### HOLDING: ${item.name} (${item.symbol})\nShares: ${item.shares}\nValue: ${item.value.toLocaleString()} USD (${allocation}%)\n\n#### FUNDAMENTAL REPORT:\n${analysis?.summary || 'N/A'}\n\n#### STRATEGIC REPORT (7 POWERS):\n${analysis?.sevenPowers || 'N/A'}`;
+    }).join("\n\n---\n\n");
 
-        const existingHolding = currentPortfolio.find(p => p.symbol === targetAnalysis.ticker);
-        const existingHoldingAllocation = existingHolding && totalPortfolioValue > 0 ? ((existingHolding.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
-        const existingHoldingContext = existingHolding
-            ? `\n*** ATTENTION: ${targetAnalysis.ticker} IS ALREADY IN THE PORTFOLIO ***\nCurrent Holding: ${existingHolding.shares} shares. Value: ${existingHolding.value.toLocaleString()} USD (${existingHoldingAllocation}%).\nEvaluate if this position should be INCREASED, DECREASED, or MAINTAINED based on its classification.`
-            : "";
+    const existingHolding = currentPortfolio.find(p => p.symbol === targetAnalysis.ticker);
+    const existingHoldingAllocation = existingHolding && totalPortfolioValue > 0 ? ((existingHolding.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
+    const existingHoldingContext = existingHolding
+        ? `\n*** ATTENTION: ${targetAnalysis.ticker} IS ALREADY IN THE PORTFOLIO ***\nCurrent Holding: ${existingHolding.shares} shares. Value: ${existingHolding.value.toLocaleString()} USD (${existingHoldingAllocation}%).\nEvaluate if this position should be INCREASED, DECREASED, or MAINTAINED based on its classification.`
+        : "";
 
-        const userPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
+    const userPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
 COMPLEXITY INVESTING DECISION SESSION: ${targetAnalysis.ticker}
 ${existingHoldingContext}
 
@@ -896,47 +594,24 @@ STRATEGIC ANALYSIS:
 ${targetAnalysis.sevenPowers}
 
 ---
-FULL PORTFOLIO CONTEXT:
+FULL PORTFOLIO CONTEXT (${currentPortfolio.length} Holdings):
 ${portfolioContext}
 
 FINAL TASK:
 Apply the Complexity Investing framework to decide on ${targetAnalysis.ticker}. Return the required JSON object.`;
 
-        // 2. Use Model -> ONLY SEARCH TOOLS
-        const result = await withRetry(() => model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-            systemInstruction: { role: 'system', parts: [{ text: COMPLEXITY_PM_PROMPT }] },
-            tools: SEARCH_TOOLS,
-            generationConfig: { responseMimeType: "application/json", responseSchema: COMPLEXITY_DECISION_SCHEMA as any }
-        }));
+    // 2. Use Model -> ONLY SEARCH TOOLS
+    const result = await withRetry(() => model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        systemInstruction: { role: 'system', parts: [{ text: COMPLEXITY_PM_PROMPT }] },
+        tools: SEARCH_TOOLS,
+        generationConfig: { responseMimeType: "application/json", responseSchema: COMPLEXITY_DECISION_SCHEMA as any }
+    }));
 
-        return {
-            data: JSON.parse(result.response.text()),
-            usage: calculateUsage(DECISION_MODEL, result.response.usageMetadata)
-        };
+    return {
+        ...JSON.parse(result.response.text()),
+        usage: calculateUsage(DECISION_MODEL, result.response.usageMetadata)
     };
-
-    try {
-        const { results, usage: parallelUsage } = await runParallel(coreDecision, 3);
-        const { data: synthesisedDecision, usage: synthesisUsage } = await synthesiseComplexityDecision(results.map(r => r.data));
-
-        const decision = synthesisedDecision;
-        decision.usage = {
-            tokens: parallelUsage.tokens + synthesisUsage.tokens,
-            cost: parallelUsage.cost + synthesisUsage.cost
-        };
-        decision.subRuns = results.map(r => ({
-            decision: r.data.decision,
-            reasoning: r.data.action_details.reasoning,
-            usage: r.usage
-        }));
-
-        return decision;
-
-    } catch (error) {
-        console.error("Gemini Complexity PM Decision Failed:", error);
-        throw new Error("Complexity Portfolio Manager failed to make a decision.");
-    }
 };
 
 /**
