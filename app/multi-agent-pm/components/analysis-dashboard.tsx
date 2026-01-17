@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import type { EquityAnalysis, TradeDecision, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
+import type { EquityAnalysis, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getLogoUrl } from '@/lib/company-utils';
@@ -42,7 +42,7 @@ interface Props {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
-    tradeDecision: { standard: TradeDecision, complexity: ComplexityDecision } | null;
+    tradeDecision: { complexity: ComplexityDecision } | null;
     tickerStatuses: TickerStatus[];
     portfolio: PortfolioItem[];
     totalCost: number;
@@ -118,7 +118,7 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                             </div>
                         )}
                         <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[8px] uppercase font-black tracking-[0.2em] h-5">
-                            Synthesised (3x Parallel)
+                            Single Shot
                         </Badge>
                     </div>
                 </div>
@@ -146,17 +146,14 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
             {isOpen && (
                 <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
                     <div className={cn(
-                        "grid grid-cols-1 gap-8 mb-6",
-                        analysis.sevenPowers ? "lg:grid-cols-2 lg:divide-x lg:divide-slate-800" : ""
+                        "grid grid-cols-1 gap-8 mb-6 lg:grid-cols-2 lg:divide-x lg:divide-slate-800"
                     )}>
                         {/* Left Column: Fundamental Analysis */}
                         <div className="text-sm pr-2 max-h-[600px] overflow-y-auto text-slate-300">
-                            {analysis.sevenPowers && (
-                                <div className="flex items-center gap-2 mb-4 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-emerald-500/20 pb-2">
-                                    <Database size={12} />
-                                    Fundamental Analyst
-                                </div>
-                            )}
+                            <div className="flex items-center gap-2 mb-4 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-emerald-500/20 pb-2">
+                                <Database size={12} />
+                                Fundamental Analyst
+                            </div>
                             <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
@@ -179,12 +176,14 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                         </div>
 
                         {/* Right Column: 7 Powers (Strategic Analysis) */}
-                        {analysis.sevenPowers && (
-                            <div className="text-sm lg:pl-8 max-h-[600px] overflow-y-auto text-slate-300 border-t lg:border-t-0 border-slate-800 pt-6 lg:pt-0">
-                                <div className="flex items-center gap-2 mb-4 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-blue-500/20 pb-2">
-                                    <ShieldCheck size={12} />
-                                    Strategic Analyst (7 Powers)
-                                </div>
+
+                        {/* Always show this section, but display placeholder if data is missing */}
+                        <div className={cn("text-sm lg:pl-8 max-h-[600px] overflow-y-auto text-slate-300 border-t lg:border-t-0 border-slate-800 pt-6 lg:pt-0", !analysis.sevenPowers && "hidden lg:block")}>
+                            <div className="flex items-center gap-2 mb-4 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-blue-500/20 pb-2">
+                                <ShieldCheck size={12} />
+                                Strategic Analyst (7 Powers)
+                            </div>
+                            {analysis.sevenPowers ? (
                                 <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
                                     <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
@@ -204,8 +203,13 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                                         {analysis.sevenPowers}
                                     </ReactMarkdown>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="h-48 flex flex-col items-center justify-center text-slate-600 space-y-2 border-2 border-dashed border-slate-800 rounded-lg opacity-50">
+                                    <ShieldCheck size={24} className="opacity-20 mb-2" />
+                                    <p className="text-[10px] font-medium uppercase tracking-widest opacity-50 text-center px-4">Analysis Pending or Unavailable</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Parallel Runs (Sub-Runs) for Target Holding */}
@@ -259,7 +263,6 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
 };
 
 const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio, totalCost }) => {
-    const [showStandardSubRuns, setShowStandardSubRuns] = useState(false);
     const [showComplexitySubRuns, setShowComplexitySubRuns] = useState(false);
 
     const sortedAnalyses = useMemo(() => {
@@ -404,77 +407,14 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-xl uppercase tracking-tight text-slate-100">
                                 <TrendingUp className="text-emerald-400" />
-                                Executive Strategy
+                                Portfolio Manager
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             {tradeDecision ? (
                                 <div className="space-y-8">
-                                    {/* Standard PM */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-mono text-[9px] uppercase tracking-widest">Standard Manager</Badge>
-                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                                                Cost: <span className="text-emerald-400">${(tradeDecision.standard.usage?.cost || 0).toFixed(4)}</span>
-                                            </span>
-                                        </div>
-
-                                        <div className="flex flex-col items-center justify-center p-6 bg-slate-950 rounded-xl border-2 border-emerald-500/20 text-center shadow-inner">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Recommended Action</span>
-                                            <span className={cn("text-5xl font-black mb-3 italic",
-                                                tradeDecision.standard.action === 'BUY' ? "text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" :
-                                                    tradeDecision.standard.action === 'SELL' ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]" :
-                                                        tradeDecision.standard.action === 'TRIM' ? "text-orange-400" :
-                                                            "text-slate-500"
-                                            )}>
-                                                {tradeDecision.standard.action}
-                                            </span>
-                                            <span className="text-xl font-black text-slate-100 tracking-tighter">{tradeDecision.standard.ticker}</span>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-blue-950/30 rounded-xl border border-blue-500/20 flex items-center gap-4">
-                                                <Coins className="text-blue-400" size={20} />
-                                                <div>
-                                                    <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Funding</h3>
-                                                    <p className="text-slate-100 text-sm font-bold">{tradeDecision.standard.fundingSource}</p>
-                                                </div>
-                                            </div>
-                                            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 text-slate-300 text-sm italic leading-relaxed">
-                                                "{tradeDecision.standard.rationale}"
-                                            </div>
-
-                                            {/* Sub-runs for Standard PM */}
-                                            {tradeDecision.standard.subRuns && (
-                                                <div className="mt-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setShowStandardSubRuns(!showStandardSubRuns)}
-                                                        className="text-[9px] font-black uppercase text-blue-400 p-0 h-auto hover:bg-transparent"
-                                                    >
-                                                        {showStandardSubRuns ? 'Hide Details' : 'View 3 Parallel Decision Rationale'}
-                                                    </Button>
-                                                    {showStandardSubRuns && (
-                                                        <div className="space-y-2 mt-2 max-h-40 overflow-y-auto pr-2">
-                                                            {tradeDecision.standard.subRuns.map((run, i) => (
-                                                                <div key={i} className="p-2 bg-black/40 rounded border border-slate-800 text-[10px] space-y-1">
-                                                                    <div className="flex justify-between font-black text-slate-500 uppercase">
-                                                                        <span>Run #{i + 1}: {run.action}</span>
-                                                                        <span className="text-emerald-500/70">${run.usage.cost.toFixed(4)}</span>
-                                                                    </div>
-                                                                    <p className="text-slate-400 italic">"{run.rationale}"</p>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
                                     {/* Complexity PM */}
-                                    <div className="space-y-6 border-t-2 border-dashed border-slate-800 pt-8">
+                                    <div className="space-y-6">
                                         <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                                             <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 font-mono text-[9px] uppercase tracking-widest">Complexity Manager</Badge>
                                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
