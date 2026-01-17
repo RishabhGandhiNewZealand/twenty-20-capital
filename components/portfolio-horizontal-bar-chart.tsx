@@ -165,14 +165,14 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
     } else {
       // Start playing
       setIsPlaying(true)
-      
+
       // Reset to start if at the end
       if (sliderValue >= availableDates.length - 1) {
         setSliderValue(0)
       }
-      
+
       const intervalTime = playbackSpeed === 0.5 ? 100 : playbackSpeed === 2 ? 25 : 50
-      
+
       playIntervalRef.current = setInterval(() => {
         setSliderValue(prev => {
           if (prev >= availableDates.length - 1) {
@@ -198,9 +198,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
       if (playIntervalRef.current) {
         clearInterval(playIntervalRef.current)
       }
-      
+
       const intervalTime = newSpeed === 0.5 ? 100 : newSpeed === 2 ? 25 : 50
-      
+
       playIntervalRef.current = setInterval(() => {
         setSliderValue(prev => {
           if (prev >= availableDates.length - 1) {
@@ -230,14 +230,14 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   const chartData: ChartData[] = displayHoldings
     .filter(holding => {
       // Ensure we have valid numeric values
-      const hasValidPercentage = typeof holding.percentage === 'number' && 
-                                !isNaN(holding.percentage) && 
-                                isFinite(holding.percentage) && 
-                                holding.percentage >= 0.1;
-      const hasValidValue = typeof holding.value === 'number' && 
-                           !isNaN(holding.value) && 
-                           isFinite(holding.value) && 
-                           holding.value > 0;
+      const hasValidPercentage = typeof holding.percentage === 'number' &&
+        !isNaN(holding.percentage) &&
+        isFinite(holding.percentage) &&
+        holding.percentage >= 0.1;
+      const hasValidValue = typeof holding.value === 'number' &&
+        !isNaN(holding.value) &&
+        isFinite(holding.value) &&
+        holding.value > 0;
       return hasValidPercentage && hasValidValue;
     })
     .map((holding) => ({
@@ -248,7 +248,11 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
       color: getCompanyColor(holding.symbol)
     }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 15) // Show top 15 holdings for better visibility
+
+  // Calculate dynamic height for the chart
+  const rowHeight = 50 // px per row
+  const minHeight = 450
+  const totalChartHeight = Math.max(minHeight, chartData.length * rowHeight)
 
   // Debug logging
   useEffect(() => {
@@ -262,24 +266,24 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
     const { x, y, width, height, fill, value, index } = props
     const data = chartData[index]
     const showValue = width > (isMobile ? 50 : 60)
-    
+
     return (
       <g>
-        <rect 
-          x={x} 
-          y={y} 
-          width={width} 
-          height={height} 
-          fill={fill} 
-          rx={4} 
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={fill}
+          rx={4}
           ry={4}
         />
         {showValue && !anonymized && (
-          <text 
-            x={x + (isMobile ? 5 : 10)} 
-            y={y + height / 2} 
-            fill="#f5f5f5" 
-            textAnchor="start" 
+          <text
+            x={x + (isMobile ? 5 : 10)}
+            y={y + height / 2}
+            fill="#f5f5f5"
+            textAnchor="start"
             dominantBaseline="middle"
             fontSize={isMobile ? "10" : "11"}
             fontWeight="500"
@@ -287,16 +291,18 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
             {formatCurrency(value)}
           </text>
         )}
-        <text 
-          x={x + width + 5} 
-          y={y + height / 2} 
-          fill="#b1b1b1" 
-          textAnchor="start" 
+        <text
+          x={x + width + 5}
+          y={y + height / 2}
+          fill="#b1b1b1"
+          textAnchor="start"
           dominantBaseline="middle"
           fontSize={isMobile ? "10" : "11"}
           fontWeight="600"
         >
-          {data.percentage.toFixed(1)}%
+          {/* Show value here if it didn't fit inside the bar */}
+          {!showValue && !anonymized && `${formatCurrency(value)} `}
+          ({data.percentage.toFixed(1)}%)
         </text>
       </g>
     )
@@ -342,21 +348,21 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   // Custom Y-axis tick component to render company logos
   const CustomYAxisTick = ({ x, y, payload }: any) => {
     const logoUrl = getLogoUrl(payload.value)
-    
+
     return (
       <g transform={`translate(${x},${y})`}>
-        <image 
-          href={logoUrl} 
-          x={-50} 
-          y={-10} 
-          width={20} 
+        <image
+          href={logoUrl}
+          x={-50}
+          y={-10}
+          width={20}
           height={20}
           preserveAspectRatio="xMidYMid meet"
         />
-        <text 
-          x={-25} 
-          y={4} 
-          textAnchor="start" 
+        <text
+          x={-25}
+          y={4}
+          textAnchor="start"
           fontSize={10}
           fontWeight={600}
           fill="#b1b1b1"
@@ -430,31 +436,28 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
               <div className="flex items-center gap-0.5 border rounded-md">
                 <button
                   onClick={() => changeSpeed(0.5)}
-                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
-                    playbackSpeed === 0.5 
-                      ? 'bg-blue-100 text-blue-700' 
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 0.5
+                      ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   0.5x
                 </button>
                 <button
                   onClick={() => changeSpeed(1)}
-                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
-                    playbackSpeed === 1 
-                      ? 'bg-blue-100 text-blue-700' 
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 1
+                      ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   1x
                 </button>
                 <button
                   onClick={() => changeSpeed(2)}
-                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
-                    playbackSpeed === 2 
-                      ? 'bg-blue-100 text-blue-700' 
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 2
+                      ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   2x
                 </button>
@@ -463,7 +466,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           </div>
           <div className="flex items-center gap-2 sm:gap-3 w-full">
             <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-              {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-NZ', { 
+              {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-NZ', {
                 year: 'numeric',
                 month: 'short'
               })}
@@ -481,54 +484,60 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
             </span>
           </div>
         </div>
-              </CardHeader>
-        <CardContent className="overflow-visible">
-          {chartData.length === 0 ? (
+      </CardHeader>
+      <CardContent className="overflow-visible">
+        {chartData.length === 0 ? (
           <div className="h-[450px] sm:h-[550px] flex items-center justify-center">
             <p className="text-gray-500">No holdings data available for this date</p>
           </div>
         ) : (
-          <div className="h-[450px] sm:h-[550px] w-full overflow-visible pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                layout="vertical"
-                margin={{ 
-                  top: 5, 
-                  right: 50, 
-                  left: 0, 
-                  bottom: 5 
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  type="number" 
-                  tickFormatter={formatTickValue}
-                  tick={anonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
-                  domain={[0, 'dataMax']}
-                  axisLine={!anonymized}
-                />
-                <YAxis 
-                  type="category" 
-                  dataKey="symbol" 
-                  tick={<CustomYAxisTick />}
-                  width={75}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="value" 
-                  shape={<CustomBar />}
-                  animationDuration={300}
-                  isAnimationActive={true}
+          <div
+            className={`w-full overflow-y-auto overflow-x-hidden transition-all duration-500 ease-in-out ${isPlaying ? 'max-h-[3000px]' : 'max-h-[600px]'
+              }`}
+          >
+            <div style={{ height: `${totalChartHeight}px`, minHeight: '450px' }} className="w-full pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  layout="vertical"
+                  margin={{
+                    top: 5,
+                    right: 80, // Increased right margin for longer labels (value + %)
+                    left: 0,
+                    bottom: 5
+                  }}
                 >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis
+                    type="number"
+                    tickFormatter={formatTickValue}
+                    tick={anonymized ? false : { fontSize: 10, fill: '#b1b1b1' }}
+                    domain={[0, 'dataMax']}
+                    axisLine={!anonymized}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="symbol"
+                    tick={<CustomYAxisTick />}
+                    width={75}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0} // Force show all ticks
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar
+                    dataKey="value"
+                    shape={<CustomBar />}
+                    animationDuration={300}
+                    isAnimationActive={true}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
       </CardContent>
