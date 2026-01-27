@@ -24,6 +24,9 @@ interface CurrentHolding {
   gainPercent: number
   allocation: number
   currency: string
+  avgPriceUSD?: number
+  gainNative?: number
+  gainPercentNative?: number
 }
 
 interface PortfolioSummary {
@@ -226,7 +229,7 @@ export default function HomePage() {
                           Market Value (NZD)
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Gain/Loss (NZD)
+                          Gain/Loss
                         </th>
                       </tr>
                     </thead>
@@ -259,7 +262,7 @@ export default function HomePage() {
                             {formatCurrencyWithDecimals(
                               holding.currency === 'NZD'
                                 ? (holding.shares > 0 ? (holding.costBasisNZD / holding.shares) : 0)
-                                : (holding.shares > 0 ? (holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)) : 0),
+                                : (holding.avgPriceUSD ?? (holding.shares > 0 ? (holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)) : 0)),
                               holding.currency
                             )}
                           </td>
@@ -267,10 +270,10 @@ export default function HomePage() {
                             {maskCurrency(holding.currentValueNZD, isAnonymized)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className={holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {maskCurrency(holding.gainNZD, isAnonymized)}
+                            <div className={(holding.gainNative ?? holding.gainNZD) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {maskCurrency((holding.gainNative ?? holding.gainNZD), isAnonymized, holding.gainNative ? holding.currency : 'NZD')}
                               <span className="text-xs ml-1">
-                                ({(isNaN(holding.gainPercent) ? 0 : holding.gainPercent).toFixed(1)}%)
+                                ({(isNaN(holding.gainPercentNative ?? holding.gainPercent) ? 0 : (holding.gainPercentNative ?? holding.gainPercent)).toFixed(1)}%)
                               </span>
                             </div>
                           </td>
@@ -336,15 +339,15 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      <div className={`text-center py-3 mb-3 rounded-lg ${holding.gainNZD >= 0 ? 'bg-green-50' : 'bg-red-50'
+                      <div className={`text-center py-3 mb-3 rounded-lg ${(holding.gainNative ?? holding.gainNZD) >= 0 ? 'bg-green-50' : 'bg-red-50'
                         }`}>
-                        <div className={`text-2xl font-bold ${holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                        <div className={`text-2xl font-bold ${(holding.gainNative ?? holding.gainNZD) >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                          {(isNaN(holding.gainPercent) ? 0 : holding.gainPercent).toFixed(1)}%
+                          {(isNaN(holding.gainPercentNative ?? holding.gainPercent) ? 0 : (holding.gainPercentNative ?? holding.gainPercent)).toFixed(1)}%
                         </div>
-                        <div className={`text-sm font-medium ${holding.gainNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                        <div className={`text-sm font-medium ${(holding.gainNative ?? holding.gainNZD) >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                          {maskCurrency(holding.gainNZD, isAnonymized)}
+                          {maskCurrency((holding.gainNative ?? holding.gainNZD), isAnonymized, holding.gainNative ? holding.currency : 'NZD')}
                         </div>
                       </div>
 
@@ -365,7 +368,7 @@ export default function HomePage() {
                             {formatCurrencyWithDecimals(
                               holding.currency === 'NZD'
                                 ? (holding.shares > 0 ? (holding.costBasisNZD / holding.shares) : 0)
-                                : (holding.shares > 0 ? (holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)) : 0),
+                                : (holding.avgPriceUSD ?? (holding.shares > 0 ? (holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)) : 0)),
                               holding.currency
                             )}
                           </div>
