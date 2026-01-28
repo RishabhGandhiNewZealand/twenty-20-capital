@@ -1,4 +1,7 @@
-import { GoogleGenerativeAI, SchemaType, GenerateContentResponse, GenerateContentResult, Part } from "@google/generative-ai";
+import { generateText, tool, Output } from "ai";
+import type { GatewayProviderOptions } from '@ai-sdk/gateway';
+import { google } from "@ai-sdk/google";
+import { z } from "zod";
 import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
@@ -46,295 +49,71 @@ export interface ComplexityDecision {
 }
 
 /**
- * JSON Schemas for Agent Outputs
+ * Zod Schemas for Structured Outputs
  */
-const FUNDAMENTAL_SCHEMA = {
-    type: SchemaType.OBJECT,
-    properties: {
-        companyName: { type: SchemaType.STRING },
-        ticker: { type: SchemaType.STRING },
-        currentPrice: { type: SchemaType.STRING },
-        rating: { type: SchemaType.STRING },
-        cagr: { type: SchemaType.STRING },
-        oneLiner: { type: SchemaType.STRING },
-        pillars: {
-            type: SchemaType.OBJECT,
-            properties: {
-                moat: { type: SchemaType.STRING },
-                operatingLeverage: { type: SchemaType.STRING },
-                organicGrowth: { type: SchemaType.STRING },
-                capitalLight: { type: SchemaType.STRING },
-                predictability: { type: SchemaType.STRING },
-                management: { type: SchemaType.STRING }
-            },
-            required: ['moat', 'operatingLeverage', 'organicGrowth', 'capitalLight', 'predictability', 'management']
-        },
-        financials: {
-            type: SchemaType.OBJECT,
-            properties: {
-                growth: { type: SchemaType.STRING },
-                health: { type: SchemaType.STRING },
-                profitability: { type: SchemaType.STRING }
-            },
-            required: ['growth', 'health', 'profitability']
-        },
-        valuation: {
-            type: SchemaType.OBJECT,
-            properties: {
-                current: { type: SchemaType.STRING },
-                bullCase: { type: SchemaType.STRING },
-                bearCase: { type: SchemaType.STRING },
-                baseCase: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        revenueGrowth: { type: SchemaType.STRING },
-                        netMargin: { type: SchemaType.STRING },
-                        exitMultiple: { type: SchemaType.STRING },
-                        shareCountReduction: { type: SchemaType.STRING },
-                        futureSharePrice: { type: SchemaType.STRING },
-                        cagrCalculation: { type: SchemaType.STRING }
-                    },
-                    required: ['revenueGrowth', 'netMargin', 'exitMultiple', 'shareCountReduction', 'futureSharePrice', 'cagrCalculation']
-                }
-            },
-            required: ['current', 'bullCase', 'bearCase', 'baseCase']
-        },
-        risks: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING }
-        },
-        conclusion: { type: SchemaType.STRING }
-    },
-    required: ['companyName', 'ticker', 'currentPrice', 'rating', 'cagr', 'oneLiner', 'pillars', 'financials', 'valuation', 'risks', 'conclusion']
-};
+const FUNDAMENTAL_SCHEMA = z.object({
+    companyName: z.string(),
+    ticker: z.string(),
+    currentPrice: z.string(),
+    rating: z.string(),
+    cagr: z.string(),
+    oneLiner: z.string(),
+    pillars: z.object({
+        moat: z.string(),
+        operatingLeverage: z.string(),
+        organicGrowth: z.string(),
+        capitalLight: z.string(),
+        predictability: z.string(),
+        management: z.string()
+    }),
+    financials: z.object({
+        growth: z.string(),
+        health: z.string(),
+        profitability: z.string()
+    }),
+    valuation: z.object({
+        current: z.string(),
+        bullCase: z.string(),
+        bearCase: z.string(),
+        baseCase: z.object({
+            revenueGrowth: z.string(),
+            netMargin: z.string(),
+            exitMultiple: z.string(),
+            shareCountReduction: z.string(),
+            futureSharePrice: z.string(),
+            cagrCalculation: z.string()
+        })
+    }),
+    risks: z.array(z.string()),
+    conclusion: z.string()
+});
 
-const COMPLEXITY_DECISION_SCHEMA = {
-    type: SchemaType.OBJECT,
-    properties: {
-        analysis: {
-            type: SchemaType.OBJECT,
-            properties: {
-                classification: { type: SchemaType.STRING },
-                s_curve_status: { type: SchemaType.STRING },
-                nzs_score: { type: SchemaType.STRING },
-                narrow_prediction_risk: { type: SchemaType.STRING }
-            },
-            required: ['classification', 's_curve_status', 'nzs_score', 'narrow_prediction_risk']
-        },
-        decision: {
-            type: SchemaType.STRING,
-            enum: ['BUY', 'SELL', 'HOLD'],
-            format: 'enum'
-        },
-        action_details: {
-            type: SchemaType.OBJECT,
-            properties: {
-                target_allocation: { type: SchemaType.STRING },
-                weighting_assessment: { type: SchemaType.STRING },
-                funding_source: { type: SchemaType.STRING },
-                reasoning: { type: SchemaType.STRING }
-            },
-            required: ['target_allocation', 'weighting_assessment', 'funding_source', 'reasoning']
-        }
-    },
-    required: ['analysis', 'decision', 'action_details']
-};
+const COMPLEXITY_DECISION_SCHEMA = z.object({
+    analysis: z.object({
+        classification: z.string(),
+        s_curve_status: z.string(),
+        nzs_score: z.string(),
+        narrow_prediction_risk: z.string()
+    }),
+    decision: z.enum(['BUY', 'SELL', 'HOLD']),
+    action_details: z.object({
+        target_allocation: z.string(),
+        weighting_assessment: z.string(),
+        funding_source: z.string(),
+        reasoning: z.string()
+    })
+});
 
+// Configuration - Vercel AI Gateway model strings with Google Search grounding
+const ANALYSIS_MODEL = 'google/gemini-3-flash';
+const DECISION_MODEL = 'google/gemini-3-pro-preview';
 
-// Configuration
-const ANALYSIS_MODEL = 'gemini-3-flash-preview';
-const DECISION_MODEL = 'gemini-3-pro-preview';
-
-// Initialize Gemini Client
-// WARNING: Ensure GEMINI_API_KEY is in your .env.local
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
-
-// Pricing (USD per 1M tokens) - Gemini 2.0 Flash / 1.5 Flash
-// Input: $0.075 / 1M, Output: $0.30 / 1M (for prompts < 128k)
-
-// Cast to any to avoid strict Schema validation recursion issues in TS
-// Cast to any to avoid strict Schema validation recursion issues in TS
-const SEARCH_TOOLS: any[] = [
-    { googleSearch: {} }
-];
-
-const FUNCTION_TOOLS: any[] = [
-    {
-        functionDeclarations: [
-            {
-                name: "get_stock_price",
-                description: "Get the real-time stock price and basic market data for a given ticker or symbol.",
-                parameters: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        ticker: {
-                            type: SchemaType.STRING,
-                            description: "The stock ticker symbol (e.g., AAPL, TSLA, BTC-USD)",
-                        },
-                    },
-                    required: ["ticker"],
-                },
-            },
-            {
-                name: "get_portfolio_allocation",
-                description: "Get the current portfolio allocation, total value, and list of holdings.",
-                parameters: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        dummy: { type: SchemaType.STRING, description: "Unused parameter to satisfy schema" }
-                    },
-                },
-            },
-        ],
-    },
-];
-
-/**
- * TOOL EXECUTOR
- */
-async function executeFinancialTools(name: string, args: any, currentPortfolio: PortfolioItem[] = [], portfolioScan: EquityAnalysis[] = []) {
-    if (name === "get_stock_price") {
-        try {
-            const quote: any = await yahooFinance.quoteSummary(args.ticker, { modules: ['price', 'summaryDetail'] });
-            return {
-                ticker: args.ticker,
-                price: quote.price?.regularMarketPrice,
-                currency: quote.price?.currency,
-                marketCap: quote.price?.marketCap,
-                peRatio: quote.summaryDetail?.trailingPE,
-                fiftyTwoWeekHigh: quote.summaryDetail?.fiftyTwoWeekHigh,
-                fiftyTwoWeekLow: quote.summaryDetail?.fiftyTwoWeekLow
-            };
-        } catch (e: any) {
-            console.error("Yahoo Finance Error:", e);
-            return { error: `Failed to fetch price for ${args.ticker}: ${e.message}` };
-        }
-    }
-
-    if (name === "get_portfolio_allocation") {
-        const totalValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
-        return {
-            totalValue,
-            holdings: currentPortfolio.map(item => ({
-                symbol: item.symbol,
-                value: item.value,
-                allocation: totalValue > 0 ? (item.value / totalValue * 100).toFixed(2) + '%' : '0%'
-            }))
-        };
-    }
-
-    return { error: "Unknown tool" };
-}
-
-/**
- * Tool Aware Generator
- * Handles the multi-turn loop for function calling
- */
-async function generateWithTools<T>(
-    model: any,
-    prompt: string,
-    systemInstruction: string,
-    toolConfig: any[],
-    responseSchema?: any,
-    currentPortfolio: PortfolioItem[] = [],
-    portfolioScan: EquityAnalysis[] = []
-): Promise<{ data: T, usage: { tokens: number, cost: number } }> {
-    let chat = model.startChat({
-        systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-        tools: toolConfig,
-        generationConfig: responseSchema ? { responseMimeType: "application/json", responseSchema: responseSchema } : undefined
-    });
-
-    let result = await withRetry<GenerateContentResult>(() => chat.sendMessage(prompt));
-    let functionCalls = result.response.functionCalls();
-
-    // Limits loop to 5 turns to prevent infinite loops
-    let loops = 0;
-    while (functionCalls && functionCalls.length > 0 && loops < 5) {
-        loops++;
-        const parts: Part[] = [];
-        for (const call of functionCalls) {
-            const toolResult = await executeFinancialTools(call.name, call.args, currentPortfolio, portfolioScan);
-            parts.push({
-                functionResponse: {
-                    name: call.name,
-                    response: { result: toolResult }
-                }
-            });
-        }
-        result = await withRetry<GenerateContentResult>(() => chat.sendMessage(parts));
-        functionCalls = result.response.functionCalls();
-    }
-
-    // Final Generation enforced JSON
-    // If the last response was free-text (after tools), we might need to coerce it to JSON if it's not.
-    // However, Gemini usually adheres to schema if provided in generationConfig even during chat.
-    // But startChat doesn't support responseSchema in all SDK versions effectively on the final turn if mixed.
-    // Strategy: Take the chat history and make a final "conversion" call if strictly needed,
-    // OR just trust the model if we pass generationConfig to sendMessage.
-    // Let's try passing the schema to the initial startChat or the final sendMessage? 
-    // The SDK allows generationConfig in startChat.
-
-    // Re-instantiate chat with schema for final output if needed, or simply parse.
-    // Issue: Function calling mode often fights with JSON mode.
-    // Best practice: Let the loop finish. Then ask for the final JSON.
-
-    // Let's optimize: We passed the schema? No, we didn't pass schema to startChat yet.
-    // Let's try to ask for JSON in the final turn.
-
-    // Actually, simple valid JSON enforcement:
-    // Actually, simple valid JSON enforcement:
-    const text = result.response.text();
-    try {
-        const json = JSON.parse(text);
-        return {
-            data: json as T,
-            usage: calculateUsage(model.model, result.response.usageMetadata)
-        };
-    } catch (e) {
-        // Fallback: If JSON parse fails, ask specifically for JSON
-        console.warn(`[Gemini] JSON parse failed, retrying with correction prompt...`);
-        const finalResult = await withRetry<GenerateContentResult>(() => chat.sendMessage(
-            "You returned invalid JSON. Please fix it and output strictly valid JSON matching the schema."
-        ));
-        try {
-            return {
-                data: JSON.parse(finalResult.response.text()) as T,
-                usage: calculateUsage(model.model, finalResult.response.usageMetadata)
-            };
-        } catch (finalError) {
-            console.error(`[Gemini] Critical JSON failure after retry: ${finalError}`);
-            throw new Error("Failed to parse Gemini response as JSON even after retry.");
-        }
-    }
-}
-
-/**
- * Robust retry helper for API instability
- */
-async function withRetry<T>(
-    fn: () => Promise<T>,
-    retries = 3,
-    delay = 1000
-): Promise<T> {
-    try {
-        return await fn();
-    } catch (error: any) {
-        const isOverloaded = error.message?.includes('503') || error.message?.includes('overloaded');
-        if (isOverloaded && retries > 0) {
-            console.log(`[Gemini] Model overloaded. Retrying in ${delay}ms... (${retries} left)`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return withRetry(fn, retries - 1, delay * 2);
-        }
-        throw error;
-    }
-}
-
+// Pricing (USD per 1M tokens)
 const calculateUsage = (modelName: string, usage: any) => {
     if (!usage) return { tokens: 0, cost: 0 };
 
-    const tokenCount = usage.promptTokenCount;
+    const tokenCount = usage.promptTokens || 0;
+    const completionTokens = usage.completionTokens || 0;
     const isPro = modelName.includes('pro');
 
     let inputRate = 0;
@@ -349,31 +128,94 @@ const calculateUsage = (modelName: string, usage: any) => {
             outputRate = 18.00;
         }
     } else {
-        inputRate = 0.50; // Gemini 3 Flash rates
+        inputRate = 0.50; // Flash rates
         outputRate = 3.00;
     }
 
-    const inputCost = (usage.promptTokenCount / 1_000_000) * inputRate;
-    const outputCost = (usage.candidatesTokenCount / 1_000_000) * outputRate;
+    const inputCost = (tokenCount / 1_000_000) * inputRate;
+    const outputCost = (completionTokens / 1_000_000) * outputRate;
     const totalCost = inputCost + outputCost;
 
     return {
-        tokens: usage.totalTokenCount,
+        tokens: tokenCount + completionTokens,
         cost: totalCost
     };
 };
+
+/**
+ * Tool Definitions for Vercel AI SDK
+ */
+const getStockPriceTool = tool({
+    description: "Get the real-time stock price and basic market data for a given ticker or symbol.",
+    parameters: z.object({
+        ticker: z.string().describe("The stock ticker symbol (e.g., AAPL, TSLA, BTC-USD)")
+    }),
+    execute: async ({ ticker }) => {
+        try {
+            const quote: any = await yahooFinance.quoteSummary(ticker, { modules: ['price', 'summaryDetail'] });
+            return {
+                ticker,
+                price: quote.price?.regularMarketPrice,
+                currency: quote.price?.currency,
+                marketCap: quote.price?.marketCap,
+                peRatio: quote.summaryDetail?.trailingPE,
+                fiftyTwoWeekHigh: quote.summaryDetail?.fiftyTwoWeekHigh,
+                fiftyTwoWeekLow: quote.summaryDetail?.fiftyTwoWeekLow
+            };
+        } catch (e: any) {
+            console.error("Yahoo Finance Error:", e);
+            return { error: `Failed to fetch price for ${ticker}: ${e.message}` };
+        }
+    }
+});
+
+const createPortfolioAllocationTool = (currentPortfolio: PortfolioItem[]) => tool({
+    description: "Get the current portfolio allocation, total value, and list of holdings.",
+    parameters: z.object({}),
+    execute: async () => {
+        const totalValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
+        return {
+            totalValue,
+            holdings: currentPortfolio.map(item => ({
+                symbol: item.symbol,
+                value: item.value,
+                allocation: totalValue > 0 ? (item.value / totalValue * 100).toFixed(2) + '%' : '0%'
+            }))
+        };
+    }
+});
+
+/**
+ * Helper: Pre-fetch stock data (for flows that don't use tools)
+ */
+async function fetchStockData(ticker: string) {
+    try {
+        const quote: any = await yahooFinance.quoteSummary(ticker, { modules: ['price', 'summaryDetail'] });
+        return {
+            ticker,
+            price: quote.price?.regularMarketPrice,
+            currency: quote.price?.currency,
+            marketCap: quote.price?.marketCap,
+            peRatio: quote.summaryDetail?.trailingPE,
+            fiftyTwoWeekHigh: quote.summaryDetail?.fiftyTwoWeekHigh,
+            fiftyTwoWeekLow: quote.summaryDetail?.fiftyTwoWeekLow
+        };
+    } catch (e: any) {
+        console.error("Yahoo Finance Error:", e);
+        return { error: `Failed to fetch price for ${ticker}: ${e.message}` };
+    }
+}
 
 /**
  * Agent 1: Fundamental Analyst
  */
 export const analyzeEquity = async (ticker: string, isTarget: boolean = false): Promise<EquityAnalysis> => {
     // Basic API Key validation
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error("Gemini API Key is missing. Please set GEMINI_API_KEY in your .env.local");
+    if (!process.env.AI_GATEWAY_API_KEY) {
+        throw new Error("AI Gateway API Key is missing. Please set AI_GATEWAY_API_KEY in your environment.");
     }
 
     // 0. CHECK CACHE (24 Hours)
-    // We strictly cache by ticker.
     const cacheKey = `${CacheKey.EQUITY_ANALYSIS}:${ticker}`;
     const cached = await cacheManager.get<EquityAnalysis>(cacheKey);
 
@@ -410,10 +252,8 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         };
     }
 
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
-
     // 1. Pre-fetch Live Data (Code-side)
-    const priceData = await executeFinancialTools('get_stock_price', { ticker });
+    const priceData = await fetchStockData(ticker);
 
     const systemInstruction = FUNDAMENTAL_ANALYST_PROMPT.replace('__TICKER_SYMBOL__', ticker);
     const taskPrompt = `Today's Date: ${new Date().toISOString().split('T')[0]}
@@ -428,36 +268,36 @@ INSTRUCTIONS:
 2. OUTSIDE of these numbers, you MUST use Google Search for 10-K, Revenues, and qualitative research.
 Output strictly valid JSON.`;
 
-    // 2. Use Model -> ONLY SEARCH TOOLS (No collision)
-    const result = await withRetry(() => model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
-        systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-        tools: SEARCH_TOOLS,
-        generationConfig: { responseMimeType: "application/json", responseSchema: FUNDAMENTAL_SCHEMA as any }
-    }));
+    // 2. Use Vercel AI Gateway with Google Search grounding and BYOK
+    const result = await generateText({
+        model: ANALYSIS_MODEL,
+        system: systemInstruction,
+        prompt: taskPrompt,
+        tools: {
+            google_search: google.tools.googleSearch({}),
+        },
+        experimental_output: Output.object({ schema: FUNDAMENTAL_SCHEMA }),
+        providerOptions: {
+            gateway: {
+                byok: {
+                    google: [{ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY }],
+                },
+            } satisfies GatewayProviderOptions,
+        },
+    });
 
-    let responseText = "";
+    let parsedData: z.infer<typeof FUNDAMENTAL_SCHEMA>;
     try {
-        responseText = result.response.text();
-    } catch (e: any) {
-        console.error("Gemini text() retrieval failed:", e);
-        console.log("Full Response:", JSON.stringify(result.response, null, 2));
-        throw new Error(`Gemini response error: ${e.message}`);
-    }
-
-    if (!responseText) {
-        console.error("Gemini returned empty text. Full Response:", JSON.stringify(result.response, null, 2));
-        // Retry logic for empty text could be here, but usually indicates a filter block
-        throw new Error("Gemini returned empty text response (likely safety filter).");
-    }
-
-    let parsedData;
-    try {
-        parsedData = JSON.parse(responseText);
+        // experimental_output provides structured data via result.experimental_output
+        parsedData = result.experimental_output as z.infer<typeof FUNDAMENTAL_SCHEMA>;
+        if (!parsedData) {
+            // Fallback to parsing text if structured output failed
+            parsedData = JSON.parse(result.text);
+        }
     } catch (e: any) {
         console.error("JSON Parse Error:", e);
         // Simple cleanup fallback
-        const cleanText = responseText.replace(/```json\n?|\n?```/g, '').trim();
+        const cleanText = result.text.replace(/```json\n?|\n?```/g, '').trim();
         try {
             parsedData = JSON.parse(cleanText);
         } catch (e2) {
@@ -465,7 +305,7 @@ Output strictly valid JSON.`;
         }
     }
 
-    const usage = calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata);
+    const usage = calculateUsage(ANALYSIS_MODEL, result.usage);
     const formattedText = renderAnalysisMarkdown(parsedData);
     const cagr = parsedData.cagr || parsedData.valuation?.baseCase?.cagrCalculation || 'N/A';
 
@@ -508,10 +348,8 @@ Output strictly valid JSON.`;
  * Agent 2: Strategic Analyst (Hamilton Helmer / 7 Powers)
  */
 export const analyzeSevenPowers = async (ticker: string, companyName: string, isTarget: boolean = false): Promise<{ text: string, usage: { tokens: number, cost: number } }> => {
-    const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
-
     // 1. Pre-fetch Live Data
-    const priceData = await executeFinancialTools('get_stock_price', { ticker });
+    const priceData = await fetchStockData(ticker);
 
     const systemInstruction = HAMILTON_HELMER_PROMPT
         .replace('{{TICKER}}', ticker)
@@ -528,16 +366,26 @@ ${JSON.stringify(priceData, null, 2)}
 2. Use Google Search to find "Financial Proxies" (Margins, Churn).
 Output a structured Markdown report.`;
 
-    // 2. Use Model -> ONLY SEARCH TOOLS
-    const result = await withRetry(() => model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: taskPrompt }] }],
-        systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] },
-        tools: SEARCH_TOOLS
-    }));
+    // 2. Use Vercel AI Gateway with Google Search grounding and BYOK
+    const result = await generateText({
+        model: ANALYSIS_MODEL,
+        system: systemInstruction,
+        prompt: taskPrompt,
+        tools: {
+            google_search: google.tools.googleSearch({}),
+        },
+        providerOptions: {
+            gateway: {
+                byok: {
+                    google: [{ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY }],
+                },
+            } satisfies GatewayProviderOptions,
+        },
+    });
 
     let responseText = "";
     try {
-        responseText = result.response.text();
+        responseText = result.text;
     } catch (e: any) {
         console.error("7 Powers Core Analysis text() failed:", e);
         responseText = "An internal error occurred while generating this report segment.";
@@ -549,11 +397,8 @@ Output a structured Markdown report.`;
 
     return {
         text: responseText,
-        usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
+        usage: calculateUsage(ANALYSIS_MODEL, result.usage)
     };
-};
-
-/**
 };
 
 /**
@@ -564,18 +409,17 @@ export const makeComplexityDecision = async (
     portfolioScan: EquityAnalysis[],
     currentPortfolio: PortfolioItem[]
 ): Promise<ComplexityDecision> => {
-    const model = genAI.getGenerativeModel({
-        model: DECISION_MODEL,
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: COMPLEXITY_DECISION_SCHEMA as any
-        },
-    }, { apiVersion: 'v1beta' });
-
     // 1. Pre-fetch Portfolio Allocation
-    const allocationData = await executeFinancialTools('get_portfolio_allocation', {}, currentPortfolio);
-
     const totalPortfolioValue = currentPortfolio.reduce((sum, item) => sum + item.value, 0);
+    const allocationData = {
+        totalValue: totalPortfolioValue,
+        holdings: currentPortfolio.map(item => ({
+            symbol: item.symbol,
+            value: item.value,
+            allocation: totalPortfolioValue > 0 ? (item.value / totalPortfolioValue * 100).toFixed(2) + '%' : '0%'
+        }))
+    };
+
     const portfolioContext = currentPortfolio.map((item) => {
         const allocation = totalPortfolioValue > 0 ? ((item.value / totalPortfolioValue) * 100).toFixed(1) : "0.0";
         const analysis = portfolioScan.find(a => a.ticker === item.symbol);
@@ -609,17 +453,39 @@ ${portfolioContext}
 FINAL TASK:
 Apply the Complexity Investing framework to decide on ${targetAnalysis.ticker}. Return the required JSON object.`;
 
-    // 2. Use Model -> ONLY SEARCH TOOLS
-    const result = await withRetry(() => model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        systemInstruction: { role: 'system', parts: [{ text: COMPLEXITY_PM_PROMPT }] },
-        tools: SEARCH_TOOLS,
-        generationConfig: { responseMimeType: "application/json", responseSchema: COMPLEXITY_DECISION_SCHEMA as any }
-    }));
+    // 2. Use Vercel AI Gateway with Google Search grounding and BYOK
+    const result = await generateText({
+        model: DECISION_MODEL,
+        system: COMPLEXITY_PM_PROMPT,
+        prompt: userPrompt,
+        tools: {
+            google_search: google.tools.googleSearch({}),
+        },
+        experimental_output: Output.object({ schema: COMPLEXITY_DECISION_SCHEMA }),
+        providerOptions: {
+            gateway: {
+                byok: {
+                    google: [{ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY }],
+                },
+            } satisfies GatewayProviderOptions,
+        },
+    });
+
+    let parsedDecision: z.infer<typeof COMPLEXITY_DECISION_SCHEMA>;
+    try {
+        parsedDecision = result.experimental_output as z.infer<typeof COMPLEXITY_DECISION_SCHEMA>;
+        if (!parsedDecision) {
+            parsedDecision = JSON.parse(result.text);
+        }
+    } catch (e: any) {
+        console.error("Decision Parse Error:", e);
+        const cleanText = result.text.replace(/```json\n?|\n?```/g, '').trim();
+        parsedDecision = JSON.parse(cleanText);
+    }
 
     return {
-        ...JSON.parse(result.response.text()),
-        usage: calculateUsage(DECISION_MODEL, result.response.usageMetadata)
+        ...parsedDecision,
+        usage: calculateUsage(DECISION_MODEL, result.usage)
     };
 };
 
@@ -683,4 +549,3 @@ ${data.valuation?.current || 'N/A'}
 ${data.conclusion || 'N/A'}
 `;
 }
-
