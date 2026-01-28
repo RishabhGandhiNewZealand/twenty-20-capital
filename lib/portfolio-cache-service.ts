@@ -401,6 +401,16 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
         const gainNZD = currentValueNZD - costBasisNZD
         const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
 
+        let gainNative = gainNZD
+        let gainPercentNative = gainPercent
+
+        if (isUSD && holding.avgPriceUSD) {
+          const costBasisUSD = holding.totalShares * holding.avgPriceUSD
+          const currentValueUSD = holding.totalShares * currentPrice
+          gainNative = currentValueUSD - costBasisUSD
+          gainPercentNative = costBasisUSD > 0 ? ((gainNative / costBasisUSD) * 100) : 0
+        }
+
         return {
           symbol: holding.symbol,
           name: holding.name,
@@ -411,7 +421,10 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
           gainNZD,
           gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
           allocation: 0, // Will be calculated below
-          currency: holding.instrumentCurrency
+          currency: holding.instrumentCurrency,
+          avgPriceUSD: holding.avgPriceUSD,
+          gainNative,
+          gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative
         }
       })
 
@@ -526,6 +539,16 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
         const gainNZD = currentValueNZD - costBasisNZD
         const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
 
+        let gainNative = gainNZD
+        let gainPercentNative = gainPercent
+
+        if (isUSD && holding.avgPriceUSD) {
+          const costBasisUSD = holding.totalShares * holding.avgPriceUSD
+          const currentValueUSD = holding.totalShares * currentPrice
+          gainNative = currentValueUSD - costBasisUSD
+          gainPercentNative = costBasisUSD > 0 ? ((gainNative / costBasisUSD) * 100) : 0
+        }
+
         return {
           symbol: holding.symbol,
           name: holding.name,
@@ -536,7 +559,10 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
           gainNZD,
           gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
           allocation: 0,
-          currency: holding.instrumentCurrency
+          currency: holding.instrumentCurrency,
+          avgPriceUSD: holding.avgPriceUSD,
+          gainNative,
+          gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative
         }
       })
 

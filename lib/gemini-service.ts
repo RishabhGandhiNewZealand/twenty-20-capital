@@ -284,21 +284,29 @@ async function generateWithTools<T>(
     // Let's try to ask for JSON in the final turn.
 
     // Actually, simple valid JSON enforcement:
+    // Actually, simple valid JSON enforcement:
     const text = result.response.text();
     try {
+        const json = JSON.parse(text);
         return {
-            data: JSON.parse(text) as T,
+            data: json as T,
             usage: calculateUsage(model.model, result.response.usageMetadata)
         };
     } catch (e) {
         // Fallback: If JSON parse fails, ask specifically for JSON
+        console.warn(`[Gemini] JSON parse failed, retrying with correction prompt...`);
         const finalResult = await withRetry<GenerateContentResult>(() => chat.sendMessage(
-            "Strictly output the final report in valid JSON format matching the schema."
+            "You returned invalid JSON. Please fix it and output strictly valid JSON matching the schema."
         ));
-        return {
-            data: JSON.parse(finalResult.response.text()) as T,
-            usage: calculateUsage(model.model, finalResult.response.usageMetadata)
-        };
+        try {
+            return {
+                data: JSON.parse(finalResult.response.text()) as T,
+                usage: calculateUsage(model.model, finalResult.response.usageMetadata)
+            };
+        } catch (finalError) {
+            console.error(`[Gemini] Critical JSON failure after retry: ${finalError}`);
+            throw new Error("Failed to parse Gemini response as JSON even after retry.");
+        }
     }
 }
 
@@ -439,7 +447,8 @@ Output strictly valid JSON.`;
 
     if (!responseText) {
         console.error("Gemini returned empty text. Full Response:", JSON.stringify(result.response, null, 2));
-        throw new Error("Gemini returned empty text response.");
+        // Retry logic for empty text could be here, but usually indicates a filter block
+        throw new Error("Gemini returned empty text response (likely safety filter).");
     }
 
     let parsedData;
