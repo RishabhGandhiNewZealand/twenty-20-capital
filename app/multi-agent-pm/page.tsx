@@ -33,6 +33,7 @@ type Action =
     | { type: 'SET_PORTFOLIO'; payload: PortfolioItem[] }
     | { type: 'SET_TARGET_TICKER'; payload: string }
     | { type: 'ADD_ANALYSIS'; payload: EquityAnalysis }
+    | { type: 'UPDATE_ANALYSIS'; payload: EquityAnalysis }
     | { type: 'RESET_ANALYSES' }
     | { type: 'SET_TICKER_STATUSES'; payload: TickerStatus[] }
     | { type: 'UPDATE_TICKER_STATUS'; payload: { ticker: string, state: TickerStatus['state'] } }
@@ -66,6 +67,16 @@ function reducer(state: State, action: Action): State {
             return {
                 ...state,
                 analyses: [...state.analyses, action.payload],
+                totalCost: state.totalCost + (action.payload.usage?.cost || 0)
+            };
+        case 'UPDATE_ANALYSIS':
+            return {
+                ...state,
+                analyses: state.analyses.map(a =>
+                    a.ticker === action.payload.ticker && a.isTarget === action.payload.isTarget
+                        ? action.payload
+                        : a
+                ),
                 totalCost: state.totalCost + (action.payload.usage?.cost || 0)
             };
         case 'RESET_ANALYSES':
@@ -249,6 +260,76 @@ export default function MultiAgentPMPage() {
         }
     };
 
+    // Refresh handlers for individual analysis sections
+    const handleRefreshAnalysis = async (ticker: string, type: 'fundamental' | 'sevenPowers') => {
+        const existingAnalysis = state.analyses.find(a => a.ticker === ticker);
+        const isTarget = existingAnalysis?.isTarget || false;
+
+        addLog("Refresh", `Refreshing ${type} analysis for ${ticker}...`);
+
+        try {
+            const response = await fetch('/api/refresh-analysis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticker, type, isTarget })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (type === 'fundamental') {
+                    // Full analysis refreshed
+                    dispatch({ type: 'UPDATE_ANALYSIS', payload: result.data });
+                    addLog("Refresh", `${ticker} fundamental analysis refreshed (Cost: $${(result.data.usage?.cost || 0).toFixed(4)})`);
+                } else {
+                    // Just 7 Powers refreshed - update the existing analysis
+                    if (existingAnalysis) {
+                        const updatedAnalysis = {
+                            ...existingAnalysis,
+                            sevenPowers: result.data.text,
+                            usage: {
+                                tokens: (existingAnalysis.usage?.tokens || 0) + (result.data.usage?.tokens || 0),
+                                cost: result.data.usage?.cost || 0
+                            }
+                        };
+                        dispatch({ type: 'UPDATE_ANALYSIS', payload: updatedAnalysis });
+                        addLog("Refresh", `${ticker} 7 Powers refreshed (Cost: $${(result.data.usage?.cost || 0).toFixed(4)})`);
+                    }
+                }
+            } else {
+                addLog("Refresh", `Failed to refresh ${ticker}: ${result.error}`);
+            }
+        } catch (error: any) {
+            addLog("Refresh", `Error refreshing ${ticker}: ${error.message}`);
+        }
+    };
+
+    const handleRefreshDecision = async () => {
+        const targetAnalysis = state.analyses.find(a => a.isTarget);
+        if (!targetAnalysis) {
+            addLog("Refresh", "Cannot refresh decision: No target analysis found");
+            return;
+        }
+
+        const portfolioAnalyses = state.analyses.filter(a => !a.isTarget);
+
+        addLog("Portfolio Manager", "Re-running portfolio decision...");
+
+        try {
+            const decisionRes = await runPortfolioManagerDecision(targetAnalysis, portfolioAnalyses, state.portfolio);
+
+            if (decisionRes.success && decisionRes.data) {
+                dispatch({ type: 'SET_DECISION', payload: decisionRes.data });
+                const pmCost = decisionRes.data.complexity.usage?.cost || 0;
+                addLog("Portfolio Manager", `Decision refreshed (Cost: $${pmCost.toFixed(4)}). Complexity[${decisionRes.data.complexity.decision}]`);
+            } else {
+                addLog("Portfolio Manager", `Failed to refresh decision: ${decisionRes.error}`);
+            }
+        } catch (error: any) {
+            addLog("Portfolio Manager", `Error refreshing decision: ${error.message}`);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -312,6 +393,8 @@ export default function MultiAgentPMPage() {
                         tickerStatuses={state.tickerStatuses}
                         portfolio={state.portfolio}
                         totalCost={state.totalCost}
+                        onRefreshAnalysis={handleRefreshAnalysis}
+                        onRefreshDecision={handleRefreshDecision}
                     />
 
                     {/* Simple Portfolio Table included directly or componentized */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Activity, ShieldCheck, TrendingUp, Link as LinkIcon, Download, Clock, Database, Coins, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+import { Activity, ShieldCheck, TrendingUp, Link as LinkIcon, Download, Clock, Database, Coins, Briefcase, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,11 +46,15 @@ interface Props {
     tickerStatuses: TickerStatus[];
     portfolio: PortfolioItem[];
     totalCost: number;
+    onRefreshAnalysis?: (ticker: string, type: 'fundamental' | 'sevenPowers') => Promise<void>;
+    onRefreshDecision?: () => Promise<void>;
 }
 
-const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => {
+const CollapsibleAnalysisCard = ({ analysis, onRefresh }: { analysis: EquityAnalysis; onRefresh?: (ticker: string, type: 'fundamental' | 'sevenPowers') => Promise<void> }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [showSubRuns, setShowSubRuns] = useState(false);
+    const [isRefreshingFundamental, setIsRefreshingFundamental] = useState(false);
+    const [isRefreshingSevenPowers, setIsRefreshingSevenPowers] = useState(false);
 
     const downloadMarkdown = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -150,9 +154,27 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                     )}>
                         {/* Left Column: Fundamental Analysis */}
                         <div className="text-sm pr-2 max-h-[600px] overflow-y-auto text-slate-300">
-                            <div className="flex items-center gap-2 mb-4 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-emerald-500/20 pb-2">
-                                <Database size={12} />
-                                Fundamental Analyst
+                            <div className="flex items-center justify-between mb-4 border-b border-emerald-500/20 pb-2">
+                                <div className="flex items-center gap-2 text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em]">
+                                    <Database size={12} />
+                                    Fundamental Analyst
+                                </div>
+                                {onRefresh && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-slate-500 hover:text-emerald-400"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsRefreshingFundamental(true);
+                                            onRefresh(analysis.ticker, 'fundamental').finally(() => setIsRefreshingFundamental(false));
+                                        }}
+                                        disabled={isRefreshingFundamental}
+                                        title="Refresh Fundamental Analysis"
+                                    >
+                                        <RefreshCw size={12} className={isRefreshingFundamental ? 'animate-spin' : ''} />
+                                    </Button>
+                                )}
                             </div>
                             <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
                                 <ReactMarkdown
@@ -175,13 +197,29 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
                             </div>
                         </div>
 
-                        {/* Right Column: 7 Powers (Strategic Analysis) */}
-
                         {/* Always show this section, but display placeholder if data is missing */}
                         <div className={cn("text-sm lg:pl-8 max-h-[600px] overflow-y-auto text-slate-300 border-t lg:border-t-0 border-slate-800 pt-6 lg:pt-0", !analysis.sevenPowers && "hidden lg:block")}>
-                            <div className="flex items-center gap-2 mb-4 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em] border-b border-blue-500/20 pb-2">
-                                <ShieldCheck size={12} />
-                                Strategic Analyst (7 Powers)
+                            <div className="flex items-center justify-between mb-4 border-b border-blue-500/20 pb-2">
+                                <div className="flex items-center gap-2 text-blue-400 font-black uppercase text-[10px] tracking-[0.2em]">
+                                    <ShieldCheck size={12} />
+                                    Strategic Analyst (7 Powers)
+                                </div>
+                                {onRefresh && analysis.sevenPowers && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-slate-500 hover:text-blue-400"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsRefreshingSevenPowers(true);
+                                            onRefresh(analysis.ticker, 'sevenPowers').finally(() => setIsRefreshingSevenPowers(false));
+                                        }}
+                                        disabled={isRefreshingSevenPowers}
+                                        title="Refresh 7 Powers Analysis"
+                                    >
+                                        <RefreshCw size={12} className={isRefreshingSevenPowers ? 'animate-spin' : ''} />
+                                    </Button>
+                                )}
                             </div>
                             {analysis.sevenPowers ? (
                                 <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-100 prose-a:text-blue-400 prose-strong:text-white prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4">
@@ -262,8 +300,9 @@ const CollapsibleAnalysisCard = ({ analysis }: { analysis: EquityAnalysis }) => 
     );
 };
 
-const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio, totalCost }) => {
+const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio, totalCost, onRefreshAnalysis, onRefreshDecision }) => {
     const [showComplexitySubRuns, setShowComplexitySubRuns] = useState(false);
+    const [isRefreshingDecision, setIsRefreshingDecision] = useState(false);
 
     const sortedAnalyses = useMemo(() => {
         // 1. Separate Target(s)
@@ -393,7 +432,7 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                                     </div>
                                 ) : (
                                     sortedAnalyses.map((analysis) => (
-                                        <CollapsibleAnalysisCard key={`${analysis.ticker}-${analysis.isTarget}`} analysis={analysis} />
+                                        <CollapsibleAnalysisCard key={`${analysis.ticker}-${analysis.isTarget}`} analysis={analysis} onRefresh={onRefreshAnalysis} />
                                     ))
                                 )}
                             </div>
@@ -405,9 +444,26 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                 <div className="lg:col-span-1">
                     <Card className="bg-slate-800/20 border-slate-700/50 backdrop-blur-sm sticky top-8">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-xl uppercase tracking-tight text-slate-100">
-                                <TrendingUp className="text-emerald-400" />
-                                Portfolio Manager
+                            <CardTitle className="flex items-center justify-between text-xl uppercase tracking-tight text-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <TrendingUp className="text-emerald-400" />
+                                    Portfolio Manager
+                                </div>
+                                {tradeDecision && onRefreshDecision && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-slate-500 hover:text-purple-400"
+                                        onClick={() => {
+                                            setIsRefreshingDecision(true);
+                                            onRefreshDecision().finally(() => setIsRefreshingDecision(false));
+                                        }}
+                                        disabled={isRefreshingDecision}
+                                        title="Re-run Portfolio Decision"
+                                    >
+                                        <RefreshCw size={14} className={isRefreshingDecision ? 'animate-spin' : ''} />
+                                    </Button>
+                                )}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
