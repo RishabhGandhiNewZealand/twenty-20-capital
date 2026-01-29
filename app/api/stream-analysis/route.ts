@@ -18,48 +18,19 @@ export async function POST(req: NextRequest) {
                 controller.enqueue(new TextEncoder().encode(json + '\n'));
             };
 
-            // Create an array of promises for each analysis task
-            // Custom Concurrency Limiter (Limit 5)
-            const CONCURRENCY_LIMIT = 5;
-            const STAGGER_MS = 200; // Stagger start by 200ms to avoid thundering herd
-
-            const activePromises = new Set<Promise<void>>();
-
-            // Process tasks with concurrency limit
-            for (let i = 0; i < tasks.length; i++) {
-                const task = tasks[i];
-
-                // Wait if we hit the limit
-                if (activePromises.size >= CONCURRENCY_LIMIT) {
-                    await Promise.race(activePromises);
+            // Process all tasks in parallel (no concurrency limit)
+            const analysisPromises = tasks.map(task => (async () => {
+                try {
+                    const result = await analyzeEquity(task.ticker, task.isTarget);
+                    sendEvent({ success: true, data: result });
+                } catch (error: any) {
+                    console.error(`Analysis failed for ${task.ticker}:`, error);
+                    sendEvent({ success: false, ticker: task.ticker, error: error.message });
                 }
+            })());
 
-                // Stagger delay for smoother api usage
-                if (i > 0) {
-                    await new Promise(resolve => setTimeout(resolve, STAGGER_MS));
-                }
-
-                const promise = (async () => {
-                    try {
-                        const result = await analyzeEquity(task.ticker, task.isTarget);
-                        sendEvent({ success: true, data: result });
-                    } catch (error: any) {
-                        console.error(`Analysis failed for ${task.ticker}:`, error);
-                        sendEvent({ success: false, ticker: task.ticker, error: error.message });
-                    }
-                })();
-
-                activePromises.add(promise);
-                // Remove self from active set when done
-                promise.finally(() => activePromises.delete(promise));
-            }
-
-            // Wait for all remaining active promises to finish
-            await Promise.all(activePromises);
-            controller.close();
-
-            // Wait for all analyses to complete then close the stream
-
+            // Wait for all analyses to complete
+            await Promise.all(analysisPromises);
             controller.close();
         }
     });
