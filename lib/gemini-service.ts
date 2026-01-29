@@ -3,7 +3,7 @@ import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
 import { FUNDAMENTAL_ANALYST_PROMPT, HAMILTON_HELMER_PROMPT, COMPLEXITY_PM_PROMPT } from './agents/prompts';
-import cacheManager, { CacheKey } from './cache-manager';
+import { getCache, putCache } from './blob-cache';
 
 // Types definition (ported from source)
 export interface PortfolioItem {
@@ -372,41 +372,39 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         throw new Error("Gemini API Key is missing. Please set GEMINI_API_KEY in your .env.local");
     }
 
-    // 0. CHECK CACHE (24 Hours)
-    // We strictly cache by ticker.
-    const cacheKey = `${CacheKey.EQUITY_ANALYSIS}:${ticker}`;
-    const cached = await cacheManager.get<EquityAnalysis>(cacheKey);
+    // 0. CHECK BLOB CACHE (24 Hours, persistent across devices)
+    const cached = await getCache<EquityAnalysis>(ticker, 'fundamental');
 
     if (cached) {
-        console.log(`[Cache] Hit for ${ticker} (v${cached.version})`);
+        console.log(`[BlobCache] Hit for fundamental/${ticker}`);
 
         // Check if 7 Powers is missing or empty (backfill for old cache entries)
-        if (!cached.data.sevenPowers || cached.data.sevenPowers.trim().length === 0) {
-            console.log(`[Cache] Backfilling 7 Powers for ${ticker}...`);
+        if (!cached.sevenPowers || cached.sevenPowers.trim().length === 0) {
+            console.log(`[BlobCache] Backfilling 7 Powers for ${ticker}...`);
             const spResult = await analyzeSevenPowers(ticker, ticker, isTarget);
 
             if (spResult.text) {
-                console.log(`[Cache] Backfill successful for ${ticker}. Length: ${spResult.text.length}`);
-                cached.data.sevenPowers = spResult.text;
+                console.log(`[BlobCache] Backfill successful for ${ticker}. Length: ${spResult.text.length}`);
+                cached.sevenPowers = spResult.text;
 
                 // Update cache with new complete record
-                await cacheManager.set(cacheKey, cached.data, 86400);
+                await putCache(ticker, 'fundamental', cached);
 
                 return {
-                    ...cached.data,
+                    ...cached,
                     usage: spResult.usage, // Charge for the backfill run
                 };
             } else {
-                console.warn(`[Cache] Backfill failed (empty result) for ${ticker}`);
+                console.warn(`[BlobCache] Backfill failed (empty result) for ${ticker}`);
             }
         }
 
         // Zero out cost so the UI doesn't add stale costs to the session total
         const zeroUsage = { tokens: 0, cost: 0 };
         return {
-            ...cached.data,
+            ...cached,
             usage: zeroUsage,
-            subRuns: cached.data.subRuns?.map(r => ({ ...r, usage: zeroUsage }))
+            subRuns: cached.subRuns?.map(r => ({ ...r, usage: zeroUsage }))
         };
     }
 
@@ -498,8 +496,8 @@ Output strictly valid JSON.`;
         usage: totalUsage
     };
 
-    // CACHE RESULT (24 Hours)
-    await cacheManager.set(cacheKey, finalAnalysis, 86400);
+    // CACHE RESULT (24 Hours) in Vercel Blob
+    await putCache(ticker, 'fundamental', finalAnalysis);
 
     return finalAnalysis;
 };
@@ -508,6 +506,17 @@ Output strictly valid JSON.`;
  * Agent 2: Strategic Analyst (Hamilton Helmer / 7 Powers)
  */
 export const analyzeSevenPowers = async (ticker: string, companyName: string, isTarget: boolean = false): Promise<{ text: string, usage: { tokens: number, cost: number } }> => {
+    // 0. CHECK BLOB CACHE (24 Hours, persistent across devices)
+    const cached = await getCache<{ text: string, usage: { tokens: number, cost: number } }>(ticker, 'sevenPowers');
+    if (cached) {
+        console.log(`[BlobCache] Hit for sevenPowers/${ticker}`);
+        // Zero out cost for cached results
+        return {
+            text: cached.text,
+            usage: { tokens: 0, cost: 0 }
+        };
+    }
+
     const model = genAI.getGenerativeModel({ model: ANALYSIS_MODEL }, { apiVersion: 'v1beta' });
 
     // 1. Pre-fetch Live Data
@@ -547,10 +556,15 @@ Output a structured Markdown report.`;
         responseText = "The model returned an empty response for this segment.";
     }
 
-    return {
+    const analysisResult = {
         text: responseText,
         usage: calculateUsage(ANALYSIS_MODEL, result.response.usageMetadata)
     };
+
+    // CACHE RESULT (24 Hours) in Vercel Blob
+    await putCache(ticker, 'sevenPowers', analysisResult);
+
+    return analysisResult;
 };
 
 /**
