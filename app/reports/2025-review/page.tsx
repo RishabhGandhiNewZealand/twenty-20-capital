@@ -11,40 +11,8 @@ import { formatCurrency, formatPercentage } from "@/lib/financial-calculations"
 import { calculateCAGRFromTotalReturn, calculateTimeWeightedReturn } from "@/lib/financial-calculations"
 import { getYearsSinceInception } from "@/lib/constants"
 
-// Manual data for Start of 2025 (End of 2024 from previous report)
-const startOfYearHoldings: any[] = [
-    { symbol: "CRM", name: "Salesforce", allocation: 20.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "GOOGL", name: "Google", allocation: 15.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "AMZN", name: "Amazon", allocation: 12.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "META", name: "Meta", allocation: 9.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "MFT.NZ", name: "Mainfreight", allocation: 8.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "NZD" },
-    { symbol: "UBER", name: "Uber", allocation: 7.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "MA", name: "Mastercard", allocation: 6.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "NFLX", name: "Netflix", allocation: 5.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "SPGI", name: "S&P Global", allocation: 5.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "MSCI", name: "MSCI", allocation: 5.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "CP", name: "CPKC Railways", allocation: 4.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "UNH", name: "UnitedHealth", allocation: 3.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-]
+// Manual data removed in favor of API fetching based on customDate
 
-// Manual data for End of 2025 (Inferred from text)
-const endOfYearHoldings: any[] = [
-    { symbol: "CRM", name: "Salesforce", allocation: 18.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "UBER", name: "Uber", allocation: 15.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "AMZN", name: "Amazon", allocation: 11.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "META", name: "Meta", allocation: 9.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "MA", name: "Mastercard", allocation: 8.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "GOOGL", name: "Google", allocation: 8.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "NFLX", name: "Netflix", allocation: 7.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "SPGI", name: "S&P Global", allocation: 6.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "MSCI", name: "MSCI", allocation: 5.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "CP", name: "CPKC Railways", allocation: 5.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "DUOL", name: "Duolingo", allocation: 2.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "ADBE", name: "Adobe", allocation: 2.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "SE", name: "Sea Limited", allocation: 1.5, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "MELI", name: "MercadoLibre", allocation: 1.5, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-    { symbol: "ZETA", name: "Zeta Global", allocation: 1.0, currentValueNZD: 0, gainNZD: 0, gainPercent: 0, shares: 0, currentPrice: 0, costBasisNZD: 0, currency: "USD" },
-]
 
 
 export default function Review2025Page() {
@@ -266,20 +234,16 @@ export default function Review2025Page() {
                                 {/* Start of Year Chart */}
                                 <div>
                                     <PortfolioHorizontalBarChart
-                                        holdings={startOfYearHoldings}
                                         customDate="2025-01-01"
                                         hideControls={true}
-                                        staticHoldings={true}
                                     />
                                 </div>
 
                                 {/* End of Year Chart */}
                                 <div>
                                     <PortfolioHorizontalBarChart
-                                        holdings={endOfYearHoldings}
                                         customDate="2025-12-31"
                                         hideControls={true}
-                                        staticHoldings={true}
                                     />
                                 </div>
 

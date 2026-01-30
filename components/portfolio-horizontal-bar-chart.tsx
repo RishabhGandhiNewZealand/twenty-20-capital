@@ -114,16 +114,49 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           setCompositionData(data)
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          setSliderValue(dates.length - 1)
-          setDisplayDate(dates[dates.length - 1])
+
+          let initialIndex = dates.length - 1
+          if (customDate) {
+            // Find closest date
+            const targetTime = new Date(customDate).getTime()
+            let minDiff = Infinity
+
+            dates.forEach((date, index) => {
+              const dateTime = new Date(date).getTime()
+              const diff = Math.abs(dateTime - targetTime)
+              if (diff < minDiff) {
+                minDiff = diff
+                initialIndex = index
+              }
+            })
+          }
+
+          setSliderValue(initialIndex)
+          setDisplayDate(dates[initialIndex])
         } else {
           const data = await response.json()
           setCompositionData(data)
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          // Start slider at latest date; min corresponds to first trade date
-          setSliderValue(dates.length - 1)
-          setDisplayDate(dates[dates.length - 1])
+
+          let initialIndex = dates.length - 1
+          if (customDate) {
+            // Find closest date
+            const targetTime = new Date(customDate).getTime()
+            let minDiff = Infinity
+
+            dates.forEach((date, index) => {
+              const dateTime = new Date(date).getTime()
+              const diff = Math.abs(dateTime - targetTime)
+              if (diff < minDiff) {
+                minDiff = diff
+                initialIndex = index
+              }
+            })
+          }
+
+          setSliderValue(initialIndex)
+          setDisplayDate(dates[initialIndex])
         }
         setLoading(false)
       } catch (error) {
