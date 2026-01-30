@@ -8,7 +8,7 @@ import { maskCurrency } from "@/lib/anonymization-utils"
 
 export default function ReportsPage() {
   const { isAnonymized } = useAnonymization()
-  
+
   const reports2024 = [
     {
       title: "2024 Annual Review",
@@ -21,6 +21,16 @@ export default function ReportsPage() {
   ]
 
   const reports2025 = [
+    {
+      title: "2025 Annual Review",
+      description: "Comprehensive portfolio review, investing philosophy update, and 2025 performance analysis",
+      date: "December 31, 2025",
+      href: "/reports/2025-review",
+      type: "Annual",
+      performance: "+34.2%",
+      portfolioValue: 59015, // Calculated December 31, 2025 Value
+      additions: 20000,
+    },
     {
       title: "Q1 2025 Report",
       description: "First quarter performance review and market outlook",
@@ -87,13 +97,12 @@ export default function ReportsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-3 sm:mb-4">{report.description}</p>
-                    
+
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
                       <div>
                         <p className="text-xs text-gray-500">Performance</p>
-                        <p className={`text-base sm:text-lg font-semibold ${
-                          report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                        <p className={`text-base sm:text-lg font-semibold ${report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                          }`}>
                           {report.performance}
                         </p>
                       </div>
@@ -104,7 +113,7 @@ export default function ReportsPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="mt-3 sm:mt-4 flex items-center text-blue-600 text-sm">
                       <span>View Report</span>
                       <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
@@ -142,14 +151,14 @@ export default function ReportsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-3 sm:mb-4">{report.description}</p>
-                    
+
                     <div className="pt-3 sm:pt-4 border-t">
                       <p className="text-xs text-gray-500 mb-1">Annual Performance</p>
                       <p className={`text-lg sm:text-xl font-semibold text-green-600`}>
                         {report.performance}
                       </p>
                     </div>
-                    
+
                     <div className="mt-3 sm:mt-4 flex items-center text-blue-600 text-sm">
                       <span>View Report</span>
                       <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />

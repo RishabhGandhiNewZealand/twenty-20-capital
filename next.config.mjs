@@ -5,6 +5,15 @@ const nextConfig = {
   },
   images: {
     // Enable image optimization for better performance
+    localPatterns: [
+      {
+        pathname: '/api/logo/**',
+        search: '?size=*',
+      },
+      {
+        pathname: '/**',
+      },
+    ],
     remotePatterns: [
       {
         protocol: 'https',
