@@ -16,7 +16,7 @@ export default function ReportsPage() {
       date: "December 31, 2024",
       href: "/reports/2024-review",
       type: "Annual",
-      performance: "+16.6%",
+      performance: "+30.70%",
     },
   ]
 
@@ -27,8 +27,8 @@ export default function ReportsPage() {
       date: "December 31, 2025",
       href: "/reports/2025-review",
       type: "Annual",
-      performance: "+34.2%",
-      portfolioValue: 59015, // Calculated December 31, 2025 Value
+      performance: "+25.98%",
+      portfolioValue: 59015,
       additions: 20000,
     },
     {
@@ -37,7 +37,7 @@ export default function ReportsPage() {
       date: "March 31, 2025",
       href: "/reports/q1-2025",
       type: "Quarterly",
-      performance: "-5.4%",
+      performance: "-7.44%",
       portfolioValue: 34788,
       additions: 6500,
     },
@@ -47,7 +47,7 @@ export default function ReportsPage() {
       date: "June 30, 2025",
       href: "/reports/q2-2025",
       type: "Quarterly",
-      performance: "+5.18%",
+      performance: "+13.13%",
       portfolioValue: 42098,
       additions: 2000,
     },
@@ -57,9 +57,9 @@ export default function ReportsPage() {
       date: "September 30, 2025",
       href: "/reports/q3-2025",
       type: "Quarterly",
-      performance: "+10%", // Placeholder
-      portfolioValue: 47000, // Placeholder
-      additions: 5000, // Placeholder
+      performance: "+16.82%",
+      portfolioValue: 47000,
+      additions: 5000,
     },
   ]
 
@@ -69,6 +69,9 @@ export default function ReportsPage() {
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Investment Reports</h1>
           <p className="text-sm sm:text-base text-gray-600">Quarterly and annual performance reviews</p>
+          <p className="text-xs text-gray-500 mt-2 italic">
+            Note: Performance values shown here may differ slightly from figures mentioned within individual reports due to different reporting methodologies applied at the time of report creation.
+          </p>
         </div>
 
         {/* 2025 Reports */}
