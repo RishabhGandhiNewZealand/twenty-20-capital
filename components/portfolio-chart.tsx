@@ -49,19 +49,32 @@ interface PortfolioChartProps {
   historyPath?: string
   historyHeaders?: Record<string, string>
   anonymizeOverride?: boolean
+  initialPeriod?: TimePeriod
+  initialStartDate?: Date
+  initialEndDate?: Date
+  locked?: boolean
 }
 
 type TimePeriod = '1M' | '3M' | '6M' | '1Y' | 'YTD' | '5Y' | 'ALL' | 'CUSTOM'
 
-export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfolio-history", historyHeaders, anonymizeOverride }: PortfolioChartProps) {
+export function PortfolioChart({
+  portfolioStats = [],
+  historyPath = "/api/portfolio-history",
+  historyHeaders,
+  anonymizeOverride,
+  initialPeriod = 'ALL',
+  initialStartDate,
+  initialEndDate,
+  locked = false
+}: PortfolioChartProps) {
   const [allPerformanceData, setAllPerformanceData] = useState<PerformanceData[]>([])
   const [filteredData, setFilteredData] = useState<PerformanceData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hideStats, setHideStats] = useState(false)
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('ALL')
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>(initialPeriod)
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(initialStartDate)
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(initialEndDate)
   const { isAnonymized } = useAnonymization()
   const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : isAnonymized
 
@@ -69,7 +82,7 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
     async function fetchPortfolioHistory() {
       try {
         const timestamp = Date.now()
-        const response = await fetch(`${historyPath}?t=${timestamp}`, { 
+        const response = await fetch(`${historyPath}?t=${timestamp}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
@@ -81,17 +94,17 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
           throw new Error('Failed to fetch portfolio history')
         }
         const result = await response.json()
-        
+
         if (!result.history || result.history.length === 0) {
           setError('No portfolio history data available')
           return
         }
-        
+
         const formattedData = result.history
-        
+
         // Use TWR-based performance calculation
         const performanceData = calculateTWRPerformanceData(formattedData)
-        
+
         setAllPerformanceData(performanceData)
         setFilteredData(performanceData)
       } catch (err) {
@@ -153,7 +166,7 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
 
     // Filter data by date range
     const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = selectedPeriod === 'CUSTOM' && customEndDate 
+    const endDateStr = selectedPeriod === 'CUSTOM' && customEndDate
       ? customEndDate.toISOString().split('T')[0]
       : now.toISOString().split('T')[0]
 
@@ -179,18 +192,18 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
 
   function sampleData<T>(data: T[], maxPoints: number): T[] {
     if (data.length <= maxPoints) return data
-    
+
     const step = Math.ceil(data.length / maxPoints)
     const sampled = [] as T[]
-    
+
     for (let i = 0; i < data.length; i += step) {
       sampled.push(data[i])
     }
-    
+
     if (sampled[sampled.length - 1] !== data[data.length - 1]) {
       sampled.push(data[data.length - 1])
     }
-    
+
     return sampled
   }
 
@@ -212,8 +225,8 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
       return (
         <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
           <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
-            {new Date(label).toLocaleDateString('en-NZ', { 
-              year: 'numeric', 
+            {new Date(label).toLocaleDateString('en-NZ', {
+              year: 'numeric',
               month: 'short',
               day: 'numeric'
             })}
@@ -310,9 +323,9 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
       <CardHeader className="pb-2 sm:pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-gray-900 text-lg sm:text-xl">Portfolio Performance</CardTitle>
-          
+
           {/* Time Period Filter Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className={`flex flex-wrap items-center gap-2 ${locked ? "hidden" : ""}`}>
             {timeButtons.map(({ label, value }) => (
               <Button
                 key={value}
@@ -321,15 +334,15 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
                 onClick={() => handlePeriodChange(value)}
                 className={cn(
                   "text-xs h-8 px-3",
-                  selectedPeriod === value 
-                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                  selectedPeriod === value
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "hover:bg-gray-100"
                 )}
               >
                 {label}
               </Button>
             ))}
-            
+
             {/* Custom Date Range Picker */}
             <Popover>
               <PopoverTrigger asChild>
@@ -400,9 +413,8 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
       <CardContent className="px-2 sm:px-6">
         <div className="h-[300px] sm:h-[400px] w-full relative">
           {portfolioStats.length > 0 && !hideStats && (
-            <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${
-              anonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
-            }`}>
+            <div className={`absolute top-1 sm:top-2 z-10 space-y-1 sm:space-y-1.5 ${anonymized ? 'left-[20px] sm:left-[25px]' : 'left-[60px] sm:left-24'
+              }`}>
               {portfolioStats.map((stat) => {
                 return (
                   <div key={stat.title} className="bg-[hsl(var(--card))]/95 backdrop-blur-sm border border-[hsl(var(--border))] rounded-md px-2 py-1 sm:px-3 sm:py-1.5 shadow-md">
@@ -421,20 +433,20 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
               margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tick={{ fontSize: 10 }}
                 interval="preserveStartEnd"
                 minTickGap={30}
                 tickFormatter={(value) => {
                   const date = new Date(value)
-                  return date.toLocaleDateString('en-NZ', { 
+                  return date.toLocaleDateString('en-NZ', {
                     month: 'short',
                     year: '2-digit'
                   })
                 }}
               />
-              <YAxis 
+              <YAxis
                 tick={anonymized ? false : { fontSize: 10 }}
                 tickFormatter={(value) => `${(isNaN(value) ? 0 : value).toFixed(0)}%`}
                 domain={[
@@ -446,14 +458,14 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
                 tickLine={!anonymized}
               />
               <Tooltip content={<CustomTooltipPercentage />} />
-              <Legend 
+              <Legend
                 wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
                 iconType="line"
               />
               {/* Reference line at 0% */}
-              <Line 
-                type="monotone" 
-                dataKey={() => 0} 
+              <Line
+                type="monotone"
+                dataKey={() => 0}
                 stroke="#94a3b8"
                 strokeWidth={1.5}
                 strokeDasharray="5 5"
@@ -461,18 +473,18 @@ export function PortfolioChart({ portfolioStats = [], historyPath = "/api/portfo
                 dot={false}
                 legendType="none"
               />
-              <Line 
-                type="monotone" 
-                dataKey="portfolioPerformance" 
+              <Line
+                type="monotone"
+                dataKey="portfolioPerformance"
                 stroke="#00a37a"
                 strokeWidth={2.5}
                 name="Portfolio TWR"
                 dot={false}
                 activeDot={{ r: 5 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="sp500Performance" 
+              <Line
+                type="monotone"
+                dataKey="sp500Performance"
                 stroke="#6b7280"
                 strokeWidth={2.5}
                 name="S&P 500 TWR"

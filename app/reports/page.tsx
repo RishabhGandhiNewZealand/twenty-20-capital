@@ -8,7 +8,7 @@ import { maskCurrency } from "@/lib/anonymization-utils"
 
 export default function ReportsPage() {
   const { isAnonymized } = useAnonymization()
-  
+
   const reports2024 = [
     {
       title: "2024 Annual Review",
@@ -16,18 +16,28 @@ export default function ReportsPage() {
       date: "December 31, 2024",
       href: "/reports/2024-review",
       type: "Annual",
-      performance: "+16.6%",
+      performance: "+30.70%",
     },
   ]
 
   const reports2025 = [
+    {
+      title: "2025 Annual Review",
+      description: "Comprehensive portfolio review, investing philosophy update, and 2025 performance analysis",
+      date: "December 31, 2025",
+      href: "/reports/2025-review",
+      type: "Annual",
+      performance: "+25.98%",
+      portfolioValue: 59015,
+      additions: 20000,
+    },
     {
       title: "Q1 2025 Report",
       description: "First quarter performance review and market outlook",
       date: "March 31, 2025",
       href: "/reports/q1-2025",
       type: "Quarterly",
-      performance: "-5.4%",
+      performance: "-7.44%",
       portfolioValue: 34788,
       additions: 6500,
     },
@@ -37,7 +47,7 @@ export default function ReportsPage() {
       date: "June 30, 2025",
       href: "/reports/q2-2025",
       type: "Quarterly",
-      performance: "+5.18%",
+      performance: "+13.13%",
       portfolioValue: 42098,
       additions: 2000,
     },
@@ -47,9 +57,9 @@ export default function ReportsPage() {
       date: "September 30, 2025",
       href: "/reports/q3-2025",
       type: "Quarterly",
-      performance: "+10%", // Placeholder
-      portfolioValue: 47000, // Placeholder
-      additions: 5000, // Placeholder
+      performance: "+16.82%",
+      portfolioValue: 47000,
+      additions: 5000,
     },
   ]
 
@@ -59,6 +69,9 @@ export default function ReportsPage() {
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Investment Reports</h1>
           <p className="text-sm sm:text-base text-gray-600">Quarterly and annual performance reviews</p>
+          <p className="text-xs text-gray-500 mt-2 italic">
+            Note: Performance values shown here may differ slightly from figures mentioned within individual reports due to different reporting methodologies applied at the time of report creation.
+          </p>
         </div>
 
         {/* 2025 Reports */}
@@ -87,13 +100,12 @@ export default function ReportsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-3 sm:mb-4">{report.description}</p>
-                    
+
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
                       <div>
                         <p className="text-xs text-gray-500">Performance</p>
-                        <p className={`text-base sm:text-lg font-semibold ${
-                          report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                        <p className={`text-base sm:text-lg font-semibold ${report.performance.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                          }`}>
                           {report.performance}
                         </p>
                       </div>
@@ -104,7 +116,7 @@ export default function ReportsPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="mt-3 sm:mt-4 flex items-center text-blue-600 text-sm">
                       <span>View Report</span>
                       <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
@@ -142,14 +154,14 @@ export default function ReportsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-3 sm:mb-4">{report.description}</p>
-                    
+
                     <div className="pt-3 sm:pt-4 border-t">
                       <p className="text-xs text-gray-500 mb-1">Annual Performance</p>
                       <p className={`text-lg sm:text-xl font-semibold text-green-600`}>
                         {report.performance}
                       </p>
                     </div>
-                    
+
                     <div className="mt-3 sm:mt-4 flex items-center text-blue-600 text-sm">
                       <span>View Report</span>
                       <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />

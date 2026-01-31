@@ -84,7 +84,7 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
     { href: "/appreciation-fund", label: "Portfolio", icon: TrendingUp },
     { href: "/analyses", label: "Analyses", icon: BarChart3 },
     { href: "/reports", label: "Reports", icon: FileText },
-    { href: "/investment-thesis", label: "Investment Thesis", icon: BookOpen },
+    { href: "/#philosophy", label: "Philosophy", icon: BookOpen },
   ]
 
 
@@ -104,9 +104,9 @@ export default function SidebarNavigation({ adminEmail = "", children }: Props) 
   const flatNavItems = allGroups.flatMap(g => g.items)
   let currentPage = flatNavItems.find(item => item.href === pathname) || flatNavItems[0]
 
-  if (pathname === '/investment-thesis') {
-    currentPage = { href: '/investment-thesis', label: 'Investment Thesis', icon: BookOpen }
-  } else if (pathname === '/portfolio') {
+  // Investment thesis logic removed
+
+  if (pathname === '/portfolio') {
     currentPage = { href: '/portfolio', label: 'Portfolio', icon: Briefcase }
   }
 

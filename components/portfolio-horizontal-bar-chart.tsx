@@ -42,14 +42,20 @@ interface PortfolioHorizontalBarChartProps {
     currentValueNZD: number
     gainNZD: number
     gainPercent: number
+    allocation?: number
+    shares?: number
+    currency?: string
   }>
   compositionPath?: string
   compositionDatePath?: string
   compositionHeaders?: Record<string, string>
   anonymizeOverride?: boolean
+  customDate?: string // Custom date string override, e.g. "2025-01-01"
+  hideControls?: boolean // Hide play/pause and slider
+  staticHoldings?: boolean // If true, force display of holdings prop and disable fetching
 }
 
-export function PortfolioHorizontalBarChart({ holdings: currentHoldings, compositionPath, compositionDatePath, compositionHeaders, anonymizeOverride }: PortfolioHorizontalBarChartProps) {
+export function PortfolioHorizontalBarChart({ holdings: currentHoldings, compositionPath, compositionDatePath, compositionHeaders, anonymizeOverride, customDate, hideControls = false, staticHoldings = false }: PortfolioHorizontalBarChartProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,6 +73,27 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
 
   useEffect(() => {
     async function loadCompositionData() {
+
+      if (staticHoldings && currentHoldings) {
+        // Map currentHoldings to HoldingAtDate format
+        // Assumes currentHoldings are already sorted and formatted correctly
+        const mappedHoldings = currentHoldings.map(h => ({
+          symbol: h.symbol,
+          name: h.name,
+          shares: h.shares || 0,
+          value: h.currentValueNZD,
+          percentage: h.allocation || 0,
+          currency: h.currency || 'USD' // Defaulting to USD if not provided
+        }))
+        setDisplayHoldings(mappedHoldings)
+        setCompositionData(null)
+        setAvailableDates([])
+        setSliderValue(0)
+        setDisplayDate(customDate || null)
+        setLoading(false)
+        return
+      }
+
       try {
         // Prefer historical compositions if a path is provided (user or admin)
         const path = compositionPath || '/api/portfolio-compositions'
@@ -77,7 +104,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
             setCompositionData(null)
             setAvailableDates([])
             setSliderValue(0)
-            setDisplayDate(null)
+            setDisplayDate(customDate || null)
             setLoading(false)
             return
           }
@@ -87,16 +114,49 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           setCompositionData(data)
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          setSliderValue(dates.length - 1)
-          setDisplayDate(dates[dates.length - 1])
+
+          let initialIndex = dates.length - 1
+          if (customDate) {
+            // Find closest date
+            const targetTime = new Date(customDate).getTime()
+            let minDiff = Infinity
+
+            dates.forEach((date, index) => {
+              const dateTime = new Date(date).getTime()
+              const diff = Math.abs(dateTime - targetTime)
+              if (diff < minDiff) {
+                minDiff = diff
+                initialIndex = index
+              }
+            })
+          }
+
+          setSliderValue(initialIndex)
+          setDisplayDate(dates[initialIndex])
         } else {
           const data = await response.json()
           setCompositionData(data)
           const dates = Object.keys(data).sort()
           setAvailableDates(dates)
-          // Start slider at latest date; min corresponds to first trade date
-          setSliderValue(dates.length - 1)
-          setDisplayDate(dates[dates.length - 1])
+
+          let initialIndex = dates.length - 1
+          if (customDate) {
+            // Find closest date
+            const targetTime = new Date(customDate).getTime()
+            let minDiff = Infinity
+
+            dates.forEach((date, index) => {
+              const dateTime = new Date(date).getTime()
+              const diff = Math.abs(dateTime - targetTime)
+              if (diff < minDiff) {
+                minDiff = diff
+                initialIndex = index
+              }
+            })
+          }
+
+          setSliderValue(initialIndex)
+          setDisplayDate(dates[initialIndex])
         }
         setLoading(false)
       } catch (error) {
@@ -414,7 +474,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
                 as of {displayDate ? formatDate(displayDate) : new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             </CardTitle>
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className={`flex items-center gap-1 sm:gap-2 ${hideControls ? "hidden" : ""}`}>
               <Button
                 variant="outline"
                 size="sm"
@@ -437,8 +497,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
                 <button
                   onClick={() => changeSpeed(0.5)}
                   className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 0.5
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
                   0.5x
@@ -446,8 +506,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
                 <button
                   onClick={() => changeSpeed(1)}
                   className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 1
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
                   1x
@@ -455,8 +515,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
                 <button
                   onClick={() => changeSpeed(2)}
                   className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 2
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
                   2x
@@ -464,7 +524,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 w-full">
+          <div className={`flex items-center gap-2 sm:gap-3 w-full ${hideControls ? "hidden" : ""}`}>
             <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
               {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-NZ', {
                 year: 'numeric',
