@@ -232,8 +232,9 @@ export default function MultiAgentPMPage() {
             }
 
             // Step 2: Ensure we have the target analysis before proceeding
-            const targetAnalysis = resultBuffer.find(r => r.isTarget);
-            const portfolioAnalyses = resultBuffer.filter(r => !r.isTarget);
+            // Use ticker match (source of truth) instead of isTarget flag (may be stale from cache)
+            const targetAnalysis = resultBuffer.find(r => r.ticker === state.targetTicker);
+            const portfolioAnalyses = resultBuffer.filter(r => r.ticker !== state.targetTicker);
 
             if (!targetAnalysis) {
                 throw new Error(`Failed to generate critical research for target: ${state.targetTicker}`);

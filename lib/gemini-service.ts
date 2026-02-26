@@ -392,6 +392,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
 
                 return {
                     ...cached,
+                    isTarget, // Always use the caller's current value, not the cached one
                     usage: spResult.usage, // Charge for the backfill run
                 };
             } else {
@@ -403,6 +404,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         const zeroUsage = { tokens: 0, cost: 0 };
         return {
             ...cached,
+            isTarget, // Always use the caller's current value, not the cached one
             usage: zeroUsage,
             subRuns: cached.subRuns?.map(r => ({ ...r, usage: zeroUsage }))
         };
