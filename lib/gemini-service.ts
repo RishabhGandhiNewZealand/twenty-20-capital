@@ -142,16 +142,19 @@ const COMPLEXITY_DECISION_SCHEMA = {
 
 
 // Configuration
-const ANALYSIS_MODEL = 'gemini-3-flash-preview';
-const DECISION_MODEL = 'gemini-3-pro-preview';
+const ANALYSIS_MODEL = 'gemini-3.1-pro-preview';
+const DECISION_MODEL = 'gemini-3.1-pro-preview';
 
 // Initialize Gemini Client
 // WARNING: Ensure GEMINI_API_KEY is in your .env.local
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 
-// Pricing (USD per 1M tokens) - Gemini 2.0 Flash / 1.5 Flash
-// Input: $0.075 / 1M, Output: $0.30 / 1M (for prompts < 128k)
+// Pricing (USD per 1M tokens) - Gemini 3.1 Pro Preview
+// Prompts <= 200k: Input $2.00 / Output $12.00 (incl. thinking)
+// Prompts >  200k: Input $4.00 / Output $18.00
+// Context caching: $0.20/$0.40 + $4.50/1M tokens/hr storage
+// Grounding w/ Google Search: 5,000 free/mo, then $14/1,000 queries
 
 // Cast to any to avoid strict Schema validation recursion issues in TS
 // Cast to any to avoid strict Schema validation recursion issues in TS
@@ -331,7 +334,7 @@ async function withRetry<T>(
     }
 }
 
-const calculateUsage = (modelName: string, usage: any) => {
+export const calculateUsage = (modelName: string, usage: any) => {
     if (!usage) return { tokens: 0, cost: 0 };
 
     const tokenCount = usage.promptTokenCount;
@@ -392,6 +395,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
 
                 return {
                     ...cached,
+                    isTarget, // Always use the caller's current value, not the cached one
                     usage: spResult.usage, // Charge for the backfill run
                 };
             } else {
@@ -403,6 +407,7 @@ export const analyzeEquity = async (ticker: string, isTarget: boolean = false): 
         const zeroUsage = { tokens: 0, cost: 0 };
         return {
             ...cached,
+            isTarget, // Always use the caller's current value, not the cached one
             usage: zeroUsage,
             subRuns: cached.subRuns?.map(r => ({ ...r, usage: zeroUsage }))
         };

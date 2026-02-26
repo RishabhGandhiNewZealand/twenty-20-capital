@@ -7,6 +7,7 @@ import { BrainCircuit, Loader2, PieChart, RefreshCw, ExternalLink } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AnalysisDashboard, { AgentStatus, AnalysisLog } from './components/analysis-dashboard';
+import AnalysisChat from './components/analysis-chat';
 import type { EquityAnalysis, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import { runFundamentalAnalysis, runBatchFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
 import { TickerStatus } from './components/analysis-dashboard';
@@ -17,6 +18,8 @@ interface State {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
+    previousAnalyses: EquityAnalysis[];
+    previousDecisions: { complexity: ComplexityDecision; targetTicker: string; timestamp: number }[];
     tradeDecision: { complexity: ComplexityDecision } | null;
     error: string | null;
     portfolio: PortfolioItem[];
@@ -37,12 +40,16 @@ type Action =
     | { type: 'RESET_ANALYSES' }
     | { type: 'SET_TICKER_STATUSES'; payload: TickerStatus[] }
     | { type: 'UPDATE_TICKER_STATUS'; payload: { ticker: string, state: TickerStatus['state'] } }
-    | { type: 'SET_DECISION'; payload: { complexity: ComplexityDecision } };
+    | { type: 'SET_DECISION'; payload: { complexity: ComplexityDecision } }
+    | { type: 'SET_PREVIOUS_ANALYSES'; payload: EquityAnalysis[] }
+    | { type: 'SET_PREVIOUS_DECISIONS'; payload: { complexity: ComplexityDecision; targetTicker: string; timestamp: number }[] };
 
 const initialState: State = {
     status: AgentStatus.IDLE,
     logs: [],
     analyses: [],
+    previousAnalyses: [],
+    previousDecisions: [],
     tradeDecision: null,
     error: null,
     portfolio: [],
@@ -93,6 +100,10 @@ function reducer(state: State, action: Action): State {
         case 'SET_DECISION':
             const decisionCost = action.payload.complexity.usage?.cost || 0;
             return { ...state, tradeDecision: action.payload, totalCost: state.totalCost + decisionCost };
+        case 'SET_PREVIOUS_ANALYSES':
+            return { ...state, previousAnalyses: action.payload };
+        case 'SET_PREVIOUS_DECISIONS':
+            return { ...state, previousDecisions: action.payload };
         default:
             return state;
     }
@@ -126,6 +137,7 @@ export default function MultiAgentPMPage() {
             setIsAdmin(true);
             setLoading(false);
             initPortfolio();
+            loadCachedAnalyses();
         };
         checkAdmin();
     }, [user, router]);
@@ -161,6 +173,25 @@ export default function MultiAgentPMPage() {
         } catch (err: any) {
             addLog("Coordinator", `Sync Failed: ${err.message}`);
             dispatch({ type: 'SET_ERROR', payload: `Sync Error: ${err.message}` });
+        }
+    };
+
+    const loadCachedAnalyses = async () => {
+        try {
+            const res = await fetch('/api/cached-analyses');
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.analyses && data.analyses.length > 0) {
+                dispatch({ type: 'SET_PREVIOUS_ANALYSES', payload: data.analyses });
+                addLog("Coordinator", `Loaded ${data.analyses.length} cached analyses from archive.`);
+            }
+            if (data.decisions && data.decisions.length > 0) {
+                dispatch({ type: 'SET_PREVIOUS_DECISIONS', payload: data.decisions });
+                addLog("Coordinator", `Loaded ${data.decisions.length} cached decisions from archive.`);
+            }
+        } catch (err: any) {
+            console.error('Failed to load cached analyses:', err);
         }
     };
 
@@ -202,15 +233,42 @@ export default function MultiAgentPMPage() {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let resultBuffer: EquityAnalysis[] = [];
+            let pendingChunk = ''; // Buffer for incomplete lines split across stream chunks
 
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    // Process any remaining buffered data
+                    if (pendingChunk.trim()) {
+                        try {
+                            const res = JSON.parse(pendingChunk);
+                            if (res.success && res.data) {
+                                const analysis = res.data as EquityAnalysis;
+                                dispatch({ type: 'ADD_ANALYSIS', payload: analysis });
+                                dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker: analysis.ticker, state: 'COMPLETED' } });
+                                addLog("Analyst", `Intelligence captured for ${analysis.ticker} (Cost: $${(analysis.usage?.cost || 0).toFixed(4)}).`);
+                                resultBuffer.push(analysis);
+                            } else {
+                                const failedTicker = res.ticker || "Unknown";
+                                dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker: failedTicker, state: 'ERROR' } });
+                                addLog("Analyst", `Warning: Failed to scan ${failedTicker}: ${res.error}`);
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse final JSON chunk", e);
+                        }
+                    }
+                    break;
+                }
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+                // Accumulate raw text and split on newline boundaries
+                pendingChunk += decoder.decode(value, { stream: true });
+                const lines = pendingChunk.split('\n');
+
+                // The last element may be an incomplete line — keep it in the buffer
+                pendingChunk = lines.pop() || '';
 
                 for (const line of lines) {
+                    if (!line.trim()) continue;
                     try {
                         const res = JSON.parse(line);
 
@@ -232,8 +290,9 @@ export default function MultiAgentPMPage() {
             }
 
             // Step 2: Ensure we have the target analysis before proceeding
-            const targetAnalysis = resultBuffer.find(r => r.isTarget);
-            const portfolioAnalyses = resultBuffer.filter(r => !r.isTarget);
+            // Use ticker match (source of truth) instead of isTarget flag (may be stale from cache)
+            const targetAnalysis = resultBuffer.find(r => r.ticker === state.targetTicker);
+            const portfolioAnalyses = resultBuffer.filter(r => r.ticker !== state.targetTicker);
 
             if (!targetAnalysis) {
                 throw new Error(`Failed to generate critical research for target: ${state.targetTicker}`);
@@ -389,6 +448,8 @@ export default function MultiAgentPMPage() {
                         status={state.status}
                         logs={state.logs}
                         analyses={state.analyses}
+                        previousAnalyses={state.previousAnalyses}
+                        previousDecisions={state.previousDecisions}
                         tradeDecision={state.tradeDecision}
                         tickerStatuses={state.tickerStatuses}
                         portfolio={state.portfolio}
@@ -470,6 +531,16 @@ export default function MultiAgentPMPage() {
                     </div>
 
                 </main>
+
+                {/* Chat Panel — appears after analysis completes */}
+                {state.status === AgentStatus.COMPLETED && state.analyses.length > 0 && (
+                    <AnalysisChat
+                        analyses={state.analyses}
+                        portfolio={state.portfolio}
+                        tradeDecision={state.tradeDecision}
+                        targetTicker={state.targetTicker}
+                    />
+                )}
             </div>
         </div>
     );

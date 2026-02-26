@@ -16,13 +16,13 @@ interface CachedData<T> {
     createdAt: number;
     expiresAt: number;
     ticker: string;
-    type: 'fundamental' | 'sevenPowers';
+    type: 'fundamental' | 'sevenPowers' | 'decision';
 }
 
 /**
  * Generate cache key for blob storage
  */
-function getCacheKey(ticker: string, type: 'fundamental' | 'sevenPowers'): string {
+function getCacheKey(ticker: string, type: 'fundamental' | 'sevenPowers' | 'decision'): string {
     return `${BLOB_PREFIX}/${type}/${ticker.toUpperCase()}.json`;
 }
 
@@ -31,7 +31,7 @@ function getCacheKey(ticker: string, type: 'fundamental' | 'sevenPowers'): strin
  */
 export async function putCache<T>(
     ticker: string,
-    type: 'fundamental' | 'sevenPowers',
+    type: 'fundamental' | 'sevenPowers' | 'decision',
     data: T
 ): Promise<void> {
     const key = getCacheKey(ticker, type);
@@ -62,7 +62,7 @@ export async function putCache<T>(
  */
 export async function getCache<T>(
     ticker: string,
-    type: 'fundamental' | 'sevenPowers'
+    type: 'fundamental' | 'sevenPowers' | 'decision'
 ): Promise<T | null> {
     const key = getCacheKey(ticker, type);
 
@@ -108,7 +108,7 @@ export async function getCache<T>(
  */
 export async function deleteCache(
     ticker: string,
-    type: 'fundamental' | 'sevenPowers'
+    type: 'fundamental' | 'sevenPowers' | 'decision'
 ): Promise<void> {
     const key = getCacheKey(ticker, type);
 
@@ -125,7 +125,7 @@ export async function deleteCache(
  */
 export async function hasValidCache(
     ticker: string,
-    type: 'fundamental' | 'sevenPowers'
+    type: 'fundamental' | 'sevenPowers' | 'decision'
 ): Promise<boolean> {
     const data = await getCache(ticker, type);
     return data !== null;
@@ -138,6 +138,7 @@ export async function clearTickerCache(ticker: string): Promise<void> {
     await Promise.all([
         deleteCache(ticker, 'fundamental'),
         deleteCache(ticker, 'sevenPowers'),
+        deleteCache(ticker, 'decision'),
     ]);
 }
 
