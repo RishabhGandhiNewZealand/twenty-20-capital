@@ -1,6 +1,7 @@
 'use server';
 
 import { analyzeEquity, makeComplexityDecision, EquityAnalysis, PortfolioItem } from '@/lib/gemini-service';
+import { putCache } from '@/lib/blob-cache';
 
 export async function runFundamentalAnalysis(ticker: string, isTarget: boolean = false) {
     try {
@@ -26,6 +27,13 @@ export async function runPortfolioManagerDecision(
     try {
         const complexity = await makeComplexityDecision(targetAnalysis, portfolioScan, currentPortfolio);
 
+        // Cache the decision keyed by target ticker
+        await putCache(targetAnalysis.ticker, 'decision', {
+            complexity,
+            targetTicker: targetAnalysis.ticker,
+            timestamp: Date.now(),
+        });
+
         return {
             success: true,
             data: { complexity }
@@ -35,3 +43,4 @@ export async function runPortfolioManagerDecision(
         return { success: false, error: 'Failed to make trade decision.' };
     }
 }
+

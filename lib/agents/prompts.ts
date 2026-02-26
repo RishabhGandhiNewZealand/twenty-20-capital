@@ -301,7 +301,7 @@ Return ONLY a JSON object.
   },
   "decision": "BUY | SELL | HOLD",
   "action_details": {
-    "target_allocation": "Head (5-20%) or Tail (<2%)",
+    "target_allocation": "Head (4-12%) or Tail (<2%)",
     "weighting_assessment": "Correctly Weighted | Underweight | Overweight | N/A (New Position)",
     "funding_source": "Name of asset to SELL/TRIM or 'New Capital'",
     "reasoning": "Why this swap improves Resilience or Optionality. Cite the '30-40 holdings' rule if relevant."

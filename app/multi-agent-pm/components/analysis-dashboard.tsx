@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Activity, ShieldCheck, TrendingUp, Link as LinkIcon, Download, Clock, Database, Coins, Briefcase, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { Activity, ShieldCheck, TrendingUp, Link as LinkIcon, Download, Clock, Database, Coins, Briefcase, ChevronDown, ChevronUp, RefreshCw, History } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,8 @@ interface Props {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
+    previousAnalyses: EquityAnalysis[];
+    previousDecisions: { complexity: ComplexityDecision; targetTicker: string; timestamp: number }[];
     tradeDecision: { complexity: ComplexityDecision } | null;
     tickerStatuses: TickerStatus[];
     portfolio: PortfolioItem[];
@@ -300,27 +302,58 @@ const CollapsibleAnalysisCard = ({ analysis, onRefresh }: { analysis: EquityAnal
     );
 };
 
-const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecision, tickerStatuses, portfolio, totalCost, onRefreshAnalysis, onRefreshDecision }) => {
+const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, previousAnalyses, previousDecisions, tradeDecision, tickerStatuses, portfolio, totalCost, onRefreshAnalysis, onRefreshDecision }) => {
     const [showComplexitySubRuns, setShowComplexitySubRuns] = useState(false);
     const [isRefreshingDecision, setIsRefreshingDecision] = useState(false);
 
-    const sortedAnalyses = useMemo(() => {
-        // 1. Separate Target(s)
-        const targets = analyses.filter(a => a.isTarget);
-        // 2. Separate Portfolio Holdings
-        const holdings = analyses.filter(a => !a.isTarget);
+    // Merge current analyses with cached portfolio holding analyses (that aren't already in current run)
+    const mergedArchiveAnalyses = useMemo(() => {
+        const currentTickers = new Set(analyses.map(a => a.ticker));
+        const portfolioTickers = new Set(portfolio.map(p => p.symbol));
 
-        // 3. Sort Holdings by Portfolio Value (Descending)
-        // We look up the value in the portfolio prop
+        // Cached portfolio analyses not in current run
+        const cachedPortfolioAnalyses = previousAnalyses
+            .filter(a => portfolioTickers.has(a.ticker) && !currentTickers.has(a.ticker));
+
+        // Combine: current analyses + cached portfolio analyses, deduplicate by ticker
+        const seen = new Set<string>();
+        const all: EquityAnalysis[] = [];
+        for (const a of [...analyses, ...cachedPortfolioAnalyses]) {
+            if (!seen.has(a.ticker)) {
+                seen.add(a.ticker);
+                all.push(a);
+            }
+        }
+
+        // Separate targets from holdings
+        const targets = all.filter(a => a.isTarget);
+        const holdings = all.filter(a => !a.isTarget);
+
+        // Sort holdings by portfolio value descending
         holdings.sort((a, b) => {
             const valA = portfolio.find(p => p.symbol === a.ticker)?.value || 0;
             const valB = portfolio.find(p => p.symbol === b.ticker)?.value || 0;
             return valB - valA;
         });
 
-        // 4. Combine: Target first, then sorted holdings
         return [...targets, ...holdings];
-    }, [analyses, portfolio]);
+    }, [analyses, previousAnalyses, portfolio]);
+
+    // Previous analyses: only non-portfolio tickers not in current run  
+    const filteredPrevious = useMemo(() => {
+        const currentTickers = new Set(analyses.map(a => a.ticker));
+        const portfolioTickers = new Set(portfolio.map(p => p.symbol));
+
+        // Only "other targets" — not portfolio holdings and not in current run
+        const prevOther = previousAnalyses.filter(
+            a => !portfolioTickers.has(a.ticker) && !currentTickers.has(a.ticker)
+        );
+
+        // Sort by timestamp descending (most recent first)
+        prevOther.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        return prevOther;
+    }, [previousAnalyses, analyses, portfolio]);
 
     return (
         <div className="space-y-6">
@@ -425,15 +458,52 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {analyses.length === 0 ? (
+                                {mergedArchiveAnalyses.length === 0 ? (
                                     <div className="h-48 flex flex-col items-center justify-center text-slate-600 space-y-2">
                                         <ShieldCheck size={48} className="opacity-10 mb-2" />
                                         <p className="text-sm font-medium uppercase tracking-widest opacity-50">Archive Empty</p>
                                     </div>
                                 ) : (
-                                    sortedAnalyses.map((analysis) => (
-                                        <CollapsibleAnalysisCard key={`${analysis.ticker}-${analysis.isTarget}`} analysis={analysis} onRefresh={onRefreshAnalysis} />
-                                    ))
+                                    mergedArchiveAnalyses.map((analysis) => {
+                                        const cachedDecision = previousDecisions.find(d => d.targetTicker === analysis.ticker);
+                                        return (
+                                            <div key={`${analysis.ticker}-${analysis.isTarget}`} className="space-y-2">
+                                                <CollapsibleAnalysisCard analysis={analysis} onRefresh={onRefreshAnalysis} />
+                                                {cachedDecision && !tradeDecision && (
+                                                    <div className="ml-4 p-3 bg-purple-950/10 rounded-xl border border-purple-500/20">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 font-mono text-[9px] uppercase tracking-widest">Cached Decision</Badge>
+                                                            <span className="text-[9px] text-slate-500 font-bold uppercase">
+                                                                {new Date(cachedDecision.timestamp).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <span className={cn("text-2xl font-black italic",
+                                                                cachedDecision.complexity.decision === 'BUY' ? "text-purple-400" :
+                                                                    cachedDecision.complexity.decision === 'SELL' ? "text-red-400" :
+                                                                        "text-slate-500"
+                                                            )}>
+                                                                {cachedDecision.complexity.decision}
+                                                            </span>
+                                                            <div className="flex-1 space-y-1">
+                                                                <div className="text-[9px] text-slate-500 uppercase tracking-widest">
+                                                                    {cachedDecision.complexity.analysis.classification.split(':')[0]}
+                                                                </div>
+                                                                <div className="text-xs text-slate-400">
+                                                                    {cachedDecision.complexity.action_details.target_allocation}
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-500 italic">
+                                                                    &quot;{cachedDecision.complexity.action_details.reasoning.length > 120
+                                                                        ? cachedDecision.complexity.action_details.reasoning.substring(0, 120) + '...'
+                                                                        : cachedDecision.complexity.action_details.reasoning}&quot;
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
                                 )}
                             </div>
                         </CardContent>
@@ -548,6 +618,63 @@ const AnalysisDashboard: React.FC<Props> = ({ status, logs, analyses, tradeDecis
                     </Card>
                 </div>
             </div>
+
+            {/* Previous Analyses Section — Other Targets only (portfolio holdings are in Intelligence Archive) */}
+            {filteredPrevious.length > 0 && (
+                <div className="space-y-6 mt-8">
+                    <div className="flex items-center gap-3 border-b border-slate-700/50 pb-4">
+                        <div className="bg-gradient-to-br from-amber-600 to-orange-700 p-2 rounded-xl">
+                            <History className="text-white" size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black uppercase tracking-tight text-slate-100">Previous Analyses</h2>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{filteredPrevious.length} previous target{filteredPrevious.length !== 1 ? 's' : ''} from prior sessions</p>
+                        </div>
+                    </div>
+
+                    {filteredPrevious.map(analysis => {
+                        // Find the cached decision for this target
+                        const cachedDecision = previousDecisions.find(d => d.targetTicker === analysis.ticker);
+                        return (
+                            <div key={`prev-other-${analysis.ticker}`} className="space-y-3">
+                                <CollapsibleAnalysisCard analysis={analysis} />
+                                {cachedDecision && (
+                                    <div className="ml-4 p-4 bg-purple-950/10 rounded-xl border border-purple-500/20">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 font-mono text-[9px] uppercase tracking-widest">Cached Decision</Badge>
+                                            <span className="text-[9px] text-slate-500 font-bold uppercase">
+                                                {new Date(cachedDecision.timestamp).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className={cn("text-3xl font-black italic",
+                                                cachedDecision.complexity.decision === 'BUY' ? "text-purple-400" :
+                                                    cachedDecision.complexity.decision === 'SELL' ? "text-red-400" :
+                                                        "text-slate-500"
+                                            )}>
+                                                {cachedDecision.complexity.decision}
+                                            </span>
+                                            <div className="flex-1 space-y-1">
+                                                <div className="text-[9px] text-slate-500 uppercase tracking-widest">
+                                                    {cachedDecision.complexity.analysis.classification.split(':')[0]}
+                                                </div>
+                                                <div className="text-xs text-slate-400">
+                                                    {cachedDecision.complexity.action_details.target_allocation}
+                                                </div>
+                                                <div className="text-[10px] text-slate-500 italic">
+                                                    "{cachedDecision.complexity.action_details.reasoning.length > 150
+                                                        ? cachedDecision.complexity.action_details.reasoning.substring(0, 150) + '...'
+                                                        : cachedDecision.complexity.action_details.reasoning}"
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };

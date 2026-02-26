@@ -17,6 +17,8 @@ interface State {
     status: AgentStatus;
     logs: AnalysisLog[];
     analyses: EquityAnalysis[];
+    previousAnalyses: EquityAnalysis[];
+    previousDecisions: { complexity: ComplexityDecision; targetTicker: string; timestamp: number }[];
     tradeDecision: { complexity: ComplexityDecision } | null;
     error: string | null;
     portfolio: PortfolioItem[];
@@ -37,12 +39,16 @@ type Action =
     | { type: 'RESET_ANALYSES' }
     | { type: 'SET_TICKER_STATUSES'; payload: TickerStatus[] }
     | { type: 'UPDATE_TICKER_STATUS'; payload: { ticker: string, state: TickerStatus['state'] } }
-    | { type: 'SET_DECISION'; payload: { complexity: ComplexityDecision } };
+    | { type: 'SET_DECISION'; payload: { complexity: ComplexityDecision } }
+    | { type: 'SET_PREVIOUS_ANALYSES'; payload: EquityAnalysis[] }
+    | { type: 'SET_PREVIOUS_DECISIONS'; payload: { complexity: ComplexityDecision; targetTicker: string; timestamp: number }[] };
 
 const initialState: State = {
     status: AgentStatus.IDLE,
     logs: [],
     analyses: [],
+    previousAnalyses: [],
+    previousDecisions: [],
     tradeDecision: null,
     error: null,
     portfolio: [],
@@ -93,6 +99,10 @@ function reducer(state: State, action: Action): State {
         case 'SET_DECISION':
             const decisionCost = action.payload.complexity.usage?.cost || 0;
             return { ...state, tradeDecision: action.payload, totalCost: state.totalCost + decisionCost };
+        case 'SET_PREVIOUS_ANALYSES':
+            return { ...state, previousAnalyses: action.payload };
+        case 'SET_PREVIOUS_DECISIONS':
+            return { ...state, previousDecisions: action.payload };
         default:
             return state;
     }
@@ -126,6 +136,7 @@ export default function MultiAgentPMPage() {
             setIsAdmin(true);
             setLoading(false);
             initPortfolio();
+            loadCachedAnalyses();
         };
         checkAdmin();
     }, [user, router]);
@@ -161,6 +172,25 @@ export default function MultiAgentPMPage() {
         } catch (err: any) {
             addLog("Coordinator", `Sync Failed: ${err.message}`);
             dispatch({ type: 'SET_ERROR', payload: `Sync Error: ${err.message}` });
+        }
+    };
+
+    const loadCachedAnalyses = async () => {
+        try {
+            const res = await fetch('/api/cached-analyses');
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.analyses && data.analyses.length > 0) {
+                dispatch({ type: 'SET_PREVIOUS_ANALYSES', payload: data.analyses });
+                addLog("Coordinator", `Loaded ${data.analyses.length} cached analyses from archive.`);
+            }
+            if (data.decisions && data.decisions.length > 0) {
+                dispatch({ type: 'SET_PREVIOUS_DECISIONS', payload: data.decisions });
+                addLog("Coordinator", `Loaded ${data.decisions.length} cached decisions from archive.`);
+            }
+        } catch (err: any) {
+            console.error('Failed to load cached analyses:', err);
         }
     };
 
@@ -417,6 +447,8 @@ export default function MultiAgentPMPage() {
                         status={state.status}
                         logs={state.logs}
                         analyses={state.analyses}
+                        previousAnalyses={state.previousAnalyses}
+                        previousDecisions={state.previousDecisions}
                         tradeDecision={state.tradeDecision}
                         tickerStatuses={state.tickerStatuses}
                         portfolio={state.portfolio}
