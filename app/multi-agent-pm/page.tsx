@@ -202,15 +202,42 @@ export default function MultiAgentPMPage() {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let resultBuffer: EquityAnalysis[] = [];
+            let pendingChunk = ''; // Buffer for incomplete lines split across stream chunks
 
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    // Process any remaining buffered data
+                    if (pendingChunk.trim()) {
+                        try {
+                            const res = JSON.parse(pendingChunk);
+                            if (res.success && res.data) {
+                                const analysis = res.data as EquityAnalysis;
+                                dispatch({ type: 'ADD_ANALYSIS', payload: analysis });
+                                dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker: analysis.ticker, state: 'COMPLETED' } });
+                                addLog("Analyst", `Intelligence captured for ${analysis.ticker} (Cost: $${(analysis.usage?.cost || 0).toFixed(4)}).`);
+                                resultBuffer.push(analysis);
+                            } else {
+                                const failedTicker = res.ticker || "Unknown";
+                                dispatch({ type: 'UPDATE_TICKER_STATUS', payload: { ticker: failedTicker, state: 'ERROR' } });
+                                addLog("Analyst", `Warning: Failed to scan ${failedTicker}: ${res.error}`);
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse final JSON chunk", e);
+                        }
+                    }
+                    break;
+                }
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+                // Accumulate raw text and split on newline boundaries
+                pendingChunk += decoder.decode(value, { stream: true });
+                const lines = pendingChunk.split('\n');
+
+                // The last element may be an incomplete line — keep it in the buffer
+                pendingChunk = lines.pop() || '';
 
                 for (const line of lines) {
+                    if (!line.trim()) continue;
                     try {
                         const res = JSON.parse(line);
 
