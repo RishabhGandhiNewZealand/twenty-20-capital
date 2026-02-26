@@ -142,8 +142,8 @@ const COMPLEXITY_DECISION_SCHEMA = {
 
 
 // Configuration
-const ANALYSIS_MODEL = 'gemini-3-flash-preview';
-const DECISION_MODEL = 'gemini-3-pro-preview';
+const ANALYSIS_MODEL = 'gemini-3.1-pro-preview';
+const DECISION_MODEL = 'gemini-3.1-pro-preview';
 
 // Initialize Gemini Client
 // WARNING: Ensure GEMINI_API_KEY is in your .env.local
