@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, Loader2, ChevronDown, Sparkles, User, X, DollarSign } from 'lucide-react';
+import { MessageSquare, Send, Loader2, ChevronDown, Sparkles, User, X, DollarSign, Wrench } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { EquityAnalysis, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
@@ -16,6 +16,11 @@ interface ChatUsage {
     cost: number;
 }
 
+interface ActiveTool {
+    name: string;
+    ticker?: string;
+}
+
 interface AnalysisChatProps {
     analyses: EquityAnalysis[];
     portfolio: PortfolioItem[];
@@ -24,22 +29,79 @@ interface AnalysisChatProps {
 }
 
 const USAGE_MARKER = '<!--USAGE:';
+const TOOL_START_MARKER = '<!--TOOL_START:';
+const TOOL_DONE_MARKER = '<!--TOOL_DONE:';
+
+const TOOL_LABELS: Record<string, string> = {
+    run_equity_analysis: 'Equity Analysis',
+    run_seven_powers_analysis: '7 Powers Analysis',
+    run_portfolio_decision: 'PM Decision',
+    get_stock_price: 'Price Lookup',
+};
+
+function stripMarkers(text: string): string {
+    // Remove all tool and usage markers from displayed text
+    return text
+        .replace(/<!--TOOL_START:.*?-->\n?/g, '')
+        .replace(/<!--TOOL_DONE:.*?-->\n?/g, '')
+        .replace(/\n?<!--USAGE:.*?-->/g, '');
+}
 
 function extractUsageFromText(text: string): { cleanText: string; usage: ChatUsage | null } {
+    const cleanText = stripMarkers(text);
     const markerIndex = text.lastIndexOf(USAGE_MARKER);
-    if (markerIndex === -1) return { cleanText: text, usage: null };
+    if (markerIndex === -1) return { cleanText, usage: null };
 
-    const cleanText = text.substring(0, markerIndex);
     const jsonStart = markerIndex + USAGE_MARKER.length;
     const jsonEnd = text.indexOf('-->', jsonStart);
-    if (jsonEnd === -1) return { cleanText: text, usage: null };
+    if (jsonEnd === -1) return { cleanText, usage: null };
 
     try {
         const usage = JSON.parse(text.substring(jsonStart, jsonEnd));
         return { cleanText, usage };
     } catch {
-        return { cleanText: text, usage: null };
+        return { cleanText, usage: null };
     }
+}
+
+function parseActiveTools(text: string): ActiveTool | null {
+    // Find tools that have started but not finished
+    const starts: { name: string; ticker?: string; index: number }[] = [];
+    const doneNames = new Set<string>();
+
+    let idx = 0;
+    while (true) {
+        const startIdx = text.indexOf(TOOL_START_MARKER, idx);
+        if (startIdx === -1) break;
+        const endIdx = text.indexOf('-->', startIdx);
+        if (endIdx === -1) break;
+        try {
+            const json = JSON.parse(text.substring(startIdx + TOOL_START_MARKER.length, endIdx));
+            starts.push({ name: json.name, ticker: json.args?.ticker || json.args?.targetTicker, index: startIdx });
+        } catch { }
+        idx = endIdx + 3;
+    }
+
+    idx = 0;
+    while (true) {
+        const doneIdx = text.indexOf(TOOL_DONE_MARKER, idx);
+        if (doneIdx === -1) break;
+        const endIdx = text.indexOf('-->', doneIdx);
+        if (endIdx === -1) break;
+        try {
+            const json = JSON.parse(text.substring(doneIdx + TOOL_DONE_MARKER.length, endIdx));
+            doneNames.add(json.name);
+        } catch { }
+        idx = endIdx + 3;
+    }
+
+    // Find last started tool that isn't done
+    for (let i = starts.length - 1; i >= 0; i--) {
+        if (!doneNames.has(starts[i].name)) {
+            return starts[i];
+        }
+    }
+    return null;
 }
 
 function buildContext(props: AnalysisChatProps): string {
@@ -52,7 +114,6 @@ function buildContext(props: AnalysisChatProps): string {
 
     let ctx = `# Analysis Session: ${targetTicker}\n\n`;
 
-    // Portfolio
     ctx += `## Current Portfolio (${portfolio.length} holdings, $${totalValue.toLocaleString()} total)\n`;
     portfolio.forEach(p => {
         const weight = totalValue > 0 ? ((p.value / totalValue) * 100).toFixed(1) : '0.0';
@@ -60,7 +121,6 @@ function buildContext(props: AnalysisChatProps): string {
     });
     ctx += '\n';
 
-    // Target Analysis
     if (targetAnalysis) {
         ctx += `## TARGET: ${targetAnalysis.ticker}\n`;
         ctx += `### Fundamental Analysis\n${targetAnalysis.summary}\n\n`;
@@ -69,7 +129,6 @@ function buildContext(props: AnalysisChatProps): string {
         }
     }
 
-    // Portfolio Holdings Analyses
     if (holdingAnalyses.length > 0) {
         ctx += `## Portfolio Holdings Analysis\n`;
         holdingAnalyses.forEach(a => {
@@ -81,7 +140,6 @@ function buildContext(props: AnalysisChatProps): string {
         });
     }
 
-    // Trade Decision
     if (tradeDecision?.complexity) {
         const d = tradeDecision.complexity;
         ctx += `## Portfolio Manager Decision\n`;
@@ -105,6 +163,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [totalUsage, setTotalUsage] = useState<ChatUsage>({ tokens: 0, cost: 0 });
     const [turnCount, setTurnCount] = useState(0);
+    const [activeTool, setActiveTool] = useState<ActiveTool | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const contextRef = useRef<string | null>(null);
@@ -122,7 +181,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, activeTool]);
 
     useEffect(() => {
         if (isOpen) {
@@ -139,6 +198,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
         setMessages(updatedMessages);
         setInput('');
         setIsLoading(true);
+        setActiveTool(null);
 
         const assistantPlaceholder: ChatMessage = { role: 'model', text: '' };
         setMessages([...updatedMessages, assistantPlaceholder]);
@@ -151,6 +211,8 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                     message: trimmed,
                     history: messages,
                     context: getContext(),
+                    portfolio: props.portfolio,
+                    analyses: props.analyses,
                 }),
             });
 
@@ -172,9 +234,12 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                 const chunk = decoder.decode(value, { stream: true });
                 fullText += chunk;
 
-                // Check for usage marker and display clean text
-                const { cleanText } = extractUsageFromText(fullText);
+                // Check for active tool execution
+                const tool = parseActiveTools(fullText);
+                setActiveTool(tool);
 
+                // Display clean text (stripped of markers)
+                const cleanText = stripMarkers(fullText);
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1] = { role: 'model', text: cleanText };
@@ -182,17 +247,16 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                 });
             }
 
-            // Extract final usage from the complete text
+            // Final extraction
             const { cleanText, usage } = extractUsageFromText(fullText);
+            setActiveTool(null);
 
-            // Set final clean message
             setMessages(prev => {
                 const newMessages = [...prev];
                 newMessages[newMessages.length - 1] = { role: 'model', text: cleanText };
                 return newMessages;
             });
 
-            // Accumulate usage
             if (usage) {
                 setTotalUsage(prev => ({
                     tokens: prev.tokens + usage.tokens,
@@ -209,6 +273,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                 };
                 return newMessages;
             });
+            setActiveTool(null);
         } finally {
             setIsLoading(false);
         }
@@ -225,6 +290,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
         setMessages([]);
         setTotalUsage({ tokens: 0, cost: 0 });
         setTurnCount(0);
+        setActiveTool(null);
         contextRef.current = null;
     };
 
@@ -250,7 +316,6 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                     <span className="text-[10px] font-mono text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">{props.targetTicker}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Cost tracker */}
                     {totalUsage.cost > 0 && (
                         <div className="flex items-center gap-1 text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-800/30 px-2 py-0.5 rounded-full" title={`${turnCount} turn${turnCount !== 1 ? 's' : ''}, ${totalUsage.tokens.toLocaleString()} tokens`}>
                             <DollarSign size={10} />
@@ -282,13 +347,14 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                         <MessageSquare className="text-slate-700 mb-3" size={28} />
                         <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest">Ask anything</p>
                         <p className="text-slate-600 text-[11px] mt-1 max-w-[280px]">
-                            I have full context on all {props.analyses.length} analyses, your portfolio, and the PM decision.
+                            I have full context on all {props.analyses.length} analyses, your portfolio, and the PM decision. I can also run new research on demand.
                         </p>
                         <div className="flex flex-wrap gap-1.5 mt-4 max-w-[320px] justify-center">
                             {[
                                 `What's the CAGR estimate for ${props.targetTicker}?`,
-                                'Compare the top 3 holdings by moat strength',
-                                'Why did the PM make this decision?',
+                                'Analyze ASML for me',
+                                'Should we add TSMC to the portfolio?',
+                                'Compare the top 3 holdings by moat',
                             ].map((suggestion, i) => (
                                 <button
                                     key={i}
@@ -339,7 +405,21 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                     </div>
                 ))}
 
-                {isLoading && messages[messages.length - 1]?.text === '' && (
+                {/* Tool execution indicator */}
+                {activeTool && (
+                    <div className="flex items-center gap-2.5 pl-9">
+                        <div className="flex items-center gap-2 text-[11px] font-semibold text-violet-300 bg-violet-950/40 border border-violet-800/30 rounded-lg px-3 py-2 animate-pulse">
+                            <Wrench size={13} className="text-violet-400 animate-spin" style={{ animationDuration: '3s' }} />
+                            <span>
+                                Running {TOOL_LABELS[activeTool.name] || activeTool.name}
+                                {activeTool.ticker && <span className="text-violet-400 font-mono ml-1">{activeTool.ticker}</span>}
+                                ...
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {isLoading && !activeTool && messages[messages.length - 1]?.text === '' && (
                     <div className="flex items-center gap-2 text-slate-500 text-xs pl-9">
                         <Loader2 size={12} className="animate-spin" />
                         <span className="animate-pulse">Thinking...</span>
@@ -358,7 +438,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Ask a question..."
+                        placeholder="Ask a question or request analysis..."
                         disabled={isLoading}
                         className="flex-1 bg-slate-900/80 border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 disabled:opacity-50 transition-all"
                     />
