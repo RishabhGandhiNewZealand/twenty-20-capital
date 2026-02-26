@@ -7,6 +7,7 @@ import { BrainCircuit, Loader2, PieChart, RefreshCw, ExternalLink } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AnalysisDashboard, { AgentStatus, AnalysisLog } from './components/analysis-dashboard';
+import AnalysisChat from './components/analysis-chat';
 import type { EquityAnalysis, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
 import { runFundamentalAnalysis, runBatchFundamentalAnalysis, runPortfolioManagerDecision } from '@/app/actions/agent-actions';
 import { TickerStatus } from './components/analysis-dashboard';
@@ -530,6 +531,16 @@ export default function MultiAgentPMPage() {
                     </div>
 
                 </main>
+
+                {/* Chat Panel — appears after analysis completes */}
+                {state.status === AgentStatus.COMPLETED && state.analyses.length > 0 && (
+                    <AnalysisChat
+                        analyses={state.analyses}
+                        portfolio={state.portfolio}
+                        tradeDecision={state.tradeDecision}
+                        targetTicker={state.targetTicker}
+                    />
+                )}
             </div>
         </div>
     );

@@ -250,7 +250,7 @@ True "Head" positions are rare "Compounding Machines".
     *   **Role:** The portfolio anchors.
     *   **CRITERIA (STRICT):** Must have **World Class Resilience** (Decentralized, High Isomorphism to market, Ant-like robustness) AND **Exceptional Optionality** (s-curve stacking).
     *   **Concentration:** ~10 companies.
-    *   **Allocation:** 5% to 20%. 
+    *   **Allocation:** 4% to 12%. 
     *   **Rule:** If a company is merely "Good" or "Great", it is NOT a Head position. It must be Anti-Fragile.
 
 2.  **The Tail (Pure Optionality):**
@@ -262,7 +262,7 @@ True "Head" positions are rare "Compounding Machines".
 
 3.  **Kill The Middle:**
     *   Aggressively avoid "Value Traps" or average companies.
-    *   Avoid holding companies for >1 year with allocations between 2% and 5% (the "Unproductive Middle").
+    *   Avoid holding companies for >1 year with allocations between 2% and 4% (the "Unproductive Middle").
 
 ### II. DECISION LOGIC & RULES
 

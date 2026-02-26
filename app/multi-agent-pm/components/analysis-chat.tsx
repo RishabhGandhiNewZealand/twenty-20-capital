@@ -1,0 +1,380 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { MessageSquare, Send, Loader2, ChevronDown, Sparkles, User, X, DollarSign } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import type { EquityAnalysis, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
+
+interface ChatMessage {
+    role: 'user' | 'model';
+    text: string;
+}
+
+interface ChatUsage {
+    tokens: number;
+    cost: number;
+}
+
+interface AnalysisChatProps {
+    analyses: EquityAnalysis[];
+    portfolio: PortfolioItem[];
+    tradeDecision: { complexity: ComplexityDecision } | null;
+    targetTicker: string;
+}
+
+const USAGE_MARKER = '<!--USAGE:';
+
+function extractUsageFromText(text: string): { cleanText: string; usage: ChatUsage | null } {
+    const markerIndex = text.lastIndexOf(USAGE_MARKER);
+    if (markerIndex === -1) return { cleanText: text, usage: null };
+
+    const cleanText = text.substring(0, markerIndex);
+    const jsonStart = markerIndex + USAGE_MARKER.length;
+    const jsonEnd = text.indexOf('-->', jsonStart);
+    if (jsonEnd === -1) return { cleanText: text, usage: null };
+
+    try {
+        const usage = JSON.parse(text.substring(jsonStart, jsonEnd));
+        return { cleanText, usage };
+    } catch {
+        return { cleanText: text, usage: null };
+    }
+}
+
+function buildContext(props: AnalysisChatProps): string {
+    const { analyses, portfolio, tradeDecision, targetTicker } = props;
+
+    const targetAnalysis = analyses.find(a => a.ticker === targetTicker);
+    const holdingAnalyses = analyses.filter(a => a.ticker !== targetTicker);
+
+    const totalValue = portfolio.reduce((sum, p) => sum + p.value, 0);
+
+    let ctx = `# Analysis Session: ${targetTicker}\n\n`;
+
+    // Portfolio
+    ctx += `## Current Portfolio (${portfolio.length} holdings, $${totalValue.toLocaleString()} total)\n`;
+    portfolio.forEach(p => {
+        const weight = totalValue > 0 ? ((p.value / totalValue) * 100).toFixed(1) : '0.0';
+        ctx += `- **${p.symbol}**: ${p.shares} shares, $${p.value.toLocaleString()} (${weight}%)\n`;
+    });
+    ctx += '\n';
+
+    // Target Analysis
+    if (targetAnalysis) {
+        ctx += `## TARGET: ${targetAnalysis.ticker}\n`;
+        ctx += `### Fundamental Analysis\n${targetAnalysis.summary}\n\n`;
+        if (targetAnalysis.sevenPowers) {
+            ctx += `### 7 Powers Strategic Analysis\n${targetAnalysis.sevenPowers}\n\n`;
+        }
+    }
+
+    // Portfolio Holdings Analyses
+    if (holdingAnalyses.length > 0) {
+        ctx += `## Portfolio Holdings Analysis\n`;
+        holdingAnalyses.forEach(a => {
+            ctx += `### ${a.ticker}\n`;
+            ctx += `${a.summary}\n\n`;
+            if (a.sevenPowers) {
+                ctx += `#### 7 Powers\n${a.sevenPowers}\n\n`;
+            }
+        });
+    }
+
+    // Trade Decision
+    if (tradeDecision?.complexity) {
+        const d = tradeDecision.complexity;
+        ctx += `## Portfolio Manager Decision\n`;
+        ctx += `- **Decision:** ${d.decision}\n`;
+        ctx += `- **Classification:** ${d.analysis.classification}\n`;
+        ctx += `- **S-Curve Status:** ${d.analysis.s_curve_status}\n`;
+        ctx += `- **NZS Score:** ${d.analysis.nzs_score}\n`;
+        ctx += `- **Target Allocation:** ${d.action_details.target_allocation}\n`;
+        ctx += `- **Weighting Assessment:** ${d.action_details.weighting_assessment}\n`;
+        ctx += `- **Funding Source:** ${d.action_details.funding_source}\n`;
+        ctx += `- **Reasoning:** ${d.action_details.reasoning}\n`;
+    }
+
+    return ctx;
+}
+
+export default function AnalysisChat(props: AnalysisChatProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [totalUsage, setTotalUsage] = useState<ChatUsage>({ tokens: 0, cost: 0 });
+    const [turnCount, setTurnCount] = useState(0);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const contextRef = useRef<string | null>(null);
+
+    const getContext = () => {
+        if (!contextRef.current) {
+            contextRef.current = buildContext(props);
+        }
+        return contextRef.current;
+    };
+
+    useEffect(() => {
+        contextRef.current = null;
+    }, [props.analyses, props.tradeDecision]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => inputRef.current?.focus(), 100);
+        }
+    }, [isOpen]);
+
+    const handleSend = async () => {
+        const trimmed = input.trim();
+        if (!trimmed || isLoading) return;
+
+        const userMessage: ChatMessage = { role: 'user', text: trimmed };
+        const updatedMessages = [...messages, userMessage];
+        setMessages(updatedMessages);
+        setInput('');
+        setIsLoading(true);
+
+        const assistantPlaceholder: ChatMessage = { role: 'model', text: '' };
+        setMessages([...updatedMessages, assistantPlaceholder]);
+
+        try {
+            const response = await fetch('/api/agent-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: trimmed,
+                    history: messages,
+                    context: getContext(),
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
+
+            if (!response.body) throw new Error('No response body');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                fullText += chunk;
+
+                // Check for usage marker and display clean text
+                const { cleanText } = extractUsageFromText(fullText);
+
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = { role: 'model', text: cleanText };
+                    return newMessages;
+                });
+            }
+
+            // Extract final usage from the complete text
+            const { cleanText, usage } = extractUsageFromText(fullText);
+
+            // Set final clean message
+            setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1] = { role: 'model', text: cleanText };
+                return newMessages;
+            });
+
+            // Accumulate usage
+            if (usage) {
+                setTotalUsage(prev => ({
+                    tokens: prev.tokens + usage.tokens,
+                    cost: prev.cost + usage.cost,
+                }));
+                setTurnCount(prev => prev + 1);
+            }
+        } catch (err: any) {
+            setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1] = {
+                    role: 'model',
+                    text: `⚠️ Error: ${err.message}`,
+                };
+                return newMessages;
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
+
+    const handleClearChat = () => {
+        setMessages([]);
+        setTotalUsage({ tokens: 0, cost: 0 });
+        setTurnCount(0);
+        contextRef.current = null;
+    };
+
+    if (!isOpen) {
+        return (
+            <button
+                onClick={() => setIsOpen(true)}
+                className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-5 py-3 rounded-2xl shadow-2xl shadow-emerald-500/30 transition-all duration-300 hover:scale-105 font-bold text-sm uppercase tracking-wider"
+            >
+                <Sparkles size={18} />
+                Ask about this analysis
+            </button>
+        );
+    }
+
+    return (
+        <div className="fixed bottom-6 right-6 z-50 w-[440px] max-h-[600px] flex flex-col bg-gray-950 border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden backdrop-blur-xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-900/60 to-teal-900/40 border-b border-slate-700/50">
+                <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-emerald-400" />
+                    <span className="font-bold text-sm text-slate-100 uppercase tracking-wider">Analysis Chat</span>
+                    <span className="text-[10px] font-mono text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">{props.targetTicker}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    {/* Cost tracker */}
+                    {totalUsage.cost > 0 && (
+                        <div className="flex items-center gap-1 text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-800/30 px-2 py-0.5 rounded-full" title={`${turnCount} turn${turnCount !== 1 ? 's' : ''}, ${totalUsage.tokens.toLocaleString()} tokens`}>
+                            <DollarSign size={10} />
+                            {totalUsage.cost.toFixed(4)}
+                        </div>
+                    )}
+                    {messages.length > 0 && (
+                        <button
+                            onClick={handleClearChat}
+                            className="text-slate-500 hover:text-slate-300 p-1 rounded transition-colors"
+                            title="Clear chat"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => setIsOpen(false)}
+                        className="text-slate-500 hover:text-slate-300 p-1 rounded transition-colors"
+                    >
+                        <ChevronDown size={16} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[200px] max-h-[440px] scrollbar-thin">
+                {messages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <MessageSquare className="text-slate-700 mb-3" size={28} />
+                        <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest">Ask anything</p>
+                        <p className="text-slate-600 text-[11px] mt-1 max-w-[280px]">
+                            I have full context on all {props.analyses.length} analyses, your portfolio, and the PM decision.
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 mt-4 max-w-[320px] justify-center">
+                            {[
+                                `What's the CAGR estimate for ${props.targetTicker}?`,
+                                'Compare the top 3 holdings by moat strength',
+                                'Why did the PM make this decision?',
+                            ].map((suggestion, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => {
+                                        setInput(suggestion);
+                                        setTimeout(() => inputRef.current?.focus(), 50);
+                                    }}
+                                    className="text-[10px] text-emerald-400/80 bg-emerald-950/30 border border-emerald-800/30 rounded-lg px-2.5 py-1.5 hover:bg-emerald-900/40 hover:border-emerald-700/40 transition-colors text-left"
+                                >
+                                    {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {messages.map((msg, i) => (
+                    <div
+                        key={i}
+                        className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                        {msg.role === 'model' && (
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center mt-0.5">
+                                <Sparkles size={12} className="text-white" />
+                            </div>
+                        )}
+                        <div
+                            className={`max-w-[340px] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${msg.role === 'user'
+                                    ? 'bg-blue-600/20 border border-blue-500/30 text-blue-100'
+                                    : 'bg-slate-800/60 border border-slate-700/40 text-slate-200'
+                                }`}
+                        >
+                            {msg.role === 'model' ? (
+                                <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-li:my-0.5 prose-headings:my-2 prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-700/50 prose-table:text-xs">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {msg.text || (isLoading && i === messages.length - 1 ? '...' : '')}
+                                    </ReactMarkdown>
+                                </div>
+                            ) : (
+                                <p>{msg.text}</p>
+                            )}
+                        </div>
+                        {msg.role === 'user' && (
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600/30 border border-blue-500/30 flex items-center justify-center mt-0.5">
+                                <User size={12} className="text-blue-300" />
+                            </div>
+                        )}
+                    </div>
+                ))}
+
+                {isLoading && messages[messages.length - 1]?.text === '' && (
+                    <div className="flex items-center gap-2 text-slate-500 text-xs pl-9">
+                        <Loader2 size={12} className="animate-spin" />
+                        <span className="animate-pulse">Thinking...</span>
+                    </div>
+                )}
+
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="px-3 py-3 border-t border-slate-800/50 bg-gray-950/80">
+                <div className="flex items-center gap-2">
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Ask a question..."
+                        disabled={isLoading}
+                        className="flex-1 bg-slate-900/80 border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 disabled:opacity-50 transition-all"
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={isLoading || !input.trim()}
+                        className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2.5 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                            <Send size={16} />
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
