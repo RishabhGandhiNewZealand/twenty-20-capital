@@ -150,10 +150,10 @@ const DECISION_MODEL = 'gemini-3-flash-preview';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 
-// Pricing (USD per 1M tokens) - Gemini 3.1 Pro Preview
-// Prompts <= 200k: Input $2.00 / Output $12.00 (incl. thinking)
-// Prompts >  200k: Input $4.00 / Output $18.00
-// Context caching: $0.20/$0.40 + $4.50/1M tokens/hr storage
+// Pricing (USD per 1M tokens) - Gemini 3 Flash Preview
+// Input: $0.50 (text/image/video) / $1.00 (audio)
+// Output: $3.00
+// Context caching: $0.05 input / $0.10 output + $1.00/1M tokens/hr storage
 // Grounding w/ Google Search: 5,000 free/mo, then $14/1,000 queries
 
 // Cast to any to avoid strict Schema validation recursion issues in TS
@@ -337,24 +337,9 @@ async function withRetry<T>(
 export const calculateUsage = (modelName: string, usage: any) => {
     if (!usage) return { tokens: 0, cost: 0 };
 
-    const tokenCount = usage.promptTokenCount;
-    const isPro = modelName.includes('pro');
-
-    let inputRate = 0;
-    let outputRate = 0;
-
-    if (isPro) {
-        if (tokenCount <= 200_000) {
-            inputRate = 2.00;
-            outputRate = 12.00;
-        } else {
-            inputRate = 4.00;
-            outputRate = 18.00;
-        }
-    } else {
-        inputRate = 0.50; // Gemini 3 Flash rates
-        outputRate = 3.00;
-    }
+    // Gemini 3 Flash pricing
+    const inputRate = 0.50;
+    const outputRate = 3.00;
 
     const inputCost = (usage.promptTokenCount / 1_000_000) * inputRate;
     const outputCost = (usage.candidatesTokenCount / 1_000_000) * outputRate;
