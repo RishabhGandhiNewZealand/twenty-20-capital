@@ -20,7 +20,6 @@ export async function GET() {
                         const response = await fetch(blob.url);
                         if (!response.ok) return null;
                         const cached = await response.json();
-                        if (Date.now() > cached.expiresAt) return null;
                         return {
                             ...cached.data,
                             cachedAt: cached.createdAt,
@@ -38,7 +37,6 @@ export async function GET() {
                         const response = await fetch(blob.url);
                         if (!response.ok) return null;
                         const cached = await response.json();
-                        if (Date.now() > cached.expiresAt) return null;
                         return {
                             ...cached.data,
                             cachedAt: cached.createdAt,

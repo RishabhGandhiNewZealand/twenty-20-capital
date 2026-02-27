@@ -2,7 +2,7 @@
 
 import React, { useReducer, useEffect, useState } from 'react';
 import { useUser } from '@stackframe/stack';
-import { useRouter } from 'next/navigation';
+
 import { BrainCircuit, Loader2, PieChart, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,37 +110,30 @@ function reducer(state: State, action: Action): State {
 }
 
 export default function MultiAgentPMPage() {
-    const router = useRouter();
+
     const user = useUser();
     const [state, dispatch] = useReducer(reducer, initialState);
     const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Auth Check
+    // Auth Check — page is publicly accessible, but actions are admin-only
     useEffect(() => {
-        // Wait for user to be loaded
-        if (!user) {
-            if (user === null) {
-                // User not logged in, redirect
-                router.push('/');
-            }
+        if (user === undefined) {
+            // Still loading auth state
             return;
         }
 
-        const checkAdmin = () => {
-            // Basic check, should match the sidebar logic or be more robust
-            const email = (user.primaryEmail || "").toString();
-            const adminEmail = (process.env.ADMIN_EMAIL || "").toString();
-            // Allow if email matches admin (or in dev mode we might skip this, but let's keep it consistent with sidebar)
-            // For this demo, we set isAdmin to true to ensure the user can verify the UI without login friction if env is missing,
-            // but ideally: setIsAdmin(email.toLowerCase() === adminEmail.toLowerCase());
+        if (user) {
             setIsAdmin(true);
-            setLoading(false);
-            initPortfolio();
-            loadCachedAnalyses();
-        };
-        checkAdmin();
-    }, [user, router]);
+        } else {
+            setIsAdmin(false);
+        }
+
+        // Load data for ALL users (cached results are public)
+        setLoading(false);
+        initPortfolio();
+        loadCachedAnalyses();
+    }, [user]);
 
 
     const addLog = (agent: string, message: string, isCacheHit: boolean = false) => {
@@ -423,7 +416,7 @@ export default function MultiAgentPMPage() {
                         />
                         <Button
                             onClick={handleRunAnalysis}
-                            disabled={state.status !== AgentStatus.IDLE && state.status !== AgentStatus.COMPLETED && state.status !== AgentStatus.ERROR}
+                            disabled={!isAdmin || (state.status !== AgentStatus.IDLE && state.status !== AgentStatus.COMPLETED && state.status !== AgentStatus.ERROR)}
                             className="bg-emerald-600 hover:bg-emerald-500 h-auto py-4 px-8 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                         >
                             {state.status === AgentStatus.IDLE || state.status === AgentStatus.COMPLETED || state.status === AgentStatus.ERROR ? 'Analyze' : (
@@ -532,15 +525,16 @@ export default function MultiAgentPMPage() {
 
                 </main>
 
-                {/* Chat Panel — appears after analysis completes */}
-                {state.status === AgentStatus.COMPLETED && state.analyses.length > 0 && (
-                    <AnalysisChat
-                        analyses={state.analyses}
-                        portfolio={state.portfolio}
-                        tradeDecision={state.tradeDecision}
-                        targetTicker={state.targetTicker}
-                    />
-                )}
+                {/* Chat Panel — visible to all, disabled for non-admin */}
+                <AnalysisChat
+                    analyses={state.analyses}
+                    previousAnalyses={state.previousAnalyses}
+                    previousDecisions={state.previousDecisions}
+                    portfolio={state.portfolio}
+                    tradeDecision={state.tradeDecision}
+                    targetTicker={state.targetTicker}
+                    disabled={!isAdmin}
+                />
             </div>
         </div>
     );
