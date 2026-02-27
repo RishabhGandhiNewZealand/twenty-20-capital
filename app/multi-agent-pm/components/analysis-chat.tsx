@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, Loader2, ChevronDown, Sparkles, User, X, DollarSign, Wrench } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { MessageSquare, Send, Loader2, ChevronDown, Sparkles, User, X, DollarSign, Wrench, GripVertical } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { EquityAnalysis, PortfolioItem, ComplexityDecision } from '@/lib/gemini-service';
@@ -23,9 +23,12 @@ interface ActiveTool {
 
 interface AnalysisChatProps {
     analyses: EquityAnalysis[];
+    previousAnalyses?: EquityAnalysis[];
+    previousDecisions?: { complexity: ComplexityDecision; targetTicker: string; timestamp: number }[];
     portfolio: PortfolioItem[];
     tradeDecision: { complexity: ComplexityDecision } | null;
     targetTicker: string;
+    disabled?: boolean;
 }
 
 const USAGE_MARKER = '<!--USAGE:';
@@ -37,6 +40,7 @@ const TOOL_LABELS: Record<string, string> = {
     run_seven_powers_analysis: '7 Powers Analysis',
     run_portfolio_decision: 'PM Decision',
     get_stock_price: 'Price Lookup',
+    get_cached_analysis: 'Cache Lookup',
 };
 
 function stripMarkers(text: string): string {
@@ -105,10 +109,26 @@ function parseActiveTools(text: string): ActiveTool | null {
 }
 
 function buildContext(props: AnalysisChatProps): string {
-    const { analyses, portfolio, tradeDecision, targetTicker } = props;
+    const { analyses, previousAnalyses = [], previousDecisions = [], portfolio, tradeDecision, targetTicker } = props;
 
-    const targetAnalysis = analyses.find(a => a.ticker === targetTicker);
-    const holdingAnalyses = analyses.filter(a => a.ticker !== targetTicker);
+    // Merge: current-run analyses take priority, then fill in from cache
+    const currentTickers = new Set(analyses.map(a => a.ticker));
+    const cachedExtras = previousAnalyses.filter(a => !currentTickers.has(a.ticker));
+    const allAnalyses = [...analyses, ...cachedExtras];
+
+    // Only include portfolio holdings + target in full context
+    const portfolioTickers = new Set(portfolio.map(p => p.symbol));
+    const contextAnalyses = allAnalyses.filter(
+        a => a.ticker === targetTicker || portfolioTickers.has(a.ticker)
+    );
+
+    const targetAnalysis = contextAnalyses.find(a => a.ticker === targetTicker);
+    const holdingAnalyses = contextAnalyses.filter(a => a.ticker !== targetTicker);
+
+    // Track non-portfolio cached tickers that are available via tool
+    const availableCachedTickers = allAnalyses
+        .filter(a => a.ticker !== targetTicker && !portfolioTickers.has(a.ticker))
+        .map(a => ({ ticker: a.ticker, date: a.timestamp ? new Date(a.timestamp).toLocaleDateString() : 'unknown' }));
 
     const totalValue = portfolio.reduce((sum, p) => sum + p.value, 0);
 
@@ -122,7 +142,8 @@ function buildContext(props: AnalysisChatProps): string {
     ctx += '\n';
 
     if (targetAnalysis) {
-        ctx += `## TARGET: ${targetAnalysis.ticker}\n`;
+        const age = targetAnalysis.timestamp ? ` (analysed ${new Date(targetAnalysis.timestamp).toLocaleDateString()})` : '';
+        ctx += `## TARGET: ${targetAnalysis.ticker}${age}\n`;
         ctx += `### Fundamental Analysis\n${targetAnalysis.summary}\n\n`;
         if (targetAnalysis.sevenPowers) {
             ctx += `### 7 Powers Strategic Analysis\n${targetAnalysis.sevenPowers}\n\n`;
@@ -130,9 +151,10 @@ function buildContext(props: AnalysisChatProps): string {
     }
 
     if (holdingAnalyses.length > 0) {
-        ctx += `## Portfolio Holdings Analysis\n`;
+        ctx += `## Portfolio Holdings Analysis (${holdingAnalyses.length} companies)\n`;
         holdingAnalyses.forEach(a => {
-            ctx += `### ${a.ticker}\n`;
+            const age = a.timestamp ? ` (analysed ${new Date(a.timestamp).toLocaleDateString()})` : '';
+            ctx += `### ${a.ticker}${age}\n`;
             ctx += `${a.summary}\n\n`;
             if (a.sevenPowers) {
                 ctx += `#### 7 Powers\n${a.sevenPowers}\n\n`;
@@ -142,7 +164,7 @@ function buildContext(props: AnalysisChatProps): string {
 
     if (tradeDecision?.complexity) {
         const d = tradeDecision.complexity;
-        ctx += `## Portfolio Manager Decision\n`;
+        ctx += `## Portfolio Manager Decision (Current Session)\n`;
         ctx += `- **Decision:** ${d.decision}\n`;
         ctx += `- **Classification:** ${d.analysis.classification}\n`;
         ctx += `- **S-Curve Status:** ${d.analysis.s_curve_status}\n`;
@@ -151,6 +173,28 @@ function buildContext(props: AnalysisChatProps): string {
         ctx += `- **Weighting Assessment:** ${d.action_details.weighting_assessment}\n`;
         ctx += `- **Funding Source:** ${d.action_details.funding_source}\n`;
         ctx += `- **Reasoning:** ${d.action_details.reasoning}\n`;
+    }
+
+    // Include previous PM decisions for context
+    if (previousDecisions.length > 0) {
+        ctx += `\n## Historical PM Decisions\n`;
+        previousDecisions.forEach(d => {
+            const date = new Date(d.timestamp).toLocaleDateString();
+            ctx += `### ${d.targetTicker} (${date})\n`;
+            ctx += `- **Decision:** ${d.complexity.decision}\n`;
+            ctx += `- **Classification:** ${d.complexity.analysis.classification}\n`;
+            ctx += `- **NZS Score:** ${d.complexity.analysis.nzs_score}\n`;
+            ctx += `- **Target Allocation:** ${d.complexity.action_details.target_allocation}\n`;
+            ctx += `- **Reasoning:** ${d.complexity.action_details.reasoning}\n\n`;
+        });
+    }
+
+    // List other available cached analyses (retrievable via get_cached_analysis tool)
+    if (availableCachedTickers.length > 0) {
+        ctx += `\n## Other Cached Analyses Available (use get_cached_analysis tool to retrieve)\n`;
+        availableCachedTickers.forEach(t => {
+            ctx += `- ${t.ticker} (cached ${t.date})\n`;
+        });
     }
 
     return ctx;
@@ -167,6 +211,42 @@ export default function AnalysisChat(props: AnalysisChatProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const contextRef = useRef<string | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Resize state
+    const [size, setSize] = useState({ width: 440, height: 520 });
+    const isResizing = useRef(false);
+    const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 });
+
+    const MIN_W = 360;
+    const MAX_W = 800;
+    const MIN_H = 380;
+    const MAX_H = 900;
+
+    const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isResizing.current = true;
+        resizeStart.current = { x: e.clientX, y: e.clientY, w: size.width, h: size.height };
+    }, [size]);
+
+    useEffect(() => {
+        const onMouseMove = (e: MouseEvent) => {
+            if (!isResizing.current) return;
+            const dx = resizeStart.current.x - e.clientX; // dragging left = bigger
+            const dy = resizeStart.current.y - e.clientY; // dragging up = bigger
+            setSize({
+                width: Math.min(MAX_W, Math.max(MIN_W, resizeStart.current.w + dx)),
+                height: Math.min(MAX_H, Math.max(MIN_H, resizeStart.current.h + dy)),
+            });
+        };
+        const onMouseUp = () => { isResizing.current = false; };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, []);
 
     const getContext = () => {
         if (!contextRef.current) {
@@ -177,7 +257,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
 
     useEffect(() => {
         contextRef.current = null;
-    }, [props.analyses, props.tradeDecision]);
+    }, [props.analyses, props.previousAnalyses, props.previousDecisions, props.tradeDecision]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -307,7 +387,19 @@ export default function AnalysisChat(props: AnalysisChatProps) {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 w-[440px] max-h-[600px] flex flex-col bg-gray-950 border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden backdrop-blur-xl">
+        <div
+            ref={containerRef}
+            className="fixed bottom-6 right-6 z-50 flex flex-col bg-gray-950 border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden backdrop-blur-xl"
+            style={{ width: size.width, height: size.height }}
+        >
+            {/* Resize handle — top-left corner */}
+            <div
+                onMouseDown={onResizeMouseDown}
+                className="absolute top-0 left-0 w-6 h-6 cursor-nwse-resize z-10 flex items-end justify-end opacity-40 hover:opacity-100 transition-opacity"
+                title="Drag to resize"
+            >
+                <GripVertical size={12} className="text-slate-500 -rotate-45 mb-0.5 mr-0.5" />
+            </div>
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-900/60 to-teal-900/40 border-b border-slate-700/50">
                 <div className="flex items-center gap-2">
@@ -341,7 +433,7 @@ export default function AnalysisChat(props: AnalysisChatProps) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[200px] max-h-[440px] scrollbar-thin">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
                         <MessageSquare className="text-slate-700 mb-3" size={28} />
@@ -383,8 +475,8 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                         )}
                         <div
                             className={`max-w-[340px] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-blue-600/20 border border-blue-500/30 text-blue-100'
-                                    : 'bg-slate-800/60 border border-slate-700/40 text-slate-200'
+                                ? 'bg-blue-600/20 border border-blue-500/30 text-blue-100'
+                                : 'bg-slate-800/60 border border-slate-700/40 text-slate-200'
                                 }`}
                         >
                             {msg.role === 'model' ? (
@@ -439,12 +531,12 @@ export default function AnalysisChat(props: AnalysisChatProps) {
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Ask a question or request analysis..."
-                        disabled={isLoading}
+                        disabled={isLoading || props.disabled}
                         className="flex-1 bg-slate-900/80 border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 disabled:opacity-50 transition-all"
                     />
                     <button
                         onClick={handleSend}
-                        disabled={isLoading || !input.trim()}
+                        disabled={isLoading || !input.trim() || props.disabled}
                         className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2.5 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
                     >
                         {isLoading ? (

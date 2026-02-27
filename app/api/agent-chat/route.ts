@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest } from "next/server";
+import { list } from "@vercel/blob";
 import {
     calculateUsage,
     analyzeEquity,
@@ -43,15 +44,21 @@ Available tools:
 4. **get_stock_price** - Quick real-time stock price lookup.
    Format: <<TOOL:get_stock_price:{"ticker":"AAPL"}>>
 
+5. **get_cached_analysis** - Retrieve a previously cached analysis for a ticker. Use this FIRST when the user asks about a company listed under "Other Cached Analyses Available" in the context. This is much faster and cheaper than running a fresh analysis.
+   Format: <<TOOL:get_cached_analysis:{"ticker":"ASML"}>>
+
 RULES:
 - Output AT MOST ONE tool call per message.
 - Place the tool marker on its own line at the very end of your text.
-- Before the marker, write a brief message to the user (e.g., "Let me run a full analysis on ASML for you...").
+- Before the marker, write a brief message to the user (e.g., "Let me pull up the cached analysis for ASML...").
 - If the user asks to analyze a company AND make a portfolio decision, use run_equity_analysis first. The portfolio decision can be run in a follow-up.
-- Do NOT use a tool if the answer is already available in the provided analysis context.
+- PREFER cached data: if a company is listed under "Other Cached Analyses Available", use get_cached_analysis FIRST rather than running a new analysis.
+- Only use run_equity_analysis when the user explicitly asks for a FRESH/NEW analysis, or when no cached analysis exists at all.
+- Do NOT use a tool if the answer is already available in the provided analysis context, even if the data is from a prior session.
 - For simple questions about existing analyses, just answer directly — no tool needed.
 
 Format all responses in clean Markdown. Use bold, bullet points, and tables where appropriate.`;
+
 
 interface ChatMessage {
     role: "user" | "model";
@@ -152,6 +159,37 @@ async function executeTool(
             return { result: summary, usage: decision.usage };
         } catch (e: any) {
             return { result: `Error: PM decision failed for ${args.targetTicker}: ${e.message}` };
+        }
+    }
+
+    if (name === "get_cached_analysis") {
+        try {
+            const ticker = (args.ticker || "").toUpperCase();
+            const { blobs } = await list({ prefix: `equity-cache/${ticker}/fundamental/` });
+            if (blobs.length === 0) {
+                return { result: `No cached analysis found for ${ticker}. You may need to run a fresh analysis using run_equity_analysis.` };
+            }
+            // Fetch the cached blob
+            const response = await fetch(blobs[0].url);
+            if (!response.ok) {
+                return { result: `Failed to retrieve cached analysis for ${ticker}.` };
+            }
+            const cached = await response.json();
+            const analysis = cached.data;
+            const cachedDate = cached.createdAt ? new Date(cached.createdAt).toLocaleDateString() : 'unknown date';
+            const summary = [
+                `# Cached Analysis: ${analysis.ticker} (from ${cachedDate})`,
+                `**Sentiment:** ${analysis.sentiment}`,
+                `**CAGR:** ${analysis.cagr}`,
+                '',
+                '## Fundamental Analysis',
+                analysis.summary,
+                '',
+                analysis.sevenPowers ? `## 7 Powers Strategic Analysis\n${analysis.sevenPowers}` : '',
+            ].join('\n');
+            return { result: summary };
+        } catch (e: any) {
+            return { result: `Error retrieving cached analysis for ${args.ticker}: ${e.message}` };
         }
     }
 
