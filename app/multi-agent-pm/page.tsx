@@ -124,16 +124,15 @@ export default function MultiAgentPMPage() {
         }
 
         if (user) {
-            // Logged-in user — treat as admin and load data
             setIsAdmin(true);
-            setLoading(false);
-            initPortfolio();
-            loadCachedAnalyses();
         } else {
-            // Not logged in — allow viewing but disable actions
             setIsAdmin(false);
-            setLoading(false);
         }
+
+        // Load data for ALL users (cached results are public)
+        setLoading(false);
+        initPortfolio();
+        loadCachedAnalyses();
     }, [user]);
 
 
