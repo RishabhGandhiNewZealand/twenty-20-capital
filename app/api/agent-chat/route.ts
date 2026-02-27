@@ -12,7 +12,7 @@ import {
 
 export const maxDuration = 300; // 5 min timeout for long tool calls
 
-const CHAT_MODEL = "gemini-3.1-pro-preview";
+const CHAT_MODEL = "gemini-3-flash-preview";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
