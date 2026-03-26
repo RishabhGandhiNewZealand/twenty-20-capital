@@ -641,9 +641,9 @@ export async function invalidatePortfolioCaches(): Promise<void> {
 
   // Invalidate Next.js cache tags
   try {
-    revalidateTag(CACHE_TAGS.PORTFOLIO_COMPOSITIONS)
-    revalidateTag(CACHE_TAGS.TRADE_DATA)
-    revalidateTag(CACHE_TAGS.PORTFOLIO_HISTORY)
+    revalidateTag(CACHE_TAGS.PORTFOLIO_COMPOSITIONS, 'max')
+    revalidateTag(CACHE_TAGS.TRADE_DATA, 'max')
+    revalidateTag(CACHE_TAGS.PORTFOLIO_HISTORY, 'max')
     logger.info('Next.js cache tags invalidated')
   } catch (error) {
     logger.error('Error invalidating Next.js cache tags:', error)

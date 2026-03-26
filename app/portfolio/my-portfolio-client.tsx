@@ -103,6 +103,11 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
   const rawUserEmail = useMemo(() => getRawEmail(user), [user])
   const userId = useMemo(() => getUserId(user), [user])
   const isAdmin = useMemo(() => !!rawUserEmail && !!adminEmail && rawUserEmail === adminEmail, [rawUserEmail, adminEmail])
+  const historyHeaders = useMemo(() => ({
+    'x-user-id': userId,
+    'x-user-email': rawUserEmail,
+    'x-is-admin': 'false'
+  }), [userId, rawUserEmail])
   const { isAnonymized, setAnonymized } = useAnonymization()
 
   const [holdings, setHoldings] = useState<CurrentHolding[]>([])
@@ -208,7 +213,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
           <PortfolioChart
             portfolioStats={portfolioStats}
             historyPath="/api/user-portfolio-history"
-            historyHeaders={{ 'x-user-id': userId, 'x-user-email': rawUserEmail, 'x-is-admin': 'false' }}
+            historyHeaders={historyHeaders}
             anonymizeOverride={false}
           />
         </div>

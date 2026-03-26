@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -22,6 +22,62 @@ import {
   TooltipProps
 } from "recharts"
 import { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent"
+
+function formatPercentageValue(value: number) {
+  const safe = isNaN(value) ? 0 : value
+  return formatPercentageBase(safe / 100, 2)
+}
+
+interface CustomTooltipProps extends TooltipProps<ValueType, NameType> {
+  onActiveChange: (active: boolean) => void
+}
+
+function CustomTooltipPercentage({ active, payload, label, onActiveChange }: CustomTooltipProps) {
+  useEffect(() => {
+    onActiveChange(active || false)
+  }, [active, onActiveChange])
+
+  if (active && payload && payload.length) {
+    const portfolioPerformance = Number(payload.find((p) => p.dataKey === 'portfolioPerformance')?.value) || 0
+    const sp500Performance = Number(payload.find((p) => p.dataKey === 'sp500Performance')?.value) || 0
+    const outperformance = portfolioPerformance - sp500Performance
+
+    return (
+      <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
+        <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
+          {new Date(label).toLocaleDateString('en-NZ', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })}
+        </p>
+        <div className="space-y-1">
+          <div className="flex justify-between items-center gap-4">
+            <span className="text-sm text-blue-600">Portfolio:</span>
+            <span className={`text-sm font-medium ${portfolioPerformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatPercentageValue(portfolioPerformance)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center gap-4">
+            <span className="text-sm text-green-600">S&P 500:</span>
+            <span className={`text-sm font-medium ${sp500Performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatPercentageValue(sp500Performance)}
+            </span>
+          </div>
+          <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
+            <div className="flex justify-between items-center gap-4">
+              <span className="text-sm text-gray-600">Outperformance:</span>
+              <span className={`text-sm font-medium ${outperformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatPercentageValue(outperformance)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return null
+}
 
 interface PortfolioHistoryData {
   date: string
@@ -77,9 +133,14 @@ export function PortfolioChart({
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(initialEndDate)
   const { isAnonymized } = useAnonymization()
   const anonymized = typeof anonymizeOverride === 'boolean' ? anonymizeOverride : isAnonymized
+  const handleActiveChange = useCallback((active: boolean) => setHideStats(active), [])
 
   useEffect(() => {
+    let cancelled = false
+
     async function fetchPortfolioHistory() {
+      setLoading(true)
+      setError(null)
       try {
         const timestamp = Date.now()
         const response = await fetch(`${historyPath}?t=${timestamp}`, {
@@ -96,7 +157,7 @@ export function PortfolioChart({
         const result = await response.json()
 
         if (!result.history || result.history.length === 0) {
-          setError('No portfolio history data available')
+          if (!cancelled) setError('No portfolio history data available')
           return
         }
 
@@ -105,16 +166,19 @@ export function PortfolioChart({
         // Use TWR-based performance calculation
         const performanceData = calculateTWRPerformanceData(formattedData)
 
-        setAllPerformanceData(performanceData)
-        setFilteredData(performanceData)
+        if (!cancelled) {
+          setAllPerformanceData(performanceData)
+          setFilteredData(performanceData)
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     fetchPortfolioHistory()
+    return () => { cancelled = true }
   }, [historyPath, historyHeaders])
 
   // Filter and recalculate TWR based on selected period
@@ -205,58 +269,6 @@ export function PortfolioChart({
     }
 
     return sampled
-  }
-
-  const formatPercentage = (value: number) => {
-    const safe = isNaN(value) ? 0 : value
-    return formatPercentageBase(safe / 100, 2)
-  }
-
-  const CustomTooltipPercentage = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-    useEffect(() => {
-      setHideStats(active || false)
-    }, [active])
-
-    if (active && payload && payload.length) {
-      const portfolioPerformance = Number(payload.find((p) => p.dataKey === 'portfolioPerformance')?.value) || 0
-      const sp500Performance = Number(payload.find((p) => p.dataKey === 'sp500Performance')?.value) || 0
-      const outperformance = portfolioPerformance - sp500Performance
-
-      return (
-        <div className="bg-[hsl(var(--card))] p-4 rounded-lg shadow-lg border border-[hsl(var(--border))]">
-          <p className="text-sm font-medium text-[hsl(var(--card-foreground))] mb-2">
-            {new Date(label).toLocaleDateString('en-NZ', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })}
-          </p>
-          <div className="space-y-1">
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-blue-600">Portfolio:</span>
-              <span className={`text-sm font-medium ${portfolioPerformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatPercentage(portfolioPerformance)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600">S&P 500:</span>
-              <span className={`text-sm font-medium ${sp500Performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatPercentage(sp500Performance)}
-              </span>
-            </div>
-            <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-sm text-gray-600">Outperformance:</span>
-                <span className={`text-sm font-medium ${outperformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatPercentage(outperformance)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    }
-    return null
   }
 
   if (loading) {
@@ -457,7 +469,7 @@ export function PortfolioChart({
                 axisLine={true}
                 tickLine={!anonymized}
               />
-              <Tooltip content={<CustomTooltipPercentage />} />
+              <Tooltip content={<CustomTooltipPercentage onActiveChange={handleActiveChange} />} />
               <Legend
                 wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
                 iconType="line"
