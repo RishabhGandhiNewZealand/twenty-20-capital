@@ -179,12 +179,14 @@ export function PortfolioChart({
       return
     }
 
-    // Recalculate TWR starting from 0% for this period
+    // Rebase TWR to start at 0% for this period using compound math
     const firstPoint = filtered[0]
+    const firstPortfolioFactor = firstPoint.portfolioPerformance / 100 + 1
+    const firstSP500Factor = firstPoint.sp500Performance / 100 + 1
     const rebasedData = filtered.map(point => ({
       date: point.date,
-      portfolioPerformance: point.portfolioPerformance - firstPoint.portfolioPerformance,
-      sp500Performance: point.sp500Performance - firstPoint.sp500Performance
+      portfolioPerformance: ((point.portfolioPerformance / 100 + 1) / firstPortfolioFactor - 1) * 100,
+      sp500Performance: ((point.sp500Performance / 100 + 1) / firstSP500Factor - 1) * 100
     }))
 
     setFilteredData(rebasedData)

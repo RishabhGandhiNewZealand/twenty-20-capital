@@ -24,6 +24,7 @@ interface CurrentHolding {
   gainPercent: number
   allocation: number
   currency: string
+  avgPriceUSD?: number
 }
 
 interface PortfolioSummary {
@@ -194,8 +195,9 @@ export default function HomePage() {
         {/* Portfolio Horizontal Bar Chart */}
         {!loading && (
           <div className="mb-6 sm:mb-8">
-            <PortfolioHorizontalBarChart 
-              holdings={holdings} 
+            <PortfolioHorizontalBarChart
+              holdings={holdings}
+              staticHoldings={true}
             />
           </div>
         )}
@@ -266,9 +268,9 @@ export default function HomePage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatCurrencyWithDecimals(
-                              holding.currency === 'NZD' 
+                              holding.currency === 'NZD'
                                 ? holding.costBasisNZD / holding.shares
-                                : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), 
+                                : (holding.avgPriceUSD ?? holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)),
                               holding.currency
                             )}
                           </td>
@@ -375,9 +377,9 @@ export default function HomePage() {
                           <div className="text-gray-500">Cost Basis (Per Share)</div>
                           <div className="font-medium text-gray-600">
                             {formatCurrencyWithDecimals(
-                              holding.currency === 'NZD' 
+                              holding.currency === 'NZD'
                                 ? holding.costBasisNZD / holding.shares
-                                : holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1), 
+                                : (holding.avgPriceUSD ?? holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)),
                               holding.currency
                             )}
                           </div>

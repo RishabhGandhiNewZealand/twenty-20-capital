@@ -238,7 +238,8 @@ async function calculateSP500Benchmark(
         // Use actual historical SPY price for this trade date
         const spyPriceUSD = getNearestPrice(trade.date, spyPrices)
         if (spyPriceUSD > 0) {
-          const spyPriceNZD = spyPriceUSD * exchangeRate
+          const tradeRate = (trade.exchRate && trade.exchRate > 0) ? trade.exchRate : exchangeRate
+          const spyPriceNZD = spyPriceUSD * tradeRate
           sp500Shares += newCapital / spyPriceNZD
         } else {
           logger.warn(`No SPY price found for trade date ${trade.date}, skipping S&P 500 calculation for this trade`)

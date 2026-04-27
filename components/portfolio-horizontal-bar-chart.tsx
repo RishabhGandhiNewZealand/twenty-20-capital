@@ -534,7 +534,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
             <Slider
               value={[sliderValue]}
               onValueChange={(value) => setSliderValue(value[0])}
-              max={availableDates.length}
+              max={Math.max(0, availableDates.length - 1)}
               step={1}
               className="flex-1"
               disabled={isPlaying}
