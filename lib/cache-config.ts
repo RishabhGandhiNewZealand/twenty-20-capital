@@ -21,6 +21,7 @@ export const CACHE_DURATIONS = {
 // Cache tags for invalidation
 export const CACHE_TAGS = {
   TRADE_DATA: 'trade-data',
+  PORTFOLIO_CURRENT: 'portfolio-current',
   PORTFOLIO_HISTORY: 'portfolio-history',
   PORTFOLIO_COMPOSITIONS: 'portfolio-compositions',
   STOCK_PRICES: 'stock-prices',

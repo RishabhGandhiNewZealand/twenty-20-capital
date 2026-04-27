@@ -10,10 +10,10 @@ import { getCachedTradeData } from './trade-data-cache'
 import { calculateDailyReturns } from './portfolioCalculations'
 import yahooFinance from './yahoo-finance'
 import { logger } from './logger'
-import { FALLBACK_USD_TO_NZD_RATE } from './constants'
+import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_AUD_TO_NZD_RATE } from './constants'
 import { generatePortfolioData } from './portfolioServerData'
 import { TradeRecord } from '@/types/portfolio'
-import { revalidateTag } from 'next/cache'
+import { revalidateTag, unstable_cache } from 'next/cache'
 import { CACHE_TAGS } from '@/lib/cache-config'
 
 // Types
@@ -127,6 +127,50 @@ async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string
         while (currentDate <= endDate) {
           const dateStr = currentDate.toISOString().split('T')[0]
           rateMap.set(dateStr, FALLBACK_USD_TO_NZD_RATE)
+          currentDate.setDate(currentDate.getDate() + 1)
+        }
+        return rateMap
+      }
+    },
+    CACHE_TTL.STOCK_PRICES
+  )
+}
+
+/**
+ * Get historical AUD/NZD exchange rates with caching
+ * AUDNZD=X gives NZD per AUD directly (no inversion needed)
+ */
+async function getAUDNZDRate(startDate: Date, endDate: Date): Promise<Map<string, number>> {
+  const cacheKey = `${CacheKey.STOCK_PRICES}:AUDNZD:${startDate.toISOString().split('T')[0]}:${endDate.toISOString().split('T')[0]}`
+
+  return cacheManager.getOrSet(
+    cacheKey,
+    async () => {
+      try {
+        logger.debug(`Fetching AUD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+
+        const quotes = await yahooFinance.historical('AUDNZD=X', {
+          period1: startDate,
+          period2: endDate,
+          interval: '1d'
+        })
+
+        logger.debug(`Got ${(quotes as any).length} AUD/NZD rate quotes`)
+
+        const rateMap = new Map<string, number>()
+        ;(quotes as any).forEach((quote: any) => {
+          const dateStr = quote.date.toISOString().split('T')[0]
+          rateMap.set(dateStr, quote.close) // AUDNZD=X is already NZD per AUD
+        })
+
+        return rateMap
+      } catch (error) {
+        logger.error('Error fetching AUD/NZD rate:', error)
+        const rateMap = new Map<string, number>()
+        const currentDate = new Date(startDate)
+        while (currentDate <= endDate) {
+          const dateStr = currentDate.toISOString().split('T')[0]
+          rateMap.set(dateStr, FALLBACK_AUD_TO_NZD_RATE)
           currentDate.setDate(currentDate.getDate() + 1)
         }
         return rateMap
@@ -281,9 +325,11 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     // Get unique tickers and currencies
     const tickers = [...new Set(trades.map(t => t.code))]
     const needsExchangeRate = trades.some(t => t.instrumentCurrency === 'USD')
+    const needsAUD = trades.some(t => t.instrumentCurrency === 'AUD')
 
     logger.debug('Unique tickers:', tickers)
     logger.debug('Needs exchange rate:', needsExchangeRate)
+    logger.debug('Needs AUD rate:', needsAUD)
 
     logger.info(`Fetching historical data for ${tickers.length} tickers in parallel...`)
     const priceDataResults = await Promise.all(tickers.map(async (ticker) => ({
@@ -294,10 +340,11 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     const tickerPrices = new Map<string, Map<string, number>>()
     priceDataResults.forEach(({ ticker, prices }) => tickerPrices.set(ticker, prices))
 
-    // Fetch exchange rate and SPY prices in parallel
-    const [exchangeRates, spyPrices] = await Promise.all([
+    // Fetch exchange rates and SPY prices in parallel
+    const [exchangeRates, spyPrices, audExchangeRates] = await Promise.all([
       needsExchangeRate ? getUSDNZDRate(startDate, endDate) : Promise.resolve(new Map<string, number>()),
-      getHistoricalPrices('SPY', startDate, endDate)
+      getHistoricalPrices('SPY', startDate, endDate),
+      needsAUD ? getAUDNZDRate(startDate, endDate) : Promise.resolve(new Map<string, number>())
     ])
 
     logger.info('Filling missing dates...')
@@ -311,6 +358,7 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
 
     const filledExchangeRates = fillMissingDates(exchangeRates, startDate, endDate)
     const filledSpyPrices = fillMissingDates(spyPrices, startDate, endDate)
+    const filledAudExchangeRates = needsAUD ? fillMissingDates(audExchangeRates, startDate, endDate) : new Map<string, number>()
 
     logger.info('Calculating daily portfolio values...')
 
@@ -321,7 +369,8 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
       filledExchangeRates,
       filledSpyPrices,
       startDate,
-      endDate
+      endDate,
+      filledAudExchangeRates
     )
 
     logger.info(`Portfolio history calculation completed. Generated ${dailyData.length} daily data points`)
@@ -377,102 +426,130 @@ async function getCurrentUSDNZDRate(): Promise<number> {
 }
 
 /**
+ * Get current AUD/NZD exchange rate (AUDNZD=X gives NZD per AUD directly)
+ */
+async function getCurrentAUDNZDRate(): Promise<number> {
+  try {
+    const quote = await yahooFinance.quote('AUDNZD=X')
+    return (quote as any).regularMarketPrice || FALLBACK_AUD_TO_NZD_RATE
+  } catch (error) {
+    logger.error('Error fetching AUD/NZD rate:', error)
+    return FALLBACK_AUD_TO_NZD_RATE
+  }
+}
+
+/**
+ * Core computation for current portfolio data (no caching layer).
+ * Handles USD and AUD → NZD conversions and returns enriched holdings.
+ */
+async function computePortfolioCurrentData(): Promise<PortfolioCurrentData> {
+  const { holdings, exitedPositions } = await generatePortfolioData()
+
+  const needsAUD = holdings.some(h => h.instrumentCurrency === 'AUD')
+
+  // Fetch FX rates and current prices in parallel
+  const [exchangeRate, audRate, prices] = await Promise.all([
+    getCurrentUSDNZDRate(),
+    needsAUD ? getCurrentAUDNZDRate() : Promise.resolve(FALLBACK_AUD_TO_NZD_RATE),
+    Promise.all(holdings.map(h => getCurrentPrice(h.symbol)))
+  ])
+
+  const priceMap = new Map<string, number>(holdings.map((h, i) => [h.symbol, prices[i]]))
+
+  logger.info(`Fetched prices for ${holdings.length} holdings (USD rate: ${exchangeRate.toFixed(4)}, AUD rate: ${audRate.toFixed(4)})`)
+
+  const enrichedHoldings = holdings.map(holding => {
+    const currentPrice = priceMap.get(holding.symbol) || 0
+    const isUSD = holding.instrumentCurrency === 'USD'
+    const isAUD = holding.instrumentCurrency === 'AUD'
+    const fxRate = isUSD ? exchangeRate : (isAUD ? audRate : 1)
+
+    const currentValueNZD = holding.totalShares * currentPrice * fxRate
+    const costBasisNZD = holding.totalShares * holding.avgPriceNZD
+    const gainNZD = currentValueNZD - costBasisNZD
+    const gainPercent = costBasisNZD > 0 ? (gainNZD / costBasisNZD) * 100 : 0
+
+    let gainNative = gainNZD
+    let gainPercentNative = gainPercent
+
+    if (isUSD && holding.avgPriceUSD) {
+      const costBasisUSD = holding.totalShares * holding.avgPriceUSD
+      const currentValueUSD = holding.totalShares * currentPrice
+      gainNative = currentValueUSD - costBasisUSD
+      gainPercentNative = costBasisUSD > 0 ? (gainNative / costBasisUSD) * 100 : 0
+    } else if (isAUD && holding.avgPriceAUD) {
+      const costBasisAUD = holding.totalShares * holding.avgPriceAUD
+      const currentValueAUD = holding.totalShares * currentPrice
+      gainNative = currentValueAUD - costBasisAUD
+      gainPercentNative = costBasisAUD > 0 ? (gainNative / costBasisAUD) * 100 : 0
+    }
+
+    return {
+      symbol: holding.symbol,
+      name: holding.name,
+      shares: holding.totalShares,
+      currentPrice,
+      currentValueNZD,
+      costBasisNZD,
+      gainNZD,
+      gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
+      allocation: 0,
+      currency: holding.instrumentCurrency,
+      avgPriceUSD: holding.avgPriceUSD,
+      avgPriceAUD: holding.avgPriceAUD,
+      gainNative,
+      gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative
+    }
+  })
+
+  const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
+  const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
+
+  enrichedHoldings.forEach(h => {
+    h.allocation = totalValue > 0 ? (h.currentValueNZD / totalValue) * 100 : 0
+  })
+  enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
+
+  const totalGain = totalValue - totalCost
+  const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
+
+  const adminUserId = process.env.ADMIN_USER_ID || ''
+  const trades = await getCachedTradeData(adminUserId)
+  const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
+  const currentSpyPrice = await getCurrentPrice('SPY')
+  const sp500Value = sp500Shares * currentSpyPrice * exchangeRate
+  const sp500GainNZD = sp500Value - currentCostBasis
+  const sp500GainPercent = currentCostBasis > 0 ? (sp500GainNZD / currentCostBasis) * 100 : 0
+
+  return {
+    holdings: enrichedHoldings,
+    exitedPositions,
+    summary: {
+      totalValueNZD: totalValue,
+      totalCostBasisNZD: totalCost,
+      totalGainNZD: totalGain,
+      totalGainPercent,
+      sp500Value,
+      sp500GainNZD,
+      sp500GainPercent,
+      exchangeRate
+    },
+    lastUpdated: new Date().toISOString()
+  }
+}
+
+// Next.js cache wrapper — properly invalidated by revalidateTag(CACHE_TAGS.PORTFOLIO_CURRENT)
+const _getCachedPortfolioCurrentData = unstable_cache(
+  computePortfolioCurrentData,
+  [CACHE_TAGS.PORTFOLIO_CURRENT],
+  { revalidate: CACHE_TTL.PORTFOLIO_CURRENT, tags: [CACHE_TAGS.PORTFOLIO_CURRENT] }
+)
+
+/**
  * Get cached current portfolio data
  */
 export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentData> {
-  return cacheManager.getOrSet(
-    CacheKey.PORTFOLIO_CURRENT,
-    async () => {
-      const { holdings, exitedPositions } = await generatePortfolioData()
-
-      // Fetch current prices for all holdings
-      const exchangeRate = await getCurrentUSDNZDRate()
-      const tickers = holdings.map(h => h.symbol)
-
-      logger.info(`Fetching current prices for ${tickers.length} tickers in parallel...`)
-      const prices = await Promise.all(tickers.map(ticker => getCurrentPrice(ticker)))
-      const priceMap = new Map<string, number>(tickers.map((ticker, i) => [ticker, prices[i]]))
-
-      // Calculate current values and gains for each holding
-      const enrichedHoldings = holdings.map(holding => {
-        const currentPrice = priceMap.get(holding.symbol) || 0
-        const isUSD = holding.instrumentCurrency === 'USD'
-        const currentValueNZD = holding.totalShares * currentPrice * (isUSD ? exchangeRate : 1)
-        const costBasisNZD = holding.totalShares * holding.avgPriceNZD
-        const gainNZD = currentValueNZD - costBasisNZD
-        const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
-
-        let gainNative = gainNZD
-        let gainPercentNative = gainPercent
-
-        if (isUSD && holding.avgPriceUSD) {
-          const costBasisUSD = holding.totalShares * holding.avgPriceUSD
-          const currentValueUSD = holding.totalShares * currentPrice
-          gainNative = currentValueUSD - costBasisUSD
-          gainPercentNative = costBasisUSD > 0 ? ((gainNative / costBasisUSD) * 100) : 0
-        }
-
-        return {
-          symbol: holding.symbol,
-          name: holding.name,
-          shares: holding.totalShares,
-          currentPrice,
-          currentValueNZD,
-          costBasisNZD,
-          gainNZD,
-          gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
-          allocation: 0, // Will be calculated below
-          currency: holding.instrumentCurrency,
-          avgPriceUSD: holding.avgPriceUSD,
-          gainNative,
-          gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative
-        }
-      })
-
-      // Calculate total value and allocations
-      const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-      const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
-
-      enrichedHoldings.forEach(holding => {
-        holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
-      })
-
-      // Sort by allocation
-      enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
-
-      const totalGain = totalValue - totalCost
-      const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
-
-      // Calculate S&P 500 benchmark using actual historical SPY prices
-      const adminUserId = process.env.ADMIN_USER_ID || ''
-      const trades = await getCachedTradeData(adminUserId)
-
-      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
-
-      const currentSpyPrice = await getCurrentPrice('SPY')
-      const sp500ValueUSD = sp500Shares * currentSpyPrice
-      const sp500Value = sp500ValueUSD * exchangeRate
-      const sp500GainNZD = sp500Value - currentCostBasis
-      const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
-
-      return {
-        holdings: enrichedHoldings,
-        exitedPositions,
-        summary: {
-          totalValueNZD: totalValue,
-          totalCostBasisNZD: totalCost,
-          totalGainNZD: totalGain,
-          totalGainPercent,
-          sp500Value,
-          sp500GainNZD,
-          sp500GainPercent,
-          exchangeRate
-        },
-        lastUpdated: new Date().toISOString()
-      }
-    },
-    CACHE_TTL.PORTFOLIO_CURRENT
-  )
+  return _getCachedPortfolioCurrentData()
 }
 
 /**
@@ -516,98 +593,6 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
     calculatePortfolioHistory
   )
 
-  // Register refresh callback for current portfolio (use the same logic as the cache getter)
-  cacheManager.registerRefreshCallback(
-    CacheKey.PORTFOLIO_CURRENT,
-    async () => {
-      // Call getCachedPortfolioCurrentData without the cache layer
-      const { holdings, exitedPositions } = await generatePortfolioData()
-
-      // Fetch current prices for all holdings
-      const exchangeRate = await getCurrentUSDNZDRate()
-      const tickers = holdings.map(h => h.symbol)
-
-      logger.info(`Fetching current prices for ${tickers.length} tickers in parallel (refresh)...`)
-      const prices = await Promise.all(tickers.map(ticker => getCurrentPrice(ticker)))
-      const priceMap = new Map<string, number>(tickers.map((ticker, i) => [ticker, prices[i]]))
-
-      // Calculate current values and gains for each holding
-      const enrichedHoldings = holdings.map(holding => {
-        const currentPrice = priceMap.get(holding.symbol) || 0
-        const isUSD = holding.instrumentCurrency === 'USD'
-        const currentValueNZD = holding.totalShares * currentPrice * (isUSD ? exchangeRate : 1)
-        const costBasisNZD = holding.totalShares * holding.avgPriceNZD
-        const gainNZD = currentValueNZD - costBasisNZD
-        const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
-
-        let gainNative = gainNZD
-        let gainPercentNative = gainPercent
-
-        if (isUSD && holding.avgPriceUSD) {
-          const costBasisUSD = holding.totalShares * holding.avgPriceUSD
-          const currentValueUSD = holding.totalShares * currentPrice
-          gainNative = currentValueUSD - costBasisUSD
-          gainPercentNative = costBasisUSD > 0 ? ((gainNative / costBasisUSD) * 100) : 0
-        }
-
-        return {
-          symbol: holding.symbol,
-          name: holding.name,
-          shares: holding.totalShares,
-          currentPrice,
-          currentValueNZD,
-          costBasisNZD,
-          gainNZD,
-          gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
-          allocation: 0,
-          currency: holding.instrumentCurrency,
-          avgPriceUSD: holding.avgPriceUSD,
-          gainNative,
-          gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative
-        }
-      })
-
-      const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-      const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
-
-      enrichedHoldings.forEach(holding => {
-        holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
-      })
-
-      enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
-
-      const totalGain = totalValue - totalCost
-      const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
-
-      const adminUserId = process.env.ADMIN_USER_ID || ''
-      const trades = await getCachedTradeData(adminUserId)
-
-      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
-
-      const currentSpyPrice = await getCurrentPrice('SPY')
-      const sp500ValueUSD = sp500Shares * currentSpyPrice
-      const sp500Value = sp500ValueUSD * exchangeRate
-      const sp500GainNZD = sp500Value - currentCostBasis
-      const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
-
-      return {
-        holdings: enrichedHoldings,
-        exitedPositions,
-        summary: {
-          totalValueNZD: totalValue,
-          totalCostBasisNZD: totalCost,
-          totalGainNZD: totalGain,
-          totalGainPercent,
-          sp500Value,
-          sp500GainNZD,
-          sp500GainPercent,
-          exchangeRate
-        },
-        lastUpdated: new Date().toISOString()
-      }
-    }
-  )
-
   // Register refresh callback for portfolio composition
   cacheManager.registerRefreshCallback(
     CacheKey.PORTFOLIO_COMPOSITION,
@@ -645,6 +630,7 @@ export async function invalidatePortfolioCaches(): Promise<void> {
     revalidateTag(CACHE_TAGS.PORTFOLIO_COMPOSITIONS)
     revalidateTag(CACHE_TAGS.TRADE_DATA)
     revalidateTag(CACHE_TAGS.PORTFOLIO_HISTORY)
+    revalidateTag(CACHE_TAGS.PORTFOLIO_CURRENT)
     logger.info('Next.js cache tags invalidated')
   } catch (error) {
     logger.error('Error invalidating Next.js cache tags:', error)

@@ -7,6 +7,7 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
     totalShares: number
     totalCostNZD: number
     totalCostUSD: number
+    totalCostAUD: number
     instrumentCurrency: string
     marketCode: string
     firstPurchaseDate: string
@@ -36,6 +37,7 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
         totalShares: 0,
         totalCostNZD: 0,
         totalCostUSD: 0,
+        totalCostAUD: 0,
         instrumentCurrency: trade.instrumentCurrency,
         marketCode: trade.marketCode,
         firstPurchaseDate: trade.date,
@@ -53,10 +55,11 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
       const costNZD = Math.abs(trade.value)
       holding.totalCostNZD += costNZD
       
-      // Calculate cost in USD for USD stocks
+      // Calculate cost in native currency for USD/AUD stocks
       if (trade.instrumentCurrency === 'USD') {
-        const costUSD = trade.qty * trade.price
-        holding.totalCostUSD += costUSD
+        holding.totalCostUSD += trade.qty * trade.price
+      } else if (trade.instrumentCurrency === 'AUD') {
+        holding.totalCostAUD += trade.qty * trade.price
       }
     } else if (trade.type === 'Sell') {
       // For sells, we need to reduce shares proportionally
@@ -69,6 +72,7 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
         const remainingRatio = remainingShares / sharesBeforeSale
         holding.totalCostNZD *= remainingRatio
         holding.totalCostUSD *= remainingRatio
+        holding.totalCostAUD *= remainingRatio
         holding.totalShares = remainingShares
       } else {
         // Sold all shares
@@ -100,6 +104,7 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
         totalShares: holding.totalShares,
         avgPriceNZD: holding.totalCostNZD / holding.totalShares,
         avgPriceUSD: holding.instrumentCurrency === 'USD' ? holding.totalCostUSD / holding.totalShares : undefined,
+        avgPriceAUD: holding.instrumentCurrency === 'AUD' ? holding.totalCostAUD / holding.totalShares : undefined,
         allocation: 0, // Will be calculated after we get current values
         instrumentCurrency: holding.instrumentCurrency,
         marketCode: holding.marketCode,

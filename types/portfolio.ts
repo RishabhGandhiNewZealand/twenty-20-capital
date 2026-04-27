@@ -25,6 +25,7 @@ export interface PortfolioHolding {
   totalShares: number
   avgPriceNZD: number
   avgPriceUSD?: number // Only for USD stocks
+  avgPriceAUD?: number // Only for AUD stocks
   allocation: number
   currentValueNZD?: number // Calculated with current prices
   instrumentCurrency: string

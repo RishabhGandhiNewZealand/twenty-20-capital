@@ -25,5 +25,8 @@ export const CACHE_REVALIDATE = {
 export const FALLBACK_USD_TO_NZD_RATE = 1.65
 export const FALLBACK_NZD_TO_USD_RATE = 0.606
 
+// AUD to NZD exchange rate fallback (1 AUD ≈ 1.08 NZD)
+export const FALLBACK_AUD_TO_NZD_RATE = 1.08
+
 // Minimum share threshold for current holdings
 export const MIN_SHARE_THRESHOLD = 0.001

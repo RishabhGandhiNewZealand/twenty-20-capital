@@ -7,7 +7,7 @@
 
 import { TradeRecord } from '@/types/portfolio'
 import { logger } from './logger'
-import { FALLBACK_USD_TO_NZD_RATE } from './constants'
+import { FALLBACK_USD_TO_NZD_RATE, FALLBACK_AUD_TO_NZD_RATE } from './constants'
 
 interface DailyPortfolioData {
   date: string
@@ -61,7 +61,8 @@ export function calculateDailyReturns(
   exchangeRates: Map<string, number>,
   spyPrices: Map<string, number>,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  audExchangeRates: Map<string, number> = new Map()
 ): DailyPortfolioData[] {
   
   // Sort trades by date, and within the same date: Sells first, then Buys, then Reinvestments
@@ -212,10 +213,14 @@ export function calculateDailyReturns(
         if (priceMap) {
           const price = priceMap.get(dateStr) || 0
           if (price > 0) {
-            // Determine if this is a USD stock
-            const isUSD = sortedTrades.find(t => t.code === ticker)?.instrumentCurrency === 'USD'
-            const valueNZD = isUSD ? shares * price * exchangeRate : shares * price
-            portfolioValue += valueNZD
+            const instrumentCurrency = sortedTrades.find(t => t.code === ticker)?.instrumentCurrency
+            let fxRate = 1
+            if (instrumentCurrency === 'USD') {
+              fxRate = exchangeRate
+            } else if (instrumentCurrency === 'AUD') {
+              fxRate = audExchangeRates.get(dateStr) || FALLBACK_AUD_TO_NZD_RATE
+            }
+            portfolioValue += shares * price * fxRate
           }
         }
       }

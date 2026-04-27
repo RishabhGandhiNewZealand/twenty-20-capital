@@ -25,6 +25,7 @@ interface CurrentHolding {
   allocation: number
   currency: string
   avgPriceUSD?: number
+  avgPriceAUD?: number
 }
 
 interface PortfolioSummary {
@@ -270,7 +271,9 @@ export default function HomePage() {
                             {formatCurrencyWithDecimals(
                               holding.currency === 'NZD'
                                 ? holding.costBasisNZD / holding.shares
-                                : (holding.avgPriceUSD ?? holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)),
+                                : holding.currency === 'AUD'
+                                  ? (holding.avgPriceAUD ?? holding.costBasisNZD / holding.shares)
+                                  : (holding.avgPriceUSD ?? holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)),
                               holding.currency
                             )}
                           </td>
@@ -379,7 +382,9 @@ export default function HomePage() {
                             {formatCurrencyWithDecimals(
                               holding.currency === 'NZD'
                                 ? holding.costBasisNZD / holding.shares
-                                : (holding.avgPriceUSD ?? holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)),
+                                : holding.currency === 'AUD'
+                                  ? (holding.avgPriceAUD ?? holding.costBasisNZD / holding.shares)
+                                  : (holding.avgPriceUSD ?? holding.costBasisNZD / holding.shares / (summary?.exchangeRate || 1)),
                               holding.currency
                             )}
                           </div>
