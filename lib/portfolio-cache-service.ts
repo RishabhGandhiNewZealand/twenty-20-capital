@@ -67,19 +67,22 @@ async function getHistoricalPrices(
 
         logger.debug(`Fetching history for ${yfinanceTicker} from ${startDate.toISOString()} to ${endDate.toISOString()}`)
 
-        const quotes = await yahooFinance.historical(yfinanceTicker, {
+        const result = await yahooFinance.chart(yfinanceTicker, {
           period1: startDate,
           period2: endDate,
           interval: '1d'
-        })
-
-        logger.debug(`Got ${(quotes as any).length} quotes for ${yfinanceTicker}`)
+        }, { validateResult: false })
 
         const priceMap = new Map<string, number>()
-          ; (quotes as any).forEach((quote: any) => {
-            const dateStr = quote.date.toISOString().split('T')[0]
-            priceMap.set(dateStr, quote.close)
+        if (result && result.quotes) {
+          logger.debug(`Got ${result.quotes.length} quotes for ${yfinanceTicker}`)
+          result.quotes.forEach((quote: any) => {
+            if (quote.close !== null && quote.close !== undefined) {
+              const dateStr = quote.date.toISOString().split('T')[0]
+              priceMap.set(dateStr, quote.close)
+            }
           })
+        }
 
         return priceMap
       } catch (error) {
@@ -103,20 +106,23 @@ async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string
       try {
         logger.debug(`Fetching USD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`)
 
-        const quotes = await yahooFinance.historical('NZDUSD=X', {
+        const result = await yahooFinance.chart('NZDUSD=X', {
           period1: startDate,
           period2: endDate,
           interval: '1d'
-        })
-
-        logger.debug(`Got ${(quotes as any).length} exchange rate quotes`)
+        }, { validateResult: false })
 
         const rateMap = new Map<string, number>()
-          ; (quotes as any).forEach((quote: any) => {
-            const dateStr = quote.date.toISOString().split('T')[0]
-            // Convert NZD/USD to USD/NZD by inverting
-            rateMap.set(dateStr, 1 / quote.close)
+        if (result && result.quotes) {
+          logger.debug(`Got ${result.quotes.length} exchange rate quotes`)
+          result.quotes.forEach((quote: any) => {
+            if (quote.close !== null && quote.close !== undefined) {
+              const dateStr = quote.date.toISOString().split('T')[0]
+              // Convert NZD/USD to USD/NZD by inverting
+              rateMap.set(dateStr, 1 / quote.close)
+            }
           })
+        }
 
         return rateMap
       } catch (error) {
