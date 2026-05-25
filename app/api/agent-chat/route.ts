@@ -1,4 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { generateText, gateway } from "ai";
 import { NextRequest } from "next/server";
 import { list } from "@vercel/blob";
 import {
@@ -12,9 +13,12 @@ import {
 
 export const maxDuration = 300; // 5 min timeout for long tool calls
 
-const CHAT_MODEL = "gemini-3-flash-preview";
+const CHAT_MODEL = "deepseek/deepseek-v4-pro";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const aiClient = createOpenAI({
+    apiKey: process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY || "",
+    baseURL: "https://ai-gateway.vercel.sh/v1",
+});
 
 const TOOL_MARKER_REGEX = /<<TOOL:(\w+):(.*?)>>/s;
 
@@ -24,7 +28,7 @@ const SYSTEM_INSTRUCTION = `You are a senior investment analyst assistant. You h
 - The current portfolio composition and allocations
 - The Complexity Investing Portfolio Manager's trade decision
 
-Your job is to answer the user's follow-up questions about ANY of this data. Be precise, cite numbers from the reports, and be concise. You also have Google Search available for supplementary lookups.
+Your job is to answer the user's follow-up questions about ANY of this data. Be precise, cite numbers from the reports, and be concise. You also have Google/Perplexity Search available for supplementary lookups.
 
 ## TOOL SYSTEM
 You have access to powerful research tools. To use a tool, output EXACTLY this marker format on its own line at the END of your message:
@@ -208,17 +212,13 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        if (!process.env.GEMINI_API_KEY) {
-            return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
+        const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return new Response(JSON.stringify({ error: "AI_GATEWAY_API_KEY or GEMINI_API_KEY not configured" }), {
                 status: 500,
                 headers: { "Content-Type": "application/json" },
             });
         }
-
-        const model = genAI.getGenerativeModel(
-            { model: CHAT_MODEL },
-            { apiVersion: "v1beta" }
-        );
 
         const fullSystemInstruction = `${SYSTEM_INSTRUCTION}
 
@@ -226,11 +226,15 @@ export async function POST(req: NextRequest) {
 ${context}
 --- END ANALYSIS CONTEXT ---`;
 
-        // Build chat history including any prior tool interactions
-        const chatHistory = history.map((msg) => ({
-            role: msg.role,
-            parts: [{ text: msg.text }],
-        }));
+        // Build chat history
+        const currentMessages: any[] = [
+            { role: "system", content: fullSystemInstruction },
+            ...history.map((msg) => ({
+                role: msg.role === "model" ? "assistant" : "user",
+                content: msg.text,
+            })),
+            { role: "user", content: message }
+        ];
 
         const encoder = new TextEncoder();
         let cumulativeUsage = { tokens: 0, cost: 0 };
@@ -238,16 +242,19 @@ ${context}
         const stream = new ReadableStream({
             async start(controller) {
                 try {
-                    const chat = model.startChat({
-                        systemInstruction: { role: "system", parts: [{ text: fullSystemInstruction }] },
-                        history: chatHistory,
-                        tools: [{ googleSearch: {} }] as any[],
+                    // Send the user message via generateText
+                    let result = await generateText({
+                        model: aiClient(CHAT_MODEL),
+                        messages: currentMessages,
+                        tools: {
+                            perplexity_search: gateway.tools.perplexitySearch({
+                                maxResults: 10,
+                            }),
+                        },
                     });
 
-                    // Send the user message
-                    let result = await chat.sendMessage(message);
-                    let responseText = result.response.text();
-                    let chatUsage = calculateUsage(CHAT_MODEL, result.response.usageMetadata);
+                    let responseText = result.text;
+                    let chatUsage = calculateUsage(CHAT_MODEL, result.usage);
                     cumulativeUsage.tokens += chatUsage.tokens;
                     cumulativeUsage.cost += chatUsage.cost;
 
@@ -292,12 +299,24 @@ ${context}
                             `<!--TOOL_DONE:${JSON.stringify({ name: toolName, ticker, cost: toolResult.usage?.cost || 0 })}-->\n`
                         ));
 
-                        // Send tool result back to the model and get the final response
+                        // Append response and tool output to history
+                        currentMessages.push({ role: "assistant", content: responseText });
+                        
                         const toolResponsePrompt = `The tool "${toolName}" has completed. Here are the results:\n\n${toolResult.result}\n\nPlease now provide a comprehensive response to the user based on these results. Do NOT call another tool unless absolutely necessary for a different analysis.`;
+                        currentMessages.push({ role: "user", content: toolResponsePrompt });
 
-                        result = await chat.sendMessage(toolResponsePrompt);
-                        responseText = result.response.text();
-                        chatUsage = calculateUsage(CHAT_MODEL, result.response.usageMetadata);
+                        result = await generateText({
+                            model: aiClient(CHAT_MODEL),
+                            messages: currentMessages,
+                            tools: {
+                                perplexity_search: gateway.tools.perplexitySearch({
+                                    maxResults: 10,
+                                }),
+                            },
+                        });
+
+                        responseText = result.text;
+                        chatUsage = calculateUsage(CHAT_MODEL, result.usage);
                         cumulativeUsage.tokens += chatUsage.tokens;
                         cumulativeUsage.cost += chatUsage.cost;
 

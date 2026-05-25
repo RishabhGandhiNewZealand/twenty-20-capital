@@ -402,7 +402,7 @@ export default function MultiAgentPMPage() {
                         </div>
                         <div>
                             <h1 className="text-3xl font-black tracking-tight uppercase italic text-gray-900 dark:text-white">Rish Agentic Insights</h1>
-                            <p className="text-gray-500 dark:text-slate-400 font-bold text-[10px] tracking-[0.4em] uppercase opacity-70">Agentic Portfolio Manager (powered by Gemini)</p>
+                            <p className="text-gray-500 dark:text-slate-400 font-bold text-[10px] tracking-[0.4em] uppercase opacity-70">Agentic Portfolio Manager (powered by DeepSeek v4 via Vercel AI Gateway)</p>
                         </div>
                     </div>
 
