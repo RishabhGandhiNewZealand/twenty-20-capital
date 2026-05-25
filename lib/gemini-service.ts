@@ -53,7 +53,7 @@ const DECISION_MODEL = 'deepseek/deepseek-v4-pro';
 // Initialize Vercel AI Gateway OpenAI Client
 // WARNING: Ensure AI_GATEWAY_API_KEY is in your environment variables
 const aiClient = createOpenAI({
-    apiKey: process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY || '',
+    apiKey: process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN,
     baseURL: 'https://ai-gateway.vercel.sh/v1',
 });
 
@@ -145,7 +145,7 @@ export const calculateUsage = (modelName: string, usage: any) => {
  */
 export const analyzeEquity = async (ticker: string, isTarget: boolean = false): Promise<EquityAnalysis> => {
     // Basic API Key validation
-    const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
     if (!apiKey) {
         throw new Error("Vercel AI Gateway API Key is missing. Please set AI_GATEWAY_API_KEY in your environment.");
     }
@@ -280,7 +280,7 @@ export const analyzeSevenPowers = async (ticker: string, companyName: string, is
         };
     }
 
-    const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
     if (!apiKey) {
         throw new Error("Vercel AI Gateway API Key is missing.");
     }
@@ -341,7 +341,7 @@ export const makeComplexityDecision = async (
     portfolioScan: EquityAnalysis[],
     currentPortfolio: PortfolioItem[]
 ): Promise<ComplexityDecision> => {
-    const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
     if (!apiKey) {
         throw new Error("Vercel AI Gateway API Key is missing.");
     }

@@ -16,7 +16,7 @@ export const maxDuration = 300; // 5 min timeout for long tool calls
 const CHAT_MODEL = "deepseek/deepseek-v4-pro";
 
 const aiClient = createOpenAI({
-    apiKey: process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY || "",
+    apiKey: process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN,
     baseURL: "https://ai-gateway.vercel.sh/v1",
 });
 
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.GEMINI_API_KEY;
+        const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
         if (!apiKey) {
             return new Response(JSON.stringify({ error: "AI_GATEWAY_API_KEY or GEMINI_API_KEY not configured" }), {
                 status: 500,
