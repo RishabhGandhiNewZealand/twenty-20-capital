@@ -48,6 +48,14 @@ export default function Review2025Page() {
                         const sp500TWR = calculateTimeWeightedReturn(sp500History)
                         const sp500CAGR = calculateCAGRFromTotalReturn(sp500TWR, yearsSinceInception)
 
+                        const vtHistory = data.history.map((h: any) => ({
+                            date: h.date,
+                            portfolioValue: h.vtValue,
+                            costBasis: h.costBasis
+                        }))
+                        const vtTWR = calculateTimeWeightedReturn(vtHistory)
+                        const vtCAGR = calculateCAGRFromTotalReturn(vtTWR, yearsSinceInception)
+
                         setPortfolioStats([
                             {
                                 title: "Portfolio Value (NZD)",
@@ -65,6 +73,12 @@ export default function Review2025Page() {
                                 title: "S&P 500 Yearly CAGR",
                                 value: formatPercentage(sp500CAGR),
                                 description: "S&P 500 Total Value Returns since inception",
+                                icon: TrendingUp,
+                            },
+                            {
+                                title: "VT Yearly CAGR",
+                                value: formatPercentage(vtCAGR),
+                                description: "Global Index Total Value Returns since inception",
                                 icon: TrendingUp,
                             },
                         ])

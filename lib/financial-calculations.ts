@@ -175,12 +175,12 @@ export function calculateTimeWeightedReturn(
  * @returns Array with TWR performance at each date
  */
 export function calculateTWRPerformanceData(
-  history: Array<{ date: string; portfolioValue: number; costBasis: number; sp500Value: number }>
-): Array<{ date: string; portfolioPerformance: number; sp500Performance: number }> {
+  history: Array<{ date: string; portfolioValue: number; costBasis: number; sp500Value: number; vtValue: number }>
+): Array<{ date: string; portfolioPerformance: number; sp500Performance: number; vtPerformance: number }> {
   if (history.length === 0) return []
   
   const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  const result: Array<{ date: string; portfolioPerformance: number; sp500Performance: number }> = []
+  const result: Array<{ date: string; portfolioPerformance: number; sp500Performance: number; vtPerformance: number }> = []
   
   // Track cumulative TWR for portfolio
   let portfolioChainedReturn = 1.0
@@ -191,6 +191,11 @@ export function calculateTWRPerformanceData(
   let sp500ChainedReturn = 1.0
   let lastSP500Value = sorted[0].sp500Value
   let lastSP500CostBasis = sorted[0].costBasis
+
+  // Track cumulative TWR for VT
+  let vtChainedReturn = 1.0
+  let lastVTValue = sorted[0].vtValue
+  let lastVTCostBasis = sorted[0].costBasis
   
   for (let i = 0; i < sorted.length; i++) {
     const current = sorted[i]
@@ -220,6 +225,14 @@ export function calculateTWRPerformanceData(
         }
         lastSP500Value = previous.sp500Value + cashFlow
         lastSP500CostBasis = current.costBasis
+
+        // Do the same for VT
+        if (lastVTValue > 0) {
+          const vtPeriodReturn = previous.vtValue / lastVTValue
+          vtChainedReturn *= vtPeriodReturn
+        }
+        lastVTValue = previous.vtValue + cashFlow
+        lastVTCostBasis = current.costBasis
       }
     }
     
@@ -231,11 +244,16 @@ export function calculateTWRPerformanceData(
     const currentSP500Return = lastSP500Value > 0
       ? (sp500ChainedReturn * (current.sp500Value / lastSP500Value) - 1) * 100
       : 0
+
+    const currentVTReturn = lastVTValue > 0
+      ? (vtChainedReturn * (current.vtValue / lastVTValue) - 1) * 100
+      : 0
     
     result.push({
       date: current.date,
       portfolioPerformance: isNaN(currentPortfolioReturn) ? 0 : currentPortfolioReturn,
-      sp500Performance: isNaN(currentSP500Return) ? 0 : currentSP500Return
+      sp500Performance: isNaN(currentSP500Return) ? 0 : currentSP500Return,
+      vtPerformance: isNaN(currentVTReturn) ? 0 : currentVTReturn
     })
   }
   

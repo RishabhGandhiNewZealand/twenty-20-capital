@@ -73,10 +73,19 @@ export async function GET(request: NextRequest) {
     })
     .catch(() => new Map<string, number>())
 
-  const [priceDataArray, exchangeRatesRaw, spyPricesRaw] = await Promise.all([
+  const vtPromise = yahooFinance.historical('VT', { period1: startDate, period2: endDate, interval: '1d' })
+    .then(quotes => {
+      const m = new Map<string, number>()
+        ; (quotes as any).forEach((q: any) => m.set(q.date.toISOString().split('T')[0], q.close))
+      return m
+    })
+    .catch(() => new Map<string, number>())
+
+  const [priceDataArray, exchangeRatesRaw, spyPricesRaw, vtPricesRaw] = await Promise.all([
     Promise.all(priceDataPromises),
     exchangeRatesPromise,
-    spyPromise
+    spyPromise,
+    vtPromise
   ])
 
   // Fill forward missing dates for consistency
@@ -86,8 +95,9 @@ export async function GET(request: NextRequest) {
   })
   const exchangeRates = fillMissingDates(exchangeRatesRaw, startDate, endDate)
   const spyPrices = fillMissingDates(spyPricesRaw, startDate, endDate)
+  const vtPrices = fillMissingDates(vtPricesRaw, startDate, endDate)
 
-  const history = calculateDailyReturns(sorted, tickerPriceMap, exchangeRates, spyPrices, startDate, endDate)
+  const history = calculateDailyReturns(sorted, tickerPriceMap, exchangeRates, spyPrices, vtPrices, startDate, endDate)
 
   return NextResponse.json({
     history,

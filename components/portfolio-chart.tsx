@@ -28,12 +28,14 @@ interface PortfolioHistoryData {
   portfolioValue: number
   costBasis: number
   sp500Value: number
+  vtValue: number
 }
 
 interface PerformanceData {
   date: string
   portfolioPerformance: number
   sp500Performance: number
+  vtPerformance: number
 }
 
 interface PortfolioStat {
@@ -184,7 +186,8 @@ export function PortfolioChart({
     const rebasedData = filtered.map(point => ({
       date: point.date,
       portfolioPerformance: point.portfolioPerformance - firstPoint.portfolioPerformance,
-      sp500Performance: point.sp500Performance - firstPoint.sp500Performance
+      sp500Performance: point.sp500Performance - firstPoint.sp500Performance,
+      vtPerformance: point.vtPerformance - firstPoint.vtPerformance
     }))
 
     setFilteredData(rebasedData)
@@ -220,6 +223,7 @@ export function PortfolioChart({
     if (active && payload && payload.length) {
       const portfolioPerformance = Number(payload.find((p) => p.dataKey === 'portfolioPerformance')?.value) || 0
       const sp500Performance = Number(payload.find((p) => p.dataKey === 'sp500Performance')?.value) || 0
+      const vtPerformance = Number(payload.find((p) => p.dataKey === 'vtPerformance')?.value) || 0
       const outperformance = portfolioPerformance - sp500Performance
 
       return (
@@ -233,15 +237,21 @@ export function PortfolioChart({
           </p>
           <div className="space-y-1">
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-blue-600">Portfolio:</span>
+              <span className="text-sm text-emerald-600">Portfolio:</span>
               <span className={`text-sm font-medium ${portfolioPerformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatPercentage(portfolioPerformance)}
               </span>
             </div>
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600">S&P 500:</span>
+              <span className="text-sm text-gray-600">S&P 500:</span>
               <span className={`text-sm font-medium ${sp500Performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatPercentage(sp500Performance)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center gap-4">
+              <span className="text-sm text-blue-600">VT (Global):</span>
+              <span className={`text-sm font-medium ${vtPerformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatPercentage(vtPerformance)}
               </span>
             </div>
             <div className="pt-2 mt-2 border-t border-[hsl(var(--border))]">
@@ -488,6 +498,15 @@ export function PortfolioChart({
                 stroke="#6b7280"
                 strokeWidth={2.5}
                 name="S&P 500 TWR"
+                dot={false}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="vtPerformance"
+                stroke="#3b82f6"
+                strokeWidth={2.5}
+                name="VT (Global) TWR"
                 dot={false}
                 activeDot={{ r: 5 }}
               />

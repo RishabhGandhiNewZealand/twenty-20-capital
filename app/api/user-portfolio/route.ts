@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
           sp500Value: 0,
           sp500GainNZD: 0,
           sp500GainPercent: 0,
+          vtValue: 0,
+          vtGainNZD: 0,
+          vtGainPercent: 0,
           exchangeRate: FALLBACK_USD_TO_NZD_RATE
         },
         lastUpdated: new Date().toISOString()
@@ -73,17 +76,23 @@ export async function GET(request: NextRequest) {
     // Build holdings up to today (NZD basis and shares) for current values
     const holdingsBySymbol = new Map<string, { shares: number, totalCostNZD: number, name: string, currency: string }>()
     let sp500Shares = 0
+    let vtShares = 0
     let currentCostBasis = 0
     let soldCapitalAvailable = 0
 
     const tradeDates = [...new Set(trades.filter(t => t.type === 'Buy').map(t => t.date))]
     const spyPriceMap = new Map<string, number>()
+    const vtPriceMap = new Map<string, number>()
 
-    // Fetch SPY historical prices sequentially
+    // Fetch SPY and VT historical prices sequentially
     for (const dateStr of tradeDates) {
       const date = new Date(dateStr)
-      const price = await getHistoricalPrice('SPY', date)
-      spyPriceMap.set(dateStr, price)
+      const [spyPrice, vtPrice] = await Promise.all([
+        getHistoricalPrice('SPY', date),
+        getHistoricalPrice('VT', date)
+      ])
+      spyPriceMap.set(dateStr, spyPrice)
+      vtPriceMap.set(dateStr, vtPrice)
     }
 
     for (const trade of trades) {
@@ -107,6 +116,11 @@ export async function GET(request: NextRequest) {
             if (spyPrice > 0) {
               const spyPriceNZD = spyPrice * exchangeRate
               sp500Shares += spyPriceNZD > 0 ? (newCapital / spyPriceNZD) : 0
+            }
+            const vtPrice = vtPriceMap.get(trade.date) || 0
+            if (vtPrice > 0) {
+              const vtPriceNZD = vtPrice * exchangeRate
+              vtShares += vtPriceNZD > 0 ? (newCapital / vtPriceNZD) : 0
             }
           }
         }
@@ -134,11 +148,13 @@ export async function GET(request: NextRequest) {
     const tickers = Array.from(holdingsBySymbol.keys())
     const prices = await Promise.all([
       ...tickers.map(ticker => getCurrentPrice(ticker)),
-      getCurrentPrice('SPY')
+      getCurrentPrice('SPY'),
+      getCurrentPrice('VT')
     ])
 
-    const currentSpyPrice = prices[prices.length - 1]
-    const tickerPrices = prices.slice(0, -1)
+    const currentSpyPrice = prices[prices.length - 2]
+    const currentVtPrice = prices[prices.length - 1]
+    const tickerPrices = prices.slice(0, -2)
     const priceMap = new Map<string, number>()
     tickers.forEach((ticker, index) => { priceMap.set(ticker, tickerPrices[index]) })
 
@@ -186,6 +202,11 @@ export async function GET(request: NextRequest) {
     const sp500GainNZD = sp500Value - currentCostBasis
     const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
 
+    const vtValueUSD = vtShares * currentVtPrice
+    const vtValue = vtValueUSD * currentExchangeRate
+    const vtGainNZD = vtValue - currentCostBasis
+    const vtGainPercent = currentCostBasis > 0 ? ((vtGainNZD / currentCostBasis) * 100) : 0
+
     return NextResponse.json({
       holdings,
       exitedPositions,
@@ -197,6 +218,9 @@ export async function GET(request: NextRequest) {
         sp500Value: isNaN(sp500Value) ? 0 : sp500Value,
         sp500GainNZD: isNaN(sp500GainNZD) ? 0 : sp500GainNZD,
         sp500GainPercent: isNaN(sp500GainPercent) ? 0 : sp500GainPercent,
+        vtValue: isNaN(vtValue) ? 0 : vtValue,
+        vtGainNZD: isNaN(vtGainNZD) ? 0 : vtGainNZD,
+        vtGainPercent: isNaN(vtGainPercent) ? 0 : vtGainPercent,
         exchangeRate: currentExchangeRate
       },
       lastUpdated: new Date().toISOString()

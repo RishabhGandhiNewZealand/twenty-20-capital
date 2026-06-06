@@ -52,6 +52,9 @@ interface PortfolioSummary {
   sp500Value: number
   sp500GainNZD: number
   sp500GainPercent: number
+  vtValue: number
+  vtGainNZD: number
+  vtGainPercent: number
   exchangeRate: number
 }
 
@@ -72,6 +75,7 @@ function createPortfolioStats(
   portfolioValue: string,
   portfolioCAGR: number,
   sp500CAGR: number,
+  vtCAGR: number,
   subtitle: string = "Current portfolio value",
   isAnonymized: boolean = false
 ) {
@@ -94,6 +98,12 @@ function createPortfolioStats(
       description: "S&P 500 Total Value Returns since inception",
       icon: ChartLine,
     },
+    {
+      title: "VT Yearly CAGR",
+      value: formatPercentage(isNaN(vtCAGR) ? 0 : vtCAGR),
+      description: "Global Index Total Value Returns since inception",
+      icon: ChartLine,
+    },
   ]
 }
 
@@ -110,7 +120,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [portfolioStats, setPortfolioStats] = useState(
-    createPortfolioStats("Loading...", 0, 0, "Calculating current value", false)
+    createPortfolioStats("Loading...", 0, 0, 0, "Calculating current value", false)
   )
 
   useEffect(() => {
@@ -162,6 +172,9 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
               sp500Value: latestHistory.sp500Value,
               sp500GainNZD: latestHistory.sp500Value - latestHistory.costBasis,
               sp500GainPercent: latestHistory.costBasis > 0 ? (((latestHistory.sp500Value - latestHistory.costBasis) / latestHistory.costBasis * 100)) : 0,
+              vtValue: latestHistory.vtValue,
+              vtGainNZD: latestHistory.vtValue - latestHistory.costBasis,
+              vtGainPercent: latestHistory.costBasis > 0 ? (((latestHistory.vtValue - latestHistory.costBasis) / latestHistory.costBasis * 100)) : 0,
               exchangeRate: userData.summary?.exchangeRate || 1
             }
             setSummary(updatedSummary)
@@ -170,14 +183,16 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
             const yearsSinceInception = getYearsSinceInception()
             const portfolioCAGR = calculateCAGRFromGainPercent(isNaN(updatedSummary.totalGainPercent) ? 0 : updatedSummary.totalGainPercent, yearsSinceInception)
             const sp500CAGR = calculateCAGRFromGainPercent(isNaN(updatedSummary.sp500GainPercent) ? 0 : updatedSummary.sp500GainPercent, yearsSinceInception)
-            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", false))
+            const vtCAGR = calculateCAGRFromGainPercent(isNaN(updatedSummary.vtGainPercent) ? 0 : updatedSummary.vtGainPercent, yearsSinceInception)
+            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, vtCAGR, "Current portfolio value", false))
           } else if (userData.summary) {
-            const { totalValueNZD, totalGainPercent, sp500GainPercent } = userData.summary
+            const { totalValueNZD, totalGainPercent, sp500GainPercent, vtGainPercent } = userData.summary
             const formattedValue = formatCurrency(totalValueNZD)
             const yearsSinceInception = getYearsSinceInception()
             const portfolioCAGR = calculateCAGRFromGainPercent(isNaN(totalGainPercent) ? 0 : totalGainPercent, yearsSinceInception)
             const sp500CAGR = calculateCAGRFromGainPercent(isNaN(sp500GainPercent) ? 0 : sp500GainPercent, yearsSinceInception)
-            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", false))
+            const vtCAGR = calculateCAGRFromGainPercent(isNaN(vtGainPercent) ? 0 : vtGainPercent, yearsSinceInception)
+            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, vtCAGR, "Current portfolio value", false))
           }
         }
       } catch (error) {
@@ -309,6 +324,16 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                             </div>
                           </td>
                         </tr>
+                        <tr className="bg-indigo-50/50">
+                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">VT (Global Index) Benchmark</td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">Value: {maskCurrency(summary.vtValue, false)}</td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            <div className={summary.vtGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {maskCurrency(summary.vtGainNZD, false)}
+                              <span className="text-xs ml-1">({(isNaN(summary.vtGainPercent) ? 0 : summary.vtGainPercent).toFixed(1)}%)</span>
+                            </div>
+                          </td>
+                        </tr>
                       </tfoot>
                     )}
                   </table>
@@ -380,8 +405,12 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                             <div className="text-gray-500">S&P 500 Value</div>
                             <div className="font-medium text-lg">{maskCurrency(summary.sp500Value, false)}</div>
                           </div>
+                          <div>
+                            <div className="text-gray-500">VT Value</div>
+                            <div className="font-medium text-lg">{maskCurrency(summary.vtValue, false)}</div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-3 gap-2 text-xs">
                           <div>
                             <div className="text-gray-500">Total Gain</div>
                             <div className={`font-medium ${summary.totalGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -392,6 +421,12 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                             <div className="text-gray-500">S&P 500 Gain</div>
                             <div className={`font-medium ${summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                               {maskCurrency(summary.sp500GainNZD, false)} ({(isNaN(summary.sp500GainPercent) ? 0 : summary.sp500GainPercent).toFixed(1)}%)
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">VT Gain</div>
+                            <div className={`font-medium ${summary.vtGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {maskCurrency(summary.vtGainNZD, false)} ({(isNaN(summary.vtGainPercent) ? 0 : summary.vtGainPercent).toFixed(1)}%)
                             </div>
                           </div>
                         </div>

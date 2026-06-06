@@ -14,6 +14,7 @@ interface DailyPortfolioData {
   portfolioValue: number
   costBasis: number
   sp500Value: number
+  vtValue: number
 }
 
 /**
@@ -60,6 +61,7 @@ export function calculateDailyReturns(
   tickerPrices: Map<string, Map<string, number>>,
   exchangeRates: Map<string, number>,
   spyPrices: Map<string, number>,
+  vtPrices: Map<string, number>,
   startDate: Date,
   endDate: Date
 ): DailyPortfolioData[] {
@@ -113,11 +115,15 @@ export function calculateDailyReturns(
   let runningSoldCapital = 0
   let runningSp500Shares = 0
   let runningSp500CostBasis = 0
+  let runningVtShares = 0
+  let runningVtCostBasis = 0
   
   // Maps to store the state at each date
   const costBasisByDate = new Map<string, number>()
   const sp500SharesByDate = new Map<string, number>()
   const sp500CostBasisByDate = new Map<string, number>()
+  const vtSharesByDate = new Map<string, number>()
+  const vtCostBasisByDate = new Map<string, number>()
   
   // Process all trades in chronological order to build up the capital flow
   logger.debug('Processing trades to calculate capital flow...')
@@ -150,10 +156,25 @@ export function calculateDailyReturns(
           const newSp500Shares = newCapital / spyPriceNZD
           runningSp500Shares += newSp500Shares
           runningSp500CostBasis += newCapital
-          logger.debug(`Trade ${dateStr}: Buy ${trade.code} with NEW capital`, {
+          logger.debug(`Trade ${dateStr}: Buy ${trade.code} with NEW capital (S&P 500)`, {
             newCapital: newCapital.toFixed(2),
             totalCostBasis: runningCostBasis.toFixed(2),
             newSp500Shares: newSp500Shares.toFixed(4)
+          })
+        }
+
+        // Only buy VT shares with truly new capital
+        const vtPrice = getNearestPrice(dateStr, vtPrices)
+        if (vtPrice > 0) {
+          const vtExchangeRate = exchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
+          const vtPriceNZD = vtPrice * vtExchangeRate
+          const newVtShares = newCapital / vtPriceNZD
+          runningVtShares += newVtShares
+          runningVtCostBasis += newCapital
+          logger.debug(`Trade ${dateStr}: Buy ${trade.code} with NEW capital (VT)`, {
+            newCapital: newCapital.toFixed(2),
+            totalCostBasis: runningCostBasis.toFixed(2),
+            newVtShares: newVtShares.toFixed(4)
           })
         }
       }
@@ -173,11 +194,14 @@ export function calculateDailyReturns(
     costBasisByDate.set(dateStr, runningCostBasis)
     sp500SharesByDate.set(dateStr, runningSp500Shares)
     sp500CostBasisByDate.set(dateStr, runningSp500CostBasis)
+    vtSharesByDate.set(dateStr, runningVtShares)
+    vtCostBasisByDate.set(dateStr, runningVtCostBasis)
   })
   
   logger.info('Capital flow calculation complete', {
     finalCostBasis: runningCostBasis.toFixed(2),
-    finalSp500Shares: runningSp500Shares.toFixed(4)
+    finalSp500Shares: runningSp500Shares.toFixed(4),
+    finalVtShares: runningVtShares.toFixed(4)
   })
   
   // Generate daily portfolio values
@@ -186,6 +210,8 @@ export function calculateDailyReturns(
   let lastCostBasis = 0
   let lastSp500Shares = 0
   let lastSp500CostBasis = 0
+  let lastVtShares = 0
+  let lastVtCostBasis = 0
   
   while (processDate <= endDate) {
     const dateStr = processDate.toISOString().split('T')[0]
@@ -200,6 +226,12 @@ export function calculateDailyReturns(
     }
     if (sp500CostBasisByDate.has(dateStr)) {
       lastSp500CostBasis = sp500CostBasisByDate.get(dateStr)!
+    }
+    if (vtSharesByDate.has(dateStr)) {
+      lastVtShares = vtSharesByDate.get(dateStr)!
+    }
+    if (vtCostBasisByDate.has(dateStr)) {
+      lastVtCostBasis = vtCostBasisByDate.get(dateStr)!
     }
     
     // Calculate portfolio value for this day
@@ -224,6 +256,10 @@ export function calculateDailyReturns(
     // Calculate S&P 500 value for this day
     const spyPrice = spyPrices.get(dateStr) || 0
     const sp500Value = lastSp500Shares * spyPrice * exchangeRate
+
+    // Calculate VT value for this day
+    const vtPrice = vtPrices.get(dateStr) || 0
+    const vtValue = lastVtShares * vtPrice * exchangeRate
     
     // Only add to history if we have valid data
     if (portfolioValue > 0 || lastCostBasis > 0) {
@@ -231,7 +267,8 @@ export function calculateDailyReturns(
         date: dateStr,
         portfolioValue: Math.round(portfolioValue * 100) / 100,
         costBasis: Math.round(lastCostBasis * 100) / 100,
-        sp500Value: Math.round(sp500Value * 100) / 100
+        sp500Value: Math.round(sp500Value * 100) / 100,
+        vtValue: Math.round(vtValue * 100) / 100
       })
     }
     

@@ -34,6 +34,9 @@ interface PortfolioSummary {
   sp500Value: number
   sp500GainNZD: number
   sp500GainPercent: number
+  vtValue: number
+  vtGainNZD: number
+  vtGainPercent: number
   exchangeRate: number
 }
 
@@ -42,6 +45,7 @@ function createPortfolioStats(
   portfolioValue: string,
   portfolioCAGR: number,
   sp500CAGR: number,
+  vtCAGR: number,
   subtitle: string = "Current portfolio value",
   isAnonymized: boolean = false
 ) {
@@ -64,6 +68,12 @@ function createPortfolioStats(
       description: "S&P 500 Total Value Returns since inception",
       icon: ChartLine,
     },
+    {
+      title: "VT Yearly CAGR",
+      value: formatPercentage(vtCAGR),
+      description: "Global Index Total Value Returns since inception",
+      icon: ChartLine,
+    },
   ]
 }
 
@@ -74,7 +84,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const { isAnonymized } = useAnonymization()
   const [portfolioStats, setPortfolioStats] = useState(
-    createPortfolioStats("Loading...", 0, 0, "Calculating current value", isAnonymized)
+    createPortfolioStats("Loading...", 0, 0, 0, "Calculating current value", isAnonymized)
   )
 
 
@@ -120,7 +130,10 @@ export default function HomePage() {
               totalGainPercent: ((latestHistory.portfolioValue - latestHistory.costBasis) / latestHistory.costBasis * 100),
               sp500Value: latestHistory.sp500Value,
               sp500GainNZD: latestHistory.sp500Value - latestHistory.costBasis,
-              sp500GainPercent: ((latestHistory.sp500Value - latestHistory.costBasis) / latestHistory.costBasis * 100)
+              sp500GainPercent: ((latestHistory.sp500Value - latestHistory.costBasis) / latestHistory.costBasis * 100),
+              vtValue: latestHistory.vtValue,
+              vtGainNZD: latestHistory.vtValue - latestHistory.costBasis,
+              vtGainPercent: ((latestHistory.vtValue - latestHistory.costBasis) / latestHistory.costBasis * 100)
             }
             setSummary(updatedSummary)
 
@@ -143,11 +156,20 @@ export default function HomePage() {
             const sp500TWR = calculateTimeWeightedReturn(sp500History)
             const sp500CAGR = calculateCAGRFromTotalReturn(sp500TWR, yearsSinceInception)
 
-            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
+            // Calculate TWR for VT (using vtValue as portfolio value)
+            const vtHistory = historyData.history.map((h: any) => ({
+              date: h.date,
+              portfolioValue: h.vtValue,
+              costBasis: h.costBasis
+            }))
+            const vtTWR = calculateTimeWeightedReturn(vtHistory)
+            const vtCAGR = calculateCAGRFromTotalReturn(vtTWR, yearsSinceInception)
+
+            setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, vtCAGR, "Current portfolio value", isAnonymized))
           }
         } else {
           // Fallback to using data from portfolio-current if history fails
-          const { totalValueNZD, totalGainPercent, sp500GainPercent } = currentData.summary
+          const { totalValueNZD, totalGainPercent, sp500GainPercent, vtGainPercent } = currentData.summary
           
           const formattedValue = formatCurrency(totalValueNZD)
 
@@ -155,8 +177,9 @@ export default function HomePage() {
           const yearsSinceInception = getYearsSinceInception()
           const portfolioCAGR = calculateCAGRFromGainPercent(totalGainPercent, yearsSinceInception)
           const sp500CAGR = calculateCAGRFromGainPercent(sp500GainPercent, yearsSinceInception)
+          const vtCAGR = calculateCAGRFromGainPercent(vtGainPercent || 0, yearsSinceInception)
 
-          setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, "Current portfolio value", isAnonymized))
+          setPortfolioStats(createPortfolioStats(formattedValue, portfolioCAGR, sp500CAGR, vtCAGR, "Current portfolio value", isAnonymized))
         }
 
       } catch (error) {
@@ -320,6 +343,22 @@ export default function HomePage() {
                             </div>
                           </td>
                         </tr>
+                        <tr className="bg-indigo-50/50">
+                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
+                            VT (Global Index) Benchmark
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            Value: {maskCurrency(summary.vtValue, isAnonymized)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            <div className={summary.vtGainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {maskCurrency(summary.vtGainNZD, isAnonymized)}
+                              <span className="text-xs ml-1">
+                                ({summary.vtGainPercent >= 0 ? '+' : ''}{summary.vtGainPercent.toFixed(1)}%)
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
                       </tfoot>
                     )}
                   </table>
@@ -437,6 +476,30 @@ export default function HomePage() {
                             summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
                             {maskCurrency(summary.sp500GainNZD, isAnonymized)} ({summary.sp500GainPercent >= 0 ? '+' : ''}{summary.sp500GainPercent.toFixed(1)}%)
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-indigo-50/50 rounded-lg border border-indigo-100 p-4">
+                        <div className="font-semibold text-gray-900 mb-3">VT (Global Index) Benchmark</div>
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                          <div>
+                            <div className="text-gray-600">Market Value</div>
+                            <div className="font-medium text-lg">{maskCurrency(summary.vtValue, isAnonymized)}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-600">Cost Basis</div>
+                            <div className="font-medium">{maskCurrency(summary.totalCostBasisNZD, isAnonymized)}</div>
+                          </div>
+                        </div>
+                        <div className={`text-center py-2 rounded-lg ${
+                          summary.vtGainNZD >= 0 ? 'bg-green-50' : 'bg-red-50'
+                        }`}>
+                          <div className="text-gray-600 text-xs mb-1">Total Return</div>
+                          <div className={`font-bold text-lg ${
+                            summary.vtGainNZD >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {maskCurrency(summary.vtGainNZD, isAnonymized)} ({summary.vtGainPercent >= 0 ? '+' : ''}{summary.vtGainPercent.toFixed(1)}%)
                           </div>
                         </div>
                       </div>

@@ -22,6 +22,7 @@ interface DailyPortfolioData {
   portfolioValue: number
   costBasis: number
   sp500Value: number
+  vtValue: number
 }
 
 interface PortfolioCurrentData {
@@ -201,26 +202,27 @@ function getNearestPrice(
 }
 
 /**
- * Calculate S&P 500 benchmark shares using historical SPY prices
+ * Calculate benchmark shares using historical prices for a given ticker
  */
-async function calculateSP500Benchmark(
+async function calculateBenchmark(
+  ticker: string,
   trades: TradeRecord[],
   exchangeRate: number
-): Promise<{ sp500Shares: number; currentCostBasis: number }> {
+): Promise<{ shares: number; currentCostBasis: number }> {
   if (!trades || trades.length === 0) {
-    return { sp500Shares: 0, currentCostBasis: 0 }
+    return { shares: 0, currentCostBasis: 0 }
   }
 
   const sortedTrades = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-  // Get date range for SPY prices
+  // Get date range for prices
   const startDate = new Date(sortedTrades[0].date)
   const endDate = new Date(sortedTrades[sortedTrades.length - 1].date)
 
-  // Fetch historical SPY prices
-  const spyPrices = await getHistoricalPrices('SPY', startDate, endDate)
+  // Fetch historical prices
+  const prices = await getHistoricalPrices(ticker, startDate, endDate)
 
-  let sp500Shares = 0
+  let shares = 0
   let currentCostBasis = 0
   let soldCapitalAvailable = 0
 
@@ -235,13 +237,13 @@ async function calculateSP500Benchmark(
         currentCostBasis += newCapital
         soldCapitalAvailable = 0
 
-        // Use actual historical SPY price for this trade date
-        const spyPriceUSD = getNearestPrice(trade.date, spyPrices)
-        if (spyPriceUSD > 0) {
-          const spyPriceNZD = spyPriceUSD * exchangeRate
-          sp500Shares += newCapital / spyPriceNZD
+        // Use actual historical price for this trade date
+        const priceUSD = getNearestPrice(trade.date, prices)
+        if (priceUSD > 0) {
+          const priceNZD = priceUSD * exchangeRate
+          shares += newCapital / priceNZD
         } else {
-          logger.warn(`No SPY price found for trade date ${trade.date}, skipping S&P 500 calculation for this trade`)
+          logger.warn(`No price found for ticker ${ticker} on trade date ${trade.date}, skipping benchmark calculation for this trade`)
         }
       }
     } else if (trade.type === 'Sell') {
@@ -249,7 +251,7 @@ async function calculateSP500Benchmark(
     }
   }
 
-  return { sp500Shares, currentCostBasis }
+  return { shares, currentCostBasis }
 }
 
 /**
@@ -293,10 +295,11 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     const tickerPrices = new Map<string, Map<string, number>>()
     priceDataResults.forEach(({ ticker, prices }) => tickerPrices.set(ticker, prices))
 
-    // Fetch exchange rate and SPY prices in parallel
-    const [exchangeRates, spyPrices] = await Promise.all([
+    // Fetch exchange rate, SPY, and VT prices in parallel
+    const [exchangeRates, spyPrices, vtPrices] = await Promise.all([
       needsExchangeRate ? getUSDNZDRate(startDate, endDate) : Promise.resolve(new Map<string, number>()),
-      getHistoricalPrices('SPY', startDate, endDate)
+      getHistoricalPrices('SPY', startDate, endDate),
+      getHistoricalPrices('VT', startDate, endDate)
     ])
 
     logger.info('Filling missing dates...')
@@ -310,6 +313,7 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
 
     const filledExchangeRates = fillMissingDates(exchangeRates, startDate, endDate)
     const filledSpyPrices = fillMissingDates(spyPrices, startDate, endDate)
+    const filledVtPrices = fillMissingDates(vtPrices, startDate, endDate)
 
     logger.info('Calculating daily portfolio values...')
 
@@ -319,6 +323,7 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
       filledPrices,
       filledExchangeRates,
       filledSpyPrices,
+      filledVtPrices,
       startDate,
       endDate
     )
@@ -442,17 +447,24 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
       const totalGain = totalValue - totalCost
       const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
 
-      // Calculate S&P 500 benchmark using actual historical SPY prices
+      // Calculate benchmarks using actual historical prices
       const adminUserId = process.env.ADMIN_USER_ID || ''
       const trades = await getCachedTradeData(adminUserId)
 
-      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
+      const { shares: sp500Shares, currentCostBasis } = await calculateBenchmark('SPY', trades, exchangeRate)
+      const { shares: vtShares } = await calculateBenchmark('VT', trades, exchangeRate)
 
       const currentSpyPrice = await getCurrentPrice('SPY')
       const sp500ValueUSD = sp500Shares * currentSpyPrice
       const sp500Value = sp500ValueUSD * exchangeRate
       const sp500GainNZD = sp500Value - currentCostBasis
       const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
+
+      const currentVtPrice = await getCurrentPrice('VT')
+      const vtValueUSD = vtShares * currentVtPrice
+      const vtValue = vtValueUSD * exchangeRate
+      const vtGainNZD = vtValue - currentCostBasis
+      const vtGainPercent = currentCostBasis > 0 ? ((vtGainNZD / currentCostBasis) * 100) : 0
 
       return {
         holdings: enrichedHoldings,
@@ -465,6 +477,9 @@ export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentD
           sp500Value,
           sp500GainNZD,
           sp500GainPercent,
+          vtValue,
+          vtGainNZD,
+          vtGainPercent,
           exchangeRate
         },
         lastUpdated: new Date().toISOString()
@@ -581,13 +596,20 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
       const adminUserId = process.env.ADMIN_USER_ID || ''
       const trades = await getCachedTradeData(adminUserId)
 
-      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
+      const { shares: sp500Shares, currentCostBasis } = await calculateBenchmark('SPY', trades, exchangeRate)
+      const { shares: vtShares } = await calculateBenchmark('VT', trades, exchangeRate)
 
       const currentSpyPrice = await getCurrentPrice('SPY')
       const sp500ValueUSD = sp500Shares * currentSpyPrice
       const sp500Value = sp500ValueUSD * exchangeRate
       const sp500GainNZD = sp500Value - currentCostBasis
       const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
+
+      const currentVtPrice = await getCurrentPrice('VT')
+      const vtValueUSD = vtShares * currentVtPrice
+      const vtValue = vtValueUSD * exchangeRate
+      const vtGainNZD = vtValue - currentCostBasis
+      const vtGainPercent = currentCostBasis > 0 ? ((vtGainNZD / currentCostBasis) * 100) : 0
 
       return {
         holdings: enrichedHoldings,
@@ -600,6 +622,9 @@ export function registerPortfolioCacheRefreshCallbacks(): void {
           sp500Value,
           sp500GainNZD,
           sp500GainPercent,
+          vtValue,
+          vtGainNZD,
+          vtGainPercent,
           exchangeRate
         },
         lastUpdated: new Date().toISOString()
