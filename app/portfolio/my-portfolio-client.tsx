@@ -89,9 +89,9 @@ function createPortfolioStats(
       icon: TrendingUp,
     },
     {
-      title: "S&P 500 Yearly CAGR",
+      title: "VT Yearly CAGR",
       value: formatPercentage(isNaN(sp500CAGR) ? 0 : sp500CAGR),
-      description: "S&P 500 Total Value Returns since inception",
+      description: "VT Total World return since inception (NZD)",
       icon: ChartLine,
     },
   ]
@@ -300,7 +300,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                           </td>
                         </tr>
                         <tr className="bg-blue-50">
-                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">S&P 500 Benchmark</td>
+                          <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">VT Total World Benchmark</td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">Value: {maskCurrency(summary.sp500Value, false)}</td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <div className={summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -377,7 +377,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                             <div className="font-medium text-lg">{maskCurrency(summary.totalValueNZD, false)}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500">S&P 500 Value</div>
+                            <div className="text-gray-500">VT benchmark value</div>
                             <div className="font-medium text-lg">{maskCurrency(summary.sp500Value, false)}</div>
                           </div>
                         </div>
@@ -389,7 +389,7 @@ export default function MyPortfolioClient({ adminEmail }: Props) {
                             </div>
                           </div>
                           <div>
-                            <div className="text-gray-500">S&P 500 Gain</div>
+                            <div className="text-gray-500">VT benchmark gain</div>
                             <div className={`font-medium ${summary.sp500GainNZD >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                               {maskCurrency(summary.sp500GainNZD, false)} ({(isNaN(summary.sp500GainPercent) ? 0 : summary.sp500GainPercent).toFixed(1)}%)
                             </div>

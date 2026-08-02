@@ -76,7 +76,7 @@ export default function LandingPage() {
             </CardHeader>
             <CardContent>
               <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
-                To avoid permanent capital loss and achieve superior returns relative to the S&P 500 over the long term.
+                To avoid permanent capital loss and achieve superior returns relative to the global equity market over the long term.
                 Success is measured not by quarterly fluctuations, but by multi-year compounding of capital (~+5% vs Index).
               </p>
             </CardContent>
@@ -276,7 +276,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Transparent Performance</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                I track and publish my performance metrics, including CAGR and total returns, compared against the S&P 500 benchmark.
+                I track and publish return and risk-adjusted performance metrics against the VT Total World benchmark.
               </p>
             </div>
             <div className="text-center p-6">

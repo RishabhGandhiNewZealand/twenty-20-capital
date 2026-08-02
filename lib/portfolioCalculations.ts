@@ -108,7 +108,7 @@ export function calculateDailyReturns(
     currentDate.setDate(currentDate.getDate() + 1)
   }
 
-  // Calculate capital flow and S&P 500 equivalent
+  // Calculate capital flow and VT Total World equivalent
   let runningCostBasis = 0
   let runningSoldCapital = 0
   let runningSp500Shares = 0
@@ -142,7 +142,7 @@ export function calculateDailyReturns(
         runningCostBasis += newCapital
         runningSoldCapital = 0
         
-        // Only buy S&P 500 shares with truly new capital
+        // Only buy VT shares with truly new capital
         const spyPrice = getNearestPrice(dateStr, spyPrices)
         if (spyPrice > 0) {
           const spyExchangeRate = exchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
@@ -165,7 +165,7 @@ export function calculateDailyReturns(
         totalSoldCapital: runningSoldCapital.toFixed(2)
       })
     } else if (trade.type === 'Reinvestment') {
-      // Reinvestment doesn't affect cost basis or S&P 500 purchases
+      // Reinvestment doesn't affect cost basis or VT purchases
       logger.debug(`Trade ${dateStr}: Reinvestment ${trade.code} - no cost basis change`)
     }
     
@@ -191,7 +191,7 @@ export function calculateDailyReturns(
     const dateStr = processDate.toISOString().split('T')[0]
     const holdings = dailyHoldings.get(dateStr) || new Map()
     
-    // Update cost basis and S&P 500 shares if there were trades on this date
+    // Update cost basis and VT shares if there were trades on this date
     if (costBasisByDate.has(dateStr)) {
       lastCostBasis = costBasisByDate.get(dateStr)!
     }
@@ -221,7 +221,7 @@ export function calculateDailyReturns(
       }
     })
     
-    // Calculate S&P 500 value for this day
+    // Calculate VT benchmark value for this day
     const spyPrice = spyPrices.get(dateStr) || 0
     const sp500Value = lastSp500Shares * spyPrice * exchangeRate
     

@@ -65,10 +65,10 @@ export async function GET(request: NextRequest) {
       return m
     })
 
-  const spyPromise = yahooFinance.historical('SPY', { period1: startDate, period2: endDate, interval: '1d' })
+  const spyPromise = yahooFinance.historical('VT', { period1: startDate, period2: endDate, interval: '1d' })
     .then(quotes => {
       const m = new Map<string, number>()
-        ; (quotes as any).forEach((q: any) => m.set(q.date.toISOString().split('T')[0], q.close))
+        ; (quotes as any).forEach((q: any) => m.set(q.date.toISOString().split('T')[0], q.adjClose ?? q.adjclose ?? q.close))
       return m
     })
     .catch(() => new Map<string, number>())

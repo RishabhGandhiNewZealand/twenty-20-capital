@@ -37,7 +37,7 @@ Provides a real-time summary of the portfolio including:
 
 - Total portfolio value in NZD
 - Overall gains/losses compared to cost basis
-- S&P 500 benchmark comparison
+- VT Total World benchmark comparison in NZD
 - Current exchange rates
 - Detailed holdings information
 
