@@ -512,22 +512,22 @@ export function PortfolioChart({
           </ResponsiveContainer>
         </div>
         {performanceMetrics && (
-          <div className="mt-5 border-t border-gray-100 pt-4">
+          <div className="mt-5 border-t border-border pt-4">
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 px-2 sm:px-0">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Risk-adjusted performance</h3>
-                <p className="text-xs text-gray-500">Daily NZD returns · VT benchmark · 2.5% NZ OCR proxy · {performanceMetrics.observations} observations</p>
+                <h3 className="text-sm font-semibold text-card-foreground">Risk-adjusted performance</h3>
+                <p className="text-xs text-muted-foreground">Daily NZD returns · VT benchmark · 2.5% NZ OCR proxy · {performanceMetrics.observations} observations</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {metricCards.map(metric => (
-                <div key={metric.label} title={metric.detail} className="rounded-lg border border-gray-100 bg-gray-50/70 p-3">
-                  <p className="text-[11px] text-gray-500">{metric.label}</p>
-                  <p className="mt-0.5 text-base font-semibold text-gray-900">{metric.value}</p>
+                <div key={metric.label} title={metric.detail} className="rounded-lg border border-border bg-muted/50 p-3">
+                  <p className="text-[11px] text-muted-foreground">{metric.label}</p>
+                  <p className="mt-0.5 text-base font-semibold text-card-foreground">{metric.value}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-2 px-2 text-[10px] text-gray-400 sm:px-0">Hover a metric for its definition. Statistics are estimates and become more meaningful over longer periods.</p>
+            <p className="mt-2 px-2 text-[10px] text-muted-foreground sm:px-0">Hover a metric for its definition. Statistics are estimates and become more meaningful over longer periods.</p>
           </div>
         )}
       </CardContent>
