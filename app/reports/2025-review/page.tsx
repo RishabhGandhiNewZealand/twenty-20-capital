@@ -62,9 +62,9 @@ export default function Review2025Page() {
                                 icon: TrendingUp,
                             },
                             {
-                                title: "S&P 500 Yearly CAGR",
+                                title: "VT Yearly CAGR",
                                 value: formatPercentage(sp500CAGR),
-                                description: "S&P 500 Total Value Returns since inception",
+                                description: "VT Total World return since inception (NZD)",
                                 icon: TrendingUp,
                             },
                         ])
@@ -266,6 +266,9 @@ export default function Review2025Page() {
                                         initialEndDate={new Date("2025-12-31")}
                                         locked={true}
                                     />
+                                    <p className="mt-2 text-xs text-gray-500">
+                                        The chart and risk metrics are restated against the current VT Total World benchmark. References to S&amp;P 500 outperformance in this archived review reflect the benchmark used when the review was published.
+                                    </p>
                                 </div>
 
                                 <div>

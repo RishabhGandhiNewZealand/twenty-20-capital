@@ -187,7 +187,7 @@ export function calculateTWRPerformanceData(
   let lastPortfolioValue = sorted[0].portfolioValue
   let lastCostBasis = sorted[0].costBasis
   
-  // Track cumulative TWR for S&P 500
+  // Track cumulative TWR for VT (legacy field name retained for API compatibility)
   let sp500ChainedReturn = 1.0
   let lastSP500Value = sorted[0].sp500Value
   let lastSP500CostBasis = sorted[0].costBasis
@@ -213,7 +213,7 @@ export function calculateTWRPerformanceData(
         lastPortfolioValue = previous.portfolioValue + cashFlow
         lastCostBasis = current.costBasis
         
-        // Do the same for S&P 500
+        // Do the same for VT
         if (lastSP500Value > 0) {
           const sp500PeriodReturn = previous.sp500Value / lastSP500Value
           sp500ChainedReturn *= sp500PeriodReturn

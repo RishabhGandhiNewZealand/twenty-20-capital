@@ -53,7 +53,9 @@ export async function GET(request: NextRequest) {
         const endDate = new Date(date)
         endDate.setDate(endDate.getDate() + 1)
         const quotes = await yahooFinance.historical(ticker, { period1: date, period2: endDate, interval: '1d' })
-        return (quotes as any).length > 0 ? (quotes as any)[0].close : 0
+        return (quotes as any).length > 0
+          ? ((quotes as any)[0].adjClose ?? (quotes as any)[0].adjclose ?? (quotes as any)[0].close)
+          : 0
       } catch {
         return 0
       }
@@ -79,10 +81,10 @@ export async function GET(request: NextRequest) {
     const tradeDates = [...new Set(trades.filter(t => t.type === 'Buy').map(t => t.date))]
     const spyPriceMap = new Map<string, number>()
 
-    // Fetch SPY historical prices sequentially
+    // Fetch VT historical prices sequentially
     for (const dateStr of tradeDates) {
       const date = new Date(dateStr)
-      const price = await getHistoricalPrice('SPY', date)
+      const price = await getHistoricalPrice('VT', date)
       spyPriceMap.set(dateStr, price)
     }
 
@@ -134,7 +136,7 @@ export async function GET(request: NextRequest) {
     const tickers = Array.from(holdingsBySymbol.keys())
     const prices = await Promise.all([
       ...tickers.map(ticker => getCurrentPrice(ticker)),
-      getCurrentPrice('SPY')
+      getCurrentPrice('VT')
     ])
 
     const currentSpyPrice = prices[prices.length - 1]

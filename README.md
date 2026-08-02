@@ -32,7 +32,7 @@ This application serves as a comprehensive personal investment portfolio tracker
 - **Exited Positions**: Historical tracking of closed positions with realized gains
 
 ### Performance Analytics
-- **S&P 500 Benchmarking**: Compare portfolio performance against market index
+- **Global Benchmarking**: Compare NZD portfolio performance and risk-adjusted returns against VT Total World
 - **CAGR Calculations**: Compound Annual Growth Rate metrics
 - **Performance Visualization**: Interactive charts showing portfolio value over time
 - **Gain/Loss Analysis**: Detailed breakdown of unrealized and realized gains

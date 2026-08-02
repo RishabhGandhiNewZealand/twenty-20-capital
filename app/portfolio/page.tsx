@@ -59,9 +59,9 @@ function createPortfolioStats(
       icon: TrendingUp,
     },
     {
-      title: "S&P 500 Yearly CAGR",
+      title: "VT Yearly CAGR",
       value: formatPercentage(sp500CAGR),
-      description: "S&P 500 Total Value Returns since inception",
+      description: "VT Total World return since inception (NZD)",
       icon: ChartLine,
     },
   ]
@@ -134,7 +134,7 @@ export default function HomePage() {
             const portfolioTWR = calculateTimeWeightedReturn(historyData.history)
             const portfolioCAGR = calculateCAGRFromTotalReturn(portfolioTWR, yearsSinceInception)
             
-            // Calculate TWR for S&P 500 (using sp500Value as portfolio value)
+            // Calculate TWR for VT (legacy sp500Value field retained for API compatibility)
             const sp500History = historyData.history.map((h: any) => ({
               date: h.date,
               portfolioValue: h.sp500Value,
@@ -306,7 +306,7 @@ export default function HomePage() {
                         </tr>
                         <tr className="bg-blue-50">
                           <td colSpan={4} className="px-6 py-4 text-sm font-medium text-gray-900">
-                            S&P 500 Benchmark
+                            VT Total World Benchmark
                           </td>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
                             Value: {maskCurrency(summary.sp500Value, isAnonymized)}
@@ -418,7 +418,7 @@ export default function HomePage() {
                       </div>
                       
                       <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
-                        <div className="font-semibold text-gray-900 mb-3">S&P 500 Benchmark</div>
+                        <div className="font-semibold text-gray-900 mb-3">VT Total World Benchmark</div>
                         <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <div className="text-gray-600">Market Value</div>

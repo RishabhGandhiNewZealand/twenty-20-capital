@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -10,6 +10,7 @@ import { Loader2, CalendarIcon } from "lucide-react"
 import { formatPercentage as formatPercentageBase, calculateTWRPerformanceData } from "@/lib/financial-calculations"
 import { useAnonymization } from "@/contexts/AnonymizationContext"
 import { cn } from "@/lib/utils"
+import { calculatePerformanceMetrics } from "@/lib/performance-metrics"
 import {
   LineChart,
   Line,
@@ -183,8 +184,8 @@ export function PortfolioChart({
     const firstPoint = filtered[0]
     const rebasedData = filtered.map(point => ({
       date: point.date,
-      portfolioPerformance: point.portfolioPerformance - firstPoint.portfolioPerformance,
-      sp500Performance: point.sp500Performance - firstPoint.sp500Performance
+      portfolioPerformance: ((1 + point.portfolioPerformance / 100) / (1 + firstPoint.portfolioPerformance / 100) - 1) * 100,
+      sp500Performance: ((1 + point.sp500Performance / 100) / (1 + firstPoint.sp500Performance / 100) - 1) * 100
     }))
 
     setFilteredData(rebasedData)
@@ -211,6 +212,22 @@ export function PortfolioChart({
     const safe = isNaN(value) ? 0 : value
     return formatPercentageBase(safe / 100, 2)
   }
+
+  const performanceMetrics = useMemo(
+    () => calculatePerformanceMetrics(filteredData, 0.025),
+    [filteredData]
+  )
+
+  const metricCards = performanceMetrics ? [
+    { label: "Annualized return", value: formatPercentage(performanceMetrics.annualizedReturn * 100), detail: "Geometric portfolio return, annualized from daily TWR." },
+    { label: "Volatility", value: formatPercentage(performanceMetrics.annualizedVolatility * 100), detail: "Annualized standard deviation of daily portfolio returns." },
+    { label: "Sharpe ratio", value: performanceMetrics.sharpeRatio.toFixed(2), detail: "Annualized excess return per unit of volatility, using the 2.5% NZ OCR as the risk-free proxy." },
+    { label: "Sortino ratio", value: performanceMetrics.sortinoRatio.toFixed(2), detail: "Annualized excess return per unit of downside deviation, using the 2.5% NZ OCR proxy." },
+    { label: "Beta vs VT", value: performanceMetrics.beta.toFixed(2), detail: "Sensitivity of portfolio daily returns to the VT global-equity benchmark." },
+    { label: "Alpha vs VT", value: formatPercentage(performanceMetrics.annualizedAlpha * 100), detail: "Annualized CAPM alpha relative to VT and the 2.5% NZ OCR proxy." },
+    { label: "Max drawdown", value: formatPercentage(performanceMetrics.maxDrawdown * 100), detail: "Largest peak-to-trough decline during the selected period." },
+    { label: "Information ratio", value: performanceMetrics.informationRatio.toFixed(2), detail: "Annualized active return versus VT divided by tracking error." },
+  ] : []
 
   const CustomTooltipPercentage = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
     useEffect(() => {
@@ -239,7 +256,7 @@ export function PortfolioChart({
               </span>
             </div>
             <div className="flex justify-between items-center gap-4">
-              <span className="text-sm text-green-600">S&P 500:</span>
+              <span className="text-sm text-green-600">VT (Total World):</span>
               <span className={`text-sm font-medium ${sp500Performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatPercentage(sp500Performance)}
               </span>
@@ -487,13 +504,32 @@ export function PortfolioChart({
                 dataKey="sp500Performance"
                 stroke="#6b7280"
                 strokeWidth={2.5}
-                name="S&P 500 TWR"
+                name="VT Total World TWR"
                 dot={false}
                 activeDot={{ r: 5 }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {performanceMetrics && (
+          <div className="mt-5 border-t border-border pt-4">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 px-2 sm:px-0">
+              <div>
+                <h3 className="text-sm font-semibold text-card-foreground">Risk-adjusted performance</h3>
+                <p className="text-xs text-muted-foreground">Daily NZD returns · VT benchmark · 2.5% NZ OCR proxy · {performanceMetrics.observations} observations</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {metricCards.map(metric => (
+                <div key={metric.label} title={metric.detail} className="rounded-lg border border-border bg-muted/50 p-3">
+                  <p className="text-[11px] text-muted-foreground">{metric.label}</p>
+                  <p className="mt-0.5 text-base font-semibold text-card-foreground">{metric.value}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 px-2 text-[10px] text-muted-foreground sm:px-0">Hover a metric for its definition. Statistics are estimates and become more meaningful over longer periods.</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
