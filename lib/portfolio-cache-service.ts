@@ -1,6 +1,6 @@
 /**
  * Portfolio Graph Data Caching Service
- * 
+ *
  * This service provides specialized caching for portfolio graph data,
  * integrating with the cache manager and handling portfolio-specific logic.
  */
@@ -15,6 +15,13 @@ import { generatePortfolioData } from './portfolioServerData'
 import { TradeRecord } from '@/types/portfolio'
 import { revalidateTag } from 'next/cache'
 import { CACHE_TAGS } from '@/lib/cache-config'
+import {
+  CASH_NAME,
+  CASH_SYMBOL,
+  calculateCashBalanceNZD,
+  getTradeValueNZD,
+  sortTradesInLedgerOrder,
+} from './portfolio-cash'
 
 // Types
 interface DailyPortfolioData {
@@ -42,7 +49,7 @@ const CACHE_TTL = {
   PORTFOLIO_CURRENT: 1200, // 20 minutes
   PORTFOLIO_COMPOSITION: 1200, // 20 minutes
   STOCK_PRICES: 300, // 5 minutes for more volatile data
-  TRADE_DATA: 1200 // 20 minutes
+  TRADE_DATA: 1200, // 20 minutes
 }
 
 /**
@@ -65,19 +72,26 @@ async function getHistoricalPrices(
           yfinanceTicker = 'MFT.NZ'
         }
 
-        logger.debug(`Fetching history for ${yfinanceTicker} from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+        logger.debug(
+          `Fetching history for ${yfinanceTicker} from ${startDate.toISOString()} to ${endDate.toISOString()}`
+        )
 
-        const result = await yahooFinance.chart(yfinanceTicker, {
-          period1: startDate,
-          period2: endDate,
-          interval: '1d'
-        }, { validateResult: false })
+        const result = await yahooFinance.chart(
+          yfinanceTicker,
+          {
+            period1: startDate,
+            period2: endDate,
+            interval: '1d',
+          },
+          { validateResult: false }
+        )
 
         const priceMap = new Map<string, number>()
         if (result && result.quotes) {
           logger.debug(`Got ${result.quotes.length} quotes for ${yfinanceTicker}`)
           result.quotes.forEach((quote: any) => {
-            const price = ticker === 'VT' ? (quote.adjclose ?? quote.adjClose ?? quote.close) : quote.close
+            const price =
+              ticker === 'VT' ? (quote.adjclose ?? quote.adjClose ?? quote.close) : quote.close
             if (price !== null && price !== undefined) {
               const dateStr = quote.date.toISOString().split('T')[0]
               priceMap.set(dateStr, price)
@@ -105,13 +119,19 @@ async function getUSDNZDRate(startDate: Date, endDate: Date): Promise<Map<string
     cacheKey,
     async () => {
       try {
-        logger.debug(`Fetching USD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+        logger.debug(
+          `Fetching USD/NZD exchange rate from ${startDate.toISOString()} to ${endDate.toISOString()}`
+        )
 
-        const result = await yahooFinance.chart('NZDUSD=X', {
-          period1: startDate,
-          period2: endDate,
-          interval: '1d'
-        }, { validateResult: false })
+        const result = await yahooFinance.chart(
+          'NZDUSD=X',
+          {
+            period1: startDate,
+            period2: endDate,
+            interval: '1d',
+          },
+          { validateResult: false }
+        )
 
         const rateMap = new Map<string, number>()
         if (result && result.quotes) {
@@ -218,7 +238,7 @@ async function calculateSP500Benchmark(
     return { sp500Shares: 0, currentCostBasis: 0 }
   }
 
-  const sortedTrades = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  const sortedTrades = sortTradesInLedgerOrder(trades)
 
   // Get date range for VT prices
   const startDate = new Date(sortedTrades[0].date)
@@ -232,7 +252,7 @@ async function calculateSP500Benchmark(
   let soldCapitalAvailable = 0
 
   for (const trade of sortedTrades) {
-    const tradeValueNZD = Math.abs(trade.value)
+    const tradeValueNZD = getTradeValueNZD(trade)
 
     if (trade.type === 'Buy') {
       if (soldCapitalAvailable >= tradeValueNZD) {
@@ -248,7 +268,9 @@ async function calculateSP500Benchmark(
           const spyPriceNZD = spyPriceUSD * exchangeRate
           sp500Shares += newCapital / spyPriceNZD
         } else {
-          logger.warn(`No VT price found for trade date ${trade.date}, skipping benchmark calculation for this trade`)
+          logger.warn(
+            `No VT price found for trade date ${trade.date}, skipping benchmark calculation for this trade`
+          )
         }
       }
     } else if (trade.type === 'Sell') {
@@ -292,18 +314,22 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
     logger.debug('Needs exchange rate:', needsExchangeRate)
 
     logger.info(`Fetching historical data for ${tickers.length} tickers in parallel...`)
-    const priceDataResults = await Promise.all(tickers.map(async (ticker) => ({
-      ticker,
-      prices: await getHistoricalPrices(ticker, startDate, endDate)
-    })))
+    const priceDataResults = await Promise.all(
+      tickers.map(async ticker => ({
+        ticker,
+        prices: await getHistoricalPrices(ticker, startDate, endDate),
+      }))
+    )
 
     const tickerPrices = new Map<string, Map<string, number>>()
     priceDataResults.forEach(({ ticker, prices }) => tickerPrices.set(ticker, prices))
 
     // Fetch exchange rate and VT prices in parallel
     const [exchangeRates, spyPrices] = await Promise.all([
-      needsExchangeRate ? getUSDNZDRate(startDate, endDate) : Promise.resolve(new Map<string, number>()),
-      getHistoricalPrices('VT', startDate, endDate)
+      needsExchangeRate
+        ? getUSDNZDRate(startDate, endDate)
+        : Promise.resolve(new Map<string, number>()),
+      getHistoricalPrices('VT', startDate, endDate),
     ])
 
     logger.info('Filling missing dates...')
@@ -330,10 +356,11 @@ async function calculatePortfolioHistory(): Promise<DailyPortfolioData[]> {
       endDate
     )
 
-    logger.info(`Portfolio history calculation completed. Generated ${dailyData.length} daily data points`)
+    logger.info(
+      `Portfolio history calculation completed. Generated ${dailyData.length} daily data points`
+    )
 
     return dailyData
-
   } catch (error) {
     logger.error('Error calculating portfolio history:', error)
     throw error
@@ -382,101 +409,115 @@ async function getCurrentUSDNZDRate(): Promise<number> {
   }
 }
 
+async function calculateCurrentPortfolioData(): Promise<PortfolioCurrentData> {
+  const adminUserId = process.env.ADMIN_USER_ID || ''
+  const [{ holdings, exitedPositions }, exchangeRate, trades] = await Promise.all([
+    generatePortfolioData(),
+    getCurrentUSDNZDRate(),
+    getCachedTradeData(adminUserId),
+  ])
+  const tickers = holdings.map(h => h.symbol)
+
+  logger.info(`Fetching current prices for ${tickers.length} tickers in parallel...`)
+  const prices = await Promise.all(tickers.map(ticker => getCurrentPrice(ticker)))
+  const priceMap = new Map<string, number>(tickers.map((ticker, i) => [ticker, prices[i]]))
+
+  const enrichedHoldings: any[] = holdings.map(holding => {
+    const currentPrice = priceMap.get(holding.symbol) || 0
+    const isUSD = holding.instrumentCurrency === 'USD'
+    const currentValueNZD = holding.totalShares * currentPrice * (isUSD ? exchangeRate : 1)
+    const costBasisNZD = holding.totalShares * holding.avgPriceNZD
+    const gainNZD = currentValueNZD - costBasisNZD
+    const gainPercent = costBasisNZD > 0 ? (gainNZD / costBasisNZD) * 100 : 0
+
+    let gainNative = gainNZD
+    let gainPercentNative = gainPercent
+
+    if (isUSD && holding.avgPriceUSD) {
+      const costBasisUSD = holding.totalShares * holding.avgPriceUSD
+      const currentValueUSD = holding.totalShares * currentPrice
+      gainNative = currentValueUSD - costBasisUSD
+      gainPercentNative = costBasisUSD > 0 ? (gainNative / costBasisUSD) * 100 : 0
+    }
+
+    return {
+      symbol: holding.symbol,
+      name: holding.name,
+      shares: holding.totalShares,
+      currentPrice,
+      currentValueNZD,
+      costBasisNZD,
+      gainNZD,
+      gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
+      allocation: 0,
+      currency: holding.instrumentCurrency,
+      avgPriceUSD: holding.avgPriceUSD,
+      gainNative,
+      gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative,
+      isCash: false,
+    }
+  })
+
+  const cashPositionNZD = calculateCashBalanceNZD(trades)
+  if (cashPositionNZD > 0.01) {
+    enrichedHoldings.push({
+      symbol: CASH_SYMBOL,
+      name: CASH_NAME,
+      shares: cashPositionNZD,
+      currentPrice: 1,
+      currentValueNZD: cashPositionNZD,
+      costBasisNZD: cashPositionNZD,
+      gainNZD: 0,
+      gainPercent: 0,
+      allocation: 0,
+      currency: 'NZD',
+      gainNative: 0,
+      gainPercentNative: 0,
+      isCash: true,
+    })
+  }
+
+  const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
+  enrichedHoldings.forEach(holding => {
+    holding.allocation = totalValue > 0 ? (holding.currentValueNZD / totalValue) * 100 : 0
+  })
+  enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
+
+  // Calculate contributed capital and the VT benchmark using the same cash ledger.
+  const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
+  const currentSpyPrice = await getCurrentPrice('VT')
+  const sp500ValueUSD = sp500Shares * currentSpyPrice
+  const sp500Value = sp500ValueUSD * exchangeRate
+  const totalGain = totalValue - currentCostBasis
+  const totalGainPercent = currentCostBasis > 0 ? (totalGain / currentCostBasis) * 100 : 0
+  const sp500GainNZD = sp500Value - currentCostBasis
+  const sp500GainPercent = currentCostBasis > 0 ? (sp500GainNZD / currentCostBasis) * 100 : 0
+
+  return {
+    holdings: enrichedHoldings,
+    exitedPositions,
+    summary: {
+      totalValueNZD: totalValue,
+      totalCostBasisNZD: currentCostBasis,
+      totalGainNZD: totalGain,
+      totalGainPercent,
+      cashPositionNZD,
+      sp500Value,
+      sp500GainNZD,
+      sp500GainPercent,
+      exchangeRate,
+    },
+    lastUpdated: new Date().toISOString(),
+  }
+}
+
 /**
  * Get cached current portfolio data
  */
 export async function getCachedPortfolioCurrentData(): Promise<PortfolioCurrentData> {
   return cacheManager.getOrSet(
     CacheKey.PORTFOLIO_CURRENT,
-    async () => {
-      const { holdings, exitedPositions } = await generatePortfolioData()
-
-      // Fetch current prices for all holdings
-      const exchangeRate = await getCurrentUSDNZDRate()
-      const tickers = holdings.map(h => h.symbol)
-
-      logger.info(`Fetching current prices for ${tickers.length} tickers in parallel...`)
-      const prices = await Promise.all(tickers.map(ticker => getCurrentPrice(ticker)))
-      const priceMap = new Map<string, number>(tickers.map((ticker, i) => [ticker, prices[i]]))
-
-      // Calculate current values and gains for each holding
-      const enrichedHoldings = holdings.map(holding => {
-        const currentPrice = priceMap.get(holding.symbol) || 0
-        const isUSD = holding.instrumentCurrency === 'USD'
-        const currentValueNZD = holding.totalShares * currentPrice * (isUSD ? exchangeRate : 1)
-        const costBasisNZD = holding.totalShares * holding.avgPriceNZD
-        const gainNZD = currentValueNZD - costBasisNZD
-        const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
-
-        let gainNative = gainNZD
-        let gainPercentNative = gainPercent
-
-        if (isUSD && holding.avgPriceUSD) {
-          const costBasisUSD = holding.totalShares * holding.avgPriceUSD
-          const currentValueUSD = holding.totalShares * currentPrice
-          gainNative = currentValueUSD - costBasisUSD
-          gainPercentNative = costBasisUSD > 0 ? ((gainNative / costBasisUSD) * 100) : 0
-        }
-
-        return {
-          symbol: holding.symbol,
-          name: holding.name,
-          shares: holding.totalShares,
-          currentPrice,
-          currentValueNZD,
-          costBasisNZD,
-          gainNZD,
-          gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
-          allocation: 0, // Will be calculated below
-          currency: holding.instrumentCurrency,
-          avgPriceUSD: holding.avgPriceUSD,
-          gainNative,
-          gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative
-        }
-      })
-
-      // Calculate total value and allocations
-      const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-      const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
-
-      enrichedHoldings.forEach(holding => {
-        holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
-      })
-
-      // Sort by allocation
-      enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
-
-      const totalGain = totalValue - totalCost
-      const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
-
-      // Calculate the VT benchmark using actual historical prices
-      const adminUserId = process.env.ADMIN_USER_ID || ''
-      const trades = await getCachedTradeData(adminUserId)
-
-      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
-
-      const currentSpyPrice = await getCurrentPrice('VT')
-      const sp500ValueUSD = sp500Shares * currentSpyPrice
-      const sp500Value = sp500ValueUSD * exchangeRate
-      const sp500GainNZD = sp500Value - currentCostBasis
-      const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
-
-      return {
-        holdings: enrichedHoldings,
-        exitedPositions,
-        summary: {
-          totalValueNZD: totalValue,
-          totalCostBasisNZD: totalCost,
-          totalGainNZD: totalGain,
-          totalGainPercent,
-          sp500Value,
-          sp500GainNZD,
-          sp500GainPercent,
-          exchangeRate
-        },
-        lastUpdated: new Date().toISOString()
-      }
-    },
+    calculateCurrentPortfolioData,
     CACHE_TTL.PORTFOLIO_CURRENT
   )
 }
@@ -497,7 +538,7 @@ export async function getCachedPortfolioComposition(): Promise<PortfolioComposit
         name: h.name,
         value: h.currentValueNZD,
         percentage: totalValue > 0 ? (h.currentValueNZD / totalValue) * 100 : 0,
-        color: h.color || '#000000'
+        color: h.color || '#000000',
       }))
 
       // Sort by percentage descending
@@ -505,7 +546,7 @@ export async function getCachedPortfolioComposition(): Promise<PortfolioComposit
 
       return {
         compositions,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       }
     },
     CACHE_TTL.PORTFOLIO_COMPOSITION
@@ -517,125 +558,30 @@ export async function getCachedPortfolioComposition(): Promise<PortfolioComposit
  */
 export function registerPortfolioCacheRefreshCallbacks(): void {
   // Register refresh callback for portfolio history
-  cacheManager.registerRefreshCallback(
-    CacheKey.PORTFOLIO_HISTORY,
-    calculatePortfolioHistory
-  )
+  cacheManager.registerRefreshCallback(CacheKey.PORTFOLIO_HISTORY, calculatePortfolioHistory)
 
   // Register refresh callback for current portfolio (use the same logic as the cache getter)
-  cacheManager.registerRefreshCallback(
-    CacheKey.PORTFOLIO_CURRENT,
-    async () => {
-      // Call getCachedPortfolioCurrentData without the cache layer
-      const { holdings, exitedPositions } = await generatePortfolioData()
-
-      // Fetch current prices for all holdings
-      const exchangeRate = await getCurrentUSDNZDRate()
-      const tickers = holdings.map(h => h.symbol)
-
-      logger.info(`Fetching current prices for ${tickers.length} tickers in parallel (refresh)...`)
-      const prices = await Promise.all(tickers.map(ticker => getCurrentPrice(ticker)))
-      const priceMap = new Map<string, number>(tickers.map((ticker, i) => [ticker, prices[i]]))
-
-      // Calculate current values and gains for each holding
-      const enrichedHoldings = holdings.map(holding => {
-        const currentPrice = priceMap.get(holding.symbol) || 0
-        const isUSD = holding.instrumentCurrency === 'USD'
-        const currentValueNZD = holding.totalShares * currentPrice * (isUSD ? exchangeRate : 1)
-        const costBasisNZD = holding.totalShares * holding.avgPriceNZD
-        const gainNZD = currentValueNZD - costBasisNZD
-        const gainPercent = costBasisNZD > 0 ? ((gainNZD / costBasisNZD) * 100) : 0
-
-        let gainNative = gainNZD
-        let gainPercentNative = gainPercent
-
-        if (isUSD && holding.avgPriceUSD) {
-          const costBasisUSD = holding.totalShares * holding.avgPriceUSD
-          const currentValueUSD = holding.totalShares * currentPrice
-          gainNative = currentValueUSD - costBasisUSD
-          gainPercentNative = costBasisUSD > 0 ? ((gainNative / costBasisUSD) * 100) : 0
-        }
-
-        return {
-          symbol: holding.symbol,
-          name: holding.name,
-          shares: holding.totalShares,
-          currentPrice,
-          currentValueNZD,
-          costBasisNZD,
-          gainNZD,
-          gainPercent: isNaN(gainPercent) ? 0 : gainPercent,
-          allocation: 0,
-          currency: holding.instrumentCurrency,
-          avgPriceUSD: holding.avgPriceUSD,
-          gainNative,
-          gainPercentNative: isNaN(gainPercentNative) ? 0 : gainPercentNative
-        }
-      })
-
-      const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-      const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasisNZD, 0)
-
-      enrichedHoldings.forEach(holding => {
-        holding.allocation = totalValue > 0 ? ((holding.currentValueNZD / totalValue) * 100) : 0
-      })
-
-      enrichedHoldings.sort((a, b) => b.allocation - a.allocation)
-
-      const totalGain = totalValue - totalCost
-      const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
-
-      const adminUserId = process.env.ADMIN_USER_ID || ''
-      const trades = await getCachedTradeData(adminUserId)
-
-      const { sp500Shares, currentCostBasis } = await calculateSP500Benchmark(trades, exchangeRate)
-
-      const currentSpyPrice = await getCurrentPrice('VT')
-      const sp500ValueUSD = sp500Shares * currentSpyPrice
-      const sp500Value = sp500ValueUSD * exchangeRate
-      const sp500GainNZD = sp500Value - currentCostBasis
-      const sp500GainPercent = currentCostBasis > 0 ? ((sp500GainNZD / currentCostBasis) * 100) : 0
-
-      return {
-        holdings: enrichedHoldings,
-        exitedPositions,
-        summary: {
-          totalValueNZD: totalValue,
-          totalCostBasisNZD: totalCost,
-          totalGainNZD: totalGain,
-          totalGainPercent,
-          sp500Value,
-          sp500GainNZD,
-          sp500GainPercent,
-          exchangeRate
-        },
-        lastUpdated: new Date().toISOString()
-      }
-    }
-  )
+  cacheManager.registerRefreshCallback(CacheKey.PORTFOLIO_CURRENT, calculateCurrentPortfolioData)
 
   // Register refresh callback for portfolio composition
-  cacheManager.registerRefreshCallback(
-    CacheKey.PORTFOLIO_COMPOSITION,
-    async () => {
-      const { holdings } = await getCachedPortfolioCurrentData()
-      const totalValue = holdings.reduce((sum, h) => sum + h.currentValueNZD, 0)
-      const compositions = holdings.map(h => ({
-        symbol: h.symbol,
-        name: h.name,
-        value: h.currentValueNZD,
-        percentage: totalValue > 0 ? (h.currentValueNZD / totalValue) * 100 : 0,
-        color: h.color || '#000000'
-      }))
+  cacheManager.registerRefreshCallback(CacheKey.PORTFOLIO_COMPOSITION, async () => {
+    const { holdings } = await getCachedPortfolioCurrentData()
+    const totalValue = holdings.reduce((sum, h) => sum + h.currentValueNZD, 0)
+    const compositions = holdings.map(h => ({
+      symbol: h.symbol,
+      name: h.name,
+      value: h.currentValueNZD,
+      percentage: totalValue > 0 ? (h.currentValueNZD / totalValue) * 100 : 0,
+      color: h.color || '#000000',
+    }))
 
-      compositions.sort((a, b) => b.percentage - a.percentage)
+    compositions.sort((a, b) => b.percentage - a.percentage)
 
-      return {
-        compositions,
-        lastUpdated: new Date().toISOString()
-      }
+    return {
+      compositions,
+      lastUpdated: new Date().toISOString(),
     }
-  )
+  })
 
   logger.info('Portfolio cache refresh callbacks registered')
 }
@@ -670,7 +616,7 @@ export async function warmUpPortfolioCaches(): Promise<void> {
     await Promise.all([
       getCachedPortfolioHistory(),
       getCachedPortfolioCurrentData(),
-      getCachedPortfolioComposition()
+      getCachedPortfolioComposition(),
     ])
 
     const duration = Date.now() - startTime
@@ -685,7 +631,7 @@ cacheManager.on(CacheEvent.TRADE_UPDATED, () => {
   logger.info('Trade update event received, portfolio caches invalidated')
 })
 
-cacheManager.on(CacheEvent.CACHE_EXPIRED, (data) => {
+cacheManager.on(CacheEvent.CACHE_EXPIRED, data => {
   logger.info(`Cache expired event: ${data.key}`)
 })
 
@@ -696,5 +642,5 @@ export default {
   getCachedPortfolioComposition,
   invalidatePortfolioCaches,
   warmUpPortfolioCaches,
-  registerPortfolioCacheRefreshCallbacks
+  registerPortfolioCacheRefreshCallbacks,
 }

@@ -1,18 +1,27 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
-import { useEffect, useState, useRef, useCallback } from "react"
-import { Loader2, Play, Pause } from "lucide-react"
-import { getCompanyColor } from "@/lib/company-colors"
-import { getLogoUrl } from "@/lib/company-utils"
-import { Slider } from "@/components/ui/slider"
-import { Button } from "@/components/ui/button"
-import { PORTFOLIO_INCEPTION_DATE } from "@/lib/constants"
-import { formatCurrency } from "@/lib/financial-calculations"
-import { formatDate } from "@/lib/format-utils"
-import { useAnonymization } from "@/contexts/AnonymizationContext"
-import { maskCurrency } from "@/lib/anonymization-utils"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { Loader2, Play, Pause } from 'lucide-react'
+import { getCompanyColor } from '@/lib/company-colors'
+import { getLogoUrl } from '@/lib/company-utils'
+import { Slider } from '@/components/ui/slider'
+import { Button } from '@/components/ui/button'
+import { PORTFOLIO_INCEPTION_DATE } from '@/lib/constants'
+import { formatCurrency } from '@/lib/financial-calculations'
+import { formatDate } from '@/lib/format-utils'
+import { useAnonymization } from '@/contexts/AnonymizationContext'
+import { maskCurrency } from '@/lib/anonymization-utils'
 
 interface ChartData {
   name: string
@@ -29,6 +38,7 @@ interface HoldingAtDate {
   value: number
   percentage: number
   currency: string
+  isCash?: boolean
 }
 
 interface CompositionCache {
@@ -45,6 +55,7 @@ interface PortfolioHorizontalBarChartProps {
     allocation?: number
     shares?: number
     currency?: string
+    isCash?: boolean
   }>
   compositionPath?: string
   compositionDatePath?: string
@@ -55,7 +66,16 @@ interface PortfolioHorizontalBarChartProps {
   staticHoldings?: boolean // If true, force display of holdings prop and disable fetching
 }
 
-export function PortfolioHorizontalBarChart({ holdings: currentHoldings, compositionPath, compositionDatePath, compositionHeaders, anonymizeOverride, customDate, hideControls = false, staticHoldings = false }: PortfolioHorizontalBarChartProps) {
+export function PortfolioHorizontalBarChart({
+  holdings: currentHoldings,
+  compositionPath,
+  compositionDatePath,
+  compositionHeaders,
+  anonymizeOverride,
+  customDate,
+  hideControls = false,
+  staticHoldings = false,
+}: PortfolioHorizontalBarChartProps) {
   const [compositionData, setCompositionData] = useState<CompositionCache | null>(null)
   const [displayHoldings, setDisplayHoldings] = useState<HoldingAtDate[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,7 +93,6 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
 
   useEffect(() => {
     async function loadCompositionData() {
-
       if (staticHoldings && currentHoldings) {
         // Map currentHoldings to HoldingAtDate format
         // Assumes currentHoldings are already sorted and formatted correctly
@@ -83,7 +102,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           shares: h.shares || 0,
           value: h.currentValueNZD,
           percentage: h.allocation || 0,
-          currency: h.currency || 'USD' // Defaulting to USD if not provided
+          currency: h.currency || 'USD', // Defaulting to USD if not provided
+          isCash: h.isCash,
         }))
         setDisplayHoldings(mappedHoldings)
         setCompositionData(null)
@@ -198,7 +218,9 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
 
       async function fetchComposition() {
         try {
-          const response = await fetch(`${dateBasePath}/${selectedDate}`, { headers: compositionHeaders as HeadersInit })
+          const response = await fetch(`${dateBasePath}/${selectedDate}`, {
+            headers: compositionHeaders as HeadersInit,
+          })
           if (!response.ok) throw new Error('Failed to fetch composition')
           const data = await response.json()
           if (data.holdings) {
@@ -290,22 +312,24 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   const chartData: ChartData[] = displayHoldings
     .filter(holding => {
       // Ensure we have valid numeric values
-      const hasValidPercentage = typeof holding.percentage === 'number' &&
+      const hasValidPercentage =
+        typeof holding.percentage === 'number' &&
         !isNaN(holding.percentage) &&
         isFinite(holding.percentage) &&
-        holding.percentage >= 0.1;
-      const hasValidValue = typeof holding.value === 'number' &&
+        holding.percentage >= 0.1
+      const hasValidValue =
+        typeof holding.value === 'number' &&
         !isNaN(holding.value) &&
         isFinite(holding.value) &&
-        holding.value > 0;
-      return hasValidPercentage && hasValidValue;
+        holding.value > 0
+      return hasValidPercentage && hasValidValue
     })
-    .map((holding) => ({
+    .map(holding => ({
       name: holding.name || holding.symbol,
       symbol: holding.symbol,
       value: Math.round(holding.value), // Round to avoid decimal issues
       percentage: Math.round(holding.percentage * 10) / 10, // Round to 1 decimal place
-      color: getCompanyColor(holding.symbol)
+      color: getCompanyColor(holding.symbol),
     }))
     .sort((a, b) => b.value - a.value)
 
@@ -317,7 +341,6 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   // Debug logging
   useEffect(() => {
     if (chartData.length > 0) {
-
     }
   }, [chartData.length]) // Only depend on length to avoid infinite loops
 
@@ -329,15 +352,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
 
     return (
       <g>
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill={fill}
-          rx={4}
-          ry={4}
-        />
+        <rect x={x} y={y} width={width} height={height} fill={fill} rx={4} ry={4} />
         {showValue && !anonymized && (
           <text
             x={x + (isMobile ? 5 : 10)}
@@ -345,7 +360,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
             fill="#f5f5f5"
             textAnchor="start"
             dominantBaseline="middle"
-            fontSize={isMobile ? "10" : "11"}
+            fontSize={isMobile ? '10' : '11'}
             fontWeight="500"
           >
             {formatCurrency(value)}
@@ -357,12 +372,11 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           fill="#b1b1b1"
           textAnchor="start"
           dominantBaseline="middle"
-          fontSize={isMobile ? "10" : "11"}
+          fontSize={isMobile ? '10' : '11'}
           fontWeight="600"
         >
           {/* Show value here if it didn't fit inside the bar */}
-          {!showValue && !anonymized && `${formatCurrency(value)} `}
-          ({data.percentage.toFixed(1)}%)
+          {!showValue && !anonymized && `${formatCurrency(value)} `}({data.percentage.toFixed(1)}%)
         </text>
       </g>
     )
@@ -395,8 +409,8 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
   }
 
   const formatTickValue = (value: number) => {
-    if (anonymized) return '';
-    if (!value || isNaN(value)) return '$0';
+    if (anonymized) return ''
+    if (!value || isNaN(value)) return '$0'
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`
     } else if (value >= 1000) {
@@ -407,26 +421,29 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
 
   // Custom Y-axis tick component to render company logos
   const CustomYAxisTick = ({ x, y, payload }: any) => {
+    const isCash = payload.value === 'CASH'
     const logoUrl = getLogoUrl(payload.value)
 
     return (
       <g transform={`translate(${x},${y})`}>
-        <image
-          href={logoUrl}
-          x={-50}
-          y={-10}
-          width={20}
-          height={20}
-          preserveAspectRatio="xMidYMid meet"
-        />
-        <text
-          x={-25}
-          y={4}
-          textAnchor="start"
-          fontSize={10}
-          fontWeight={600}
-          fill="#b1b1b1"
-        >
+        {isCash ? (
+          <>
+            <circle cx={-40} cy={0} r={10} fill="#059669" />
+            <text x={-40} y={4} textAnchor="middle" fontSize={11} fontWeight={700} fill="#fff">
+              $
+            </text>
+          </>
+        ) : (
+          <image
+            href={logoUrl}
+            x={-50}
+            y={-10}
+            width={20}
+            height={20}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        )}
+        <text x={-25} y={4} textAnchor="start" fontSize={10} fontWeight={600} fill="#b1b1b1">
           {payload.value}
         </text>
       </g>
@@ -471,10 +488,17 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
             <CardTitle className="text-gray-900 text-lg sm:text-xl">
               Portfolio Allocation
               <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2 block sm:inline">
-                as of {displayDate ? formatDate(displayDate) : new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}
+                as of{' '}
+                {displayDate
+                  ? formatDate(displayDate)
+                  : new Date().toLocaleDateString('en-NZ', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
               </span>
             </CardTitle>
-            <div className={`flex items-center gap-1 sm:gap-2 ${hideControls ? "hidden" : ""}`}>
+            <div className={`flex items-center gap-1 sm:gap-2 ${hideControls ? 'hidden' : ''}`}>
               <Button
                 variant="outline"
                 size="sm"
@@ -496,44 +520,49 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
               <div className="flex items-center gap-0.5 border rounded-md">
                 <button
                   onClick={() => changeSpeed(0.5)}
-                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 0.5
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
+                    playbackSpeed === 0.5
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
                   0.5x
                 </button>
                 <button
                   onClick={() => changeSpeed(1)}
-                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 1
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
+                    playbackSpeed === 1
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
                   1x
                 </button>
                 <button
                   onClick={() => changeSpeed(2)}
-                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${playbackSpeed === 2
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                  className={`px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium transition-colors ${
+                    playbackSpeed === 2
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
                   2x
                 </button>
               </div>
             </div>
           </div>
-          <div className={`flex items-center gap-2 sm:gap-3 w-full ${hideControls ? "hidden" : ""}`}>
+          <div
+            className={`flex items-center gap-2 sm:gap-3 w-full ${hideControls ? 'hidden' : ''}`}
+          >
             <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
               {PORTFOLIO_INCEPTION_DATE.toLocaleDateString('en-NZ', {
                 year: 'numeric',
-                month: 'short'
+                month: 'short',
               })}
             </span>
             <Slider
               value={[sliderValue]}
-              onValueChange={(value) => setSliderValue(value[0])}
+              onValueChange={value => setSliderValue(value[0])}
               max={availableDates.length}
               step={1}
               className="flex-1"
@@ -552,10 +581,14 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
           </div>
         ) : (
           <div
-            className={`w-full overflow-y-auto overflow-x-hidden transition-all duration-500 ease-in-out ${isPlaying ? 'max-h-[3000px]' : 'max-h-[600px]'
-              }`}
+            className={`w-full overflow-y-auto overflow-x-hidden transition-all duration-500 ease-in-out ${
+              isPlaying ? 'max-h-[3000px]' : 'max-h-[600px]'
+            }`}
           >
-            <div style={{ height: `${totalChartHeight}px`, minHeight: '450px' }} className="w-full pt-4">
+            <div
+              style={{ height: `${totalChartHeight}px`, minHeight: '450px' }}
+              className="w-full pt-4"
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartData}
@@ -564,7 +597,7 @@ export function PortfolioHorizontalBarChart({ holdings: currentHoldings, composi
                     top: 5,
                     right: 80, // Increased right margin for longer labels (value + %)
                     left: 0,
-                    bottom: 5
+                    bottom: 5,
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
