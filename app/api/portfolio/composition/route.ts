@@ -1,17 +1,18 @@
-import { NextResponse } from 'next/server';
-import { getCachedTradeData } from '@/lib/trade-data-cache';
-import yahooFinance from '@/lib/yahoo-finance';
-import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants';
+import { NextResponse } from 'next/server'
+import { getCachedTradeData } from '@/lib/trade-data-cache'
+import yahooFinance from '@/lib/yahoo-finance'
+import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import { CASH_NAME, CASH_SYMBOL, calculateCashBalanceNZD } from '@/lib/portfolio-cash'
 
 // Force dynamic since we fetch fresh data and want the absolute latest state
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 // Edge runtime for lower latency
-export const runtime = 'nodejs'; // Use nodejs because yahoo-finance2 might fallback to node builtins? 
-// Correction: yahoo-finance2 might technically run on edge but 'fs' usage in other libs might break it. 
+export const runtime = 'nodejs' // Use nodejs because yahoo-finance2 might fallback to node builtins?
+// Correction: yahoo-finance2 might technically run on edge but 'fs' usage in other libs might break it.
 // Given the dependencies (getCachedTradeData -> fs?), I should verify if Edge is possible.
 // getCachedTradeData uses 'fs/promises' probably, so Edge Runtime will FAIL.
 // User requested Edge Runtime, but if dependencies don't support it, I must stick to Node.
-// I will check getCachedTradeData source. For now, I'll set it to 'nodejs' to be safe, 
+// I will check getCachedTradeData source. For now, I'll set it to 'nodejs' to be safe,
 // or I can try to make it edge compatible if the data source allows.
 // The user explicitly asked for Edge Runtime. I should check if I can fetch trade data from an DB or API instead of FS?
 // Rish-Investing-Journey seems to use a JSON file or NeonDB?
@@ -42,110 +43,130 @@ I will write it as Node.js for now to avoid build errors, and add a comment.
 */
 
 interface Holding {
-    symbol: string;
-    name: string;
-    shares: number;
-    value: number;
-    currency: string;
-    percentage: number;
+  symbol: string
+  name: string
+  shares: number
+  value: number
+  currency: string
+  percentage: number
+  isCash?: boolean
 }
 
 export async function GET() {
-    try {
-        const adminUserId = process.env.ADMIN_USER_ID || '';
-        const trades = await getCachedTradeData(adminUserId);
+  try {
+    const adminUserId = process.env.ADMIN_USER_ID || ''
+    const trades = await getCachedTradeData(adminUserId)
 
-        if (!trades || trades.length === 0) {
-            return NextResponse.json({ error: 'No trades found' }, { status: 404 });
-        }
-
-        // 1. Calculate Net Shares
-        const holdingsMap = new Map<string, { symbol: string; name: string; shares: number; currency: string }>();
-
-        trades.forEach(trade => {
-            const current = holdingsMap.get(trade.code) || {
-                symbol: trade.code,
-                name: trade.name,
-                shares: 0,
-                currency: trade.instrumentCurrency
-            };
-
-            if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
-                current.shares += trade.qty;
-            } else if (trade.type === 'Sell') {
-                current.shares -= Math.abs(trade.qty);
-            }
-
-            if (current.shares > 0.001) {
-                holdingsMap.set(trade.code, current);
-            } else {
-                holdingsMap.delete(trade.code);
-            }
-        });
-
-        // 2. Fetch Live Prices
-        const symbols = Array.from(holdingsMap.keys());
-        const quotePromises = symbols.map(async (symbol) => {
-            try {
-                const ySymbol = symbol === 'MFT' ? 'MFT.NZ' : symbol;
-                const quote = await yahooFinance.quote(ySymbol);
-                return { symbol, price: quote.regularMarketPrice || 0 };
-            } catch (e) {
-                console.error(`Failed to fetch price for ${symbol}`, e);
-                return { symbol, price: 0 };
-            }
-        });
-
-        const [quotes, rateQuote] = await Promise.all([
-            Promise.all(quotePromises),
-            yahooFinance.quote('NZDUSD=X') // Fetch Exchange Rate
-        ]);
-
-        const priceMap = new Map(quotes.map(q => [q.symbol, q.price]));
-        const usdToNzd = rateQuote.regularMarketPrice ? (1 / rateQuote.regularMarketPrice) : FALLBACK_USD_TO_NZD_RATE;
-
-        // 3. Calculate Values
-        let totalPortfolioValue = 0;
-        const portfolio: Holding[] = [];
-
-        holdingsMap.forEach(h => {
-            const price = priceMap.get(h.symbol) || 0;
-            let value = h.shares * price;
-
-            // Convert USD holdings to NZD
-            if (h.currency === 'USD') {
-                value = value * usdToNzd;
-            }
-
-            if (value > 0.01) {
-                totalPortfolioValue += value;
-                portfolio.push({
-                    symbol: h.symbol,
-                    name: h.name,
-                    shares: h.shares,
-                    value,
-                    currency: h.currency,
-                    percentage: 0 // Calc later
-                });
-            }
-        });
-
-        // 4. Calculate Percentages
-        portfolio.forEach(p => {
-            p.percentage = totalPortfolioValue > 0 ? (p.value / totalPortfolioValue) * 100 : 0;
-        });
-
-        // Sort by value (desc)
-        portfolio.sort((a, b) => b.value - a.value);
-
-        return NextResponse.json({
-            timestamp: new Date().toISOString(),
-            totalValue: totalPortfolioValue,
-            holdings: portfolio
-        });
-
-    } catch (error) {
-        console.error('Portfolio Snapshot Error:', error);
-        return NextResponse.json({ error: 'Failed to calculate portfolio snapshot' }, { status: 500 });
+    if (!trades || trades.length === 0) {
+      return NextResponse.json({ error: 'No trades found' }, { status: 404 })
     }
+
+    // 1. Calculate Net Shares
+    const holdingsMap = new Map<
+      string,
+      { symbol: string; name: string; shares: number; currency: string }
+    >()
+
+    trades.forEach(trade => {
+      const current = holdingsMap.get(trade.code) || {
+        symbol: trade.code,
+        name: trade.name,
+        shares: 0,
+        currency: trade.instrumentCurrency,
+      }
+
+      if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+        current.shares += trade.qty
+      } else if (trade.type === 'Sell') {
+        current.shares -= Math.abs(trade.qty)
+      }
+
+      if (current.shares > 0.001) {
+        holdingsMap.set(trade.code, current)
+      } else {
+        holdingsMap.delete(trade.code)
+      }
+    })
+
+    // 2. Fetch Live Prices
+    const symbols = Array.from(holdingsMap.keys())
+    const quotePromises = symbols.map(async symbol => {
+      try {
+        const ySymbol = symbol === 'MFT' ? 'MFT.NZ' : symbol
+        const quote = await yahooFinance.quote(ySymbol)
+        return { symbol, price: quote.regularMarketPrice || 0 }
+      } catch (e) {
+        console.error(`Failed to fetch price for ${symbol}`, e)
+        return { symbol, price: 0 }
+      }
+    })
+
+    const [quotes, rateQuote] = await Promise.all([
+      Promise.all(quotePromises),
+      yahooFinance.quote('NZDUSD=X'), // Fetch Exchange Rate
+    ])
+
+    const priceMap = new Map(quotes.map(q => [q.symbol, q.price]))
+    const usdToNzd = rateQuote.regularMarketPrice
+      ? 1 / rateQuote.regularMarketPrice
+      : FALLBACK_USD_TO_NZD_RATE
+
+    // 3. Calculate Values
+    let totalPortfolioValue = 0
+    const portfolio: Holding[] = []
+
+    holdingsMap.forEach(h => {
+      const price = priceMap.get(h.symbol) || 0
+      let value = h.shares * price
+
+      // Convert USD holdings to NZD
+      if (h.currency === 'USD') {
+        value = value * usdToNzd
+      }
+
+      if (value > 0.01) {
+        totalPortfolioValue += value
+        portfolio.push({
+          symbol: h.symbol,
+          name: h.name,
+          shares: h.shares,
+          value,
+          currency: h.currency,
+          percentage: 0, // Calc later
+        })
+      }
+    })
+
+    const cashPositionNZD = calculateCashBalanceNZD(trades)
+    if (cashPositionNZD > 0.01) {
+      totalPortfolioValue += cashPositionNZD
+      portfolio.push({
+        symbol: CASH_SYMBOL,
+        name: CASH_NAME,
+        shares: cashPositionNZD,
+        value: cashPositionNZD,
+        currency: 'NZD',
+        percentage: 0,
+        isCash: true,
+      })
+    }
+
+    // 4. Calculate Percentages
+    portfolio.forEach(p => {
+      p.percentage = totalPortfolioValue > 0 ? (p.value / totalPortfolioValue) * 100 : 0
+    })
+
+    // Sort by value (desc)
+    portfolio.sort((a, b) => b.value - a.value)
+
+    return NextResponse.json({
+      timestamp: new Date().toISOString(),
+      totalValue: totalPortfolioValue,
+      cashPositionNZD,
+      holdings: portfolio,
+    })
+  } catch (error) {
+    console.error('Portfolio Snapshot Error:', error)
+    return NextResponse.json({ error: 'Failed to calculate portfolio snapshot' }, { status: 500 })
+  }
 }

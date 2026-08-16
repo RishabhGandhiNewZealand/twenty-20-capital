@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCachedTradeData } from '@/lib/trade-data-cache'
-import yahooFinance from 'yahoo-finance2'
+import yahooFinance from '@/lib/yahoo-finance'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import {
+  CASH_NAME,
+  CASH_SYMBOL,
+  applyTradeToCashBalance,
+  sortTradesInLedgerOrder,
+} from '@/lib/portfolio-cash'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,17 +20,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({})
     }
 
-    trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    const startDate = new Date(trades[0].date)
+    const sortedTrades = sortTradesInLedgerOrder(trades)
+    const startDate = new Date(sortedTrades[0].date)
     const endDate = new Date()
 
-    const tickers = [...new Set(trades.map(t => t.code))]
+    const tickers = [...new Set(sortedTrades.map(t => t.code))]
 
-    const priceDataPromises = tickers.map(async (ticker) => {
+    const priceDataPromises = tickers.map(async ticker => {
       try {
         let yfinanceTicker = ticker
         if (ticker === 'MFT') yfinanceTicker = 'MFT.NZ'
-        const quotes = await yahooFinance.historical(yfinanceTicker, { period1: startDate, period2: endDate, interval: '1d' })
+        const quotes = await yahooFinance.historical(yfinanceTicker, {
+          period1: startDate,
+          period2: endDate,
+          interval: '1d',
+        })
         const priceMap = new Map<string, number>()
         quotes.forEach(q => priceMap.set(q.date.toISOString().split('T')[0], q.close))
         return { ticker, priceMap }
@@ -34,17 +44,24 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', { period1: startDate, period2: endDate, interval: '1d' })
+    const exchangeRatePromise = yahooFinance
+      .historical('NZDUSD=X', { period1: startDate, period2: endDate, interval: '1d' })
       .then(quotes => {
         const rateMap = new Map<string, number>()
         quotes.forEach(q => rateMap.set(q.date.toISOString().split('T')[0], 1 / q.close))
         return rateMap
-      }).catch(() => new Map<string, number>())
+      })
+      .catch(() => new Map<string, number>())
 
-    const [priceDataArray, exchangeRates] = await Promise.all([Promise.all(priceDataPromises), exchangeRatePromise])
+    const [priceDataArray, exchangeRates] = await Promise.all([
+      Promise.all(priceDataPromises),
+      exchangeRatePromise,
+    ])
 
     const tickerPriceMap = new Map<string, Map<string, number>>()
-    priceDataArray.forEach(({ ticker, priceMap }) => { tickerPriceMap.set(ticker, priceMap) })
+    priceDataArray.forEach(({ ticker, priceMap }) => {
+      tickerPriceMap.set(ticker, priceMap)
+    })
 
     // Fill forward helpers
     const fillForwardMap = (map: Map<string, number>) => {
@@ -53,8 +70,10 @@ export async function GET(request: NextRequest) {
       const cur = new Date(startDate)
       while (cur <= endDate) {
         const ds = cur.toISOString().split('T')[0]
-        if (map.has(ds)) { last = map.get(ds)!; filled.set(ds, last) }
-        else if (last !== null) filled.set(ds, last)
+        if (map.has(ds)) {
+          last = map.get(ds)!
+          filled.set(ds, last)
+        } else if (last !== null) filled.set(ds, last)
         cur.setDate(cur.getDate() + 1)
       }
       return filled
@@ -65,34 +84,73 @@ export async function GET(request: NextRequest) {
     const filledExchangeRates = fillForwardMap(exchangeRates)
 
     const compositions: Record<string, any[]> = {}
-    const holdings = new Map<string, { symbol: string, name: string, shares: number, currency: string }>()
+    const holdings = new Map<
+      string,
+      { symbol: string; name: string; shares: number; currency: string }
+    >()
+    let cashBalanceNZD = 0
 
     const processDate = new Date(startDate)
     while (processDate <= endDate) {
       const dateStr = processDate.toISOString().split('T')[0]
 
-      const todaysTrades = trades.filter(t => t.date === dateStr)
+      const todaysTrades = sortedTrades.filter(t => t.date === dateStr)
       todaysTrades.forEach(trade => {
-        const cur = holdings.get(trade.code) || { symbol: trade.code, name: trade.name, shares: 0, currency: trade.instrumentCurrency }
-        if (trade.type === 'Buy' || trade.type === 'Reinvestment') { cur.shares += Math.abs(trade.qty) }
-        else if (trade.type === 'Sell') { cur.shares -= Math.abs(trade.qty) }
-        if (cur.shares > 0.001) { holdings.set(trade.code, cur) } else { holdings.delete(trade.code) }
+        const cur = holdings.get(trade.code) || {
+          symbol: trade.code,
+          name: trade.name,
+          shares: 0,
+          currency: trade.instrumentCurrency,
+        }
+        if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+          cur.shares += Math.abs(trade.qty)
+        } else if (trade.type === 'Sell') {
+          cur.shares -= Math.abs(trade.qty)
+        }
+        if (cur.shares > 0.001) {
+          holdings.set(trade.code, cur)
+        } else {
+          holdings.delete(trade.code)
+        }
+        cashBalanceNZD = applyTradeToCashBalance(cashBalanceNZD, trade)
       })
 
       let totalValue = 0
       const dayHoldings: any[] = []
       holdings.forEach(h => {
-        const price = (filledPrices.get(h.symbol)?.get(dateStr) || 0)
+        const price = filledPrices.get(h.symbol)?.get(dateStr) || 0
         const rate = filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
         const valueInCurrency = h.shares * price
         const valueNZD = h.currency === 'USD' ? valueInCurrency * rate : valueInCurrency
         if (valueNZD > 0) {
           totalValue += valueNZD
-          dayHoldings.push({ symbol: h.symbol, name: h.name, shares: h.shares, value: valueNZD, percentage: 0, currency: h.currency })
+          dayHoldings.push({
+            symbol: h.symbol,
+            name: h.name,
+            shares: h.shares,
+            value: valueNZD,
+            percentage: 0,
+            currency: h.currency,
+          })
         }
       })
 
-      dayHoldings.forEach(dh => { dh.percentage = totalValue > 0 ? (dh.value / totalValue) * 100 : 0 })
+      if (cashBalanceNZD > 0.01) {
+        totalValue += cashBalanceNZD
+        dayHoldings.push({
+          symbol: CASH_SYMBOL,
+          name: CASH_NAME,
+          shares: cashBalanceNZD,
+          value: cashBalanceNZD,
+          percentage: 0,
+          currency: 'NZD',
+          isCash: true,
+        })
+      }
+
+      dayHoldings.forEach(dh => {
+        dh.percentage = totalValue > 0 ? (dh.value / totalValue) * 100 : 0
+      })
       dayHoldings.sort((a, b) => b.value - a.value)
       if (dayHoldings.length > 0) compositions[dateStr] = dayHoldings
 
@@ -102,6 +160,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(compositions)
   } catch (error) {
     logger.error('Error in user portfolio compositions endpoint:', error)
-    return NextResponse.json({ error: 'Failed to calculate portfolio compositions' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to calculate portfolio compositions' },
+      { status: 500 }
+    )
   }
 }

@@ -4,6 +4,12 @@ import { getCachedTradeData } from '@/lib/trade-data-cache'
 import yahooFinance from '@/lib/yahoo-finance'
 import { logger } from '@/lib/logger'
 import { FALLBACK_USD_TO_NZD_RATE } from '@/lib/constants'
+import {
+  CASH_NAME,
+  CASH_SYMBOL,
+  applyTradeToCashBalance,
+  sortTradesInLedgerOrder,
+} from '@/lib/portfolio-cash'
 
 interface HoldingAtDate {
   symbol: string
@@ -12,6 +18,7 @@ interface HoldingAtDate {
   value: number
   percentage: number
   currency: string
+  isCash?: boolean
 }
 
 interface CompositionData {
@@ -33,14 +40,14 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
       return {}
     }
 
-    trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const sortedTrades = sortTradesInLedgerOrder(trades)
 
-    const startDate = new Date(trades[0].date)
+    const startDate = new Date(sortedTrades[0].date)
     const endDate = new Date()
 
-    const tickers = [...new Set(trades.map(t => t.code))]
+    const tickers = [...new Set(sortedTrades.map(t => t.code))]
 
-    const priceDataPromises = tickers.map(async (ticker) => {
+    const priceDataPromises = tickers.map(async ticker => {
       try {
         let yfinanceTicker = ticker
         if (ticker === 'MFT') {
@@ -50,14 +57,14 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
         const quotes = await yahooFinance.historical(yfinanceTicker, {
           period1: startDate,
           period2: endDate,
-          interval: '1d'
+          interval: '1d',
         })
 
         const priceMap = new Map<string, number>()
-          ; (quotes as any).forEach((quote: any) => {
-            const dateStr = quote.date.toISOString().split('T')[0]
-            priceMap.set(dateStr, quote.close)
-          })
+        ;(quotes as any).forEach((quote: any) => {
+          const dateStr = quote.date.toISOString().split('T')[0]
+          priceMap.set(dateStr, quote.close)
+        })
 
         return { ticker, priceMap }
       } catch (error) {
@@ -66,22 +73,25 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
       }
     })
 
-    const exchangeRatePromise = yahooFinance.historical('NZDUSD=X', {
-      period1: startDate,
-      period2: endDate,
-      interval: '1d'
-    }).then(quotes => {
-      const rateMap = new Map<string, number>()
-        ; (quotes as any).forEach((quote: any) => {
+    const exchangeRatePromise = yahooFinance
+      .historical('NZDUSD=X', {
+        period1: startDate,
+        period2: endDate,
+        interval: '1d',
+      })
+      .then(quotes => {
+        const rateMap = new Map<string, number>()
+        ;(quotes as any).forEach((quote: any) => {
           const dateStr = quote.date.toISOString().split('T')[0]
           rateMap.set(dateStr, 1 / quote.close)
         })
-      return rateMap
-    }).catch(() => new Map<string, number>())
+        return rateMap
+      })
+      .catch(() => new Map<string, number>())
 
     const [priceDataArray, exchangeRates] = await Promise.all([
       Promise.all(priceDataPromises),
-      exchangeRatePromise
+      exchangeRatePromise,
     ])
 
     const tickerPriceMap = new Map<string, Map<string, number>>()
@@ -130,24 +140,28 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
     }
 
     const compositions: CompositionData = {}
-    const holdings = new Map<string, {
-      symbol: string
-      name: string
-      shares: number
-      currency: string
-    }>()
+    const holdings = new Map<
+      string,
+      {
+        symbol: string
+        name: string
+        shares: number
+        currency: string
+      }
+    >()
+    let cashBalanceNZD = 0
 
     const processDate = new Date(startDate)
     while (processDate <= endDate) {
       const dateStr = processDate.toISOString().split('T')[0]
 
-      const todaysTrades = trades.filter(t => t.date === dateStr)
+      const todaysTrades = sortedTrades.filter(t => t.date === dateStr)
       todaysTrades.forEach(trade => {
         const current = holdings.get(trade.code) || {
           symbol: trade.code,
           name: trade.name,
           shares: 0,
-          currency: trade.instrumentCurrency
+          currency: trade.instrumentCurrency,
         }
 
         if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
@@ -163,6 +177,7 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
         } else {
           holdings.delete(trade.code)
         }
+        cashBalanceNZD = applyTradeToCashBalance(cashBalanceNZD, trade)
       })
 
       let totalValue = 0
@@ -174,9 +189,8 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
         const exchangeRate = filledExchangeRates.get(dateStr) || FALLBACK_USD_TO_NZD_RATE
 
         const valueInCurrency = holding.shares * price
-        const valueNZD = holding.currency === 'USD'
-          ? valueInCurrency * exchangeRate
-          : valueInCurrency
+        const valueNZD =
+          holding.currency === 'USD' ? valueInCurrency * exchangeRate : valueInCurrency
 
         if (valueNZD > 0) {
           totalValue += valueNZD
@@ -186,13 +200,26 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
             shares: holding.shares,
             value: valueNZD,
             percentage: 0,
-            currency: holding.currency
+            currency: holding.currency,
           })
         }
       })
 
+      if (cashBalanceNZD > 0.01) {
+        totalValue += cashBalanceNZD
+        holdingsWithValues.push({
+          symbol: CASH_SYMBOL,
+          name: CASH_NAME,
+          shares: cashBalanceNZD,
+          value: cashBalanceNZD,
+          percentage: 0,
+          currency: 'NZD',
+          isCash: true,
+        })
+      }
+
       holdingsWithValues.forEach(holding => {
-        holding.percentage = totalValue > 0 ? ((holding.value / totalValue) * 100) : 0
+        holding.percentage = totalValue > 0 ? (holding.value / totalValue) * 100 : 0
       })
       holdingsWithValues.sort((a, b) => b.value - a.value)
 
@@ -205,21 +232,16 @@ async function calculatePortfolioCompositions(): Promise<CompositionData> {
 
     logger.info(`Successfully calculated ${Object.keys(compositions).length} daily compositions`)
     return compositions
-
   } catch (error) {
     logger.error('Error calculating portfolio compositions:', error)
     throw error
   }
 }
 
-const getCachedPortfolioCompositions = unstable_cache(
-  calculatePortfolioCompositions,
-  [CACHE_TAG],
-  {
-    revalidate: CACHE_REVALIDATE_SECONDS,
-    tags: [CACHE_TAG]
-  }
-)
+const getCachedPortfolioCompositions = unstable_cache(calculatePortfolioCompositions, [CACHE_TAG], {
+  revalidate: CACHE_REVALIDATE_SECONDS,
+  tags: [CACHE_TAG],
+})
 
 export async function GET() {
   try {
@@ -228,9 +250,8 @@ export async function GET() {
     return NextResponse.json(compositions, {
       headers: {
         'Cache-Control': 'public, s-maxage=1200, stale-while-revalidate=1800',
-      }
+      },
     })
-
   } catch (error) {
     logger.error('Error in portfolio compositions endpoint:', error)
     return NextResponse.json(
