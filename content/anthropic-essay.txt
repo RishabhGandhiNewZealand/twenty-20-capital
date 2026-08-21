@@ -214,6 +214,7 @@ The investable opportunity may therefore be concentrated in the transition rathe
 
 Success taken to its absolute limit could eventually consume the unit in which the success is being measured.
 
+The Verdict
 That is why the $2 trillion number, enormous as it is, may not be the only number that matters in the Anthropic IPO. The more difficult variable is one we may not be able to express honestly as a number at all.
 
 Transformative AI is not a roulette wheel with known probabilities. It could change which forms of scarcity have economic value, how labor and capital divide the surplus, which companies possess durable moats, and whether historical correlations remain useful. Demanding a precise probability before allowing any exposure can create the illusion of rigor while quietly assuming that the future is more measurable than it is.
@@ -237,4 +238,3 @@ If the evidence were already there, Anthropic would not be offered at a valuatio
 If Anthropic never crosses that threshold, $2 trillion may look ridiculous. If superintelligence turns out to be easy and every frontier laboratory arrives within the same window, the thesis breaks. If the problem is hard but achievable, and Anthropic gets there first with a machine researcher capable of making itself better faster than rivals can follow, then the category changes.
 
 And $2 trillion may be remembered not as the price at which investors lost their minds, but as the last price before the market understood what kind of asset it was looking at.
-

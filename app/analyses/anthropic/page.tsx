@@ -12,6 +12,7 @@ const sectionHeadings = new Set([
   'The $2 Trillion Contingent Hedge',
   'Why Not Wait?',
   'The Spacing Guild Outcome',
+  'The Verdict',
 ])
 
 const references = [
@@ -133,7 +134,7 @@ export default function AnthropicEssayPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="border-b border-[#ddd2c7] bg-[#f3eee7] text-[#282421] dark:border-[#35312e] dark:bg-[#171615] dark:text-[#f2eee8]">
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-[52rem] px-4 py-10 sm:px-6 sm:py-16">
           <Link
             href="/analyses"
             className="mb-10 inline-flex items-center text-sm font-medium text-[#746b64] transition-colors hover:text-[#a14f34] dark:text-[#aaa19a] dark:hover:text-[#e09274]"
@@ -169,7 +170,7 @@ export default function AnthropicEssayPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-[52rem] px-4 py-10 sm:px-6 sm:py-16">
         <article>
           {essay.blocks.map((block, index) =>
             sectionHeadings.has(block) ? (
