@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BookOpen, Calendar, Loader2 } from 'lucide-react'
+import { Calendar, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { StockPrice, StockPriceError } from '@/types/stock'
@@ -112,22 +112,22 @@ export default function AnalysesPage() {
         </div>
 
         <Link href="/analyses/anthropic" className="block mb-4 sm:mb-6">
-          <Card className="group h-full cursor-pointer overflow-hidden border-violet-200 bg-gradient-to-br from-white via-white to-violet-50 transition-all hover:border-violet-300 hover:shadow-lg dark:border-violet-900 dark:from-card dark:via-card dark:to-violet-950/30 dark:hover:border-violet-700">
+          <Card className="group h-full cursor-pointer overflow-hidden border-[#dfd3c8] bg-gradient-to-br from-[#fffdf9] via-[#fffdf9] to-[#f5e9df] transition-all hover:border-[#d97757] hover:shadow-lg dark:border-[#35312e] dark:from-[#1c1b19] dark:via-[#1c1b19] dark:to-[#27211e] dark:hover:border-[#8f4f3a]">
             <CardContent className="p-5 sm:p-7">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="max-w-4xl">
                   <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700 text-white">
-                      <BookOpen className="h-5 w-5" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1e7de] ring-1 ring-[#dfd3c8] dark:bg-[#292522] dark:ring-[#443a34]">
+                      <img src="/anthropic-logo.svg" alt="Anthropic logo" className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a14f34] dark:text-[#e09274]">
                         Strategic Essay
                       </p>
                       <p className="text-sm text-gray-500">Anthropic</p>
                     </div>
                   </div>
-                  <h2 className="mb-3 text-xl font-bold text-gray-900 transition-colors group-hover:text-violet-800 sm:text-2xl">
+                  <h2 className="mb-3 text-xl font-bold text-gray-900 transition-colors group-hover:text-[#8d442f] dark:group-hover:text-[#e7a087] sm:text-2xl">
                     The $2 Trillion Hedge
                   </h2>
                   <p className="line-clamp-3 text-sm leading-6 text-gray-600 sm:text-base">

@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, Calendar, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Calendar, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -96,6 +96,18 @@ const references = [
     publisher: 'Taiwan Semiconductor Manufacturing Company',
     href: 'https://investor.tsmc.com/english/annual-reports',
   },
+  {
+    title: 'The Foundation series',
+    publisher: 'Isaac Asimov',
+  },
+  {
+    title: 'Dune',
+    publisher: 'Frank Herbert',
+  },
+  {
+    title: 'The Culture series',
+    publisher: 'Iain M. Banks',
+  },
 ]
 
 function getEssay() {
@@ -136,25 +148,25 @@ export default function AnthropicEssayPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="border-b border-violet-100 bg-gradient-to-br from-violet-950 via-violet-900 to-slate-950 text-white">
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+      <header className="border-b border-[#ddd2c7] bg-[#f3eee7] text-[#282421] dark:border-[#35312e] dark:bg-[#171615] dark:text-[#f2eee8]">
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
           <Link
             href="/analyses"
-            className="mb-10 inline-flex items-center text-sm font-medium text-violet-200 transition-colors hover:text-white"
+            className="mb-10 inline-flex items-center text-sm font-medium text-[#746b64] transition-colors hover:text-[#a14f34] dark:text-[#aaa19a] dark:hover:text-[#e09274]"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Analyses
           </Link>
 
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-              <BookOpen className="h-5 w-5 text-violet-100" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#e9dfd5] ring-1 ring-[#d8cabd] dark:bg-[#292522] dark:ring-[#443a34]">
+              <img src="/anthropic-logo.svg" alt="Anthropic logo" className="h-7 w-7" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a14f34] dark:text-[#e09274]">
                 Strategic Essay
               </p>
-              <p className="text-sm text-violet-100">Anthropic</p>
+              <p className="text-sm text-[#746b64] dark:text-[#b8afa8]">Anthropic</p>
             </div>
           </div>
 
@@ -162,24 +174,24 @@ export default function AnthropicEssayPage() {
             {essay.title}
           </h1>
 
-          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-violet-200">
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[#746b64] dark:text-[#aaa19a]">
             <span className="flex items-center">
               <Calendar className="mr-2 h-4 w-4" />
               August 21, 2026
             </span>
-            <span className="hidden h-1 w-1 rounded-full bg-violet-400 sm:block" />
+            <span className="hidden h-1 w-1 rounded-full bg-[#d97757] sm:block" />
             <span>Long-form investment thinking</span>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
-        <article className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
+        <article>
           {essay.blocks.map((block, index) =>
             sectionHeadings.has(block) ? (
               <h2
                 key={`${block}-${index}`}
-                className="mb-6 mt-14 border-l-4 border-violet-600 pl-5 text-2xl font-bold tracking-tight text-gray-950 first:mt-0 sm:mt-16 sm:text-3xl"
+                className="mb-6 mt-14 border-t border-[#d8cec5] pt-7 text-2xl font-bold tracking-tight text-gray-950 first:mt-0 dark:border-[#35312e] sm:mt-16 sm:text-3xl"
               >
                 {block}
               </h2>
@@ -196,10 +208,10 @@ export default function AnthropicEssayPage() {
           )}
         </article>
 
-        <section className="mx-auto mt-16 max-w-3xl border-t border-gray-200 pt-10 sm:mt-20">
+        <section className="mt-16 border-t border-gray-200 pt-10 sm:mt-20">
           <div className="mb-7">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">
-              Further reading
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#a14f34] dark:text-[#e09274]">
+              Further reading & referenced works
             </p>
             <h2 className="text-2xl font-bold text-gray-950">References</h2>
           </div>
@@ -207,22 +219,26 @@ export default function AnthropicEssayPage() {
           <ol className="space-y-4">
             {references.map((reference, index) => (
               <li
-                key={reference.href}
+                key={`${reference.title}-${reference.publisher}`}
                 className="group flex gap-4 text-sm leading-6 text-gray-600 sm:text-base"
               >
-                <span className="w-6 shrink-0 font-mono text-xs font-semibold text-violet-700">
+                <span className="w-6 shrink-0 font-mono text-xs font-semibold text-[#a14f34] dark:text-[#e09274]">
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <div>
-                  <a
-                    href={reference.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-start font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-violet-700 hover:decoration-violet-400"
-                  >
-                    {reference.title}
-                    <ExternalLink className="ml-1.5 mt-1 h-3.5 w-3.5 shrink-0" />
-                  </a>
+                  {reference.href ? (
+                    <a
+                      href={reference.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-start font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 transition-colors hover:text-[#a14f34] hover:decoration-[#d97757] dark:hover:text-[#e09274]"
+                    >
+                      {reference.title}
+                      <ExternalLink className="ml-1.5 mt-1 h-3.5 w-3.5 shrink-0" />
+                    </a>
+                  ) : (
+                    <p className="font-medium text-gray-900">{reference.title}</p>
+                  )}
                   <p className="text-gray-500">{reference.publisher}</p>
                 </div>
               </li>
@@ -230,10 +246,10 @@ export default function AnthropicEssayPage() {
           </ol>
         </section>
 
-        <div className="mx-auto mt-14 max-w-3xl border-t border-gray-200 pt-8">
+        <div className="mt-14 border-t border-gray-200 pt-8">
           <Link
             href="/analyses"
-            className="inline-flex items-center text-sm font-semibold text-violet-700 transition-colors hover:text-violet-900"
+            className="inline-flex items-center text-sm font-semibold text-[#a14f34] transition-colors hover:text-[#7d3b29] dark:text-[#e09274] dark:hover:text-[#f0ad95]"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Analyses
