@@ -191,7 +191,7 @@ export default function AnthropicEssayPage() {
             sectionHeadings.has(block) ? (
               <h2
                 key={`${block}-${index}`}
-                className="mb-6 mt-14 border-t border-[#d8cec5] pt-7 text-2xl font-bold tracking-tight text-gray-950 first:mt-0 dark:border-[#35312e] sm:mt-16 sm:text-3xl"
+                className="mb-6 mt-14 border-t border-[#d8cec5] pt-7 text-2xl font-bold tracking-tight text-[#282421] first:mt-0 dark:border-[#35312e] dark:!text-[#f2eee8] sm:mt-16 sm:text-3xl"
               >
                 {block}
               </h2>
@@ -213,7 +213,7 @@ export default function AnthropicEssayPage() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#a14f34] dark:text-[#e09274]">
               Further reading & referenced works
             </p>
-            <h2 className="text-2xl font-bold text-gray-950">References</h2>
+            <h2 className="text-2xl font-bold text-[#282421] dark:!text-[#f2eee8]">References</h2>
           </div>
 
           <ol className="space-y-4">
