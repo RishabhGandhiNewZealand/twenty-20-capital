@@ -47,17 +47,6 @@ In fact, leaving money on the table may be exactly what maximizes the long-run v
 
 Anthropic's most extreme bull case is that it becomes the infrastructure layer for cognition while allowing enormous fortunes to be made both above and below it.
 
-The General Intellect
-There is an older intellectual argument hiding underneath this entire thesis. In the Grundrisse, Karl Marx wrote about the "general intellect": the accumulated knowledge of society becoming embodied in machinery and appearing as a productive force of capital. The resonance with frontier AI is difficult to miss. Centuries of mathematics, science, language, software, law, and organizational knowledge are distilled into systems that can perform productive work, and the resulting capability is controlled through machines, compute, and corporate ownership rather than residing only in individual workers.
-
-But Marx is only one side of the story. Friedrich Hayek's great objection to centralized economic planning was that the knowledge required to coordinate an economy is dispersed across millions of people, local situations, and changing prices. Michael Polanyi went deeper still with the observation that humans often know more than they can explicitly tell. Expertise is tacit. A master surgeon, engineer, trader, or manager cannot necessarily reduce everything they know to a manual that another person can simply read.
-
-Superintelligence is, in a strange sense, an empirical test of all three ideas. Marx asks what happens when accumulated social knowledge becomes machine capital. Hayek asks whether economically useful knowledge can ever be centralized. Polanyi asks whether the most valuable forms of human knowledge can even be articulated. Frontier AI matters economically to the extent that it can do something previous software could not: absorb patterns from vast amounts of explicit information, learn behaviors that were never cleanly written down, and deploy that capability across millions of contexts at once.
-
-If Hayek and Polanyi remain binding constraints, human institutions and local expertise remain indispensable complements to AI. If increasingly capable models can overcome a meaningful portion of those constraints, the consequence is larger than automating jobs. The informational architecture of the firm changes. The amount of knowledge that can be coordinated through a single system expands. Activities that once required thousands of specialists may become manageable by tiny organizations sitting on top of enormous machine intelligence.
-
-Anthropic would then be selling more than labor substitution. It would be selling a new way of organizing knowledge itself.
-
 The Six-Month Question
 Of course, none of this matters if model leadership remains temporary.
 
@@ -248,5 +237,4 @@ If the evidence were already there, Anthropic would not be offered at a valuatio
 If Anthropic never crosses that threshold, $2 trillion may look ridiculous. If superintelligence turns out to be easy and every frontier laboratory arrives within the same window, the thesis breaks. If the problem is hard but achievable, and Anthropic gets there first with a machine researcher capable of making itself better faster than rivals can follow, then the category changes.
 
 And $2 trillion may be remembered not as the price at which investors lost their minds, but as the last price before the market understood what kind of asset it was looking at.
-
 

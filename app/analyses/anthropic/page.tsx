@@ -5,7 +5,6 @@ import path from 'node:path'
 
 const sectionHeadings = new Set([
   'What Happens If Intelligence Becomes Cheap?',
-  'The General Intellect',
   'The Six-Month Question',
   'When Power Starts Producing Power',
   'The Hyperscaler Paradox',
@@ -65,21 +64,6 @@ const references = [
     title: 'The Coal Question',
     publisher: 'William Stanley Jevons, 1865',
     href: 'https://www.econlib.org/library/YPDBooks/Jevons/jvnCQ.html',
-  },
-  {
-    title: 'The Use of Knowledge in Society',
-    publisher: 'F. A. Hayek, 1945',
-    href: 'https://german.yale.edu/sites/default/files/hayek_-_the_use_of_knowledge_in_society.pdf',
-  },
-  {
-    title: 'Grundrisse: The Fragment on Machines',
-    publisher: 'Karl Marx, 1857–58',
-    href: 'https://www.marxists.org/archive/marx/works/1857/grundrisse/ch14.htm',
-  },
-  {
-    title: 'The Tacit Dimension',
-    publisher: 'Michael Polanyi, University of Chicago Press',
-    href: 'https://press.uchicago.edu/ucp/books/book/chicago/T/bo6035368.html',
   },
   {
     title: '7 Powers: The Foundations of Business Strategy',
