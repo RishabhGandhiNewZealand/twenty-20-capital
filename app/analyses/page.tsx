@@ -131,14 +131,14 @@ export default function AnalysesPage() {
                     The $2 Trillion Hedge
                   </h2>
                   <p className="line-clamp-3 text-sm leading-6 text-gray-600 sm:text-base">
-                    When Anthropic eventually walks into the public markets, the number everyone
-                    will talk about is the valuation. If the rumors are right, that number could be
-                    close to $2 trillion, placing the company among the largest market debuts ever.
+                    When Anthropic walks onto the public markets later this year, the number
+                    everyone will talk about is the valuation. If the rumours prove accurate, the
+                    offering could value Anthropic near $2 trillion.
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center text-sm text-gray-500 sm:pt-1">
                   <Calendar className="mr-2 h-4 w-4" />
-                  August 21, 2026
+                  August 24, 2026
                 </div>
               </div>
             </CardContent>
