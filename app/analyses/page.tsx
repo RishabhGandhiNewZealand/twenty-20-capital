@@ -138,7 +138,7 @@ export default function AnalysesPage() {
                 </div>
                 <div className="flex shrink-0 items-center text-sm text-gray-500 sm:pt-1">
                   <Calendar className="mr-2 h-4 w-4" />
-                  August 24, 2026
+                  August 25, 2026
                 </div>
               </div>
             </CardContent>

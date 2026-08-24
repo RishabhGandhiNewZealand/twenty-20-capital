@@ -18,7 +18,7 @@ function getEssay() {
   const bodyStart = firstRule >= 0 ? firstRule + 1 : 1
 
   return {
-    title,
+    title: title.replace(/^#\s+/, ''),
     subtitle: subtitleLine.replace(/^\*(.*)\*$/, '$1'),
     body: lines.slice(bodyStart).join('\n').trim(),
   }
@@ -61,7 +61,7 @@ export default function AnthropicEssayPage() {
           <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[#746b64] dark:text-[#aaa19a]">
             <span className="flex items-center">
               <Calendar className="mr-2 h-4 w-4" />
-              August 24, 2026
+              August 25, 2026
             </span>
             <span className="hidden h-1 w-1 rounded-full bg-[#d97757] sm:block" />
             <span>Long-form investment thinking</span>
