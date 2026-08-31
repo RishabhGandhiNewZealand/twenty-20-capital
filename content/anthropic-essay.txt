@@ -6,17 +6,19 @@
 
 When Anthropic walks onto the public markets later this year, the number everyone will talk about is the valuation. If the rumours prove accurate, the offering could value Anthropic near $2 trillion.[^1] Many investors will ask whether a company still consuming extraordinary amounts of capital can possibly be worth that much.
 
-That is the obvious question. It is far from the only one.
+That is the obvious question. We think it's far from the only one.
 
-The conventional case is easy enough to understand. Claude keeps taking enterprise share, coding agents become a huge business, inference gets cheaper, margins improve, and Anthropic grows into its valuation. Under that framework, $2 trillion is demanding. Anthropic could become one of the most successful technology companies ever built and still deliver mediocre returns to someone who buys the IPO.
+The conventional case is easy enough to understand. Claude keeps taking enterprise share, coding agents become a huge business, inference gets cheaper, margins improve, and Anthropic grows into its valuation. Under that framework, the valuation is demanding. Anthropic could become one of the most successful technology companies ever built and still deliver mediocre returns to someone who buys the IPO.
 
-Despite that, we argue that this IPO is unlike any other. Anthropic possesses unique characteristics that could make it immensely valuable in a future marked by a steep decline in the cost of cognition. That future is speculative, but far too plausible to dismiss it as impossible: Anthropic develops superintelligence first, and getting there first matters greatly.
+And yet, we argue that this IPO is unlike any other. Not because $2 trillion looks reasonable under conventional assumptions, but because Anthropic offers exposure to a future in which those assumptions become less useful.
 
-If that happens, debating whether the company deserves a valuation of five or fifty times trailing revenue becomes beside the point. Anthropic would be selling raw intelligence, not software: an input into everything else in the economy.
+Anthropic possesses unique characteristics that could make it immensely valuable in a future marked by a steep decline in the cost of cognition. That future is speculative, but plausible enough to dismiss it as impossible: Anthropic develops superintelligence first, and getting there first matters greatly.
 
-Isaac Asimov's *Foundation and Empire* offers a useful way to frame this problem. Psychohistory works because the behaviour of immense populations can be modelled statistically. Then the Mule appears: a singular actor outside the model's assumptions who changes the path of history. Investors like to assign probabilities within a distribution. Like the Mule, superintelligence could be an event that changes the distribution itself.
+If that happens, debating whether the company deserves a valuation of five or fifty times trailing revenue becomes beside the point. Anthropic would no longer really be selling software. It would be selling intelligence itself.
 
-In that world, Anthropic should be viewed less as a normal equity investment but rather as protection against an extreme tail event.
+We do not know how to value that.
+
+In Isaac Asimov's *Foundation and Empire*, Psychohistory works because the behaviour of immense populations can be modelled statistically. Then the Mule appears: a singular actor outside the model's assumptions. Superintelligence may be such an event. Investors are trying to assign probabilities within a distribution when the real risk is that the distribution itself changes.
 
 ## Consequences of cheap intelligence
 
@@ -26,13 +28,15 @@ TSMC is a useful comparison. It occupies arguably one of the most important posi
 
 There is a tendency to make the addressable market calculation too tidy. Start with the global knowledge-worker wage bill, assume a percentage gets automated, give the model provider some share of the savings, and out comes a very large spreadsheet number. We doubt the economy will cooperate with that model. When cognition becomes cheaper, companies will not simply buy today’s quantity of thinking at a discount. They will buy thousands of drug hypotheses instead of dozens, run millions of simulations before making decisions and commission software for jobs too small to justify a human engineer. Entire categories of cognitive work that no company purchases today may become normal operating expenses. 
 
-This is the Jevons effect applied to intelligence. And unlike coal, we suspect demand for today's quantity of purchased thinking is anywhere near a natural limit, or that such a limit even exists.
+This is the Jevons effect applied to intelligence. But the analogy may understate the case. We doubt the demand for thinking is anywhere near a natural limit. We are not even sure such a limit exists.
 
 The number of “workers replaced” may eventually be less useful than the volume of machine cognition consumed. Consider how we do not measure cloud computing's addressable market today by counting the server-room employees AWS replaced.
 
 Anthropic would not need to extract every possible dollar. It could and should price well below the theoretical maximum, ideally an order of magnitude below, and remain consistent with its public-benefit mission.
 
-If Claude produces $200,000 of annual output, charging only $10,000 is  sufficient. The customer keeps most of the surplus. Anthropic takes only a fraction. Applied across tens or hundreds of millions—perhaps even billions—of worker equivalents, that fraction will likely be unlike anything seen before. Infrastructure companies often become more important by allowing fortunes to grow around them. AWS, Visa and TSMC all did.
+Suppose Claude produces $200,000 of annual output and Anthropic charges $10,000. The customer keeps almost all the surplus.
+
+Now apply that across tens or hundreds of millions—perhaps even billions—of worker equivalents. The numbers become absurd very quickly.
 
 ## The six-month question
 
@@ -40,7 +44,7 @@ None of this matters if model leadership remains temporary. Claude can lead for 
 
 Can a six-month lead become extremely difficult to catch?
 
-There is precedent, although this remains the least certain and most important part of the thesis. TSMC did not win because one process node stayed permanently superior, nor did Google win because one version of search was permanently better. An early lead attracted capital, talent, customers and process knowledge, making the next lead easier to earn. AI could become the strongest version of this pattern because the product may eventually help create its successor. Competitors can copy features and perhaps entire model generations. The harder thing to copy is the rate at which the leading lab learns.
+There is precedent, although this is both the least certain and most important part of the thesis. TSMC did not win because one process node stayed permanently superior, nor did Google win because one version of search was permanently better. An early lead attracted capital, talent, customers and process knowledge, making the next lead easier to earn. AI could become the strongest version of this pattern because the product may eventually help create its successor. Competitors can copy features and perhaps entire model generations. The harder thing to copy is the rate at which the leading lab learns.
 
 Frontier research is still constrained by human attention. A lab can raise another ten billion dollars. It cannot instantly create and integrate another thousand exceptional researchers. A capable machine researcher changes that production function.
 
@@ -52,27 +56,27 @@ Anthropic only needs enough of a lead to remain one or two generations ahead. On
 
 But this only works if superintelligence is both achievable and sufficiently hard to solve. If every frontier lab arrives at roughly the same time, being first creates little moat. If the technology is impossible or decades away, the tail never arrives. Anthropic's extraordinary outcome exists between those extremes: it crosses the threshold first, then turns a temporary lead into a widening one. There may not be one decisive threshold. There could be several. But being first across one could give Anthropic the best chance of crossing the next.
 
-In Helmer’s seven-powers framework, this would begin with Process Power. Anthropic’s advantage does not reside in one set of model weights but in the accumulated system that produces them: researchers, infrastructure, evaluations, safety methods, tooling, judgement, and thousands of operating decisions. That process could eventually produce the best automated AI researcher. If Anthropic retains exclusive access, the researcher could become a Cornered Resource: a scarce asset capable of building a better successor before rivals catch up. Each generation would then strengthen the process that produced it. Anthropic would then control something genuinely scarce, not superintelligence as a static artefact, but the best available producer of future superintelligence.
+In Helmer’s world, this would begin with Process Power. Anthropic’s advantage does not reside in one set of model weights but in the accumulated system that produces them: researchers, infrastructure, evaluations, safety methods, tooling, judgement, and thousands of operating decisions. That process could eventually produce the best automated AI researcher. If Anthropic retains exclusive access, the researcher could become a Cornered Resource: a scarce asset capable of building a better successor before rivals catch up. Each generation would then strengthen the process that produced it. Anthropic would then control something genuinely scarce, not superintelligence as a static artefact, but the best available producer of future superintelligence.
 
 Stealing one generation of model weights alone would be like stealing a photograph of TSMC's latest chip and assuming you had stolen the fab. The durable asset is not the photograph. It is the capability that produces the next node.
 
 Our contention is that, among the companies competing at the frontier, Anthropic is the closest to setting this process in motion. Stacking leading releases in a market where model-level advantages often last only weeks may be the earliest flicker of Process Power.[^2][^3]
 
-## The Spacing Guild constraint
+## The compute constraint
 
 This cognitive moat would still rest on a physical stack owned largely by other companies.
 
-Amazon, Google, Microsoft all want Anthropic's cloud spending. This dependence gives Anthropic options. Rather than owning the world's data centres, it may be better to have infrastructure providers competing for its workloads.
+Amazon, Google, and Microsoft all want Anthropic's cloud spending. This dependence gives Anthropic options. Rather than owning the world's data centres, it may be better to have infrastructure providers competing for its workloads.
 
-We can already see this playing out: Anthropic has committed to spend more than $100 billion on AWS over ten years and $30 billion on Azure, with a further $200 billion, five-year commitment to Google Cloud and chips.[^4] The hyperscalers are competing to generate Claude tokens. Currently, the bargaining power cuts both ways. Amazon, Google and Microsoft have no reason to welcome an unavoidable tollbooth above their infrastructure. They are funding rival laboratories, building their own models, bundling intelligence into existing products and making switching easier. They want Anthropic but they also want several Anthropics.
+We can already see this playing out: Anthropic has committed to spending more than $100 billion on AWS, $30 billion on Azure and a further $200 billion on Google Cloud.[^4] If Athropic can generate the most revenue per megawatt of compute, the hyperscalers will compete to generate Claude tokens. Currently, the bargaining power cuts both ways. Amazon, Google and Microsoft have no reason to welcome an unavoidable tollbooth above their infrastructure. They are funding rival laboratories, building their own models, bundling intelligence into existing products and making switching easier. They want Anthropic, but they also want several Anthropics.
 
-Anthropic's extreme bull case resembles the Spacing Guild in Dune: It would control an indispensable layer without owning every asset beneath it. And just as the Guild depends on spice, Anthropic depends on compute and electricity.
+Anthropic's extreme outcome resembles that of the Spacing Guild in Dune: It would control an indispensable layer without owning every asset beneath it. And just as the Guild depends on spice, Anthropic depends on compute and electricity.
 
-The best machine researcher could make that dependence less constraining, turning Anthropic into an even stronger version of the Spacing Guild—one capable of improving the equivalent of interstellar travel itself. In practice, that means better training algorithms, lower inference costs, better chips and more intelligence per unit of power. Anthropic would still need the physical stack, but it might use that stack more productively than its competitors. The bull case, therefore, requires Anthropic to become important enough that infrastructure providers compete for it, while its research advantage reduces its dependence on them faster than they can commoditise the model layer. Anthropic would remain dependent on the infrastructure without remaining hostage to it.
+The best machine researcher could make that dependence less constraining, turning Anthropic into something stranger than the Spacing Guild: an indispensable intermediary capable of improving the equivalent of interstellar travel itself. Anthropic would still need the physical stack, but it might use that stack more productively than its competitors. It could remain dependent on the infrastructure without becoming hostage to it.
 
 ## Anthropic's purpose in the portfolio
 
-So far, we have described the most extreme version of the Anthropic bull case. However, there is also a dangerous trick buried in the bull case. The St. Petersburg paradox shows how a tiny probability of an enormous payoff can dominate an expected-value calculation. Applied carelessly, that logic can justify buying any equity at any price: perhaps Anthropic will be worth $100 trillion, $500 trillion or more. It is easy to unconsciously smuggle price-indifference into the thesis by inventing a sufficiently large tail. A $2 trillion Anthropic and a $20 trillion Anthropic are not the same investment. The higher the price, the more capital we must sacrifice today and the more extreme the winning future must become.
+This is where the thesis starts to make us uncomfortable. There is a dangerous trick buried in the bull case. The St. Petersburg paradox shows how a tiny probability of an enormous payoff can dominate an expected-value calculation. Applied carelessly, that logic can justify buying any equity at any price: perhaps Anthropic will be worth $100 trillion, $500 trillion or more. It is easy to unconsciously smuggle price-indifference into the thesis by inventing a sufficiently large tail. A $2 trillion Anthropic and a $20 trillion Anthropic are not the same investment. The higher the price, the more capital we must sacrifice today and the more extreme the winning future must become.
 
 We have no honest probability to assign. Is it 1 percent, 5 percent or 10 percent? We have no idea, and neither does anybody else. There is no historical distribution for recursive AI research, only anecdotes.
 
@@ -82,17 +86,19 @@ Anthropic is therefore not an ordinary negatively correlated asset. Its appeal i
 
 ### Enough to matter
 
-One is to buy Anthropic at an absurd valuation and watch AI progress slowly, competition persist or Anthropic lose its position at the frontier. That loss is bounded by the amount invested. The other is to own none of Anthropic as it becomes a dominant supplier of cognition, while the same transition damages assumptions supporting the rest of the portfolio. The damage could extend across several holdings, prove difficult to repair after the fact and cost far more than a small drag on performance.
+There are two errors we can make. One is to buy Anthropic at an absurd valuation and watch AI progress slowly, competition persist, or Anthropic lose its position at the frontier. That loss is bounded by the amount invested. The other is to own none of Anthropic as it becomes a dominant supplier of cognition, while the same transition damages assumptions supporting the rest of the portfolio. The damage could extend across several holdings, prove difficult to repair after the fact and cost far more than a small drag on performance.
 
 The right balance depends on the rest of the portfolio. An investor concentrated in businesses whose value depends on expensive cognitive labour has reason to own more Anthropic than someone already exposed to semiconductors, energy infrastructure or other likely beneficiaries of AI. There is no honest way to calculate an optimal allocation from probabilities we cannot estimate.
 
-Our portfolio already has indirect exposure through hyperscalers, semiconductor companies and other infrastructure plays. That reduces the need for a large Anthropic position, but it does not make direct exposure redundant. At $2 trillion, a tail allocation of roughly two percent seems appropriate: large enough to matter if the thesis is right, but small enough that a complete loss would not materially impair the portfolio. This is a risk-budget judgement, not a mathematically derived optimum.
+Our portfolio already has indirect exposure through hyperscalers, semiconductor companies and other infrastructure plays. That reduces the need for a large Anthropic position, but it does not make direct exposure redundant. 
+
+At $2 trillion, a tail allocation of roughly two percent seems appropriate, because one percent would barely matter in the winning scenario, while five percent would turn a hedge into a large speculative bet. This is a risk-budget judgement, not a mathematically derived optimum.
 
 ## Why not wait?
 
 The disciplined strategy seems obvious: let the IPO dust settle, wait for the multiple to compress and buy once there is clear evidence that recursive research acceleration is underway. The risk is that the evidence arrives before an attractive entry price does.
 
-After the IPO, Anthropic may trade down 70–80 percent while the research thesis remains intact. But recursive research acceleration could instead become clear soon after the IPO and cause the market to violently re-categorise the company. The choice is therefore not simply $2 trillion now or perhaps $500 billion later. It is $2 trillion now versus some chance of a cheaper entry and some chance that the same exposure is never again available near $2 trillion.
+After the IPO, Anthropic may trade down 70–80 percent while the research thesis remains intact. But recursive research acceleration could instead become clear soon after the IPO, causing the market to violently re-categorise the company. The choice is therefore not simply $2 trillion now or perhaps $500 billion later. It is $2 trillion now, versus some chance of a cheaper entry and the chance that the same exposure will never again be available near $2 trillion.
 
 The timing risk is further increased because, as machine researchers begin to compress the interval between breakthroughs, the interval between evidence points may also compress. Research could move on machine timescales while investors wait for quarterly reports on human timescales.
 
@@ -104,7 +110,7 @@ There is no conventional case for calling that valuation cheap. The investment o
 
 The thesis would break if Anthropic fell materially behind and failed to recover, if frontier models became interchangeable, or if better AI researchers did not accelerate their own development. A lower share price would not compensate for any of those failures, and we will happily exit.
 
-In most futures, $2 trillion will look aggressive. In the one we are hedging, it may look cheap.
+We are not paying $2 trillion because we know Anthropic will win. We are paying for the possibility that, if it does, much of what we already own may no longer mean what we thought it did.
 
 ---
 
