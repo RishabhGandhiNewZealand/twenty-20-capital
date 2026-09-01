@@ -4,21 +4,21 @@
 
 ---
 
-When Anthropic walks onto the public markets later this year, the number everyone will talk about is the valuation. If the rumours prove accurate, the offering could be near an record breaking $2 trillion.[^1] And yet, we argue that this IPO is basically a must buy. Not because $2 trillion looks reasonable under conventional assumptions, but because Anthropic offers exposure to a future in which those assumptions become less useful.
+When Anthropic walks onto the public markets later this year, the number everyone will talk about is the valuation. If the rumours prove accurate, the offering could be near a record breaking $2 trillion.[^1] And yet, I argue that this IPO is basically a must-buy. Not because $2 trillion looks reasonable under conventional assumptions, but because Anthropic offers exposure to a future in which those assumptions become less useful.
 
 That future is speculative, but plausible enough to dismiss as impossible: Anthropic develops superintelligence first, and getting there first matters greatly.
 
-If that happens, debating whether the company deserves a valuation of five or fifty times trailing revenue becomes beside the point. Anthropic would no longer really be selling software. It would be selling intelligence itself.
+If that happens, debating whether the company deserves to trade at five or fifty times trailing revenue becomes beside the point. Anthropic would no longer really be selling software. It would be selling intelligence itself, an input into everything else.
 
 I don't know how to value that. And I don't think anyone else does either. 
 
-But we can look to science fiction to help us frame the problem.
+In times like these, we can look to science fiction to guide us.
 
-In Isaac Asimov's *Foundation and Empire*, Psychohistory works because the behaviour of immense populations can be modelled statistically. Then the Mule appears: a singular actor outside the model's assumptions. Superintelligence may be such an event. Investors are trying to assign probabilities within a distribution when the real risk is that the distribution itself changes.
+Isaac Asimov's *Foundation* series plays with the concept of Psychohistory, and how the behaviour of immense populations can be modelled statistically. Then the Mule appears: a singular actor outside the model's assumptions. Superintelligence may be such an event. Investors are trying to assign probabilities within a distribution when the real risk is that the distribution itself changes.
 
 ## When Intelligence becomes cheap
 
-There is a tendency to make the addressable market calculation too tidy. Start with the global knowledge-worker wage bill, assume a percentage gets automated, give the model provider some share of the savings, and out comes a very large spreadsheet number. We doubt the economy will cooperate with that model. When cognition becomes cheaper, companies will not simply buy today’s quantity of thinking at a discount. They will buy many order of magnitudes more, thousands of drug hypotheses instead of dozens and commission software for jobs too small to justify a human engineer. Entire categories of cognitive work that no company purchases today may become normal operating expenses. 
+There is a tendency to make the addressable market calculation too tidy. Start with the global knowledge-worker wage bill, assume a percentage gets automated, give the model provider some share of the savings, and out comes a very large spreadsheet number. I highly doubt the economy will cooperate with that model. As cognition becomes cheaper, companies will not simply buy today’s quantity of thinking at a discount. They will buy many orders of magnitude more, thousands of drug hypotheses instead of dozens and commission software for jobs too small to justify a human engineer. Entire categories of cognitive work that no company purchases today may become normal operating expenses. 
 
 This is the Jevons effect applied to intelligence. But the analogy may understate the case, we doubt the demand for thinking is anywhere near a natural limit or even that such a limit exists.
 
