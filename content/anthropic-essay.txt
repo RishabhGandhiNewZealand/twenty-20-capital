@@ -14,7 +14,7 @@ I don't know how to value that. And I don't think anyone else does either.
 
 When the future is this uncertain, fiction is often a better guide than reality.
 
-Isaac Asimov's *Foundation* series plays with the concept of Psychohistory, and how the behaviour of immense populations can be modelled statistically. Then the Mule appears: a singular actor outside the model's assumptions. Superintelligence may be such an event. Investors are trying to assign probabilities within a distribution when the real risk is that the distribution itself changes.
+Isaac Asimov's *Foundation* series plays with the concept of Psychohistory, and how the behaviour of immense populations can be modelled statistically. Then the Mule appears: a singular actor outside the model's assumptions. Superintelligence may be such an event. Investors try to assign probabilities within a distribution when the real risk is that the distribution itself changes.
 
 ## When Intelligence becomes cheap
 
@@ -42,11 +42,7 @@ Imagine two labs advancing at roughly the same rate until one develops a slightl
 
 Anthropic only needs enough of a lead to remain one or two generations ahead. Once that separation appears, ordinary business advantages will reinforce it. The better model attracts more customers. That gives Anthropic more revenue to spend on compute and experiments. Which in turn creates a better model. The lead only needs to become strong enough at one lab to make the next round unforgivably unfair.
 
-We cannot completely ignore physical realities. Fabs and power plants take years to build, and ten thousand research agents will not be ten thousand times as productive as one. Better intelligence will ease these constraints by improving algorithms, chip design, networking and cooling, but it cannot make the physical world disappear. 
-
-Importantly, these constraints apply to every frontier lab.
-
-If every frontier lab arrives at super intelligence at roughly the same time, being first creates little moat. If the technology is impossible or decades away, the tail never arrives. The extraordinary outcome exists between those extremes: Anthropic crosses a threshold first, then turns a temporary lead into a widening one. There may not be one decisive threshold. There could be several. But being first across one could give Anthropic the best chance of crossing the next. 
+If every frontier lab arrives at super intelligence at roughly the same time, being first creates little moat. If the technology is impossible or decades away, the tail never arrives. The extraordinary outcome sits between those extremes: Anthropic crosses a threshold first, then turns a temporary lead into a widening one. There may not be one decisive threshold. There could be several. But being first across one could give Anthropic the best chance of crossing the next. 
 
 In Helmer’s world, Anthropic has some inklings of Process power. It's advantage does not reside in one set of model weights but in the accumulated system that produces them: researchers, infrastructure, evaluations, safety methods, tooling, judgement, and thousands of operating decisions. That process could eventually produce the best automated AI researcher. If Anthropic retains exclusive access, the researcher could become a Cornered Resource. Each generation would then strengthen the process that produced it. 
 
@@ -82,7 +78,7 @@ There are two errors to make. One is to buy Anthropic at an absurd valuation and
 
 My portfolio already has indirect exposure through the hyperscalers and semiconductor companies. This reduces the need for a large Anthropic position, but it does not make direct exposure redundant. 
 
-At $2 trillion, a tail allocation of roughly two percent seems appropriate, because one percent would not provide enough upside to offset damage elsewhere in the portfolio, while five percent would turn a hedge into a large speculative bet. This is a risk-budget judgement, not a mathematically derived optimum.
+At $2 trillion, a tail allocation of roughly two percent seems appropriate, because one percent would not provide enough upside to offset damage elsewhere in the portfolio, while five percent would turn a hedge into a large speculative bet. This is a pure judgement call, not a mathematical optimum.
 
 ## Why not wait?
 
@@ -92,13 +88,13 @@ Normally, I would. Space X has a similar tail and I ignored that IPO.
 
 The risk with Anthropic is that the evidence arrives before an attractive entry price ever does.
 
-After the IPO, Anthropic may trade down 70–80 percent while the research thesis remains intact. But recursive research acceleration could instead become clear soon after the IPO, causing the market to violently re-categorise the company. The choice is therefore not simply $2 trillion now or perhaps $500 billion later. It is $2 trillion now, versus some chance of a cheaper entry and the chance that the same exposure will never again be available near $2 trillion.
+After the IPO, Anthropic may trade down 70–80 percent while the research thesis remains intact. But recursive research acceleration could instead become clear soon after the IPO, causing the market to violently re-categorise the company. The choice is therefore not simply $2 trillion now or perhaps $500 billion later. It is $2 trillion now, versus some chance of a cheaper entry and the chance that the same valuation will never again be available.
 
-The timing risk is further increased because, as machine researchers begin to compress the interval between breakthroughs, the interval between evidence points may also compress. Research could move on machine timescales while investors wait for quarterly reports on human timescales.
+The timing risk is further increased because, as machine researchers begin to compress the interval between breakthroughs, the interval between evidence points may also compress. Research could move on to machine timescales while investors wait patiently for quarterly reports on human timescales.
 
 ## Verdict
 
-At an IPO valuation of roughly $2 trillion, we would allocate roughly two percent of the portfolio to Anthropic.
+At an IPO valuation of roughly $2 trillion, I will be allocating roughly two percent of the portfolio to Anthropic.
 
 The investment only works as exposure to a narrower possibility: Anthropic reaches the frontier first and turns a temporary research lead into a durable advantage. The evidence for that outcome is not yet strong, which is precisely why the position should be small.
 
@@ -109,8 +105,6 @@ I am not paying $2 trillion because I know Anthropic will win. I are paying for 
 ---
 
 ## Further reading
-
-These works develop the essay's fictional frames, strategic vocabulary and central economic and technological mechanisms. 
 
 - **The Mule and psychohistory:** Isaac Asimov, [*Foundation and Empire*](https://www.penguinrandomhouse.com/books/5657/foundation-and-empire-by-isaac-asimov/).
 - **The Spacing Guild and spice:** Frank Herbert, [*Dune*](https://us.macmillan.com/books/9781427201447/dune/).
