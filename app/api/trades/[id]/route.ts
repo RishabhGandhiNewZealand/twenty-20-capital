@@ -39,7 +39,7 @@ export async function PUT(
         value = ${trade.value},
         deleted_flag = ${trade.deleted_flag || false},
         deleted_at = ${trade.deleted_flag ? new Date().toISOString() : null}
-      WHERE id = ${tradeId} AND user_id = ${userId}
+      WHERE id = ${tradeId} AND user_id = ${userId} AND source_code IS NULL
       RETURNING id
     `
     
@@ -96,7 +96,7 @@ export async function DELETE(
       SET
         deleted_flag = TRUE,
         deleted_at = CURRENT_TIMESTAMP
-      WHERE id = ${tradeId} AND user_id = ${userId}
+      WHERE id = ${tradeId} AND user_id = ${userId} AND source_code IS NULL
       RETURNING id
     `
     

@@ -12,6 +12,9 @@ export interface TradeRecord {
   brokerageCurrency: string
   exchRate: number
   value: number
+  // A Reinvestment with a source code represents a non-cash spin-off.
+  sourceCode?: string
+  basisTransferUSD?: number
   user_id?: string
   deleted_flag?: boolean
   deleted_at?: string
@@ -50,4 +53,4 @@ export interface PortfolioSummary {
   exitedPositions: ExitedPosition[]
   totalValueNZD: number
   lastUpdated: string
-} 
+}

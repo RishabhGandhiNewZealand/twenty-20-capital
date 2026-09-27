@@ -90,10 +90,14 @@ export async function GET(request: NextRequest) {
       const current = holdingsBySymbol.get(trade.code) || { shares: 0, totalCostNZD: 0, name: trade.name, currency: trade.instrumentCurrency }
       const exchangeRate = trade.instrumentCurrency === 'USD' ? (1 / trade.exchRate) : 1
       const qty = isNaN(trade.qty) ? 0 : trade.qty
-      const price = isNaN(trade.price) ? 0 : trade.price
-      const tradeValueNZD = Math.abs(qty * price * exchangeRate)
+      const tradeValueNZD = Math.abs(trade.value)
 
       if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+        if (trade.type === 'Reinvestment' && trade.sourceCode) {
+          const source = holdingsBySymbol.get(trade.sourceCode)
+          if (source) source.totalCostNZD -= Math.abs(trade.value)
+          current.totalCostNZD += Math.abs(trade.value)
+        }
         current.shares += qty
         if (trade.type === 'Buy') {
           current.totalCostNZD += tradeValueNZD

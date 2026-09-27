@@ -481,7 +481,7 @@ export default function TradesPage() {
                                   trade.type === 'Sell' ? 'text-red-600' : 
                                   'text-blue-600'
                                 }`}>
-                                  {trade.type}
+                                  {trade.sourceCode ? 'Spin-off' : trade.type}
                                 </span>
                                 {trade.id && trade.id < 0 && (
                                   <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">NEW</span>
@@ -499,20 +499,20 @@ export default function TradesPage() {
                                 <span className="font-medium">{isNaN(trade.qty) ? 0 : trade.qty}</span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Price: </span>
+                                <span className="text-muted-foreground">{trade.sourceCode ? 'From: ' : 'Price: '}</span>
                                 <span className="font-medium">
-                                  {formatCurrencyWithDecimals(isNaN(trade.price) ? 0 : trade.price, trade.instrumentCurrency, 2)}
+                                  {trade.sourceCode || formatCurrencyWithDecimals(isNaN(trade.price) ? 0 : trade.price, trade.instrumentCurrency, 2)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Value: </span>
+                                <span className="text-muted-foreground">{trade.sourceCode ? 'Basis moved: ' : 'Value: '}</span>
                                 <span className="font-medium">
                                   {formatCurrencyWithDecimals(isNaN(trade.value) ? 0 : trade.value, 'NZD', 2)}
                                 </span>
                               </div>
                             </div>
                             <div className="flex gap-1 ml-4">
-                              {trade.deleted_flag ? (
+                              {trade.sourceCode ? null : trade.deleted_flag ? (
                                 <Button
                                   variant="ghost"
                                   size="sm"

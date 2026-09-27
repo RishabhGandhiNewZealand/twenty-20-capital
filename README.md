@@ -160,6 +160,13 @@ The application uses a PostgreSQL database with trade data stored in the `applic
 - Currency information (instrument_currency, brokerage_currency, exchange_rate)
 - Transaction values and fees
 
+Spin-offs are recorded as non-cash Reinvestment rows with `source_code` and
+`basis_transfer_usd`. The row's `value` is transferred NZD cost basis, not new
+cash invested; its `price` and `brokerage` are zero. Portfolio calculations
+reduce the source holding's basis and assign it to the distributed shares on
+the event date. Apply `migrations/2026-09-27-spinoff-basis.sql` before deploying
+code that reads these columns.
+
 ## Project Structure
 
 ```

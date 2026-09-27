@@ -47,6 +47,14 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
     holding.trades.push(trade)
     
     if (trade.type === 'Buy' || trade.type === 'Reinvestment') {
+      if (trade.type === 'Reinvestment' && trade.sourceCode) {
+        const source = holdings.get(trade.sourceCode)
+        if (source) {
+          source.totalCostNZD -= Math.abs(trade.value)
+          source.totalCostUSD -= trade.basisTransferUSD || 0
+        }
+      }
+
       holding.totalShares += trade.qty
       
       // Calculate cost in NZD (trade.value is already in NZD based on exchange rate)
@@ -55,7 +63,10 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
       
       // Calculate cost in USD for USD stocks
       if (trade.instrumentCurrency === 'USD') {
-        const costUSD = trade.qty * trade.price
+        const costUSD = trade.sourceCode
+          ? (trade.basisTransferUSD || 0)
+          : trade.qty * trade.price +
+            (trade.type === 'Buy' && trade.brokerageCurrency === 'USD' ? trade.brokerage : 0)
         holding.totalCostUSD += costUSD
       }
     } else if (trade.type === 'Sell') {
@@ -138,4 +149,4 @@ export function calculatePortfolioData(trades: TradeRecord[]): { holdings: Portf
   }
   
   return { holdings: currentHoldings, exitedPositions }
-} 
+}

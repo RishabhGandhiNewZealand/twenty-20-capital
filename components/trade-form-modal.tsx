@@ -57,9 +57,11 @@ export default function TradeFormModal({ trade, onSave, onClose }: TradeFormModa
     const brokerageInNZD = formData.brokerageCurrency === 'NZD'
       ? formData.brokerage
       : formData.brokerage / formData.exchRate
-    const calculatedValue = valueInNZD + brokerageInNZD
+    const calculatedValue = formData.type === 'Sell'
+      ? valueInNZD - brokerageInNZD
+      : valueInNZD + brokerageInNZD
     setFormData(prev => ({ ...prev, value: parseFloat(calculatedValue.toFixed(2)) }))
-  }, [formData.qty, formData.price, formData.exchRate, formData.brokerage, formData.instrumentCurrency, formData.brokerageCurrency])
+  }, [formData.type, formData.qty, formData.price, formData.exchRate, formData.brokerage, formData.instrumentCurrency, formData.brokerageCurrency])
 
   const handleInputChange = (field: keyof TradeRecord, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
